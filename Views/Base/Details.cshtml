@@ -1,0 +1,25 @@
+﻿@model FRAProject.DTOs.BaseDto
+@{
+    ViewData["Title"] = "Base Details";
+}
+
+<section class="content-header">
+    <h1>Base Details</h1>
+</section>
+
+<section class="content">
+    <div class="card card-info">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Base Name</dt>
+                <dd class="col-sm-9">@Model.BaseName</dd>
+
+                <dt class="col-sm-3">Local Name</dt>
+                <dd class="col-sm-9">@Model.BaseNameLocal</dd>
+            </dl>
+
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
+            <a asp-action="Index" class="btn btn-secondary">Back</a>
+        </div>
+    </div>
+</section>

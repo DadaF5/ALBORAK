@@ -1,0 +1,165 @@
+﻿@model FRAProject.ViewModels.SubDepartment.SubDepartmentIndexViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Sub-Departments";
+}
+
+<div class="content-wrapper-flauid">
+
+    <!-- Page Header -->
+    <section class="content-header">
+        <h1>Sub-Departments</h1>
+    </section>
+
+    <!-- Filters -->
+    <section class="content">
+        <div class="card card-primary card-outline">
+
+            <div class="card-header">
+                <h3 class="card-title">Filters</h3>
+            </div>
+
+            <form method="get">
+                <div class="card-body row">
+
+                    <!-- Base Filter -->
+                    <div class="col-md-2">
+                        <label>Base</label>
+                        <select id="BaseId" name="BaseId" class="form-control"
+                                asp-for="BaseId" asp-items="Model.Bases">
+                            <option value="">-- All Bases --</option>
+                        </select>
+                    </div>
+
+                    <!-- Department Filter -->
+                    <div class="col-md-2">
+                        <label>Department</label>
+                        <select id="DepartmentId" name="DepartmentId" class="form-control"
+                                asp-for="DepartmentId" asp-items="Model.Departments">
+                            <option value="">-- All Departments --</option>
+                        </select>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="col-md-2">
+                        <label>Search</label>
+                        <input type="text" class="form-control"
+                               name="SearchTerm" asp-for="SearchTerm" placeholder="Search SubDepartment..." />
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="col-md-2 mt-4 pt-2">
+                        <button class="btn btn-primary btn-block">Apply</button>
+                    </div>
+
+                   <div class="col-md-2 mt-4 pt-2">
+                        <a asp-action="Create" class="btn btn-success btn-block">
+                            + Add New Department
+                        </a>
+                    </div>
+
+                </div>
+            </form>
+
+        </div>
+
+        <!-- RESULTS -->
+        <div class="card mt-3">
+
+            <div class="card-header bg-info">
+                <h3 class="card-title">Sub-Department List</h3>
+            </div>
+
+            <div class="card-body">
+
+                @if (!Model.SubDepartments.Any())
+                {
+                    <div class="alert alert-warning">No results found.</div>
+                }
+                else
+                {
+                    <!-- GROUP BY BASE -->
+                    @foreach (var group in Model.SubDepartments.GroupBy(x => x.BaseName))
+                    {
+                        <h4 class="mt-4 text-primary">@group.Key</h4>
+
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Department</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var item in group)
+                                {
+                                    <tr>
+                                        <td>@item.Name</td>
+                                        <td>@item.DepartmentName</td>
+                                        <td>
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
+                                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                }
+            </div>
+
+            <!-- PAGINATION -->
+            <div class="card-footer">
+                <nav>
+                    <ul class="pagination">
+
+                        @{
+                            int totalPages = (int)Math.Ceiling(Model.TotalItems / (double)Model.PageSize);
+                            for (int i = 1; i <= totalPages; i++)
+                            {
+                                <li class="page-item @(Model.PageNumber == i ? "active" : "")">
+                                    <a class="page-link"
+                                       href="@Url.Action("Index", new {
+                                            BaseId = Model.BaseId,
+                                            DepartmentId = Model.DepartmentId,
+                                            SearchTerm = Model.SearchTerm,
+                                            PageNumber = i,
+                                            PageSize = Model.PageSize })">
+                                        @i
+                                    </a>
+                                </li>
+                            }
+                        }
+
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        $("#BaseId").change(function () {
+            var baseId = $(this).val();
+
+            $("#DepartmentId").empty();
+            $("#DepartmentId").append('<option value="">Loading...</option>');
+
+            $.getJSON('/SubDepartment/GetDepartmentsByBase', { baseId: baseId }, function (data) {
+                $("#DepartmentId").empty();
+                $("#DepartmentId").append('<option value="">-- All Departments --</option>');
+
+                $.each(data, function (i, item) {
+                    $("#DepartmentId").append('<option value="' + item.value + '">' + item.text + '</option>');
+                });
+            });
+        });
+    </script>
+}

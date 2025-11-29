@@ -1,0 +1,90 @@
+﻿@model List<FRAProject.ViewModels.PersonViewModel>
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+<div class="container-fluid mt-0">
+    <h2>Persons</h2>
+
+    <!-- Filters & Search -->
+    <form id="filterForm" class="row mb-3 g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Search</label>
+            <input type="text" name="search" class="form-control" placeholder="Name or Matricule" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Base</label>
+            <select name="baseId" class="form-select">
+                <option value="">-- All Bases --</option>
+                @foreach (var b in ViewData["Bases"] as List<SelectListItem>)
+                {
+                    <option value="@b.Value">@b.Text</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Rank</label>
+            <select name="rankId" class="form-select">
+                <option value="">-- All Ranks --</option>
+                @foreach (var r in ViewData["Ranks"] as List<SelectListItem>)
+                {
+                    <option value="@r.Value">@r.Text</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2 form-check mt-3 pt-1">
+            <input type="checkbox" name="activeOnly" value="true" class="form-check-input" />
+            <label class="form-check-label">Active Only</label>
+        </div>
+        <div class="col-md-3">
+            <button type="button" id="btnFilter" class="btn btn-primary">Filter</button>
+            <button type="button" id="btnReset" class="btn btn-secondary">Reset</button>
+        </div>
+    </form>
+
+    <!-- Table container for AJAX -->
+    <div id="personTableContainer"></div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function loadTable(page = 1) {
+            var formData = $("#filterForm").serializeArray();
+            formData.push({ name: "page", value: page });
+
+            $.get('@Url.Action("PersonTable")', formData, function (data) {
+                $("#personTableContainer").html(data);
+            });
+        }
+
+        $(document).ready(function () {
+            // Initial load
+            loadTable();
+
+            // Filter button
+            $("#btnFilter").click(function () {
+                loadTable();
+            });
+
+            // Reset button
+            $("#btnReset").click(function () {
+                $("#filterForm")[0].reset();
+                loadTable();
+            });
+
+            // Pagination click (delegated)
+            $("#personTableContainer").on("click", ".pagination a.page-link", function (e) {
+                e.preventDefault();
+                var page = $(this).data("page");
+                if (page) loadTable(page);
+            });
+
+                // Search input: trigger on Enter
+            $("input[name='search']").on("keypress", function (e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    loadTable();
+            }
+        });
+        });
+    </script>
+}

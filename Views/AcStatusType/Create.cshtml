@@ -1,0 +1,25 @@
+﻿@model FRAProject.Models.AcStatusType
+
+@{
+    ViewData["Title"] = "Create Aircraft Status Type";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<form asp-action="Create">
+    <div class="form-group mb-3">
+        <label asp-for="StatusName" class="control-label"></label>
+        <input asp-for="StatusName" class="form-control" />
+        <span asp-validation-for="StatusName" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Description" class="control-label"></label>
+        <input asp-for="Description" class="form-control" />
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</form>
+

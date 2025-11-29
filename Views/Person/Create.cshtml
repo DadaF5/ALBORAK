@@ -1,0 +1,182 @@
+﻿@model FRAProject.ViewModels.PersonViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+<div class="container mt-4">
+    <h2>Create Person</h2>
+
+    <form asp-action="Create" method="post" enctype="multipart/form-data">
+        <div class="row g-3">
+
+            <!-- Base Dropdown -->
+            <div class="col-md-4">
+                <label class="form-label">Base</label>
+                @Html.DropDownListFor(m => m.BaseId, (SelectList)ViewData["Bases"], "-- Select Base --", new { @class = "form-select", @id = "BaseDropdown" })
+            </div>
+
+            <!-- Department Dropdown -->
+            <div class="col-md-4">
+                <label class="form-label">Department</label>
+                @Html.DropDownListFor(m => m.DepartmentId, (SelectList)ViewData["Departments"], "-- Select Department --", new { @class = "form-select", @id = "DepartmentDropdown" })
+            </div>
+
+            <!-- SubDepartment Dropdown -->
+            <div class="col-md-4">
+                <label class="form-label">SubDepartment</label>
+                @Html.DropDownListFor(m => m.SubDepartmentId, (SelectList)ViewData["SubDepartments"], "-- Select SubDepartment --", new { @class = "form-select", @id = "SubDepartmentDropdown" })
+            </div>
+
+            <!-- Rank Dropdown -->
+            <div class="col-md-4">
+                <label class="form-label">Rank</label>
+                @Html.DropDownListFor(m => m.RankId, (SelectList)ViewData["Ranks"], "-- Select Rank --", new { @class = "form-select" })
+            </div>
+
+            <!-- Matricule -->
+            <div class="col-md-4">
+                <label class="form-label">Matricule</label>
+                @Html.TextBoxFor(m => m.Matricule, new { @class = "form-control" })
+            </div>
+
+            <!-- First Name -->
+            <div class="col-md-4">
+                <label class="form-label">First Name</label>
+                @Html.TextBoxFor(m => m.FirstName, new { @class = "form-control" })
+            </div>
+
+            <!-- Last Name -->
+            <div class="col-md-4">
+                <label class="form-label">Last Name</label>                
+                @Html.TextBoxFor(m => m.LastName, new { @class = "form-control" })
+            </div>
+
+            <!-- Gender -->
+            <div class="col-md-4">
+                <label class="form-label">Gender</label>
+                @* @Html.TextBoxFor(m => m.Gender, new { @class = "form-control" }) *@
+                <label class="form-label">Gender</label>
+                @Html.DropDownListFor(
+                                m => m.Gender,
+                                new SelectList(new[] { "Male", "Female" }, Model?.Gender ?? "Male"), // Male selected by default
+                                null,
+                                new { @class = "form-select" }
+                                )
+            </div>
+
+            <!-- Date of Birth -->
+            <div class="col-md-4">
+                <label class="form-label">Date of Birth</label>
+                @Html.TextBoxFor(m => m.DateOfBirth, "{0:yyyy-MM-dd}", new { @type = "date", @class = "form-control" })
+            </div>
+
+            <!-- City -->
+            <div class="col-md-4">
+                <label class="form-label">City</label>
+                @Html.TextBoxFor(m => m.City, new { @class = "form-control" })
+            </div>
+
+            <!-- Country -->
+            <div class="col-md-4">
+                <label class="form-label">Country</label>
+                @Html.TextBoxFor(m => m.Country, new { @class = "form-control" })
+            </div>
+
+            <!-- Speciality -->
+            <div class="col-md-4">
+                <label class="form-label">Speciality</label>
+                @Html.TextBoxFor(m => m.Speciality, new { @class = "form-control" })
+            </div>
+            <!-- Patrimonial Status-->
+            <div class="col-md-4">
+                <label class="form-label">Patrimonial Status</label>
+                @Html.TextBoxFor(m => m.PatrimonialStatus, new { @class = "form-control" })
+            <!-- National ID -->
+            <div class="col-md-4">
+                <label class="form-label">National ID</label>
+                @Html.TextBoxFor(m => m.NationalId, new { @class = "form-control" })
+            </div>
+
+            <!-- Active Checkbox -->
+            <div class="col-md-2 d-flex align-items-center">
+                <div class="form-check mt-4">
+                    @Html.CheckBoxFor(m => m.Active, new { @class = "form-check-input" })
+                    <label class="form-check-label">Active</label>
+                </div>
+            </div>
+
+            <!-- Photo Upload -->
+            <div class="col-md-4">
+                <label class="form-label">Photo</label>
+                <input type="file" name="PhotoFile" class="form-control" accept="image/*" id="PhotoFileInput" />
+                <div class="mt-2">
+                    <img id="PhotoPreview" src="#" alt="Photo Preview" class="img-thumbnail" style="max-width: 150px; display: none;" />
+                </div>
+                <button type="submit">Save</button>
+            </div>
+
+            <div class="col-md-12 mt-3">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Base -> Department cascading
+            $('#BaseDropdown').change(function () {
+                var baseId = $(this).val();
+                $('#DepartmentDropdown').html('<option>Loading...</option>');
+                $('#SubDepartmentDropdown').html('<option>-- Select SubDepartment --</option>');
+                if (baseId) {
+                    $.getJSON('/Person/GetDepartmentsByBase', { baseId: baseId }, function (data) {
+                        var options = '<option value="">-- Select Department --</option>';
+                        $.each(data, function (i, d) {
+                            options += '<option value="' + d.id + '">' + d.name + '</option>';
+                        });
+                        $('#DepartmentDropdown').html(options);
+                    });
+                } else {
+                    $('#DepartmentDropdown').html('<option value="">-- Select Department --</option>');
+                }
+            });
+
+            // Department -> SubDepartment cascading
+            $('#DepartmentDropdown').change(function () {
+                var departmentId = $(this).val();
+                $('#SubDepartmentDropdown').html('<option>Loading...</option>');
+                if (departmentId) {
+                    $.getJSON('/Person/GetSubDepartmentsByDepartment', { departmentId: departmentId }, function (data) {
+                        var options = '<option value="">-- Select SubDepartment --</option>';
+                        $.each(data, function (i, sd) {
+                            options += '<option value="' + sd.id + '">' + sd.name + '</option>';
+                        });
+                        $('#SubDepartmentDropdown').html(options);
+                    });
+                } else {
+                    $('#SubDepartmentDropdown').html('<option value="">-- Select SubDepartment --</option>');
+                }
+            });
+        });
+    </script>
+    <script>
+        document.getElementById('PhotoFileInput').addEventListener('change', function (event) {
+            var input = event.target;
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var preview = document.getElementById('PhotoPreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block'; // show the image
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        });
+    </script>
+
+   
+}
+

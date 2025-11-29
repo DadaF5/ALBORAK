@@ -1,0 +1,101 @@
+﻿@model FRAProject.ViewModels.PersonViewModel
+
+<div class="container mt-3">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4>Person Details - @Model.FullName</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- Photo on top right -->
+                <div class="col-md-3 text-center">
+                    @if (Model.Photo != null && Model.Photo.Length > 0)
+                    {
+                        <img src="data:image/jpeg;base64,@Convert.ToBase64String(Model.Photo)"
+                             class="img-thumbnail mb-3" style="max-width:200px;" />
+                    }
+                    else
+                    {
+                        <span class="text-muted">No Photo</span>
+                    }
+                </div>
+
+                <div class="col-md-9">
+                    <table class="table table-borderless table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Full Name</th>
+                                <td>@Model.FirstName @Model.LastName</td>
+                            </tr>
+                            <tr>
+                                <th>Matricule</th>
+                                <td>@Model.Matricule</td>
+                            </tr>
+                            <tr>
+                                <th>Rank</th>
+                                <td>@Model.RankName</td>
+                            </tr>
+                            <tr>
+                                <th>Gender</th>
+                                <td>@Model.Gender</td>
+                            </tr>
+                            <tr>
+                                <th>Date of Birth</th>
+                                <td>@Model.DateOfBirth?.ToString("yyyy-MM-dd")</td>
+                            </tr>
+                            <tr>
+                                <th>Patrimonial Status</th>
+                                <td>@Model.PatrimonialStatus</td>
+                            <tr>
+                                <th>National ID</th>
+                                <td>@Model.NationalId</td>
+                            </tr>
+                            <tr>
+                                <th>Speciality</th>
+                                <td>@Model.Speciality</td>
+                            </tr>
+                            <tr>
+                                <th>City</th>
+                                <td>@Model.City</td>
+                            </tr>
+                            <tr>
+                                <th>Country</th>
+                                <td>@Model.Country</td>
+                            </tr>
+                            <tr>
+                                <th>Active</th>
+                                <td>
+                                    @if (Model.Active)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                            </tr>
+
+                            <!-- Hierarchy -->
+                            <tr>
+                                <th>Base</th>
+                                <td>@Model.BaseName</td>
+                            </tr>
+                            <tr>
+                                <th>Department</th>
+                                <td>@Model.DepartmentName</td>
+                            </tr>
+                            <tr>
+                                <th>SubDepartment</th>
+                                <td>@Model.SubDepartmentName</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-primary">Edit</a>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">Back to List</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

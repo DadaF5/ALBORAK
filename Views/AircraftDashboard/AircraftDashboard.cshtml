@@ -1,0 +1,124 @@
+﻿@model List<FRAProject.ViewModels.AircraftStatusDashboardViewModel>
+@{
+    ViewData["Title"] = "Aircraft Dashboard";
+}
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h1 class="mb-4 fw-bold display-6 ps-3 border-start border-4 border-primary">
+    @ViewData["Title"]
+    <i class="fas fa-fighter-jet"></i>
+</h1>
+
+<div class="row">
+    @foreach (var baseItem in Model)
+    {
+        <div class="col-md-6 col-lg-4 col-xl-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white py-2">
+                    <h6 class="mb-0 fw-bold">@baseItem.BaseName</h6>
+                </div>
+
+                <div class="card-body small p-2">
+                    @foreach (var category in baseItem.Categories)
+                    {
+                        <div class="mb-2 border-bottom pb-1">
+                            <strong class="text-secondary"> @category.CategoryName</strong>
+
+                            @foreach (var mg in category.MainGroups)
+                            {
+                                <div class="ms-2 mt-1">
+                                    <strong class="text-dark">@mg.MainGroupName</strong>
+
+                                    @foreach (var type in mg.Types)
+                                    {
+                                        <div class="ms-3 mt-2">
+                                            <!-- Aircraft Type Name (bigger & bold) -->
+                                            <span class="fw-bold fs-4 d-block mb-2">@type.TypeName</span>
+
+                                            <!-- Status Badges -->
+                                            <div class="d-flex flex-wrap">
+                                                @foreach (var status in type.StatusCounts)
+                                                {
+                                                    string badgeClass = status.Key switch
+                                                    {
+                                                        "Serviceable" => "bg-success",
+                                                        "Maintenance" => "bg-warning text-dark",
+                                                        "Planned" => "bg-info text-dark",
+                                                        "Repair" => "bg-danger",
+                                                        _ => "bg-secondary"
+                                                    };
+                                                    <span class="badge @badgeClass me-2 mb-2 px-3 py-2 fs-6">
+                                                        @status.Key: @status.Value
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                       
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* <div class="accordion" id="accordionBase">
+    @foreach (var baseItem in Model)
+    {
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header" id="headingBase@baseItem.BaseId">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBase@baseItem.BaseId" aria-expanded="false" aria-controls="collapseBase@baseItem.BaseId">
+                    @baseItem.BaseName
+                </button>
+            </h2>
+            <div id="collapseBase@baseItem.BaseId" class="accordion-collapse collapse" aria-labelledby="headingBase@baseItem.BaseId" data-bs-parent="#accordionBase">
+                <div class="accordion-body">
+                    @foreach (var category in baseItem.Categories)
+                    {
+                        <div class="card mb-2">
+                            <div class="card-header bg-secondary text-white">
+                                Category: @category.CategoryName
+                            </div>
+                            <div class="card-body">
+                                @foreach (var mg in category.MainGroups)
+                                {
+                                    <div class="card mb-2">
+                                        <div class="card-header bg-primary text-white">
+                                            Main Group: @mg.MainGroupName
+                                        </div>
+                                        <div class="card-body">
+                                            @foreach (var type in mg.Types)
+                                            {
+                                                <h5>@type.TypeName</h5>
+                                                <div class="d-flex flex-wrap mb-2">
+                                                    @foreach (var status in type.StatusCounts)
+                                                    {
+                                                        string badgeClass = status.Key switch
+                                                        {
+                                                            "Serviceable" => "bg-success",
+                                                            "Maintenance" => "bg-warning text-dark",
+                                                            "Planned" => "bg-info text-dark",
+                                                            "Repair" => "bg-danger",
+                                                            _ => "bg-secondary"
+                                                        };
+                                                        <span class="badge @badgeClass me-2 mb-2">
+                                                            @status.Key: @status.Value
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div> *@

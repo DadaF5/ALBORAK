@@ -1,0 +1,96 @@
+﻿@model FRAProject.ViewModels.SubDepartment.SubDepartmentEditViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Edit Sub-Department";
+}
+
+<div class="content-wrapper-fluid">
+
+    <section class="content-header">
+        <h1>Edit Sub-Department</h1>
+    </section>
+
+    <section class="content">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">Edit Details</h3>
+            </div>
+
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+
+                <div class="card-body">
+
+                    <!-- Name -->
+                    <div class="form-group">
+                        <label asp-for="Name"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <!-- Base -->
+                    <div class="form-group">
+                        <label>Base</label>
+                        <select id="BaseId"
+                                asp-for="BaseId"
+                                asp-items="Model.Bases"
+                                class="form-control">
+                            <option value="">-- Select Base --</option>
+                        </select>
+                        <span asp-validation-for="BaseId" class="text-danger"></span>
+                    </div>
+
+                    <!-- Department -->
+                    <div class="form-group">
+                        <label>Department</label>
+                        <select id="DepartmentId"
+                                asp-for="DepartmentId"
+                                asp-items="Model.Departments"
+                                class="form-control">
+                            <option value="">-- Select Department --</option>
+                        </select>
+                        <span asp-validation-for="DepartmentId" class="text-danger"></span>
+                    </div>
+
+                </div>
+
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <a asp-action="Index" class="btn btn-secondary">Back</a>
+                </div>
+
+            </form>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        // When Base changes -> load departments dynamically
+        $("#BaseId").change(function () {
+
+            var baseId = $(this).val();
+
+            $("#DepartmentId").empty();
+            $("#DepartmentId").append('<option value="">Loading...</option>');
+
+            $.getJSON('/SubDepartment/GetDepartmentsByBase', { baseId: baseId }, function (data) {
+
+                $("#DepartmentId").empty();
+                $("#DepartmentId").append('<option value="">-- Select Department --</option>');
+
+                $.each(data, function (i, item) {
+                    $("#DepartmentId").append(
+                        '<option value="' + item.value + '">' + item.text + '</option>');
+                });
+            });
+        });
+    </script>
+}
+

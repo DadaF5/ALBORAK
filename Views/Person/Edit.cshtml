@@ -1,0 +1,227 @@
+﻿@model FRAProject.ViewModels.PersonViewModel
+
+@{
+    ViewData["Title"] = "Edit Person";
+}
+
+<div class="container mt-4">
+    <h3 class="mb-4">Edit Person</h3>
+
+    <form asp-action="Edit" enctype="multipart/form-data">
+        <input type="hidden" asp-for="Id" />
+
+        <div class="row g-3">
+
+            <!-- Matricule -->
+            <div class="col-md-4">
+                <label asp-for="Matricule" class="form-label"></label>
+                <input asp-for="Matricule" class="form-control" />
+                <span asp-validation-for="Matricule" class="text-danger"></span>
+            </div>
+
+            <!-- Rank -->
+            <div class="col-md-4">
+                <label asp-for="RankId" class="form-label">Rank</label>
+                @Html.DropDownListFor(m => m.RankId,
+                (IEnumerable<SelectListItem>)ViewData["Ranks"],
+                                "-- Select Rank --",
+                                new { @class = "form-select" })
+                <span asp-validation-for="RankId" class="text-danger"></span>
+            </div>
+
+            <!-- Gender -->
+            <div class="col-md-4">
+                <label asp-for="Gender" class="form-label">Gender</label>
+                @Html.DropDownListFor(
+                                m => m.Gender,
+                                new SelectList(new[] { "Male", "Female" }, Model.Gender),
+                                new { @class = "form-select" })
+                <span asp-validation-for="Gender" class="text-danger"></span>
+            </div>
+
+            <!-- First Name -->
+            <div class="col-md-4">
+                <label asp-for="FirstName" class="form-label"></label>
+                <input asp-for="FirstName" class="form-control" />
+                <span asp-validation-for="FirstName" class="text-danger"></span>
+            </div>
+
+            <!-- Last Name -->
+            <div class="col-md-4">
+                <label asp-for="LastName" class="form-label"></label>
+                <input asp-for="LastName" class="form-control" />
+                <span asp-validation-for="LastName" class="text-danger"></span>
+            </div>
+
+            <!-- Date of Birth -->
+            <div class="col-md-4">
+                <label asp-for="DateOfBirth" class="form-label"></label>
+                <input asp-for="DateOfBirth" class="form-control" type="date" />
+                <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+            </div>
+
+            <!-- Base -->
+            <div class="col-md-4">
+                <label class="form-label">Base</label>
+                @Html.DropDownListFor(m => m.BaseId,
+                                (IEnumerable<SelectListItem>)ViewData["Bases"],
+                                "-- Select Base --",
+                                new { @class = "form-select", id = "BaseSelect" })
+                <span asp-validation-for="BaseId" class="text-danger"></span>
+            </div>
+
+            <!-- Department -->
+            <div class="col-md-4">
+                <label class="form-label">Department</label>
+                @Html.DropDownListFor(m => m.DepartmentId,
+                                (IEnumerable<SelectListItem>)ViewData["Departments"],
+                                "-- Select Department --",
+                                new { @class = "form-select", id = "DepartmentSelect" })
+                <span asp-validation-for="DepartmentId" class="text-danger"></span>
+            </div>
+
+            <!-- SubDepartment -->
+            <div class="col-md-4">
+                <label class="form-label">Sub-Department</label>
+                @Html.DropDownListFor(m => m.SubDepartmentId,
+                                (IEnumerable<SelectListItem>)ViewData["SubDepartments"],
+                                "-- Select Sub-Department --",
+                                new { @class = "form-select", id = "SubDepartmentSelect" })
+                <span asp-validation-for="SubDepartmentId" class="text-danger"></span>
+            </div>
+            <!-- Patrimonial status -->
+            <div class="col-md-4">
+                <label asp-for="PatrimonialStatus" class="form-label>"></label>
+                <input asp-for="PatrimonialStatus" class="form-control" />
+                <span asp-validation-for="PatrimonialStatus" class="text-danger"></span>
+            </div>
+            <!-- National ID -->
+            <div class="col-md-4">
+                <label asp-for="NationalId" class="form-label"></label>
+                <input asp-for="NationalId" class="form-control" />
+            </div>
+
+            <!-- Speciality -->
+            <div class="col-md-4">
+                <label asp-for="Speciality" class="form-label"></label>
+                <input asp-for="Speciality" class="form-control" />
+            </div>
+
+            <!-- City -->
+            <div class="col-md-4">
+                <label asp-for="City" class="form-label"></label>
+                <input asp-for="City" class="form-control" />
+            </div>
+
+            <!-- Country -->
+            <div class="col-md-4">
+                <label asp-for="Country" class="form-label"></label>
+                <input asp-for="Country" class="form-control" />
+            </div>
+
+            <!-- Active -->
+            <div class="col-md-4">
+                <div class="form-check mt-4 pt-2">
+                    <input asp-for="Active" class="form-check-input" type="checkbox" />
+                    <label asp-for="Active" class="form-check-label">Active</label>
+                </div>
+            </div>
+
+            <!-- Photo Upload -->
+            <div class="col-md-4">
+                <label class="form-label">Photo</label>
+
+                <input type="file"
+                       name="PhotoFile"
+                       id="PhotoFileInput"
+                       accept="image/*"
+                       class="form-control" />
+
+                <div class="mt-2">
+                    @if (Model != null)
+                    {
+                        if (Model.Photo != null && Model.Photo.Length > 0)
+                        {
+                            <img id="PhotoPreview"
+                                 src="data:image/jpeg;base64,@Convert.ToBase64String(Model.Photo)"
+                                 class="img-thumbnail"
+                                 style="max-width:150px;" />
+                        }
+                        else
+                        {
+                            <img id="PhotoPreview"
+                                 src="#"
+                                 style="display:none; max-width:150px;"
+                                 class="img-thumbnail" />
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-danger">Error: Model is null.</p>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Buttons -->
+        <div class="mt-4">
+            <button class="btn btn-primary">Save Changes</button>
+            <a asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
+        </div>
+
+    </form>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+
+    <script>
+
+        // ========== PHOTO PREVIEW ==========
+        document.getElementById('PhotoFileInput').addEventListener('change', function (e) {
+            var preview = document.getElementById('PhotoPreview');
+            var file = e.target.files[0];
+
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function (evt) {
+                    preview.src = evt.target.result;
+                    preview.style.display = "block";
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // ========== CASCADING DROPDOWNS ==========
+
+        // When Base changes → load Departments
+        $("#BaseSelect").change(function () {
+            var baseId = $(this).val();
+            $.getJSON("/Person/GetDepartmentsByBase", { baseId: baseId }, function (data) {
+                $("#DepartmentSelect").empty();
+                $("#DepartmentSelect").append($("<option>").val("").text("-- Select Department --"));
+                $.each(data, function (i, item) {
+                    $("#DepartmentSelect").append($("<option>").val(item.value).text(item.text));
+                });
+
+                // Clear SubDepartments
+                $("#SubDepartmentSelect").empty();
+                $("#SubDepartmentSelect").append($("<option>").val("").text("-- Select Sub-Department --"));
+            });
+        });
+
+        // When Department changes → load SubDepartments
+        $("#DepartmentSelect").change(function () {
+            var deptId = $(this).val();
+            $.getJSON("/Person/GetSubDepartmentsByDepartment", { departmentId: deptId }, function (data) {
+                $("#SubDepartmentSelect").empty();
+                $("#SubDepartmentSelect").append($("<option>").val("").text("-- Select Sub-Department --"));
+                $.each(data, function (i, item) {
+                    $("#SubDepartmentSelect").append($("<option>").val(item.value).text(item.text));
+                });
+            });
+        });
+
+    </script>
+}

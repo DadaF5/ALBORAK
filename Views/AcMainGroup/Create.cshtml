@@ -1,0 +1,91 @@
+﻿@model FRAProject.ViewModels.AcMainGroup.AcMainGroupViewModel
+
+@{
+    ViewData["Title"] = "Create Aircraft Main Group";
+}
+
+<div class="content-wrapper">
+
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h3>Create Aircraft Main Group</h3>
+                </div>
+                <div class="col-sm-6 text-end">
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">New Main Group</h5>
+                </div>
+
+                <div class="card-body">
+
+                    <form asp-action="Create" method="post">
+
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <!-- Category -->
+                        <div class="mb-3">
+                            <label asp-for="AcCategoryId" class="form-label fw-bold"></label>
+                            <select asp-for="AcCategoryId" class="form-select" asp-items="Model.Categories">
+                                <option value="">-- Select Category --</option>
+                            </select>
+                            <span asp-validation-for="AcCategoryId" class="text-danger"></span>
+                        </div>
+
+                        <!-- Base -->
+                        <div class="mb-3">
+                            <label asp-for="BaseId" class="form-label fw-bold"></label>
+                            <select asp-for="BaseId" class="form-select" asp-items="Model.Bases">
+                                <option value="">-- Select Base --</option>
+                            </select>
+                            <span asp-validation-for="BaseId" class="text-danger"></span>
+                        </div>
+
+                        <!-- Group Name -->
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label fw-bold"></label>
+                            <input asp-for="Name" class="form-control" placeholder="Enter Main Group Name" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                        <!-- Description (NEW) -->
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label fw-bold"></label>
+                            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter description"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+                        <!-- Active -->
+                        <div class="form-check mb-3">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                            <label asp-for="IsActive" class="form-check-label fw-bold"></label>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="bi bi-check-circle"></i> Save
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary ms-2">
+                                Cancel
+                            </a>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+</div>

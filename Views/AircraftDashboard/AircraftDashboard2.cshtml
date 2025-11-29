@@ -1,0 +1,119 @@
+﻿@model FRAProject.ViewModels.AircraftDashboardViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Aircraft Status Dashboard";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <select id="baseFilter" class="form-select">
+            <option value="">-- Select Base --</option>
+            @foreach (var b in Model.Bases)
+            {
+                <option value="@b.Value" selected="@(b.Selected ? "selected" : null)">@b.Text</option>
+               @*  @(b.Value == Model.SelectedBaseId?.ToString() ? "selected" : "")>@b.Text</option> *@
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select id="categoryFilter" class="form-select">
+            <option value="">-- Select Category --</option>
+            @foreach (var c in Model.Categories)
+            {
+                <option value="@c.Value" selected="@(c.Selected ? "selected" : null)">@c.Text</option>
+@*                 <option value="@c.Value" @(c.Value == Model.SelectedCategoryId?.ToString() ? "selected" : "")>@c.Text</option>
+ *@            }
+        </select>
+    </div>
+</div>
+
+<div id="dashboardContent">
+    @foreach (var baseItem in Model.Data)
+    {
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white" data-bs-toggle="collapse" href="#collapseBase@baseItem.BaseId" style="cursor:pointer;">
+                <h4 class="mb-0">@baseItem.BaseName</h4>
+            </div>
+            <div class="collapse show" id="collapseBase@baseItem.BaseId">
+                <div class="card-body">
+                    @foreach (var category in baseItem.Categories)
+                    {
+                        <div class="mb-2">
+                            <h5 class="text-info" data-bs-toggle="collapse" href="#collapseCat@category.AcCategoryId" style="cursor:pointer;">
+                                @category.CategoryName
+                            </h5>
+                            <div class="collapse show" id="collapseCat@category.AcCategoryId">
+                                @foreach (var mg in category.MainGroups)
+                                {
+                                    <div class="mb-2">
+                                        <h6 class="text-secondary" data-bs-toggle="collapse" href="#collapseMG@mg.AcMainGroupId" style="cursor:pointer;">
+                                            @mg.MainGroupName
+                                        </h6>
+                                        <div class="collapse show" id="collapseMG@mg.AcMainGroupId">
+                                            <table class="table table-bordered table-sm">
+                                                <thead class="thead-light">
+                                                    <tr>
+                                                        <th>Type</th>
+                                                        @{
+                                                            var allStatuses = mg.Types.SelectMany(t => t.StatusCounts.Keys).Distinct().ToList();
+                                                        }
+                                                        @foreach (var status in allStatuses)
+                                                        {
+                                                            <th>@status</th>
+                                                        }
+                                                        <th>Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var type in mg.Types)
+                                                    {
+                                                        <tr>
+                                                            <td>@type.TypeName</td>
+                                                            @foreach (var status in allStatuses)
+                                                            {
+                                                                var count = type.StatusCounts.ContainsKey(status) ? type.StatusCounts[status] : 0;
+                                                                string badgeClass = status switch
+                                                                {
+                                                                    "Ready" => "bg-success",
+                                                                    "Serviceable" => "bg-success",
+                                                                    "Maintenance" => "bg-warning",
+                                                                    "Repair" => "bg-danger",
+                                                                    "Expired" => "bg-secondary",
+                                                                    "Destroyed" => "bg-dark",
+                                                                    "Waiting Spare Parts" => "bg-info",
+                                                                    _ => "bg-light text-dark"
+                                                                };
+                                                                <td><span class="badge @badgeClass" title="@status">@count</span></td>
+                                                            }
+                                                            <td>@type.Total</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Filter dropdown change
+        $(document).ready(function () {
+            $('#baseFilter, #categoryFilter').change(function () {
+                var baseId = $('#baseFilter').val();
+                var catId = $('#categoryFilter').val();
+                window.location.href = '@Url.Action("AircraftDashboard")' + '?baseId=' + baseId + '&categoryId=' + catId;
+            });
+        });
+    </script>
+}

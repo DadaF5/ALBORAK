@@ -21,6 +21,9 @@ namespace FRAProject.Data
         public DbSet<Base> Bases { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<SubDepartment> SubDepartments { get; set; }
+        public DbSet<Wing> Wings { get; set; }
+        public DbSet<Squadron> Squadrons { get; set; }
+
 
 
         //===============================
@@ -43,6 +46,15 @@ namespace FRAProject.Data
         {
             base.OnModelCreating(modelBuilder);
             // Prevent duplicates : tailNo + RegistrationNumber + IntCode per AcType
+
+            // Wing to squadron relationship
+
+            modelBuilder.Entity<Wing>()
+                .HasMany(w => w.Squadrons)
+                .WithOne(s => s.Wing)
+                .HasForeignKey(s => s.WingId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevent cascade delete
+
         }
 
     }

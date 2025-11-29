@@ -1,0 +1,54 @@
+﻿@model IEnumerable<FRAProject.ViewModels.WingViewModel>
+
+<table class="table table-bordered table-striped">
+    <thead class="table-light">
+        <tr>
+            <th>Name</th>
+            <th>Wing Long Name</th>
+            <th>Department</th>
+            <th>Main Group</th>
+            <th>Active</th>
+            <th>Squadrons</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Any())
+        {
+            foreach (var wing in Model)
+            {
+                <tr>
+                    <td>@wing.Name</td>
+                    <td>@wing.WingLong</td>
+                    <td>@wing.DepartmentName</td>
+                    <td>@wing.AcMainGroupName</td>
+                    <td>
+                        @if (wing.Active)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td>@(wing.Squadrons?.Count ?? 0)</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@wing.Id" class="btn btn-info btn-sm">Details</a>
+                        <a asp-action="Edit" asp-route-id="@wing.Id" class="btn btn-warning btn-sm">Edit</a>
+                        <form asp-action="Delete" asp-route-id="@wing.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure?');">
+                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="7" class="text-center">No Wings found.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+

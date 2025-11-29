@@ -1,0 +1,69 @@
+﻿@model IEnumerable<FRAProject.ViewModels.WingViewModel>
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Wings";
+}
+
+<h2>Wings</h2>
+
+<form id="filterForm" class="row g-3 mb-3">
+    <div class="col-md-3">
+        
+            @Html.DropDownList("departmentId", (SelectList)ViewData["Departments"], "-- All Departments --", new { @class = "form-select", id = "departmentFilter" })
+
+      
+    </div>
+    <div class="col-md-3">
+        @Html.DropDownList("acMainGroupId", (SelectList)ViewData["AcMainGroups"], "-- All Main Groups --", new { @class = "form-select", id = "acMainGroupFilter" })
+
+    </div>
+    <div class="col-md-3">
+        <input type="text" id="searchInput" name="search" 
+            value="@ViewData["Search"]" 
+            class="form-control" p
+            laceholder="Search Name or Wing Long">
+
+    </div>
+    <div class="col-md-3">
+    <a asp-action="Create" class="btn btn-success btn-sm ml-3">
+        <i class="fas fa-plus"></i> Create New
+    </a>
+    </div>
+</form>
+
+<div id="wingTableContainer">
+    @await Html.PartialAsync("_WingTable", Model)
+</div>
+
+@section Scripts{
+<script src="~/plugins/jquery/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+
+        function loadTable() {
+            var data = {
+                departmentId: $('#departmentFilter').val(),
+                acMainGroupId: $('#acMainGroupFilter').val(),
+                search: $('#searchInput').val()
+            };
+
+            $.get('@Url.Action("Table")', data, function (result) {
+                $('#wingTableContainer').html(result);
+            });
+        }
+
+        // Filter change events
+        $('#departmentFilter, #acMainGroupFilter').change(loadTable);
+
+        // Search on Enter key
+        $('#searchInput').keypress(function (e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                loadTable();
+            }
+        });
+    });
+</script>
+}
+

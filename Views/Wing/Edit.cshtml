@@ -1,0 +1,68 @@
+﻿@model FRAProject.ViewModels.WingViewModel
+
+@{
+    ViewData["Title"] = "Edit Wing";
+}
+
+<div class="container mt-4">
+    <h3 class="mb-4">Edit Wing</h3>
+
+    <form asp-action="Edit" method="post">
+
+        <input type="hidden" asp-for="Id" />
+
+        <div class="row">
+
+            <!-- Department -->
+            <div class="col-md-4 mb-3">
+                <label asp-for="DepartmentId" class="form-label"></label>
+                <label asp-for="DepartmentId" class="form-label"></label>
+                @Html.DropDownListFor(m => m.DepartmentId, Model.Departments ?? new List<SelectListItem>(), "-- Select Department --", new { @class = "form-select" })
+                <span asp-validation-for="DepartmentId" class="text-danger"></span>
+            </div>
+
+            <!-- Base (AC Main Group) -->
+            <div class="col-md-4 mb-3">
+                <label asp-for="AcMainGroupId" class="form-label"></label>
+                @Html.DropDownListFor(m => m.AcMainGroupId, Model.AcMainGroups ?? new List<SelectListItem>(), "-- Select Main Group --", new { @class = "form-select" })
+                <span asp-validation-for="AcMainGroupId" class="text-danger"></span>
+            </div>
+
+            <!-- Wing Short Name -->
+            <div class="col-md-4 mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <!-- Wing Long Name -->
+            <div class="col-md-12 mb-3">
+                <label asp-for="WingLong" class="form-label"></label>
+                <input asp-for="WingLong" class="form-control" />
+                <span asp-validation-for="WingLong" class="text-danger"></span>
+            </div>
+
+            <!-- Active -->
+            <div class="col-md-3 mb-3">
+                <label class="form-label d-block">Active</label>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" asp-for="Active" />
+                    <label class="form-check-label" for="Active">Active</label>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Update</button>
+            <a asp-action="Index" class="btn btn-secondary ms-2">Back to List</a>
+        </div>
+
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

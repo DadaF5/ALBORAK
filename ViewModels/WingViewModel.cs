@@ -26,11 +26,18 @@ namespace FRAProject.ViewModels
         public int? AcMainGroupId { get; set; }
         public string AcMainGroupName { get; set; } = "";
 
+        // Optional Base
+        [Display(Name = "Base")]
+        public int? BaseId { get; set; }
+        public string BaseName { get; set; } = "";
+
+
         public bool Active { get; set; } = true;
 
         //// Dropdown lists for Create/Edit
         public List<SelectListItem>? Departments { get; set; }
         public List<SelectListItem>? AcMainGroups { get; set; }
+        public List<SelectListItem>? Bases { get; set; }
 
         // Optional: List of Squadrons under this Wing
         public ICollection<SquadronViewModel>? Squadrons { get; set; }

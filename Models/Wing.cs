@@ -1,39 +1,28 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace FRAProject.Models
 {
     public class Wing
     {
-        [Key]
         public int Id { get; set; }
 
-        [Required, StringLength(50)]
-        public string Name { get; set; }
+        public string Name { get; set; } = "";
+        public string WingLong { get; set; } = "";
 
-        [Required, StringLength(60)]
-        [Display(Name = "Wing Long Name")]
-        public string WingLong { get; set; }
-
-        // FK to Department
-        [Required]
         public int DepartmentId { get; set; }
-        [Display(Name = "Department")]
-        public Department Department { get; set; }
+        public Department? Department { get; set; }
+
+        public int? AcMainGroupId { get; set; }
+        public AcMainGroup? AcMainGroup { get; set; }
+
+        public int? BaseId { get; set; }
+        public Base? Base { get; set; }
 
         public bool Active { get; set; } = true;
 
-        // AcMainGroup is OPTIONAL
-        [Display(Name = "Main Group")]
-        public int? AcMainGroupId { get; set; }  // Nullable for optional relationship        
-        // Navigation property
-        public AcMainGroup? AcMainGroup { get; set; }
-
-
-        // Navigation property: Wing has many Squadrons
+        // Navigation - if you plan to serialize entities directly, avoid serializing collections
+        [JsonIgnore] // prevents cycles if you serialize Wing
         public ICollection<Squadron>? Squadrons { get; set; }
-
-        [NotMapped]
-        public string FullName => $"{Name} ({Department?.Name})";
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace FRAProject.Models
 {
@@ -25,5 +26,7 @@ namespace FRAProject.Models
 
         // Navigation to SubDepartments
         public ICollection<SubDepartment> SubDepartments { get; set; } = new HashSet<SubDepartment>();
+        [JsonIgnore]
+        public ICollection<Wing> Wings { get; set; } = new HashSet<Wing>();
     }
 }

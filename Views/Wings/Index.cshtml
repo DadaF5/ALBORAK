@@ -1,0 +1,172 @@
+﻿@model IEnumerable<FRAProject.ViewModels.WingViewModel>
+
+@{
+    ViewData["Title"] = "Wing";
+    var departments = ViewData["Departments"] as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var bases = ViewData["Bases"] as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var acMainGroups = ViewData["AcMainGroups"] as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var getDepsUrl = Url.Action("GetDepartmentsByBase", "Wings");
+    var currentDepartmentId = Context.Request.Query["departmentId"].FirstOrDefault() ?? "";
+}
+
+<h2>Wings</h2>
+
+<form method="get" class="form-inline mb-3">
+    <div class="form-group mr-2">
+        <label class="mr-1" for="baseFilter">Base</label>
+
+        @Html.DropDownList(
+        "baseId",
+                (SelectList)ViewData["Bases"],
+                "-- All --",
+                new { @class = "form-select", id = "baseFilter" })
+    </div>
+
+    <div class="form-group mr-2">
+        <label class="mr-1" for="departmentFilter">Department</label>
+
+        @Html.DropDownList(
+                "departmentId",
+                (SelectList)ViewData["Departments"],
+                "-- All --",
+                new { @class = "form-select", id = "departmentFilter", data_selected = currentDepartmentId })
+    </div>
+
+    <div class="form-group mr-2">
+        <label class="mr-1" for="acMainGroupFilter">Main Group</label>
+
+        @Html.DropDownList(
+                "acMainGroupId",
+                (SelectList)ViewData["AcMainGroups"],
+                "-- All --",
+                new { @class = "form-select", id = "acMainGroupFilter" })
+    </div>
+
+    <div class="form-group mr-2 align-items-center d-flex">
+        <label class="mr-1">Include inactive</label>
+        <input type="checkbox" name="includeInactive" value="true" class="form-check-input ml-1" />
+    </div>
+
+    <button type="submit" class="btn btn-primary ml-2">Filter</button>
+    <a asp-action="Create" class="btn btn-success ml-2">New Wing</a>
+</form>
+
+<table class="table table-sm table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Short Name</th>
+            <th>Full Name</th>
+            <th>Department</th>
+            <th>Base</th>
+            <th>Main Group</th>
+            <th>Active</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Any())
+        {
+            <tr><td colspan="8" class="text-muted">No wings found.</td></tr>
+        }
+        else
+        {
+            foreach (var w in Model)
+            {
+                <tr>
+                    <td>@w.Id</td>
+                    <td>@w.Name</td>
+                    <td>@w.WingLong</td>
+                    <td>@w.DepartmentName</td>
+                    <td>@w.BaseName</td>
+                    <td>@(string.IsNullOrEmpty(w.AcMainGroupName) ? w.AcMainGroupName : w.AcMainGroupName)</td>
+                    <td>@(w.Active ? "Yes" : "No")</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@w.Id" class="btn btn-sm btn-secondary">Edit</a>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        (function () {
+            // Try multiple ways to locate the selects (id first, then by name) so this works even if Razor changes ids
+            const baseSelect = document.getElementById('baseFilter') || document.querySelector('select[name="baseId"]');
+            const deptSelect = document.getElementById('departmentFilter') || document.querySelector('select[name="departmentId"]');
+
+            const url = '@getDepsUrl'; // should be /Wing/GetDepartmentsByBase if your controller is WingController
+
+            if (!baseSelect) {
+                console.warn('Base select not found (looked for #baseFilter or select[name="baseId"])');
+                return;
+            }
+            if (!deptSelect) {
+                console.warn('Department select not found (looked for #departmentFilter or select[name="departmentId"])');
+                return;
+            }
+
+            console.log('Cascading selects initialized. GetDeps URL:', url);
+
+            function populateDepartments(items, selectedId) {
+                // preserve extra attributes (like name) if present
+                const nameAttr = deptSelect.getAttribute('name') || 'departmentId';
+                // create a new fragment to avoid reflow per appendChild
+                const frag = document.createDocumentFragment();
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = '-- All --';
+                frag.appendChild(defaultOpt);
+
+                items.forEach(it => {
+                    const opt = document.createElement('option');
+                    opt.value = it.id;
+                    opt.textContent = it.name;
+                    if (selectedId && String(it.id) === String(selectedId)) opt.selected = true;
+                    frag.appendChild(opt);
+                });
+
+                // replace options while preserving the select element
+                deptSelect.innerHTML = ''; // clear
+                deptSelect.appendChild(frag);
+                // ensure name attribute remains for form submission
+                deptSelect.setAttribute('name', nameAttr);
+            }
+
+            async function fetchAndPopulate(baseId, preserveSelection) {
+                const fetchUrl = url + (baseId ? ('?baseId=' + encodeURIComponent(baseId)) : '');
+                console.log('Fetching departments for baseId=', baseId, 'URL=', fetchUrl);
+                try {
+                    const res = await fetch(fetchUrl, { credentials: 'same-origin' });
+                    console.log('Fetch status', res.status);
+                    if (!res.ok) {
+                        const txt = await res.text().catch(()=>'<no body>');
+                        console.error('Failed fetch:', res.status, txt);
+                        return;
+                    }
+                    const items = await res.json();
+                    console.log('Departments returned:', items.length, items);
+                    const selected = preserveSelection ? (deptSelect.getAttribute('data_selected') || deptSelect.value) : null;
+                    populateDepartments(items, selected);
+                } catch (err) {
+                    console.error('Error fetching departments:', err);
+                }
+            }
+
+            // Event: when base changes, fetch new departments (do NOT submit the form)
+            baseSelect.addEventListener('change', function () {
+                // on user change we don't preserve old department selection
+                fetchAndPopulate(baseSelect.value, false);
+            });
+
+            // If page loaded with a base already selected, fetch depts and try to re-select current department
+            const initialBase = baseSelect.value;
+            if (initialBase) {
+                const preselected = deptSelect.getAttribute('data_selected') || deptSelect.value || '';
+                fetchAndPopulate(initialBase, true);
+            }
+        })();
+    </script>
+}

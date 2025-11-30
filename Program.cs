@@ -1,5 +1,7 @@
 using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography.Xml;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +12,12 @@ builder.Services.AddDbContext<FRAContext>(options =>
 
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(opts =>
+    {
+        opts.JsonSerializerOptions.ReferenceHandler=ReferenceHandler.IgnoreCycles;
+        opts.JsonSerializerOptions.DefaultIgnoreCondition=JsonIgnoreCondition.WhenWritingNull;
+    });
 
 var app = builder.Build();
 

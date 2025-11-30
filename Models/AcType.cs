@@ -14,6 +14,13 @@ namespace FRAProject.Models
         [StringLength(250)]
         public string Description { get; set; }
 
+        [Required(ErrorMessage = "Max Grossweight is required")]
+        public double MaxGrossweight { get; set; }
+        public int MaxPassengers { get; set; }
+
+        [Required(ErrorMessage = "Max Engines is required")]
+        public int MaxEngines { get; set; } = 1;
+
         // --------------------------
         // Foreign Key to AcMainGroup
         // --------------------------

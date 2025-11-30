@@ -15,17 +15,25 @@
 
             <!-- Department -->
             <div class="col-md-4 mb-3">
-                <label asp-for="DepartmentId" class="form-label"></label>
+               
                 <label asp-for="DepartmentId" class="form-label"></label>
                 @Html.DropDownListFor(m => m.DepartmentId, Model.Departments ?? new List<SelectListItem>(), "-- Select Department --", new { @class = "form-select" })
                 <span asp-validation-for="DepartmentId" class="text-danger"></span>
             </div>
 
-            <!-- Base (AC Main Group) -->
+            <!-- AC Main Group (AC Main Group) -->
             <div class="col-md-4 mb-3">
                 <label asp-for="AcMainGroupId" class="form-label"></label>
                 @Html.DropDownListFor(m => m.AcMainGroupId, Model.AcMainGroups ?? new List<SelectListItem>(), "-- Select Main Group --", new { @class = "form-select" })
                 <span asp-validation-for="AcMainGroupId" class="text-danger"></span>
+            </div>
+
+            <!-- Base -->
+            <div class="col-md-4 mb-3">
+                <label asp-for="BaseId" class="form-label"></label>
+                @Html.DropDownListFor(m => m.BaseId, Model.Bases ?? new List<SelectListItem>(), 
+                "-- Select Base --", new { @class = "form-select" })
+                <span asp-validation-for="BaseId" class="text-danger"></span>
             </div>
 
             <!-- Wing Short Name -->

@@ -1,0 +1,118 @@
+﻿@model FRAProject.ViewModels.WingViewModel
+
+@{
+    ViewData["Title"] = "Create Wing";
+    var getDepsUrl = Url.Action("GetDepartmentsByBase", "Wings");
+}
+
+<h2>Create Wing</h2>
+
+<form method="post" asp-action="Create">
+    @Html.AntiForgeryToken()
+
+    <div class="form-row">
+
+        <div class="form-group col-md-3">
+            <label asp-for="BaseId"></label>
+            <select id="BaseId" asp-for="BaseId" asp-items="Model.Bases" class="form-control">
+                <option value="">-- None --</option>
+            </select>
+        </div>
+
+        <div class="form-group col-md-3">
+            <label asp-for="DepartmentId"></label>
+            <select id="DepartmentId" asp-for="DepartmentId" asp-items="Model.Departments" class="form-control">
+                <option value="">-- Select department --</option>
+            </select>
+            <span asp-validation-for="DepartmentId" class="text-danger"></span>
+        </div>
+
+        <div class="form-group col-md-3">
+            <label asp-for="AcMainGroupId"></label>
+            <select asp-for="AcMainGroupId" asp-items="Model.AcMainGroups" class="form-control">
+                <option value="">-- None --</option>
+            </select>
+        </div>
+
+        <div class="form-group col-md-3">
+            <label asp-for="Name"></label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+       
+    </div>
+
+    <div class="form-row">
+        
+
+        <div class="form-group col-md-4">
+            <label asp-for="WingLong"></label>
+            <input asp-for="WingLong" class="form-control" />
+            <span asp-validation-for="WingLong" class="text-danger"></span>
+        </div>
+       
+
+        <div class="form-group col-md-2">
+            <div class="col-md-6 form-check mt-2">
+                <label asp-for="Active"></label>
+                <br /><span style="text-align:right; padding-left:20px;">  <input asp-for="Active" class="form-check-input" /> </span>              
+                
+            </div>
+        </div>
+          
+    <div class="form-group col-md-2">
+            <label>Actions</label>
+            <br />
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+
+    </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            const baseSelect = document.getElementById('BaseId');
+            const deptSelect = document.getElementById('DepartmentId');
+            const url = '@getDepsUrl';
+
+            if (!baseSelect || !deptSelect) return;
+
+            baseSelect.addEventListener('change', async function () {
+                const baseId = baseSelect.value;
+                const fetchUrl = url + (baseId ? '?baseId=' + encodeURIComponent(baseId) : '');
+                try {
+                    const res = await fetch(fetchUrl, { credentials: 'same-origin' });
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    const items = await res.json();
+
+                    // clear previous options and add default
+                    deptSelect.innerHTML = '';
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = '';
+                    defaultOpt.textContent = '-- Select department --';
+                    deptSelect.appendChild(defaultOpt);
+
+                    items.forEach(it => {
+                        const opt = document.createElement('option');
+                        opt.value = it.id;
+                        opt.textContent = it.name;
+                        deptSelect.appendChild(opt);
+                    });
+
+                } catch (err) {
+                    console.error('Failed loading departments:', err);
+                }
+            });
+
+            // Optionally trigger change on page load if a BaseId is pre-selected (Edit case)
+            if (baseSelect.value) {
+                baseSelect.dispatchEvent(new Event('change'));
+            }
+        })();
+    </script>
+}

@@ -19,6 +19,11 @@ namespace FRAProject.ViewModels.AcType
         [Display(Name = "Main Group")]
         public int AcMainGroupId { get; set; }
 
+        public double MaxGrossweight { get; set; }
+        public int MaxPassengers { get; set; }
+        public int MaxEngines { get; set; } = 1;
+
+
         // For dropdown list
         public IEnumerable<SelectListItem>? AcMainGroups { get; set; }
     }

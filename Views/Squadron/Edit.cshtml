@@ -1,0 +1,149 @@
+﻿@model FRAProject.ViewModels.SquadronViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Edit Squadron";
+}
+
+<div class="container">
+    <div class="row mb-3">
+        <div class="col">
+            <h2>Edit Squadron</h2>
+        </div>
+        <div class="col text-right">
+            <a asp-action="Index" class="btn btn-secondary btn-sm">Back to list</a>
+        </div>
+    </div>
+
+    <form asp-action="Edit" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="Name"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="form-group col-md-6">
+                <label asp-for="FrenchName"></label>
+                <input asp-for="FrenchName" class="form-control" />
+                <span asp-validation-for="FrenchName" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="CallSign"></label>
+                <input asp-for="CallSign" class="form-control" />
+                <span asp-validation-for="CallSign" class="text-danger"></span>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label asp-for="CallSignShort"></label>
+                <input asp-for="CallSignShort" class="form-control" />
+                <span asp-validation-for="CallSignShort" class="text-danger"></span>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label asp-for="WingId">Wing</label>
+                <select asp-for="WingId" asp-items="Model.Wings" class="form-control"></select>
+                <span asp-validation-for="WingId" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Existing Logo</label>
+            <div class="mb-2">
+                @if (!string.IsNullOrWhiteSpace(Model.LogoPath))
+                {
+                    <img id="existingLogo" src="@Url.Content(Model.LogoPath)" alt="Existing logo" style="width:160px;height:160px;object-fit:cover;border:1px solid #ddd;border-radius:4px;" />
+                }
+                else
+                {
+                    <img id="existingLogo" src="@Url.Content("~/images/placeholder.png")" alt="No logo" style="width:160px;height:160px;object-fit:cover;border:1px solid #ddd;border-radius:4px;" />
+                }
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.LogoPath))
+            {
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" asp-for="RemoveLogo" id="removeLogoCheckbox" />
+                    <label class="form-check-label" for="removeLogoCheckbox">Remove existing logo</label>
+                </div>
+            }
+        </div>
+
+        <div class="form-group">
+            <label asp-for="LogoFile">Replace Logo</label>
+            <input asp-for="LogoFile" type="file" accept="image/*" class="form-control-file" id="logoFileInput" />
+            <small class="form-text text-muted">Choose an image to replace the existing logo. Preview will appear below.</small>
+            <span asp-validation-for="LogoFile" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Preview</label>
+            <div>
+                <img id="logoPreview" src="@Url.Content(Model.LogoPath ?? "~/images/placeholder.png")" alt="Logo preview" style="width:160px;height:160px;object-fit:cover;border:1px solid #ddd;border-radius:4px;" />
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="Active" class="d-block"></label>
+                <div class="form-check">
+                    <input asp-for="Active" class="form-check-input" type="checkbox" />
+                    <label asp-for="Active" class="form-check-label">Active</label>
+                </div>
+            </div>
+
+            <div class="form-group col-md-8 text-right align-self-end">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var input = document.getElementById('logoFileInput');
+            var preview = document.getElementById('logoPreview');
+            var removeCheckbox = document.getElementById('removeLogoCheckbox');
+
+            input && input.addEventListener('change', function () {
+                var file = input.files && input.files[0];
+                if (!file) {
+                    preview.src = '@Url.Content(Model.LogoPath ?? "~/images/placeholder.png")';
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function (ev) {
+                    preview.src = ev.target.result;
+                    if (removeCheckbox) { removeCheckbox.checked = false; }
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // basic bootstrap validation styling
+            (function () {
+                'use strict';
+                var forms = document.getElementsByClassName('needs-validation');
+                Array.prototype.forEach.call(forms, function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            })();
+        })();
+    </script>
+
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,127 @@
+﻿@model List<FRAProject.ViewModels.SquadronViewModel>
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Squadrons";
+    var bases = (IEnumerable<SelectListItem>)ViewData["Bases"];
+    var wings = (IEnumerable<SelectListItem>)ViewData["Wings"];
+}
+
+<!-- Bootstrap 4 layout -->
+<div class="container">
+    <div class="row align-items-center mb-3">
+        <div class="col-md-6">
+            <h2 class="mb-0">Squadrons</h2>
+        </div>
+        <div class="col-md-6 text-md-right">
+            <a asp-action="Create" class="btn btn-primary btn-sm">
+                <i class="fa fa-plus mr-1" aria-hidden="true"></i> New Squadron
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="get" asp-action="Index" class="form-inline">
+                <div class="form-row w-100">
+                    <div class="form-group col-6 pr-1">
+                        <label for="baseId" class="sr-only">Base</label>
+                        <select id="baseId" name="baseId" class="form-control form-control-sm w-100" onchange="this.form.submit()">
+                            <option value="">-- All bases --</option>
+                            @foreach (SelectListItem b in bases)
+                            {
+                                if (b.Selected)
+                                {
+                                    <option value="@b.Value" selected="selected">@b.Text</option>
+                                }
+                                else
+                                {
+                                    <option value="@b.Value">@b.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group col-6 pl-1">
+                        <label for="wingId" class="sr-only">Wing</label>
+                        <select id="wingId" name="wingId" class="form-control form-control-sm w-100" onchange="this.form.submit()">
+                            <option value="">-- All wings --</option>
+                            @foreach (SelectListItem w in wings)
+                            {
+                                if (w.Selected)
+                                {
+                                    <option value="@w.Value" selected="selected">@w.Text</option>
+                                }
+                                else
+                                {
+                                    <option value="@w.Value">@w.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                <noscript class="mt-2">
+                    <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                </noscript>
+            </form>
+        </div>
+        <div class="col-md-6 text-right d-none d-md-block">
+            <!-- optional area for future actions/filters -->
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-sm">
+            <thead class="thead-light">
+                <tr>
+                    <th style="width:64px;"></th>
+                    <th>Squadron</th>
+                    <th>Wing</th>
+                    <th>Base</th>
+                    <th>Call-Sign</th>
+                    <th style="width:80px;">Active</th>
+                    <th style="width:140px; text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td class="align-middle text-center">
+                            @if (!string.IsNullOrWhiteSpace(s.LogoPath))
+                            {
+                                <img src="@Url.Content(s.LogoPath)" alt="@s.Name logo" class="img-thumbnail" style="width:48px;height:48px;object-fit:cover;" />
+                            }
+                            else
+                            {
+                                <img src="@Url.Content("~/images/placeholder.png")" alt="No logo" class="img-thumbnail" style="width:48px;height:48px;object-fit:cover;" />
+                            }
+                        </td>
+                        <td class="align-middle">
+                            <a asp-action="Details" asp-route-id="@s.Id">@s.Name</a>
+                        </td>
+                        <td class="align-middle">@s.WingName</td>
+                        <td class="align-middle">@s.BaseName</td>
+                        <td class="align-middle">@s.CallSign</td>
+                        <td class="align-middle">
+                            @if (s.Active)
+                            {
+                                <span class="badge badge-success">Yes</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary">No</span>
+                            }
+                        </td>
+                        <td class="align-middle text-right">
+                            <a asp-action="Edit" asp-route-id="@s.Id" class="btn btn-sm btn-info mr-1">Edit</a>
+                            <form asp-action="Delete" asp-route-id="@s.Id" method="post" class="d-inline" onsubmit="return confirm('Delete this squadron?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

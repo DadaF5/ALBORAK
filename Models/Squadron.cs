@@ -38,8 +38,14 @@ namespace FRAProject.Models
 
         public bool Active { get; set; } = true;
 
+        // Navigation
+        public ICollection<Odv>? Odvs { get; set; }
+       
+
         // Computed for display
         [NotMapped]
         public string FullName => $"{Name} ({Wing?.Name})";
+
+
     }
 }

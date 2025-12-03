@@ -1,0 +1,11 @@
+﻿@* simple helper example inline in the view *@
+@using System.ComponentModel.DataAnnotations
+@functions {
+    string GetDisplayName(Enum value)
+    {
+        var attr = value.GetType().GetField(value.ToString())?
+                     .GetCustomAttributes(typeof(DisplayAttribute), false)
+                     .OfType<DisplayAttribute>().FirstOrDefault();
+        return attr?.Name ?? value.ToString();
+    }
+}

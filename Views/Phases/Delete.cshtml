@@ -1,0 +1,32 @@
+﻿@model FRAProject.ViewModels.PhaseViewModel
+@{
+    ViewData["Title"] = "Delete Phase";
+}
+
+<div class="container">
+    <div class="row mb-3">
+        <div class="col"><h2>Delete Phase</h2></div>
+        <div class="col text-right">
+            <a asp-action="Index" class="btn btn-secondary btn-sm">Back to list</a>
+        </div>
+    </div>
+
+    <div class="alert alert-danger">
+        <strong>Warning:</strong> Deleting a phase will remove it permanently.
+    </div>
+
+    <dl class="row">
+        <dt class="col-sm-3">Name</dt>
+        <dd class="col-sm-9">@Model.Name</dd>
+
+        <dt class="col-sm-3">Description</dt>
+        <dd class="col-sm-9">@Model.Description</dd>
+    </dl>
+
+    <form asp-action="Delete" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>

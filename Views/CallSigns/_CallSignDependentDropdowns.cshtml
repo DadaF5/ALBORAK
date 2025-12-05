@@ -1,0 +1,76 @@
+﻿@* Partial to add AJAX dependent dropdown behavior for CallSign Base -> Squadron *@
+<script>
+    (function () {
+        function toInt(v) {
+            var n = parseInt(v, 10);
+            return isNaN(n) ? 0 : n;
+        }
+
+        async function loadSquadronsForBase(baseId, squadronSelect) {
+            // Clear existing options
+            squadronSelect.innerHTML = '';
+            // Add default prompt
+            var defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.text = '-- Select Squadron (optional) --';
+            squadronSelect.appendChild(defaultOption);
+
+            if (!baseId || baseId <= 0) {
+                // no base selected -> keep default only
+                return;
+            }
+
+            try {
+                // Call controller endpoint
+                var url = '@Url.Action("GetSquadrons", "CallSigns")' + '?baseId=' + encodeURIComponent(baseId);
+                const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+                if (!resp.ok) {
+                    console.error('Failed to fetch squadrons', resp.statusText);
+                    return;
+                }
+                const items = await resp.json();
+                items.forEach(function (it) {
+                    var opt = document.createElement('option');
+                    opt.value = it.id;
+                    opt.text = it.text;
+                    squadronSelect.appendChild(opt);
+                });
+
+                // If page had a preselected squadron value, try to reselect it
+                var selectedValue = squadronSelect.getAttribute('data-selected');
+                if (selectedValue) {
+                    squadronSelect.value = selectedValue;
+                }
+            } catch (err) {
+                console.error('Error loading squadrons', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var baseSelect = document.getElementById('BaseId');
+            var squadronSelect = document.getElementById('SquadronId');
+
+            if (!baseSelect || !squadronSelect) return;
+
+            // Store currently selected squadron (for Edit page)
+            var currentSquadron = squadronSelect.value;
+            if (currentSquadron) {
+                squadronSelect.setAttribute('data-selected', currentSquadron);
+            }
+
+            // When base changes, reload squadron options
+            baseSelect.addEventListener('change', function () {
+                var baseId = toInt(baseSelect.value);
+                // clear data-selected when user changes base interactively
+                squadronSelect.removeAttribute('data-selected');
+                loadSquadronsForBase(baseId, squadronSelect);
+            });
+
+            // initial load: if a base is selected already, populate squadrons
+            var initialBaseId = toInt(baseSelect.value);
+            if (initialBaseId > 0) {
+                loadSquadronsForBase(initialBaseId, squadronSelect);
+            }
+        });
+    })();
+</script>

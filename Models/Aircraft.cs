@@ -57,6 +57,14 @@ namespace FRAProject.Models
         // --------------------------
         [NotMapped]
         public string DisplayName => $"{Registration} ({TailNo})";
+
+
+        // --------------------------
+        // collection navigation properties
+        public ICollection<Sortie>? Sorties { get; set; }
+        public ICollection<MaintenanceComponent>? Components { get; set; }
+        public ICollection<FlightLog>? FlightLogs { get; set; }
+        
     }
 
 }

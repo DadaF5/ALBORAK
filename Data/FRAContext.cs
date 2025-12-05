@@ -3,11 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using FRAProject.Models;
 using FRAProject.Enums;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 
 namespace FRAProject.Data
 {
-    public class FRAContext : DbContext
+    public partial class FRAContext : IdentityDbContext<ApplicationUser>
     {
         public FRAContext(DbContextOptions<FRAContext> options)
             : base(options)
@@ -26,6 +27,17 @@ namespace FRAProject.Data
         public DbSet<Wing> Wings { get; set; } = null!;
         public DbSet<Squadron> Squadrons { get; set; } = null!;
 
+
+
+
+        public DbSet<Sortie> Sorties { get; set; } = null!;
+        public DbSet<SortieCrew> SortieCrews { get; set; } = null!;
+
+        //===============================
+        // User Related DbSets
+        public DbSet<UserDocument> UserDocuments { get; set; } = null!;
+        public DbSet<UserQualification> UserQualifications { get; set; } = null!;
+
         //===============================
         // Aircraft Related DbSets
         //===============================
@@ -34,12 +46,76 @@ namespace FRAProject.Data
         public DbSet<AcType> AcTypes { get; set; } = null!;
         public DbSet<AcStatusType> AcStatusTypes { get; set; } = null!;
         public DbSet<Aircraft> Aircrafts { get; set; } = null!;
+        public DbSet<FlightLog> FlightLogs { get; set; } = null!;
+        public DbSet<MaintenanceComponent> MaintenanceComponents { get; set; } = null!;
+        public DbSet<MaintenanceThreshold> MaintenanceThresholds { get; set; } = null!;
+        public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;
 
+        private void ConfigureFlightLog(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<FlightLog>(e =>
+            {
+                e.HasKey(f => f.Id);
+
+                // Make sure EF uses the declared AircraftId property as the FK and the Aircraft.FlightLogs inverse nav
+                e.HasOne(f => f.Aircraft)
+                 .WithMany(a => a.FlightLogs)     // requires Aircraft.FlightLogs nav (you have it)
+                 .HasForeignKey(f => f.AircraftId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                // Map Sortie relation explicitly to avoid ambiguity if Sortie has navs
+                e.HasOne(f => f.Sortie)
+                 .WithOne() // or .WithOne(s => s.FlightLog) if Sortie has a FlightLog nav
+                 .HasForeignKey<FlightLog>(f => f.SortieId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                // Decimal precision (avoid warnings)
+                e.Property(f => f.HobbsStart).HasPrecision(8, 2);
+                e.Property(f => f.HobbsEnd).HasPrecision(8, 2);
+                e.Property(f => f.TachStart).HasPrecision(8, 2);
+                e.Property(f => f.TachEnd).HasPrecision(8, 2);
+                e.Property(f => f.FuelUsedKg).HasPrecision(10, 2);
+
+                // Optional: index on SortieId or AircraftId
+                e.HasIndex(f => f.SortieId).IsUnique(false);
+                e.HasIndex(f => f.AircraftId);
+            });
+        }
+        private void ConfigureMaintenance(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<FlightLog>(e =>
+            {
+                e.HasKey(f => f.Id);
+                e.HasOne(f => f.Sortie).WithOne().HasForeignKey<FlightLog>(f => f.SortieId).OnDelete(DeleteBehavior.Cascade);
+                e.HasOne(f => f.Aircraft).WithMany().HasForeignKey(f => f.AircraftId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<MaintenanceComponent>(e =>
+            {
+                e.HasKey(c => c.Id);
+                e.HasOne(c => c.Aircraft).WithMany(a => a.Components).HasForeignKey(c => c.AircraftId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<MaintenanceThreshold>(e =>
+            {
+                e.HasKey(t => t.Id);
+                e.HasOne(t => t.Component).WithMany(c => c.Thresholds).HasForeignKey(t => t.ComponentId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<MaintenanceWorkOrder>(e =>
+            {
+                e.HasKey(w => w.Id);
+                e.HasOne(w => w.Aircraft).WithMany().HasForeignKey(w => w.AircraftId).OnDelete(DeleteBehavior.Restrict);
+                e.HasOne(w => w.Component).WithMany().HasForeignKey(w => w.ComponentId).OnDelete(DeleteBehavior.Restrict);
+            });
+        }
         // =============================
         // Air activity Related DbSets
         // =============================
         public DbSet<Mission> Missions { get; set; } = null!;
         public DbSet<Phase> Phases { get; set; } = null!;
+        public DbSet<CallSign> CallSigns { get; set; } = null!;
+
 
         // Scheduling / assignments table (ODV)
         public DbSet<Odv> Odvs { get; set; } = null!;
@@ -47,6 +123,15 @@ namespace FRAProject.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            ConfigureDecimalPrecision(modelBuilder);
+            ConfigureSorties(modelBuilder);
+            ConfigureMaintenance(modelBuilder);
+            ConfigureFlightLog(modelBuilder);
+            // CallSign configuration in partial class
+            ConfigureCallSign (modelBuilder);
+
+
 
             // ===== general hints / TODOs =====
             // - Add further indexes / constraints as your domain requires.
@@ -176,10 +261,84 @@ namespace FRAProject.Data
                 entity.HasMany(m => m.Odvs)
                       .WithOne(o => o.Mission)
                       .HasForeignKey(o => o.MissionId);
+            }
+            
+
+            
+            
+            );
+            
+
+        // Additional model configuration (Wings, Bases, AcMainGroups, etc.) should be kept
+
+        // in their respective configuration areas if you split configuration into partials.
+    }
+        private void ConfigureDecimalPrecision(ModelBuilder modelBuilder)
+        {
+            // Sortie fuel
+            modelBuilder.Entity<Sortie>(e =>
+            {
+                e.Property(s => s.FuelQuantity).HasPrecision(10, 2);
             });
 
-            // Additional model configuration (Wings, Bases, AcMainGroups, etc.) should be kept
-            // in their respective configuration areas if you split configuration into partials.
+            // FlightLog hobbs/tach/fuel
+            modelBuilder.Entity<FlightLog>(e =>
+            {
+                e.Property(f => f.HobbsStart).HasPrecision(8, 2);
+                e.Property(f => f.HobbsEnd).HasPrecision(8, 2);
+                e.Property(f => f.TachStart).HasPrecision(8, 2);
+                e.Property(f => f.TachEnd).HasPrecision(8, 2);
+                e.Property(f => f.FuelUsedKg).HasPrecision(10, 2);
+            });
+
+            // Maintenance component numeric values if present
+            modelBuilder.Entity<MaintenanceComponent>(e =>
+            {
+                // if you have any decimal fields here, configure them too:
+                // e.Property(c => c.SomeDecimalField).HasPrecision(9, 2);
+            });
+
+            // Add other decimal properties here as needed
+        }
+
+        // In your OnModelCreating (or a partial), add:
+        private void ConfigureSorties(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Sortie>(entity =>
+            {
+                entity.HasKey(s => s.SortieId);
+                entity.Property(s => s.Configuration).HasMaxLength(200);
+                entity.Property(s => s.Notes).HasColumnType("nvarchar(max)");
+
+                entity.HasOne(s => s.Odv)
+                      .WithMany(o => o.Sorties)
+                      .HasForeignKey(s => s.OdvID)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(s => s.Aircraft)
+                      .WithMany(a => a.Sorties) // add ICollection<Sortie> Sorties in Aircraft model if desired
+                      .HasForeignKey(s => s.AircraftId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(s => new { s.OdvID });
+            });
+
+            modelBuilder.Entity<SortieCrew>(entity =>
+            {
+                entity.HasKey(sc => sc.SortieCrewId);
+
+                entity.HasOne(sc => sc.Sortie)
+                      .WithMany(s => s.CrewMembers)
+                      .HasForeignKey(sc => sc.SortieId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(sc => sc.Person)
+                      .WithMany() // optionally add navigation ICollection<SortieCrew> to Person
+                      .HasForeignKey(sc => sc.PersonId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(sc => new { sc.SortieId });
+            });
         }
     }
 }

@@ -12,8 +12,8 @@ namespace FRAProject.ViewModels.Rank
 
         public int Sequence { get; set; }
 
-        public int RankTypeId { get; set; }
-
+        public int RankTypeId { get; set; }   
+       
         public IEnumerable<SelectListItem> RankTypes { get; set; } = new List<SelectListItem>();
     }
 }

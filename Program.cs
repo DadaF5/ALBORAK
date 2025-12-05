@@ -1,31 +1,90 @@
 using FRAProject.Data;
+using FRAProject.Infrastructure.Authorization;
+using FRAProject.Infrastructure.Identity;
+using FRAProject.Models;
+using FRAProject.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography.Xml;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
-
 
 // Add DB Context
 builder.Services.AddDbContext<FRAContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("FRAConString")));
 
+// Identity: use the "default identity" registration which includes the Identity UI.
+// We add roles as well so role checks still work.
+builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+{
+    options.User.RequireUniqueEmail = true;
+    // adjust password/lockout options for dev as needed
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+})
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<FRAContext>()
+    .AddDefaultTokenProviders()
+    .AddDefaultUI(); // ensures /Identity/Account/Login etc are available
 
-// Add services to the container.
+// custom claims factory
+builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppClaimsPrincipalFactory>();
+
+// Authorization handlers & policies
+builder.Services.AddSingleton<IAuthorizationHandler, SameSquadronHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, SameBaseHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, SquadronOrBaseMaintenanceHandler>();
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("SameSquadron", p => p.Requirements.Add(new SameSquadronRequirement()));
+    options.AddPolicy("SameBase", p => p.Requirements.Add(new SameBaseRequirement()));
+    options.AddPolicy("SquadronOrBaseMaintenance", p => p.Requirements.Add(new SquadronOrBaseMaintenanceRequirement()));
+    options.AddPolicy("RequireCrewChiefOrAdmin", p => p.RequireRole("CrewChief", "Admin"));
+
+    // IMPORTANT: require authentication for every endpoint by default.
+    // Controllers/actions or pages that should be public must use [AllowAnonymous].
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+
+// If you scaffold or use Identity UI, register Razor Pages
+builder.Services.AddRazorPages();
+
+// register application services
+builder.Services.AddScoped<SquadronActivityService>();
+// register other domain services here
+
+// MVC + JSON options
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(opts =>
     {
-        opts.JsonSerializerOptions.ReferenceHandler=ReferenceHandler.IgnoreCycles;
-        opts.JsonSerializerOptions.DefaultIgnoreCondition=JsonIgnoreCondition.WhenWritingNull;
+        opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        opts.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
 
 var app = builder.Build();
+
+// Seed Roles/Admin (run once at startup)
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        await IdentitySeed.SeedRolesAndAdminAsync(services);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Seeding error: " + ex.Message);
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -34,10 +93,15 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// IMPORTANT: Authentication must come before Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Map Razor Pages so Identity UI (if used) is reachable at /Identity/Account/Login etc.
+app.MapRazorPages();
 
 app.Run();

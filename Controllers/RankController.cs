@@ -28,7 +28,7 @@ namespace FRAProject.Controllers
                     Id = r.Id,
                     Name = r.Name,
                     FullRank = r.FullRank,
-                    Sequence = r.Sequence,
+                    Sequence = r.Sequence,                   
                     RankTypeId = r.RankTypeId
                 })
                 .ToListAsync();

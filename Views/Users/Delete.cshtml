@@ -1,0 +1,36 @@
+﻿@model FRAProject.ViewModels.UserListViewModel
+
+@{
+    ViewData["Title"] = "Delete user";
+}
+
+<h2>Delete user</h2>
+
+<div class="alert alert-warning">
+    <strong>Confirm deletion</strong>
+    <p>You are about to permanently delete the user <strong>@Model.DisplayName</strong> (@Model.UserName). This action cannot be undone.</p>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Username</dt>
+            <dd class="col-sm-9">@Model.UserName</dd>
+
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9">@Model.Email</dd>
+
+            <dt class="col-sm-3">Roles</dt>
+            <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.Roles) ? Model.Roles : "—")</dd>
+        </dl>
+
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="form-group">
+                <button type="submit" class="btn btn-danger">Delete</button>
+                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

@@ -37,5 +37,9 @@ namespace FRAProject.ViewModels
         public int? BaseId { get; set; }
 
         public IEnumerable<SelectListItem> BaseList { get; set; } = new List<SelectListItem>();
+
+        // Admin-editable activation flag
+        [Display(Name = "Account active")]
+        public bool IsActive { get; set; } = true;
     }
 }

@@ -1,0 +1,47 @@
+﻿@model FRAProject.Models.CallSign
+
+@{
+    ViewData["Title"] = "CallSign Details";
+}
+
+<h2>CallSign Details</h2>
+
+<div class="card">
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Code</dt>
+            <dd class="col-sm-9">@Model.Code</dd>
+
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">@Model.Description</dd>
+
+            <dt class="col-sm-3">Base</dt>
+            <dd class="col-sm-9">@(@Model.Base?.BaseName ?? (Model.BaseId.HasValue ? Model.BaseId.ToString() : "Global"))</dd>
+
+            <dt class="col-sm-3">Squadron</dt>
+            <dd class="col-sm-9">@(@Model.Squadron?.Name ?? (Model.SquadronId.HasValue ? Model.SquadronId.ToString() : "—"))</dd>
+
+            <dt class="col-sm-3">Active</dt>
+            <dd class="col-sm-9">@(Model.IsActive ? "Yes" : "No")</dd>
+
+            <dt class="col-sm-3">Created</dt>
+            <dd class="col-sm-9">@Model.CreatedAtUtc.ToLocalTime().ToString("g") by @Model.CreatedBy</dd>
+
+            @if (Model.UpdatedAtUtc.HasValue)
+            {
+                <dt class="col-sm-3">Updated</dt>
+                <dd class="col-sm-9">@Model.UpdatedAtUtc.Value.ToLocalTime().ToString("g") by @Model.UpdatedBy</dd>
+            }
+        </dl>
+
+        <div class="mt-3">
+            <a asp-action="Index" class="btn btn-secondary">Back to list</a>
+
+            @if (User?.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+                <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">Delete</a>
+            }
+        </div>
+    </div>
+</div>

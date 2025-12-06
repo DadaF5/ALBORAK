@@ -1,0 +1,41 @@
+﻿@model FRAProject.ViewModels.CallSignViewModel
+
+@* Reusable form partial for Create/Edit. Controller must populate Model.BaseList and Model.SquadronList. *@
+
+<div class="form-group">
+    <label asp-for="Code" class="control-label"></label>
+    <input asp-for="Code" class="form-control" />
+    <span asp-validation-for="Code" class="text-danger"></span>
+</div>
+
+<div class="form-row">
+    <div class="form-group col-md-6">
+        <label asp-for="Description" class="control-label"></label>
+        <input asp-for="Description" class="form-control" />
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="form-group col-md-3">
+        <label asp-for="BaseId" class="control-label">Base</label>
+        <select asp-for="BaseId" id="BaseId" class="form-control" asp-items="Model.BaseList">
+            <option value="">-- Global --</option>
+        </select>
+        <span asp-validation-for="BaseId" class="text-danger"></span>
+    </div>
+
+    <div class="form-group col-md-3">
+        <label asp-for="SquadronId" class="control-label">Squadron</label>
+        <select asp-for="SquadronId" id="SquadronId" class="form-control" data-selected="@(Model?.SquadronId?.ToString() ?? "")" asp-items="Model.SquadronList">
+            <option value="">-- Select Squadron (optional) --</option>
+        </select>
+        <span asp-validation-for="SquadronId" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="form-group form-check">
+    <input asp-for="IsActive" class="form-check-input" />
+    <label asp-for="IsActive" class="form-check-label"></label>
+</div>
+
+@* Include dependent dropdown JavaScript partial (you already have this partial) *@
+@await Html.PartialAsync("_CallSignDependentDropdowns")

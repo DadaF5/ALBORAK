@@ -18,5 +18,7 @@ namespace FRAProject.Models
         // Navigation
         public ICollection<Department> Departments { get; set; } = new HashSet<Department>();
         public ICollection<AcMainGroup> AcMainGroups { get; set; } = new HashSet<AcMainGroup>();
+      
+
     }
 }

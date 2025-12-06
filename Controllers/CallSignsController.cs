@@ -13,6 +13,7 @@ using System.Collections.Generic;
 
 namespace FRAProject.Controllers
 {
+    // Allow any authenticated user to access read-only actions (Index, Details).
     [Authorize]
     public class CallSignsController : Controller
     {
@@ -31,6 +32,7 @@ namespace FRAProject.Controllers
             var user = User;
             var query = _context.CallSigns.AsQueryable();
 
+            // Non-admins see a filtered list according to their BaseId claim
             if (!user.IsInRole("Admin"))
             {
                 var baseClaim = user.FindFirst("BaseId")?.Value;
@@ -44,7 +46,12 @@ namespace FRAProject.Controllers
                 }
             }
 
-            var list = await query.OrderBy(c => c.Code).ToListAsync();
+            var list = await query
+                .Include(c => c.Base)       // <-- eager load Base
+                .Include(c => c.Squadron)   // <-- eager load Squadron
+                .AsNoTracking()
+                .OrderBy(c => c.Code)
+                .ToListAsync();
             return View(list);
         }
 
@@ -56,11 +63,27 @@ namespace FRAProject.Controllers
             var cs = await _context.CallSigns.FindAsync(id.Value);
             if (cs == null) return NotFound();
 
+            // Non-admins should only see items allowed by the same filter used in Index
+            if (!User.IsInRole("Admin"))
+            {
+                var baseClaim = User.FindFirst("BaseId")?.Value;
+                if (!string.IsNullOrEmpty(baseClaim) && int.TryParse(baseClaim, out var baseId))
+                {
+                    if (cs.BaseId.HasValue && cs.BaseId.Value != baseId)
+                        return Forbid();
+                }
+                else
+                {
+                    if (cs.BaseId.HasValue)
+                        return Forbid();
+                }
+            }
+
             return View(cs);
         }
 
         // GET: CallSigns/Create
-        [Authorize(Roles = "Admin,Maintenance,HR")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create()
         {
             var vm = new CallSignViewModel();
@@ -71,23 +94,16 @@ namespace FRAProject.Controllers
         // POST: CallSigns/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin,Maintenance,HR")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(CallSignViewModel model)
         {
             model.Code = (model.Code ?? string.Empty).Trim();
-
-            // server-side conditional validation
-            if (User.IsInRole("Maintenance") && model.BaseId == null)
-            {
-                ModelState.AddModelError(nameof(model.BaseId), "Maintenance-scoped call signs must be assigned to a Base.");
-            }
 
             if (model.SquadronId.HasValue && model.BaseId == null)
             {
                 ModelState.AddModelError(nameof(model.BaseId), "Please select a Base when selecting a Squadron.");
             }
 
-            // Simple uniqueness check within selected scope
             if (await DuplicateCallSignExistsSimpleAsync(model.Code, model.BaseId, model.SquadronId, null))
             {
                 ModelState.AddModelError(nameof(model.Code), "A CallSign with this code already exists in the selected scope.");
@@ -116,7 +132,7 @@ namespace FRAProject.Controllers
         }
 
         // GET: CallSigns/Edit/5
-        [Authorize(Roles = "Admin,Maintenance,HR")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -141,24 +157,18 @@ namespace FRAProject.Controllers
         // POST: CallSigns/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin,Maintenance,HR")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(int id, CallSignViewModel model)
         {
             if (id != model.Id) return BadRequest();
 
             model.Code = (model.Code ?? string.Empty).Trim();
 
-            // server-side conditional validation
-            if (User.IsInRole("Maintenance") && model.BaseId == null)
-            {
-                ModelState.AddModelError(nameof(model.BaseId), "Maintenance-scoped call signs must be assigned to a Base.");
-            }
             if (model.SquadronId.HasValue && model.BaseId == null)
             {
                 ModelState.AddModelError(nameof(model.BaseId), "Please select a Base when selecting a Squadron.");
             }
 
-            // Simple uniqueness check within selected scope, exclude current id
             if (await DuplicateCallSignExistsSimpleAsync(model.Code, model.BaseId, model.SquadronId, model.Id))
             {
                 ModelState.AddModelError(nameof(model.Code), "A CallSign with this code already exists in the selected scope.");
@@ -224,7 +234,6 @@ namespace FRAProject.Controllers
             if (baseId <= 0)
                 return Json(Array.Empty<object>());
 
-            // Use joins so this works even if navigation properties are missing.
             var squadrons = await (from s in _context.Set<Squadron>()
                                    join w in _context.Set<Wing>() on s.WingId equals w.Id
                                    join d in _context.Set<Department>() on w.DepartmentId equals d.Id

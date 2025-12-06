@@ -1,0 +1,115 @@
+﻿@model FRAProject.ViewModels.RegisterUserViewModel
+
+@{
+    ViewData["Title"] = "Create User";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4 class="mb-0">Create User</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label asp-for="FirstName"></label>
+                            <input asp-for="FirstName" class="form-control" />
+                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <label asp-for="LastName"></label>
+                            <input asp-for="LastName" class="form-control" />
+                            <span asp-validation-for="LastName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <label asp-for="PhoneNumber"></label>
+                            <input asp-for="PhoneNumber" class="form-control" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label asp-for="Email"></label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group col-md-6">
+                            <label asp-for="Password"></label>
+                            <input asp-for="Password" class="form-control" id="password" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label asp-for="ConfirmPassword"></label>
+                            <input asp-for="ConfirmPassword" class="form-control" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group col-md-6">
+                            <label>Roles (optional)</label>
+                            <div>
+                                @foreach (var r in Model.AvailableRoles)
+                                {
+                                    var id = "role_" + r.Value;
+                                    var isChecked = Model.SelectedRoles?.Contains(r.Value) == true;
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="@id" name="SelectedRoles" value="@r.Value" @(isChecked ? "checked" : "") />
+                                        <label class="form-check-label" for="@id">@r.Text</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="BaseId">Base (optional)</label>
+                        <select asp-for="BaseId" class="form-control" asp-items="Model.BaseList">
+                            <option value="">-- none --</option>
+                        </select>
+                        <span asp-validation-for="BaseId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group d-flex">
+                        <button type="submit" class="btn btn-success mr-2">Create user</button>
+                        <a asp-controller="Users" asp-action="Index" class="btn btn-secondary">Back to users</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // small password strength hint
+        document.addEventListener('DOMContentLoaded', function () {
+            var pw = document.getElementById('password');
+            if (!pw) return;
+            var hint = document.createElement('small');
+            hint.className = 'form-text text-muted';
+            pw.parentNode.appendChild(hint);
+            pw.addEventListener('input', function () {
+                var v = pw.value;
+                var score = 0;
+                if (v.length >= 8) score++;
+                if (/[A-Z]/.test(v)) score++;
+                if (/[0-9]/.test(v)) score++;
+                if (/[^A-Za-z0-9]/.test(v)) score++;
+                var text = ['Very weak', 'Weak', 'Okay', 'Strong', 'Very strong'][Math.min(score,4)];
+                hint.textContent = 'Password strength: ' + text;
+            });
+        });
+    </script>
+}
+```

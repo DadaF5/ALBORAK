@@ -1,8 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FRAProject.ViewModels
 {
-    // Minimal fields for self-registration. Prefer admin approval for scoping (Base/Squadron).
     public class RegisterUserViewModel
     {
         [Required, EmailAddress]
@@ -25,7 +26,16 @@ namespace FRAProject.ViewModels
         [Phone]
         public string? PhoneNumber { get; set; }
 
-        // If you allow user to choose a Base/Unit at registration (not recommended),
-        // include optional fields here; prefer admin assignment instead.
+        // Strongly-typed role selection (checkboxes)
+        public List<string> SelectedRoles { get; set; } = new List<string>();
+
+        // Roles available for admin to select (controller will populate this)
+        public IEnumerable<SelectListItem> AvailableRoles { get; set; } = new List<SelectListItem>();
+
+        // Optional: Base selection for scoping
+        [Display(Name = "Base (optional)")]
+        public int? BaseId { get; set; }
+
+        public IEnumerable<SelectListItem> BaseList { get; set; } = new List<SelectListItem>();
     }
 }

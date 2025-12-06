@@ -47,6 +47,18 @@
                     @if (User?.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
                     {
                         <li class="nav-item d-none d-sm-inline-block">
+                            <a asp-controller="Users" asp-action="Index" class="nav-link">
+                                <i class="fas fa-users-cog mr-1"></i> Manage Users
+                            </a>
+                        </li>
+
+                        <li class="nav-item d-none d-sm-inline-block">
+                            <a asp-controller="Account" asp-action="Create" class="nav-link">
+                                <i class="fas fa-user-plus mr-1"></i> Create User
+                            </a>
+                        </li>
+
+                        <li class="nav-item d-none d-sm-inline-block">
                             <a asp-controller="MenuItems" asp-action="Index" class="nav-link">
                                 <i class="fas fa-th-list mr-1"></i> Manage Menu
                             </a>

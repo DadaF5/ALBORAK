@@ -1,0 +1,108 @@
+﻿@* Sidebar partial: drop this file into Views/Shared and include it from your _Layout *@
+<aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <a href="~/" class="brand-link text-center">
+        <span class="brand-text font-weight-light"><img src="~/Images/Air_Force_small.png" /></span>
+    </a>
+
+    <div class="sidebar">
+        <nav class="mt-2">
+            <ul class="nav nav-pills nav-sidebar flex-column" role="menu">
+                <li class="nav-item">
+                    <a asp-controller="AircraftDashboard" asp-action="AircraftDashboard" class="nav-link">
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <p>Dashboard</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="AcCategory" asp-action="Index" class="nav-link">
+                        <i class="fa fa-fighter-jet"></i>
+                        <p>Aircraft Category</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="AcStatusType" asp-action="Index" class="nav-link">
+                        <i class="fa fa-fighter-jet"></i>
+                        <p>Aircraft Status Type</p>
+                    </a>
+                </li>
+
+
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="AcMainGroup" asp-action="Index">
+                        <i class="fa fa-fighter-jet"></i>
+                        <p>Main Groups</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="AcType" asp-action="Index">
+                        <i class="fa fa-fighter-jet"></i>
+                        <p>Aircraft Types</p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a asp-controller="Aircraft" asp-action="Index" class="nav-link">
+                        <i class="fa fa-fighter-jet"></i>
+                        <p>Aircraft</p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a asp-controller="Wings" asp-action="Index" class="nav-link">
+                        <i class="fa fa-fighter-jet"></i>
+                        <p>Wing</p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a asp-controller="Squadron" asp-action="Index" class="nav-link">
+                        <i class="fa fa-fighter-jet"></i>
+                        <p>Squadron</p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a asp-controller="RankType" asp-action="Index" class="nav-link">
+                        <i class="nav-icon fas fa-user-shield"></i>
+                        <p>Rank Type</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a asp-controller="Rank" asp-action="Index" class="nav-link">
+                        <i class="nav-icon fas fa-user-shield"></i>
+                        <p>Ranks</p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a asp-controller="Base" asp-action="Index" class="nav-link">
+                        <i class="nav-icon fas fa-building"></i>
+                        <p>Bases</p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a asp-controller="Department" asp-action="Index" class="nav-link">
+                        <i class="nav-icon fas fa-building"></i>
+                        <p>Departments</p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a asp-controller="SubDepartment" asp-action="Index" class="nav-link">
+                        <i class="nav-icon fas fa-cogs"></i>
+                        <p>Services</p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a asp-controller="Person" asp-action="Index" class="nav-link">
+                        <i class="nav-icon fas fa-users"></i>
+                        <p>Personnel</p>
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+    </div>
+</aside>

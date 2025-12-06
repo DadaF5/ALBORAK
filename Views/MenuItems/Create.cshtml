@@ -1,0 +1,22 @@
+﻿@model FRAProject.Models.MenuItem
+
+@{
+    ViewData["Title"] = "Create Menu Item";
+}
+
+<h2>Create Menu Item</h2>
+
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    @await Html.PartialAsync("_Form", Model)
+
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Create</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

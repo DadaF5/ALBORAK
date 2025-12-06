@@ -30,6 +30,7 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 
 // custom claims factory
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppClaimsPrincipalFactory>();
+builder.Services.AddScoped<IMenuService,SampleMenuService>();
 
 // Authorization handlers & policies
 builder.Services.AddSingleton<IAuthorizationHandler, SameSquadronHandler>();
@@ -56,6 +57,9 @@ builder.Services.AddRazorPages();
 // register application services
 builder.Services.AddScoped<SquadronActivityService>();
 // register other domain services here
+//builder.Services.AddScoped<IMenuService, SampleMenuService>();
+// Register DB-backed service (scoped so it gets FRAContext per-request)
+builder.Services.AddScoped<IMenuService, MenuService>();
 
 // MVC + JSON options
 builder.Services.AddControllersWithViews()
@@ -81,6 +85,22 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// after var app = builder.Build(); and after any role/user seeding
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        // seed menu items if empty
+        await MenuSeeder.SeedAsync(services);
+    }
+    catch (Exception ex)
+    {
+        // replace with your logger if you have one
+        Console.WriteLine("Menu seeding error: " + ex.Message);
+    }
+}
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

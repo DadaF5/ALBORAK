@@ -115,7 +115,7 @@ namespace FRAProject.Data
         public DbSet<Mission> Missions { get; set; } = null!;
         public DbSet<Phase> Phases { get; set; } = null!;
         public DbSet<CallSign> CallSigns { get; set; } = null!;
-
+        public DbSet<MenuItem> MenuItems { get; set; } = null!;
 
         // Scheduling / assignments table (ODV)
         public DbSet<Odv> Odvs { get; set; } = null!;
@@ -124,12 +124,23 @@ namespace FRAProject.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Decimal precision configuration in partial class
             ConfigureDecimalPrecision(modelBuilder);
+
+            // Sortie configuration in partial class
             ConfigureSorties(modelBuilder);
+
+            // Maintenance configuration in partial class
             ConfigureMaintenance(modelBuilder);
+
+            // FlightLog configuration in partial class
             ConfigureFlightLog(modelBuilder);
+
             // CallSign configuration in partial class
             ConfigureCallSign (modelBuilder);
+
+            // Menu configuration in partial class
+            ConfigureMenus(modelBuilder);
 
 
 

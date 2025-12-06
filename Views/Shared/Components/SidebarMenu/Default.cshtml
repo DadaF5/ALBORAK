@@ -1,0 +1,125 @@
+﻿@model IEnumerable<FRAProject.Models.MenuItem>
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    // Active route detection helpers
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    int idx = 0;
+    string CollapseId() => "menu_collapse_" + (idx++);
+}
+
+<aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <a asp-controller="Home" asp-action="Index" class="brand-link text-center">
+        <img src="~/images/Air_Force_small.png" alt="logo" style="height:80px;" />
+    </a>
+
+    <div class="sidebar">
+        <nav class="mt-2">
+            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                @foreach (var parent in Model)
+                {
+                    var hasChildren = parent.Children != null && parent.Children.Count > 0;
+                    var collapseId = CollapseId();
+
+                    bool parentActive = false;
+                    if (!hasChildren)
+                    {
+                        parentActive = string.Equals(parent.Controller, currentController, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(parent.Action, currentAction, StringComparison.OrdinalIgnoreCase);
+                    }
+                    else
+                    {
+                        parentActive = parent.Children.Any(c =>
+                        string.Equals(c.Controller, currentController, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(c.Action, currentAction, StringComparison.OrdinalIgnoreCase));
+                    }
+
+                    <li class="nav-item @(hasChildren ? "has-treeview" : "") @(parentActive ? "menu-open" : "")">
+                        @if (hasChildren)
+                        {
+                            <a href="#" class="nav-link @(parentActive ? "active" : "")" data-toggle="collapse" aria-expanded="@(parentActive)">
+                                <i class="@parent.IconClass nav-icon"></i>
+                                <p>
+                                    @parent.Title
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+
+                            <ul class="nav nav-treeview collapse @(parentActive ? "show" : "")" id="@collapseId">
+                                @foreach (var child in parent.Children)
+                                {
+                                    bool childActive = string.Equals(child.Controller, currentController, StringComparison.OrdinalIgnoreCase)
+                                    && string.Equals(child.Action, currentAction, StringComparison.OrdinalIgnoreCase);
+
+                                    <li class="nav-item">
+                                        @if (!string.IsNullOrWhiteSpace(child.Controller) && !string.IsNullOrWhiteSpace(child.Action))
+                                        {
+                                            <a asp-controller="@child.Controller" asp-action="@child.Action" class="nav-link @(childActive ? "active" : "")">
+                                                <i class="@child.IconClass nav-icon"></i>
+                                                <p>@child.Title</p>
+                                            </a>
+                                        }
+                                        else if (!string.IsNullOrWhiteSpace(child.Url))
+                                        {
+                                            <a href="@Url.Content(child.Url)" class="nav-link @(childActive ? "active" : "")">
+                                                <i class="@child.IconClass nav-icon"></i>
+                                                <p>@child.Title</p>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="nav-link">
+                                                <i class="@child.IconClass nav-icon"></i>
+                                                <p>@child.Title</p>
+                                            </span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            if (!string.IsNullOrWhiteSpace(parent.Controller) && !string.IsNullOrWhiteSpace(parent.Action))
+                            {
+                                <a asp-controller="@parent.Controller" asp-action="@parent.Action" class="nav-link @(parentActive ? "active" : "")">
+                                    <i class="@parent.IconClass nav-icon"></i>
+                                    <p>@parent.Title</p>
+                                </a>
+                            }
+                            else if (!string.IsNullOrWhiteSpace(parent.Url))
+                            {
+                                <a href="@Url.Content(parent.Url)" class="nav-link @(parentActive ? "active" : "")">
+                                    <i class="@parent.IconClass nav-icon"></i>
+                                    <p>@parent.Title</p>
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="nav-link @(parentActive ? "active" : "")">
+                                    <i class="@parent.IconClass nav-icon"></i>
+                                    <p>@parent.Title</p>
+                                </span>
+                            }
+                        }
+                    </li>
+                }
+            </ul>
+        </nav>
+    </div>
+</aside>
+
+@section Scripts {
+    <script>
+        // ensure expanded menu containing active link is shown
+        (function () {
+            $('.nav-link.active').each(function () {
+                var $parentCollapse = $(this).closest('.collapse');
+                if ($parentCollapse.length) {
+                    $parentCollapse.addClass('show');
+                    $parentCollapse.closest('.has-treeview').addClass('menu-open');
+                }
+            });
+        })();
+    </script>
+}

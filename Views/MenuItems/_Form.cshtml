@@ -1,0 +1,62 @@
+﻿@model FRAProject.Models.MenuItem
+
+@*
+PSEUDOCODE / PLAN (detailed):
+1. Ensure the select for ParentId binds to the list stored in ViewData["ParentList"].
+2. Avoid nested double-quote collisions in the HTML attribute by using a Razor expression or single-quoted attribute.
+3. Cast the ViewData entry to IEnumerable<SelectListItem> so `asp-items` can render options.
+4. Keep the rest of the form unchanged and preserve validation spans.
+5. Implement the select as:
+   <select asp-for="ParentId" class="form-control" asp-items='@(ViewData["ParentList"] as IEnumerable<SelectListItem>)'></select>
+*@
+
+<div class="form-group">
+    <label asp-for="Title" class="control-label"></label>
+    <input asp-for="Title" class="form-control" />
+    <span asp-validation-for="Title" class="text-danger"></span>
+</div>
+
+<div class="form-row">
+    <div class="form-group col-md-6">
+        <label asp-for="IconClass" class="control-label"></label>
+        <input asp-for="IconClass" class="form-control" />
+        <span asp-validation-for="IconClass" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-6">
+        <label asp-for="Roles" class="control-label"></label>
+        <input asp-for="Roles" class="form-control" />
+        <span asp-validation-for="Roles" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group col-md-4">
+        <label asp-for="Controller" class="control-label"></label>
+        <input asp-for="Controller" class="form-control" />
+        <span asp-validation-for="Controller" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-4">
+        <label asp-for="Action" class="control-label"></label>
+        <input asp-for="Action" class="form-control" />
+        <span asp-validation-for="Action" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-4">
+        <label asp-for="Url" class="control-label"></label>
+        <input asp-for="Url" class="form-control" />
+        <span asp-validation-for="Url" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group col-md-4">
+        <label for="ParentId">Parent</label>
+
+        <select asp-for="ParentId" class="form-control" asp-items='@(ViewData["ParentList"] as IEnumerable<SelectListItem>)'></select>
+        <span asp-validation-for="ParentId" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-2">
+        <label asp-for="SortOrder" class="control-label"></label>
+        <input asp-for="SortOrder" class="form-control" />
+        <span asp-validation-for="SortOrder" class="text-danger"></span>
+    </div>
+</div>

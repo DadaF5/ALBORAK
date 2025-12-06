@@ -1,0 +1,30 @@
+﻿@model FRAProject.Models.MenuItem
+
+@{
+    ViewData["Title"] = "Delete Menu Item";
+    var hasChildren = ViewData["HasChildren"] as bool? ?? false;
+}
+
+<h2>Delete Menu Item</h2>
+
+<div class="alert alert-warning">
+    <strong>Are you sure?</strong> You are about to delete the menu item: <strong>@Model.Title</strong>
+</div>
+
+@if (hasChildren)
+{
+    <div class="alert alert-danger">
+        This item has child menu items. Please reassign or delete child items first.
+    </div>
+    <a asp-action="Index" class="btn btn-secondary">Back</a>
+}
+else
+{
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div class="form-group">
+            <button type="submit" class="btn btn-danger">Delete</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+}

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    [Migration("20251207195859_AddCrewMemberAndQualifications")]
+    [Migration("20251207204351_AddCrewMemberAndQualifications")]
     partial class AddCrewMemberAndQualifications
     {
         /// <inheritdoc />

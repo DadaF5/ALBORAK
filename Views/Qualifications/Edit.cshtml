@@ -1,0 +1,59 @@
+﻿@model FRAProject.Models.Qualification
+
+@{
+    ViewData["Title"] = "Edit Qualification";
+}
+
+<h2>Edit Qualification</h2>
+
+<form asp-action="Edit" method="post" id="qualification-form" class="form-horizontal">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="form-group">
+        <label asp-for="Name" class="control-label"></label>
+        <input asp-for="Name" class="form-control" id="QualificationName" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+        <div id="duplicateWarning" class="text-danger" style="display:none;margin-top:4px;"></div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="QualificationType" class="control-label"></label>
+        <select asp-for="QualificationType" class="form-control" id="QualificationType">
+            <option value="Military" selected="@(Model.QualificationType == "Military")">Military</option>
+            <option value="Civilian" selected="@(Model.QualificationType == "Civilian")">Civilian</option>
+            <option value="Other" selected="@(Model.QualificationType == "Other")">Other</option>
+        </select>
+        <span asp-validation-for="QualificationType" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Description" class="control-label"></label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="form-group form-check">
+        <input asp-for="Active" class="form-check-input" />
+        <label asp-for="Active" class="form-check-label"></label>
+    </div>
+
+    <button type="submit" id="submitBtn" class="btn btn-primary">Save</button>
+    <a asp-action="Index" class="btn btn-secondary">Back to list</a>
+</form>
+
+@section Scripts {
+    <script src="~/js/qualification-duplicate.js"></script>
+    <script>
+        // initialize duplicate check for edit (pass existing Id to exclude)
+        initQualificationDuplicateCheck({
+            checkUrl: '@Url.Action("IsDuplicate", "Qualifications")',
+            nameSelector: '#QualificationName',
+            typeSelector: '#QualificationType',
+            duplicateWarningSelector: '#duplicateWarning',
+            submitBtnSelector: '#submitBtn',
+            formSelector: '#qualification-form',
+            excludeId: @Model.Id
+        });
+    </script>
+}

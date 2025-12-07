@@ -6,7 +6,7 @@
 
     <!-- Filters & Search -->
     <form id="filterForm" class="row mb-3 g-2 align-items-end">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label">Search</label>
             <input type="text" name="search" class="form-control" placeholder="Name or Matricule" />
         </div>
@@ -34,9 +34,15 @@
             <input type="checkbox" name="activeOnly" value="true" class="form-check-input" />
             <label class="form-check-label">Active Only</label>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <button type="button" id="btnFilter" class="btn btn-primary">Filter</button>
             <button type="button" id="btnReset" class="btn btn-secondary">Reset</button>
+           
+        </div>
+        <div class="col-md-2 mt-4 pt-2">
+            <a asp-action="Create" class="btn btn-success btn-block">
+                + Add Person
+            </a>
         </div>
     </form>
 

@@ -117,6 +117,14 @@ namespace FRAProject.Data
         public DbSet<CallSign> CallSigns { get; set; } = null!;
         public DbSet<MenuItem> MenuItems { get; set; } = null!;
 
+        // =============================
+        // Crew Member Related DbSets
+        public DbSet<CrewMember> CrewMembers { get; set; } = null!;
+        public DbSet<Qualification> Qualifications { get; set; } = null!;
+        public DbSet<CrewMemberQualification> CrewMemberQualifications { get; set; } = null!;
+       
+
+
         // Scheduling / assignments table (ODV)
         public DbSet<Odv> Odvs { get; set; } = null!;
 
@@ -143,14 +151,51 @@ namespace FRAProject.Data
             ConfigureMenus(modelBuilder);
 
 
+            // Enforce 1:1 relationship between Person and CrewMember by making PersonId unique
+            modelBuilder.Entity<CrewMember>(b =>
+            {
+                b.HasKey(cm => cm.Id);
 
-            // ===== general hints / TODOs =====
-            // - Add further indexes / constraints as your domain requires.
-            // - If any entity already contains navigation/configuration via Data Annotations,
-            //   duplicate Fluent config is not required.
+                b.HasIndex(cm => cm.PersonId).IsUnique();    // enforces 1:1
 
-            // Prevent duplicates : tailNo + RegistrationNumber + IntCode per AcType
-            // (Add index configuration for Aircraft if needed)
+                b.HasOne(cm => cm.Person)
+                    .WithOne(p => p.CrewMember)             // make sure Person has a CrewMember nav property
+                    .HasForeignKey<CrewMember>(cm => cm.PersonId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                b.HasOne(cm => cm.Squadron)
+                    .WithMany(s => s.CrewMembers)
+                    .HasForeignKey(cm => cm.SquadronId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                b.HasOne(cm => cm.PrimaryQualification)
+                    .WithMany()
+                    .HasForeignKey(cm => cm.PrimaryQualificationId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<Qualification>(b =>
+            {
+                b.HasKey(q => q.Id);
+                b.Property(q => q.Name).HasMaxLength(100).IsRequired();
+            });
+
+            modelBuilder.Entity<CrewMemberQualification>(b =>
+            {
+                b.HasKey(cmq => cmq.Id);
+
+                b.HasOne(cmq => cmq.CrewMember)
+                    .WithMany(cm => cm.CrewMemberQualifications)
+                    .HasForeignKey(cmq => cmq.CrewMemberId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(cmq => cmq.Qualification)
+                    .WithMany(q => q.CrewMemberQualifications)
+                    .HasForeignKey(cmq => cmq.QualificationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                b.HasIndex(cmq => new { cmq.CrewMemberId, cmq.QualificationId });
+            });
 
             // Wing -> Squadron: prevent cascade delete so deleting a Wing won't delete Squadrons
             modelBuilder.Entity<Wing>()

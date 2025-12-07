@@ -57,5 +57,8 @@ namespace FRAProject.Models
 
         // Computed
         public string FullName => $"{FirstName} {LastName}";
+
+        // Navigation: optional 1:1 link to CrewMember
+        public CrewMember? CrewMember { get; set; }
     }
 }

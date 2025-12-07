@@ -46,7 +46,9 @@ namespace FRAProject.Models
         [NotMapped]
         public string FullName => $"{Name} ({Wing?.Name})";
 
-
+        // Navigation: crew members belonging to this squadron
+        // Initialize collection to avoid null checks in code.
+        public ICollection<CrewMember> CrewMembers { get; set; } = new List<CrewMember>();
 
 
     }

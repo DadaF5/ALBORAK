@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20251207192534_AddCrewMemberEntity")]
+    partial class AddCrewMemberEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -390,118 +393,42 @@ namespace FRAProject.Migrations
 
             modelBuilder.Entity("FRAProject.Models.CrewMember", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("CrewMemberId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Active")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("AllowedToSign")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Captain")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CrewMemberId"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CrewMemberType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("Mobile")
+                    b.Property<bool>("IsInstructor")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LicenseNumber")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NickName")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
 
                     b.Property<int>("PersonId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Photo")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                    b.Property<string>("QualificationNotes")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("PrimaryQualificationId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Role")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("SequenceNo")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SquadronId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<string>("Rank")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                    b.HasKey("CrewMemberId");
 
                     b.HasIndex("PersonId")
                         .IsUnique();
 
-                    b.HasIndex("PrimaryQualificationId");
-
-                    b.HasIndex("SquadronId");
-
                     b.ToTable("CrewMembers");
-                });
-
-            modelBuilder.Entity("FRAProject.Models.CrewMemberQualification", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CrewMemberId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("IssuedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("QualificationId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Remarks")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("Status")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime?>("ValidFrom")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ValidUntil")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("QualificationId");
-
-                    b.HasIndex("CrewMemberId", "QualificationId");
-
-                    b.ToTable("CrewMemberQualifications");
                 });
 
             modelBuilder.Entity("FRAProject.Models.Department", b =>
@@ -958,36 +885,6 @@ namespace FRAProject.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Phases");
-                });
-
-            modelBuilder.Entity("FRAProject.Models.Qualification", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Active")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("QualificationType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Qualifications");
                 });
 
             modelBuilder.Entity("FRAProject.Models.Rank", b =>
@@ -1524,41 +1421,7 @@ namespace FRAProject.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("FRAProject.Models.Qualification", "PrimaryQualification")
-                        .WithMany()
-                        .HasForeignKey("PrimaryQualificationId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("FRAProject.Models.Squadron", "Squadron")
-                        .WithMany("CrewMembers")
-                        .HasForeignKey("SquadronId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Person");
-
-                    b.Navigation("PrimaryQualification");
-
-                    b.Navigation("Squadron");
-                });
-
-            modelBuilder.Entity("FRAProject.Models.CrewMemberQualification", b =>
-                {
-                    b.HasOne("FRAProject.Models.CrewMember", "CrewMember")
-                        .WithMany("CrewMemberQualifications")
-                        .HasForeignKey("CrewMemberId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Models.Qualification", "Qualification")
-                        .WithMany("CrewMemberQualifications")
-                        .HasForeignKey("QualificationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CrewMember");
-
-                    b.Navigation("Qualification");
                 });
 
             modelBuilder.Entity("FRAProject.Models.Department", b =>
@@ -1876,11 +1739,6 @@ namespace FRAProject.Migrations
                     b.Navigation("Departments");
                 });
 
-            modelBuilder.Entity("FRAProject.Models.CrewMember", b =>
-                {
-                    b.Navigation("CrewMemberQualifications");
-                });
-
             modelBuilder.Entity("FRAProject.Models.Department", b =>
                 {
                     b.Navigation("SubDepartments");
@@ -1913,11 +1771,6 @@ namespace FRAProject.Migrations
                     b.Navigation("Missions");
                 });
 
-            modelBuilder.Entity("FRAProject.Models.Qualification", b =>
-                {
-                    b.Navigation("CrewMemberQualifications");
-                });
-
             modelBuilder.Entity("FRAProject.Models.Rank", b =>
                 {
                     b.Navigation("Persons");
@@ -1935,8 +1788,6 @@ namespace FRAProject.Migrations
 
             modelBuilder.Entity("FRAProject.Models.Squadron", b =>
                 {
-                    b.Navigation("CrewMembers");
-
                     b.Navigation("Odvs");
                 });
 

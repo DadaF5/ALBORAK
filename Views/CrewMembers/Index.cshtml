@@ -89,7 +89,12 @@
                     <td>@(item.PrimaryQualification?.Name ?? "-")</td>
                     <td>@item.Status</td>
                     <td style="width:300px; text-align:center;">
-                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
+                        <a href="@Url.Action("Details", "CrewMembers", new { id = item.Id, modal = true })"
+                           class="btn btn-sm btn-info open-details-modal"
+                           data-id="@item.Id"
+                           title="Open details in modal">
+                            Details
+                        </a>
                         @if (User.IsInRole("Admin"))
                         {
                             <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning ml-1">Edit</a>
@@ -127,3 +132,27 @@
 <div class="text-muted">
     Showing page @pageNumber of @totalPages — @totalItems item(s).
 </div>
+
+@* container where modal partial will be injected by the client script *@
+<div id="modalContainer"></div>
+
+@* ensure the modal loader script is included (add to _Layout if you prefer site-wide) *@
+<script src="~/js/crewmember-details-modal.js"></script>
+
+@* optional small runtime check to help debug if JS isn't hooking up *@
+<script>
+    (function () {
+        // runs after the script load; if the loader didn't attach, this logs a hint
+        document.addEventListener('DOMContentLoaded', function () {
+            var btn = document.querySelector('a.open-details-modal');
+            if (!btn) {
+                console.warn('No open-details-modal link found on the page.');
+            } else {
+                // quick test hook: if clicking navigates instead of AJAX, open devtools network to inspect.
+                btn.addEventListener('click', function () {
+                    console.debug('open-details-modal clicked (debug):', this.href);
+                }, { once: true });
+            }
+        });
+    })();
+</script>

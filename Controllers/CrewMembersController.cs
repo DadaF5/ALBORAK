@@ -319,6 +319,36 @@ namespace FRAProject.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var crewMember = await _context.CrewMembers
+                .Include(cm => cm.Person)
+                .Include(cm => cm.Squadron)
+                .Include(cm => cm.PrimaryQualification)
+                .Include(cm => cm.CrewMemberQualifications)
+                    .ThenInclude(cmq => cmq.Qualification)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(cm => cm.Id == id);
+
+            if (crewMember == null) return NotFound();
+
+            // If this was requested as AJAX (X-Requested-With) or ?modal=true, return the modal partial
+            var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+            var modalQuery = (Request.Query["modal"].ToString() ?? "").ToLowerInvariant() == "true";
+
+            if (isAjax || modalQuery)
+            {
+                return PartialView("_DetailsModal", crewMember);
+            }
+
+            // Otherwise render the full Details page (existing full view)
+            return View(crewMember);
+        }
+
+
+
 
         // Validate upload before saving. Returns true if valid; otherwise false and sets error message.
         private bool TryValidateUpload(IFormFile file, out string? error)
@@ -519,6 +549,28 @@ namespace FRAProject.Controllers
         private bool CrewMemberExists(int id)
         {
             return _context.CrewMembers.Any(e => e.Id == id);
+        }
+        // Print log helper
+        // Add this method inside your existing CrewMembersController class.
+        // It returns a print-friendly full page view (Views/CrewMembers/Print.cshtml)
+        // which auto-triggers the browser print dialog (user can choose "Save as PDF").
+        public async Task<IActionResult> Print(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var crewMember = await _context.CrewMembers
+                .Include(cm => cm.Person)
+                .Include(cm => cm.Squadron)
+                .Include(cm => cm.PrimaryQualification)
+                .Include(cm => cm.CrewMemberQualifications)
+                    .ThenInclude(cmq => cmq.Qualification)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(cm => cm.Id == id);
+
+            if (crewMember == null) return NotFound();
+
+            // Return a dedicated Print view (no layout) that is formatted for printing.
+            return View("Print", crewMember);
         }
     }
 }

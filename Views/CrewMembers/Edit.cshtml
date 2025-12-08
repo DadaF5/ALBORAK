@@ -1,0 +1,71 @@
+﻿@model FRAProject.Models.CrewMember
+
+@{
+    ViewData["Title"] = "Edit Crew Member";
+}
+
+<h2>Edit Crew Member</h2>
+
+<form asp-action="Edit" method="post" class="form-horizontal" id="crew-member-form" enctype="multipart/form-data">
+    <input type="hidden" asp-for="Id" />
+    @await Html.PartialAsync("_CrewMemberFormPartial", Model)
+
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a asp-action="Index" class="btn btn-secondary">Back to list</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Photo preview logic reused from Create
+        (function () {
+            const photoUrlInput = document.querySelector('[name="Photo"]');
+            const photoFileInput = document.getElementById('photoFileInput');
+            const preview = document.getElementById('photoPreview');
+
+            function showPreviewUrl(url) {
+                if (!url) {
+                    preview.style.display = 'none';
+                    preview.src = '';
+                    return;
+                }
+                preview.src = url;
+                preview.style.display = 'block';
+            }
+
+            let urlTimer;
+            if (photoUrlInput) {
+                photoUrlInput.addEventListener('input', function () {
+                    clearTimeout(urlTimer);
+                    urlTimer = setTimeout(() => {
+                        if (photoFileInput && photoFileInput.files.length > 0) {
+                            return;
+                        }
+                        showPreviewUrl(photoUrlInput.value.trim());
+                    }, 300);
+                });
+            }
+
+            if (photoFileInput) {
+                photoFileInput.addEventListener('change', function (e) {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) {
+                        if (photoUrlInput) showPreviewUrl(photoUrlInput.value.trim());
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = function (ev) {
+                        showPreviewUrl(ev.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            if (preview && preview.src) {
+                preview.style.display = preview.src ? 'block' : 'none';
+            }
+        })();
+    </script>
+}

@@ -1,4 +1,4 @@
-﻿namespace FRAProject.Models
+﻿namespace FRAProject.Enums
 {
     public enum CrewMemberStatus
     {

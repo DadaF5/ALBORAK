@@ -5,10 +5,10 @@ namespace FRAProject.Models
 {
     public class Sortie
     {
-        public int SortieId { get; set; }
+        public int Id { get; set; }
 
         // FK to ODV
-        public int OdvID { get; set; }
+        public int OdvId { get; set; }
         public Odv? Odv { get; set; }
 
         // aircraft & configuration for this sortie
@@ -16,10 +16,10 @@ namespace FRAProject.Models
         public Aircraft? Aircraft { get; set; }
         public string? Configuration { get; set; } // free text or FK to a config table
 
-        // fuel in kg/lb (use one unit in your domain)
+        // fuel in chosen unit (store with precision)
         public decimal? FuelQuantity { get; set; }
 
-        // times - use DateTime for full timestamp or TimeSpan for time-of-day
+        // times - DateTime for full timestamp
         public DateTime? StartTime { get; set; }    // planned/actual start
         public DateTime? LandingTime { get; set; }  // planned/actual landing
 
@@ -29,7 +29,7 @@ namespace FRAProject.Models
         public string? Notes { get; set; }
 
         // navigation - crew assigned to this sortie
-        public ICollection<SortieCrew> CrewMembers { get; set; } = new HashSet<SortieCrew>();
+        public List<SortieCrew> SortieCrews { get; set; } = new List<SortieCrew>();
 
         // Completion audit - set when sortie is finalized
         public bool IsCompleted { get; set; } = false;

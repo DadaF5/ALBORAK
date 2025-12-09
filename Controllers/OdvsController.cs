@@ -1,129 +1,424 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
-using FRAProject.Data;
-using FRAProject.Models;
-using FRAProject.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using FRAProject.Data;
+using FRAProject.Models;
+using FRAProject.ViewModels;
 
 namespace FRAProject.Controllers
 {
-    public class OdvsController : Controller
+    // Full ODV controller with create/edit that supports modal workflows (AJAX partials)
+    // Usage pattern:
+    // - Index page shows list of ODV records.
+    // - Links/buttons for Create/Edit point to /Odv/Create?modal=true or /Odv/Edit/{id}?modal=true
+    // - Client JS fetches the partial and displays a bootstrap modal.
+    // - POST requests from the modal are sent as normal form posts. If posted via AJAX (X-Requested-With)
+    //   the controller will return either the modal partial (with validation errors) or JSON { success: true }.
+    // - If the request is non-AJAX the controller will render the full page views as a fallback.
+    public class OdvController : Controller
     {
         private readonly FRAContext _context;
 
-        public OdvsController(FRAContext context)
+        public OdvController(FRAContext context)
         {
             _context = context;
         }
 
-        // GET: Odvs/Create
+        // GET: Odv
+        public async Task<IActionResult> Index()
+        {
+            var list = await _context.Odvs
+                .Include(o => o.Squadron)
+                .Include(o => o.Mission)
+                .OrderByDescending(o => o.OdvDate)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return View(list);
+        }
+
+        // GET: Odv/Create
+        // If requested as AJAX (X-Requested-With) or with ?modal=true, returns a partial view with modal markup.
         public async Task<IActionResult> Create()
         {
-            await PopulateDropdowns();
             var vm = new OdvCreateVm
             {
-                OdvDate = System.DateTime.UtcNow.Date,
-                Sorties = new List<SortieVm> { new SortieVm() } // one empty sortie by default
+                OdvDate = DateTime.UtcNow.Date
             };
+
+            await PopulateSelectListsAsync();
+
+            var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+            var modalQuery = (Request.Query["modal"].ToString() ?? "").ToLowerInvariant() == "true";
+
+            if (isAjax || modalQuery)
+            {
+                return PartialView("_CreateEditModal", vm);
+            }
+
             return View(vm);
         }
 
-        // POST: Odvs/Create
+        // POST: Odv/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(OdvCreateVm vm)
         {
+            vm.Sorties ??= new List<SortieVm>();
+
+            // Basic server-side validation
+            if (!vm.Sorties.Any()) ModelState.AddModelError(string.Empty, "Please add at least one sortie.");
+
             if (!ModelState.IsValid)
             {
-                await PopulateDropdowns();
+                await PopulateSelectListsAsync();
+                // If AJAX, return partial so client can re-render modal with validation summary
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return PartialView("_CreateEditModal", vm);
+                }
                 return View(vm);
             }
 
             using var tx = await _context.Database.BeginTransactionAsync();
-
             try
             {
                 var odv = new Odv
                 {
-                    SquadronID = vm.SquadronID,
+                    SquadronId = vm.SquadronID,
                     MissionId = vm.MissionId,
                     OdvDate = vm.OdvDate,
-                    ZoneID = vm.ZoneID,
-                    MissionTypeID = vm.MissionTypeID,
+                    Zone = vm.ZoneID,
+                    MissionType = vm.MissionTypeID,
                     Area = vm.Area,
                     OdvStatus = vm.OdvStatus,
                     TOFF = vm.TOFF,
-                    AcMainGroupID = vm.AcMainGroupID,
-                    CallSignId = vm.CallSignId,
-                    Obs = vm.Obs
+                    AcMainGroupId = vm.AcMainGroupID,
+                    CallSign = vm.CallSignId,
+                    Obs = vm.Obs,
+                    CreatedAtUtc = DateTime.UtcNow
                 };
 
                 _context.Odvs.Add(odv);
-                await _context.SaveChangesAsync(); // get odv.OdvID
+                await _context.SaveChangesAsync();
 
-                // Add sorties
-                if (vm.Sorties != null)
+                // Create sorties and crew assignments
+                foreach (var sVm in vm.Sorties)
                 {
-                    foreach (var sVm in vm.Sorties)
+                    var sortie = new Sortie
                     {
-                        var sortie = new Sortie
-                        {
-                            OdvID = odv.OdvID,
-                            AircraftId = sVm.AircraftId,
-                            Configuration = sVm.Configuration,
-                            FuelQuantity = sVm.FuelQuantity,
-                            StartTime = sVm.StartTime,
-                            LandingTime = sVm.LandingTime,
-                            TOFF = sVm.TOFF,
-                            Notes = sVm.Notes
-                        };
+                        OdvId = odv.Id,
+                        AircraftId = sVm.AircraftId,
+                        Configuration = sVm.Configuration,
+                        FuelQuantity = sVm.FuelQuantity,
+                        StartTime = sVm.StartTime,
+                        LandingTime = sVm.LandingTime,
+                        TOFF = sVm.TOFF,
+                        Notes = sVm.Notes,
+                        CompletedAtUtc = DateTime.UtcNow
+                    };
 
-                        _context.Sorties.Add(sortie);
-                        await _context.SaveChangesAsync(); // obtain SortieId for crew
+                    _context.Sorties.Add(sortie);
+                    await _context.SaveChangesAsync();
 
-                        // Add crew assignments
-                        if (sVm.Crew != null)
+                    if (sVm.Crew != null)
+                    {
+                        foreach (var c in sVm.Crew)
                         {
-                            foreach (var cVm in sVm.Crew)
+                            // if crew member selection uses PersonId, map person -> crew member id if necessary
+                            int? crewMemberId = null;
+
+                            if (c.PersonId != 0)
                             {
-                                // optional validation: ensure Person exists
-                                var sc = new SortieCrew
+                                // Try to treat PersonId as CrewMember.Id first (most common).
+                                var cm = await _context.CrewMembers.FindAsync(c.PersonId);
+                                if (cm != null) crewMemberId = cm.Id;
+                                else
                                 {
-                                    SortieId = sortie.SortieId,
-                                    PersonId = cVm.PersonId,
-                                    Role = cVm.Role,
-                                    IsPrimary = cVm.IsPrimary
-                                };
-                                _context.SortieCrews.Add(sc);
+                                    // Fallback: if PersonId was actually a Person.Id, attempt to find CrewMember for that Person
+                                    var cmByPerson = await _context.CrewMembers.FirstOrDefaultAsync(x => x.PersonId == c.PersonId);
+                                    if (cmByPerson != null) crewMemberId = cmByPerson.Id;
+                                }
                             }
-                            await _context.SaveChangesAsync();
+
+                            if (!crewMemberId.HasValue) continue;
+
+                            var assignment = new SortieCrew
+                            {
+                                SortieId = sortie.Id,
+                                CrewMemberId = crewMemberId.Value,
+                                Role = c.Role,
+                                IsPrimary = c.IsPrimary
+                            };
+                            _context.SortieCrews.Add(assignment);
                         }
+                        await _context.SaveChangesAsync();
                     }
                 }
 
                 await tx.CommitAsync();
-                return RedirectToAction("Index", "Odvs");
+
+                // If AJAX return JSON success; client can close modal and update UI
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, id = odv.Id });
+                }
+
+                return RedirectToAction(nameof(Index));
             }
-            catch
+            catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                ModelState.AddModelError(string.Empty, "Error saving ODV. Please try again.");
-                await PopulateDropdowns();
+                ModelState.AddModelError(string.Empty, "Failed to create ODV: " + ex.Message);
+                await PopulateSelectListsAsync();
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return PartialView("_CreateEditModal", vm);
+                }
+
                 return View(vm);
             }
         }
 
-        private async Task PopulateDropdowns()
+        // GET: Odv/Edit/5
+        public async Task<IActionResult> Edit(int? id)
         {
-            ViewBag.Squadrons = new SelectList(await _context.Squadrons.AsNoTracking().OrderBy(s => s.Name).ToListAsync(), "Id", "Name");
-            ViewBag.Missions = new SelectList(await _context.Missions.AsNoTracking().OrderBy(m => m.Name).ToListAsync(), "Id", "Name");
-            ViewBag.Aircrafts = new SelectList(await _context.Aircrafts.AsNoTracking().OrderBy(a => a.TailNo).ToListAsync(), "Id", "TailNumber");
-            ViewBag.People = new SelectList(await _context.Persons.AsNoTracking().OrderBy(p => p.LastName).ToListAsync(), "Id", "FullName"); // adjust FullName
-            ViewBag.AcMainGroups = new SelectList(await _context.AcMainGroups.AsNoTracking().OrderBy(g => g.Name).ToListAsync(), "Id", "Name");
+            if (id == null) return NotFound();
 
-            // For enum selects you can create select-lists in view from enums directly.
+            var odv = await _context.Odvs
+                .Include(o => o.Sorties)
+                    .ThenInclude(s => s.SortieCrews)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (odv == null) return NotFound();
+
+            // map domain -> OdvCreateVm
+            var vm = new OdvCreateVm
+            {
+                SquadronID = odv.SquadronId,
+                MissionId = odv.MissionId,
+                OdvDate = odv.OdvDate,
+                ZoneID = odv.Zone,
+                MissionTypeID = odv.MissionType,
+                Area = odv.Area,
+                OdvStatus = odv.OdvStatus,
+                TOFF = odv.TOFF,
+                AcMainGroupID = odv.AcMainGroupId,
+                CallSignId = odv.CallSign,
+                Obs = odv.Obs,
+                Sorties = odv.Sorties?.Select(s => new SortieVm
+                {
+                    SortieId = s.Id,
+                    AircraftId = s.AircraftId,
+                    Configuration = s.Configuration,
+                    FuelQuantity = s.FuelQuantity,
+                    StartTime = s.StartTime,
+                    LandingTime = s.LandingTime,
+                    TOFF = s.TOFF,
+                    Notes = s.Notes,
+                    Crew = s.SortieCrews?.Select(a => new SortieCrewVm
+                    {
+                        PersonId = a.CrewMemberId, // will try to map to CrewMemberId on save
+                        Role = a.Role,
+                        IsPrimary = a.IsPrimary
+                    }).ToList() ?? new System.Collections.Generic.List<SortieCrewVm>()
+                }).ToList() ?? new System.Collections.Generic.List<SortieVm>()
+            };
+
+            await PopulateSelectListsAsync();
+
+            var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+            var modalQuery = (Request.Query["modal"].ToString() ?? "").ToLowerInvariant() == "true";
+
+            if (isAjax || modalQuery)
+            {
+                // Partial with modal markup for editing
+                return PartialView("_CreateEditModal", vm);
+            }
+
+            return View(vm);
+        }
+
+        // POST: Odv/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, OdvCreateVm vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                await PopulateSelectListsAsync();
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return PartialView("_CreateEditModal", vm);
+                }
+                return View(vm);
+            }
+
+            using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var odv = await _context.Odvs
+                    .Include(o => o.Sorties)
+                        .ThenInclude(s => s.SortieCrews)
+                    .FirstOrDefaultAsync(o => o.Id == id);
+
+                if (odv == null) return NotFound();
+
+                // update header
+                odv.SquadronId = vm.SquadronID;
+                odv.MissionId = vm.MissionId;
+                odv.OdvDate = vm.OdvDate;
+                odv.Zone = vm.ZoneID;
+                odv.MissionType = vm.MissionTypeID;
+                odv.Area = vm.Area;
+                odv.OdvStatus = vm.OdvStatus;
+                odv.TOFF = vm.TOFF;
+                odv.AcMainGroupId = vm.AcMainGroupID;
+                odv.CallSign = vm.CallSignId;
+                odv.Obs = vm.Obs;
+                odv.UpdatedAtUtc = DateTime.UtcNow;
+
+                // Simple approach: remove existing sorties & assignments for this ODV and recreate from VM
+                // (adjust to do diffs if you prefer)
+                var existingSorties = odv.Sorties?.ToList() ?? new System.Collections.Generic.List<Sortie>();
+                foreach (var es in existingSorties)
+                {
+                    // remove assignments
+                    var assigns = await _context.SortieCrews.Where(a => a.SortieId == es.Id).ToListAsync();
+                    _context.SortieCrews.RemoveRange(assigns);
+                    // remove sortie
+                    _context.Sorties.Remove(es);
+                }
+                await _context.SaveChangesAsync();
+
+                // create new sorties from vm
+                foreach (var sVm in vm.Sorties)
+                {
+                    var sortie = new Sortie
+                    {
+                        OdvId = odv.Id,
+                        AircraftId = sVm.AircraftId,
+                        Configuration = sVm.Configuration,
+                        FuelQuantity = sVm.FuelQuantity,
+                        StartTime = sVm.StartTime,
+                        LandingTime = sVm.LandingTime,
+                        TOFF = sVm.TOFF,
+                        Notes = sVm.Notes,
+                        CompletedAtUtc = DateTime.UtcNow
+                    };
+                    _context.Sorties.Add(sortie);
+                    await _context.SaveChangesAsync();
+
+                    if (sVm.Crew != null)
+                    {
+                        foreach (var c in sVm.Crew)
+                        {
+                            int? crewMemberId = null;
+                            if (c.PersonId != 0)
+                            {
+                                var cm = await _context.CrewMembers.FindAsync(c.PersonId);
+                                if (cm != null) crewMemberId = cm.Id;
+                                else
+                                {
+                                    var cmByPerson = await _context.CrewMembers.FirstOrDefaultAsync(x => x.PersonId == c.PersonId);
+                                    if (cmByPerson != null) crewMemberId = cmByPerson.Id;
+                                }
+                            }
+
+                            if (!crewMemberId.HasValue) continue;
+
+                            var assignment = new SortieCrew
+                            {
+                                SortieId = sortie.Id,
+                                CrewMemberId = crewMemberId.Value,
+                                Role = c.Role,
+                                IsPrimary = c.IsPrimary
+                            };
+                            _context.SortieCrews.Add(assignment);
+                        }
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                _context.Odvs.Update(odv);
+                await _context.SaveChangesAsync();
+
+                await tx.CommitAsync();
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, id = odv.Id });
+                }
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                ModelState.AddModelError(string.Empty, "Failed to save ODV: " + ex.Message);
+                await PopulateSelectListsAsync();
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return PartialView("_CreateEditModal", vm);
+                }
+
+                return View(vm);
+            }
+        }
+
+        // Optional: a simple Details endpoint that returns full view or modal partial as in earlier patterns
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var odv = await _context.Odvs
+                .Include(o => o.Squadron)
+                .Include(o => o.Mission)
+                .Include(o => o.Sorties)
+                    .ThenInclude(s => s.SortieCrews)
+                        .ThenInclude(a => a.CrewMember)
+                            .ThenInclude(cm => cm.Person)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (odv == null) return NotFound();
+
+            var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+            var modalQuery = (Request.Query["modal"].ToString() ?? "").ToLowerInvariant() == "true";
+
+            if (isAjax || modalQuery)
+            {
+                return PartialView("_DetailsModal", odv);
+            }
+
+            return View(odv);
+        }
+
+        // Helper that populates select lists for Create/Edit views
+        private async Task PopulateSelectListsAsync()
+        {
+            var squadrons = await _context.Squadrons.OrderBy(s => s.Name).Select(s => new { s.Id, s.Name }).ToListAsync();
+            var missions = await _context.Missions.OrderBy(m => m.Name).Select(m => new { m.Id, m.Name }).ToListAsync();
+            var acs = await _context.Aircrafts.OrderBy(a => a.AcType).Select(a => new { a.Id, Display = a.AcType + " / " + a.Registration }).ToListAsync();
+
+            var crew = await _context.CrewMembers
+                .Include(cm => cm.Person)
+                .OrderBy(cm => cm.NickName)
+                .Select(cm => new { cm.Id, Display = (cm.NickName ?? "") + (cm.Person != null ? " (" + cm.Person.FirstName + " " + cm.Person.LastName + ")" : "") })
+                .ToListAsync();
+
+            ViewData["Squadrons"] = new SelectList(squadrons, "Id", "Name");
+            ViewData["Missions"] = new SelectList(missions, "Id", "Name");
+            ViewData["Aircrafts"] = new SelectList(acs, "Id", "Display");
+            ViewData["CrewMembers"] = new SelectList(crew, "Id", "Display");
+
+            // Enums to select lists (Zone, MissionType, OdvStatus) can be added similarly if needed by your views
         }
     }
 }

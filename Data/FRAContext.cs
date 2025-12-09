@@ -27,12 +27,24 @@ namespace FRAProject.Data
         public DbSet<Wing> Wings { get; set; } = null!;
         public DbSet<Squadron> Squadrons { get; set; } = null!;
 
-
-
-
+        // Scheduling / assignments table (ODV)
+        public DbSet<Odv> Odvs { get; set; } = null!;
         public DbSet<Sortie> Sorties { get; set; } = null!;
         public DbSet<SortieCrew> SortieCrews { get; set; } = null!;
 
+        // =============================
+        // Air activity Related DbSets
+        // =============================
+        public DbSet<Mission> Missions { get; set; } = null!;
+        public DbSet<Phase> Phases { get; set; } = null!;
+        public DbSet<CallSign> CallSigns { get; set; } = null!;
+        public DbSet<MenuItem> MenuItems { get; set; } = null!;
+
+        // =============================
+        // Crew Member Related DbSets
+        public DbSet<CrewMember> CrewMembers { get; set; } = null!;
+        public DbSet<Qualification> Qualifications { get; set; } = null!;
+        public DbSet<CrewMemberQualification> CrewMemberQualifications { get; set; } = null!;  
         //===============================
         // User Related DbSets
         public DbSet<UserDocument> UserDocuments { get; set; } = null!;
@@ -109,24 +121,7 @@ namespace FRAProject.Data
                 e.HasOne(w => w.Component).WithMany().HasForeignKey(w => w.ComponentId).OnDelete(DeleteBehavior.Restrict);
             });
         }
-        // =============================
-        // Air activity Related DbSets
-        // =============================
-        public DbSet<Mission> Missions { get; set; } = null!;
-        public DbSet<Phase> Phases { get; set; } = null!;
-        public DbSet<CallSign> CallSigns { get; set; } = null!;
-        public DbSet<MenuItem> MenuItems { get; set; } = null!;
-
-        // =============================
-        // Crew Member Related DbSets
-        public DbSet<CrewMember> CrewMembers { get; set; } = null!;
-        public DbSet<Qualification> Qualifications { get; set; } = null!;
-        public DbSet<CrewMemberQualification> CrewMemberQualifications { get; set; } = null!;
-       
-
-
-        // Scheduling / assignments table (ODV)
-        public DbSet<Odv> Odvs { get; set; } = null!;
+                   
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -223,93 +218,106 @@ namespace FRAProject.Data
             var zoneConverter = new EnumToStringConverter<Zone>();
             var missionTypeConverter = new EnumToStringConverter<MissionType>();
             var odvStatusConverter = new EnumToStringConverter<OdvStatus>();
-
-            // --- ODV mapping ---
-            modelBuilder.Entity<Odv>(entity =>
+            
+            // Odv configuration
+            modelBuilder.Entity<Odv>(b =>
             {
-                entity.ToTable("ODV");
-                entity.HasKey(o => o.OdvID);
+                b.ToTable("Odvs");
 
-                entity.Property(o => o.OdvID).HasColumnName("OdvID");
-                entity.Property(o => o.SquadronID).HasColumnName("SquadronID");
-                entity.Property(o => o.MissionId).HasColumnName("MissionId");
+                b.HasKey(x => x.Id);
 
-                // Date-only mapping
-                entity.Property(o => o.OdvDate)
-                      .HasColumnType("date")
-                      .IsRequired();
+                // date-only column
+                b.Property(x => x.OdvDate)
+                    .HasColumnType("date")
+                    .IsRequired();
 
-                // time(7) mapping
-                entity.Property(o => o.TOFF)
-                      .HasColumnType("time(7)");
+                // TimeSpan -> SQL time
+                b.Property(x => x.TOFF)
+                    .HasColumnType("time");
 
-                // Area (free-text), CallSignId, Obs
-                entity.Property(o => o.Area)
-                      .HasMaxLength(200)
-                      .HasColumnType("nvarchar(200)")
-                      .IsRequired();
+                // Audit columns
+                b.Property(x => x.CreatedAtUtc)
+                    .HasColumnType("datetime2")
+                    .IsRequired();
 
-                entity.Property(o => o.CallSignId)
-                      .HasMaxLength(20)
-                      .HasColumnType("nvarchar(20)");
+                b.Property(x => x.UpdatedAtUtc)
+                    .HasColumnType("datetime2");
 
-                entity.Property(o => o.Obs)
-                      .HasColumnType("nvarchar(max)");
+               
+                b.Property(x => x.Zone)
+                    .HasConversion(zoneConverter)
+                    .HasMaxLength(50)
+                    .HasColumnName("Zone");
 
-                // AcMainGroup snapshot
-                entity.Property(o => o.AcMainGroupID)
-                      .HasColumnName("AcMainGroupID")
-                      .IsRequired();
+                b.Property(x => x.MissionType)
+                    .HasConversion(missionTypeConverter)
+                    .HasMaxLength(50)
+                    .HasColumnName("MissionType");
 
-                // Enum-backed saved as strings (readable DB values)
-                entity.Property(o => o.ZoneID)
-                      .HasConversion(zoneConverter)
-                      .HasMaxLength(20)
-                      .HasColumnType("nvarchar(20)")
-                      .IsRequired();
+                b.Property(x => x.OdvStatus)
+                    .HasConversion(odvStatusConverter)
+                    .HasMaxLength(50)
+                    .HasColumnName("OdvStatus");
 
-                entity.Property(o => o.MissionTypeID)
-                      .HasConversion(missionTypeConverter)
-                      .HasMaxLength(50)
-                      .HasColumnType("nvarchar(50)")
-                      .IsRequired();
+                // FKs naming (optional explicit configuration)
+                b.HasOne(x => x.Squadron)
+                    .WithMany() // adjust if Squadron entity has collection navigation
+                    .HasForeignKey(x => x.SquadronId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
-                entity.Property(o => o.OdvStatus)
-                      .HasConversion(odvStatusConverter)
-                      .HasMaxLength(50)
-                      .HasColumnType("nvarchar(50)")
-                      .IsRequired(false)
-                      .HasDefaultValue(OdvStatus.Planned);
-                
+                b.HasOne(x => x.Mission)
+                    .WithMany()
+                    .HasForeignKey(x => x.MissionId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
-                // Relationships (use Restrict to avoid accidental cascade deletes)
-                entity.HasOne(o => o.Squadron)
-                      .WithMany(s => s.Odvs)
-                      .HasForeignKey(o => o.SquadronID)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(o => o.Mission)
-                      .WithMany(m => m.Odvs)
-                      .HasForeignKey(o => o.MissionId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(o => o.AcMainGroup)
-                      .WithMany(amg => amg.Odvs)
-                      .HasForeignKey(o => o.AcMainGroupID)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                // Helpful indexes for common queries
-                entity.HasIndex(o => new { o.SquadronID, o.OdvDate });
-                entity.HasIndex(o => new { o.MissionId, o.OdvDate });
-                entity.HasIndex(o => new { o.AcMainGroupID, o.OdvDate });
+                b.HasOne(x => x.AcMainGroup)
+                    .WithMany()
+                    .HasForeignKey(x => x.AcMainGroupId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // Sortie configuration
+            modelBuilder.Entity<Sortie>(b =>
+            {
+                b.ToTable("Sorties");
+                b.HasKey(s => s.Id);
+
+                // FK to Odv
+                b.HasOne(s => s.Odv)
+                    .WithMany(o => o.Sorties)
+                    .HasForeignKey(s => s.OdvId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Optional FK to Aircraft (restrict delete to avoid cascade removing sorties when removing aircraft)
+                b.HasOne(s => s.Aircraft).WithMany().HasForeignKey(s => s.AircraftId).OnDelete(DeleteBehavior.Restrict);
+
+                // column types
+                b.Property(s => s.FuelQuantity).HasColumnType("decimal(10,2)"); // adjust precision as needed
+                b.Property(s => s.StartTime).HasColumnType("datetime2");
+                b.Property(s => s.LandingTime).HasColumnType("datetime2");
+                b.Property(s => s.TOFF).HasColumnType("time");
+                b.Property(s => s.IsCompleted).HasDefaultValue(false);
+                b.Property(s => s.CompletedAtUtc).HasColumnType("datetime2");
+            });
+            // SortieCrew configuration
+            modelBuilder.Entity<SortieCrew>(b =>
+            {
+                b.ToTable("SortieCrews");
+                b.HasKey(c => c.Id);
+
+                b.HasOne(c => c.Sortie).WithMany(s => s.SortieCrews).HasForeignKey(c => c.SortieId).OnDelete(DeleteBehavior.Cascade);
+                b.HasOne(c => c.CrewMember).WithMany().HasForeignKey(c => c.CrewMemberId).OnDelete(DeleteBehavior.Restrict);
+
+                b.Property(c => c.Role).HasMaxLength(100);
+                b.Property(c => c.IsPrimary).HasDefaultValue(false);
+                b.Property(c => c.Remarks).HasMaxLength(1000);
+            });
             // --- Ensure Squadron and Mission have Odv navigations (if not already configured elsewhere) ---
             modelBuilder.Entity<Squadron>(entity =>
             {
                 entity.HasMany(s => s.Odvs)
                       .WithOne(o => o.Squadron)
-                      .HasForeignKey(o => o.SquadronID);
+                      .HasForeignKey(o => o.SquadronId);
             });
 
             modelBuilder.Entity<Mission>(entity =>
@@ -318,9 +326,6 @@ namespace FRAProject.Data
                       .WithOne(o => o.Mission)
                       .HasForeignKey(o => o.MissionId);
             }
-            
-
-            
             
             );
             
@@ -362,13 +367,13 @@ namespace FRAProject.Data
         {
             modelBuilder.Entity<Sortie>(entity =>
             {
-                entity.HasKey(s => s.SortieId);
+                entity.HasKey(s => s.Id);
                 entity.Property(s => s.Configuration).HasMaxLength(200);
                 entity.Property(s => s.Notes).HasColumnType("nvarchar(max)");
 
                 entity.HasOne(s => s.Odv)
                       .WithMany(o => o.Sorties)
-                      .HasForeignKey(s => s.OdvID)
+                      .HasForeignKey(s => s.OdvId)
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(s => s.Aircraft)
@@ -376,21 +381,21 @@ namespace FRAProject.Data
                       .HasForeignKey(s => s.AircraftId)
                       .OnDelete(DeleteBehavior.SetNull);
 
-                entity.HasIndex(s => new { s.OdvID });
+                entity.HasIndex(s => new { s.OdvId });
             });
 
             modelBuilder.Entity<SortieCrew>(entity =>
             {
-                entity.HasKey(sc => sc.SortieCrewId);
+                entity.HasKey(sc => sc.Id);
 
                 entity.HasOne(sc => sc.Sortie)
-                      .WithMany(s => s.CrewMembers)
+                      .WithMany(s => s.SortieCrews)
                       .HasForeignKey(sc => sc.SortieId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(sc => sc.Person)
+                entity.HasOne(sc => sc.CrewMember)
                       .WithMany() // optionally add navigation ICollection<SortieCrew> to Person
-                      .HasForeignKey(sc => sc.PersonId)
+                      .HasForeignKey(sc => sc.Id)
                       .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasIndex(sc => new { sc.SortieId });

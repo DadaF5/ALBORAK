@@ -3,15 +3,21 @@
     // assignment of a Person to a Sortie (1..* crew members per sortie)
     public class SortieCrew
     {
-        public int SortieCrewId { get; set; } // surrogate PK
+        public int Id { get; set; }
 
         public int SortieId { get; set; }
         public Sortie? Sortie { get; set; }
 
-        public int PersonId { get; set; } // crew member (Person)
-        public Person? Person { get; set; }
+        // Reference to existing CrewMember entity (adjust type if you store Person instead)
+        public int CrewMemberId { get; set; }
+        public CrewMember? CrewMember { get; set; }
 
-        public string? Role { get; set; } // e.g., "PIC", "SIC", "Crewman", "Loadmaster"
+        // Role e.g. "Pilot", "Copilot", "Observer"
+        public string? Role { get; set; }
+
+        // Mark primary performer for this role if required
         public bool IsPrimary { get; set; } = false;
+
+        public string? Remarks { get; set; }
     }
 }

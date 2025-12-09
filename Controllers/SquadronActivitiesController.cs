@@ -26,14 +26,14 @@ namespace FRAProject.Controllers
                 .Include(s => s.Aircraft)
                 .Include(s => s.Odv)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.SortieId == id);
+                .FirstOrDefaultAsync(s => s.Id == id);
 
             if (sortie == null) return NotFound();
 
             var vm = new CompleteSortieVm
             {
-                SortieId = sortie.SortieId,
-                OdvId = sortie.OdvID,
+                SortieId = sortie.Id,
+                OdvId = sortie.Id,
                 TakeOffUtc = sortie.StartTime ?? System.DateTime.UtcNow,
                 LandingUtc = sortie.LandingTime ?? System.DateTime.UtcNow,
                 HobbsStart = null,

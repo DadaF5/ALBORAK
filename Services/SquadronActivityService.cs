@@ -36,7 +36,7 @@ namespace FRAProject.Services
                     .Include(s => s.Aircraft).ThenInclude(a => a.AcType)
                     .Include(s => s.Aircraft).ThenInclude(a => a.Components)
                     .ThenInclude(c => c.Thresholds)
-                    .FirstOrDefaultAsync(s => s.SortieId == sortieId);
+                    .FirstOrDefaultAsync(s => s.Id == sortieId);
 
                 if (sortie == null)
                     return Result.Fail("Sortie not found.");
@@ -53,7 +53,7 @@ namespace FRAProject.Services
                 // Create FlightLog
                 var flightLog = new FlightLog
                 {
-                    SortieId = sortie.SortieId,
+                    SortieId = sortie.Id,
                     AircraftId = sortie.AircraftId!.Value,
                     TakeOffUtc = takeoffUtc,
                     LandingUtc = landingUtc,

@@ -13,13 +13,13 @@
             <dd class="col-sm-9">@Model.UserName</dd>
 
             <dt class="col-sm-3">Display name</dt>
-            <dd class="col-sm-9">@Model.DisplayName</dd>
+            <dd class="col-sm-9">@Model.FirstName</dd>
 
             <dt class="col-sm-3">Email</dt>
             <dd class="col-sm-9">@Model.Email</dd>
 
             <dt class="col-sm-3">Roles</dt>
-            <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.Roles) ? Model.Roles : "—")</dd>
+            <dd class="col-sm-9">@((Model.Roles != null && Model.Roles.Length > 0) ? string.Join(", ", Model.Roles) : "—")</dd>
 
             <dt class="col-sm-3">Base</dt>
             <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.BaseName) ? Model.BaseName : "—")</dd>
@@ -28,7 +28,7 @@
             <dd class="col-sm-9">@(Model.IsActive ? "Yes" : "No")</dd>
 
             <dt class="col-sm-3">Created</dt>
-            <dd class="col-sm-9">@Model.CreatedAtUtc.ToLocalTime().ToString("g")</dd>
+            <dd class="col-sm-9">@((Model.CreatedAtUtc.HasValue) ? Model.CreatedAtUtc.Value.ToLocalTime().ToString("g") : "—")</dd>
 
             <dt class="col-sm-3">Last login</dt>
             <dd class="col-sm-9">

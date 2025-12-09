@@ -32,11 +32,26 @@ namespace FRAProject.ViewModels
         // Roles available for admin to select (controller will populate this)
         public IEnumerable<SelectListItem> AvailableRoles { get; set; } = new List<SelectListItem>();
 
-        // Optional: Base selection for scoping
+        // Organization scoping fields (admin can pick defaults for the new user)
         [Display(Name = "Base (optional)")]
         public int? BaseId { get; set; }
-
         public IEnumerable<SelectListItem> BaseList { get; set; } = new List<SelectListItem>();
+
+        [Display(Name = "Wing (optional)")]
+        public int? WingId { get; set; }
+        public IEnumerable<SelectListItem> WingList { get; set; } = new List<SelectListItem>();
+
+        [Display(Name = "Department (optional)")]
+        public int? DepartmentId { get; set; }
+        public IEnumerable<SelectListItem> DepartmentList { get; set; } = new List<SelectListItem>();
+
+        [Display(Name = "Squadron (optional)")]
+        public int? SquadronId { get; set; }
+        public IEnumerable<SelectListItem> SquadronList { get; set; } = new List<SelectListItem>();
+
+        [Display(Name = "Aircraft Main Group (optional)")]
+        public int? AcMainGroupId { get; set; }
+        public IEnumerable<SelectListItem> AcMainGroupList { get; set; } = new List<SelectListItem>();
 
         // Admin-editable activation flag
         [Display(Name = "Account active")]

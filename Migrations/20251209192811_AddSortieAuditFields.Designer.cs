@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20251209192811_AddSortieAuditFields")]
+    partial class AddSortieAuditFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -815,9 +818,6 @@ namespace FRAProject.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("BaseId")
-                        .HasColumnType("int");
-
                     b.Property<string>("CallSign")
                         .HasColumnType("nvarchar(max)");
 
@@ -861,18 +861,13 @@ namespace FRAProject.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AcMainGroupId")
-                        .HasDatabaseName("IX_Odvs_AcMainGroupId");
+                    b.HasIndex("AcMainGroupId");
 
                     b.HasIndex("AcMainGroupId1");
 
                     b.HasIndex("MissionId");
 
-                    b.HasIndex("BaseId", "OdvDate")
-                        .HasDatabaseName("IX_Odvs_BaseId_OdvDate");
-
-                    b.HasIndex("SquadronId", "OdvDate")
-                        .HasDatabaseName("IX_Odvs_SquadronId_OdvDate");
+                    b.HasIndex("SquadronId");
 
                     b.ToTable("Odvs", (string)null);
                 });
@@ -1062,9 +1057,6 @@ namespace FRAProject.Migrations
                     b.Property<int?>("AircraftId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("BaseId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("CompletedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -1123,14 +1115,7 @@ namespace FRAProject.Migrations
 
                     b.HasIndex("IsCompleted");
 
-                    b.HasIndex("OdvId")
-                        .HasDatabaseName("IX_Sorties_OdvId");
-
-                    b.HasIndex("BaseId", "StartTime")
-                        .HasDatabaseName("IX_Sorties_Base_StartTime");
-
-                    b.HasIndex("OdvId", "IsCompleted")
-                        .HasDatabaseName("IX_Sorties_Odv_Completed");
+                    b.HasIndex("OdvId");
 
                     b.ToTable("Sorties", (string)null);
                 });
@@ -1707,10 +1692,6 @@ namespace FRAProject.Migrations
                         .WithMany("Odvs")
                         .HasForeignKey("AcMainGroupId1");
 
-                    b.HasOne("FRAProject.Models.Base", "Base")
-                        .WithMany()
-                        .HasForeignKey("BaseId");
-
                     b.HasOne("FRAProject.Models.Mission", "Mission")
                         .WithMany("Odvs")
                         .HasForeignKey("MissionId")
@@ -1724,8 +1705,6 @@ namespace FRAProject.Migrations
                         .IsRequired();
 
                     b.Navigation("AcMainGroup");
-
-                    b.Navigation("Base");
 
                     b.Navigation("Mission");
 

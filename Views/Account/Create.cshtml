@@ -1,115 +1,148 @@
 ﻿@model FRAProject.ViewModels.RegisterUserViewModel
-
+@using Microsoft.AspNetCore.Mvc.Rendering
 @{
-    ViewData["Title"] = "Create User";
+    Layout = "_Layout";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card mt-4">
-            <div class="card-header">
-                <h4 class="mb-0">Create User</h4>
+<h2>Create User</h2>
+
+<div class="card p-3">
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger"></span>
             </div>
-            <div class="card-body">
-                <form asp-action="Create" method="post">
-                    <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            <label asp-for="FirstName"></label>
-                            <input asp-for="FirstName" class="form-control" />
-                            <span asp-validation-for="FirstName" class="text-danger"></span>
-                        </div>
+            <div class="form-group col-md-3">
+                <label asp-for="Password"></label>
+                <input asp-for="Password" class="form-control" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
 
-                        <div class="form-group col-md-4">
-                            <label asp-for="LastName"></label>
-                            <input asp-for="LastName" class="form-control" />
-                            <span asp-validation-for="LastName" class="text-danger"></span>
-                        </div>
-
-                        <div class="form-group col-md-4">
-                            <label asp-for="PhoneNumber"></label>
-                            <input asp-for="PhoneNumber" class="form-control" />
-                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label asp-for="Email"></label>
-                            <input asp-for="Email" class="form-control" />
-                            <span asp-validation-for="Email" class="text-danger"></span>
-                        </div>
-
-                        <div class="form-group col-md-6">
-                            <label asp-for="Password"></label>
-                            <input asp-for="Password" class="form-control" id="password" />
-                            <span asp-validation-for="Password" class="text-danger"></span>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label asp-for="ConfirmPassword"></label>
-                            <input asp-for="ConfirmPassword" class="form-control" />
-                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-                        </div>
-
-                        <div class="form-group col-md-6">
-                            <label>Roles (optional)</label>
-                            <div>
-                                @foreach (var r in Model.AvailableRoles)
-                                {
-                                    var id = "role_" + r.Value;
-                                    var isChecked = Model.SelectedRoles?.Contains(r.Value) == true;
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="checkbox" id="@id" name="SelectedRoles" value="@r.Value" @(isChecked ? "checked" : "") />
-                                        <label class="form-check-label" for="@id">@r.Text</label>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label asp-for="BaseId">Base (optional)</label>
-                        <select asp-for="BaseId" class="form-control" asp-items="Model.BaseList">
-                            <option value="">-- none --</option>
-                        </select>
-                        <span asp-validation-for="BaseId" class="text-danger"></span>
-                    </div>
-
-                    <div class="form-group d-flex">
-                        <button type="submit" class="btn btn-success mr-2">Create user</button>
-                        <a asp-controller="Users" asp-action="Index" class="btn btn-secondary">Back to users</a>
-                    </div>
-                </form>
+            <div class="form-group col-md-3">
+                <label asp-for="ConfirmPassword"></label>
+                <input asp-for="ConfirmPassword" class="form-control" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
             </div>
         </div>
-    </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="FirstName"></label>
+                <input asp-for="FirstName" class="form-control" />
+                <span asp-validation-for="FirstName" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="LastName"></label>
+                <input asp-for="LastName" class="form-control" />
+                <span asp-validation-for="LastName" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="PhoneNumber"></label>
+                <input asp-for="PhoneNumber" class="form-control" />
+                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+            </div>
+        </div>
+
+        <hr />
+
+        <h4>Organization defaults (optional)</h4>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="BaseId"></label>
+                <select asp-for="BaseId" asp-items="Model.BaseList" class="form-control" id="BaseSelect"></select>
+                <span asp-validation-for="BaseId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label asp-for="WingId"></label>
+                <select asp-for="WingId" asp-items="Model.WingList" class="form-control" id="WingSelect"></select>
+                <span asp-validation-for="WingId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label asp-for="DepartmentId"></label>
+                <select asp-for="DepartmentId" asp-items="Model.DepartmentList" class="form-control"></select>
+                <span asp-validation-for="DepartmentId" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="SquadronId"></label>
+                <select asp-for="SquadronId" asp-items="Model.SquadronList" class="form-control" id="SquadronSelect"></select>
+                <span asp-validation-for="SquadronId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label asp-for="AcMainGroupId"></label>
+                <select asp-for="AcMainGroupId" asp-items="Model.AcMainGroupList" class="form-control" id="AcMainGroupSelect"></select>
+                <span asp-validation-for="AcMainGroupId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group col-md-4 align-self-end">
+                <div class="form-check">
+                    <input asp-for="IsActive" class="form-check-input" />
+                    <label asp-for="IsActive" class="form-check-label"></label>
+                </div>
+            </div>
+        </div>
+
+        <hr />
+
+        <h4>Roles</h4>
+        <div class="form-group">
+            @if (Model.AvailableRoles != null && Model.AvailableRoles.Any())
+            {
+                foreach (var r in Model.AvailableRoles)
+                {
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="SelectedRoles" value="@r.Value" id="role_@r.Value" />
+                        <label class="form-check-label" for="role_@r.Value">@r.Text</label>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted">No roles configured.</p>
+            }
+        </div>
+
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Create user</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
     <script>
-        // small password strength hint
-        document.addEventListener('DOMContentLoaded', function () {
-            var pw = document.getElementById('password');
-            if (!pw) return;
-            var hint = document.createElement('small');
-            hint.className = 'form-text text-muted';
-            pw.parentNode.appendChild(hint);
-            pw.addEventListener('input', function () {
-                var v = pw.value;
-                var score = 0;
-                if (v.length >= 8) score++;
-                if (/[A-Z]/.test(v)) score++;
-                if (/[0-9]/.test(v)) score++;
-                if (/[^A-Za-z0-9]/.test(v)) score++;
-                var text = ['Very weak', 'Weak', 'Okay', 'Strong', 'Very strong'][Math.min(score,4)];
-                hint.textContent = 'Password strength: ' + text;
+        // Basic client-side enhancement for cascading selects if your UI supplies full lists.
+        // If you have dedicated endpoints to fetch dependent lists (Wings by Base etc.), replace this logic by AJAX calls.
+        (function () {
+            // Example: if you want to hide mismatched Wing/Squadron options when Base is changed,
+            // you can add data-base-id attributes to option elements in ViewBag when populating lists server-side.
+            var baseSelect = document.getElementById('BaseSelect');
+            var wingSelect = document.getElementById('WingSelect');
+            var squadSelect = document.getElementById('SquadronSelect');
+
+            if (!baseSelect || !wingSelect) return;
+
+            baseSelect.addEventListener('change', function () {
+                // If you added data attributes to <option> elements (e.g. data-base="1"), you can filter wings here.
+                // As a fallback, we simply clear dependent selects when base changes.
+                squadSelect && (squadSelect.selectedIndex = 0);
+                wingSelect && (wingSelect.selectedIndex = 0);
+                // Optionally show a small hint to admins that cascading can be improved with AJAX endpoints.
             });
-        });
+        })();
     </script>
 }
-```

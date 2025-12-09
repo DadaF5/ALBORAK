@@ -2,8 +2,16 @@
 {
     public class SortieCrewVm
     {
-        public int PersonId { get; set; }           // selected crew member
+        // Selected crew member id from dropdown (can be CrewMember.Id or Person.Id depending on your UI)
+        public int PersonId { get; set; }
+
+        // Role in the sortie e.g. "Pilot", "Copilot", "Observer"
         public string? Role { get; set; }
+
+        // Mark this crew member as primary for their role
         public bool IsPrimary { get; set; }
+
+        // Optional free text remarks for this assignment
+        public string? Remarks { get; set; }
     }
 }

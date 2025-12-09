@@ -1,197 +1,221 @@
-﻿@model FRAProject.ViewModels.UsersIndexViewModel
-
+﻿@using Microsoft.AspNetCore.Mvc.Rendering
+@using FRAProject.Models
 @{
-    ViewData["Title"] = "Users";
-    var sort = Model.SortOrder ?? "";
-    string ToggleSort(string colAsc, string colDesc) => sort == colAsc ? colDesc : colAsc;
-}
+    // Model expected: IEnumerable<ApplicationUser>
+    Layout = "_Layout";
+    var query = Context.Request.Query["q"].ToString();
+    var baseFilter = Context.Request.Query["baseId"].ToString();
+    var wingFilter = Context.Request.Query["wingId"].ToString();
+    var squadFilter = Context.Request.Query["squadronId"].ToString();
+    var roleFilter = Context.Request.Query["role"].ToString();
+    var isActiveFilter = Context.Request.Query["isActive"].ToString();
+    var sortOrder = Context.Request.Query["sortOrder"].ToString();
 
-<div class="mb-3 d-flex justify-content-between align-items-center">
-    <h2>Users</h2>
-
-    <div>
-        <a class="btn btn-primary" asp-controller="Account" asp-action="Create">
-            <i class="fas fa-user-plus mr-1"></i> Create User
-        </a>
-    </div>
-</div>
-
-<form method="get" class="mb-3">
-    <div class="form-row">
-        <div class="col-md-4">
-            <input type="search" name="search" value="@Model.Search" class="form-control" placeholder="Search (username, email, name)..." />
-        </div>
-
-        <div class="col-md-2">
-            <select asp-for="RoleFilter" class="form-control" asp-items="Model.AvailableRoles">
-                <option value="">-- All roles --</option>
-            </select>
-        </div>
-
-        <div class="col-md-2">
-            <select asp-for="BaseFilter" class="form-control" asp-items="Model.BaseList">
-                <option value="">-- All bases --</option>
-            </select>
-        </div>
-
-        <div class="col-md-2">
-            <select name="isActiveFilter" class="form-control">
-                <option value="">-- Any status --</option>
-                <option value="true" selected="@(Model.IsActiveFilter == true ? "selected" : null)">Active</option>
-                <option value="false" selected="@(Model.IsActiveFilter == false ? "selected" : null)">Inactive</option>
-            </select>
-        </div>
-
-        <div class="col-md-2 text-right">
-            <button type="submit" class="btn btn-secondary">Filter</button>
-            <a class="btn btn-link" href="@Url.Action("Index", "Users")">Reset</a>
-        </div>
-    </div>
-
-    @* Preserve sort and page size when submitting filters *@
-    <input type="hidden" name="sortOrder" value="@Model.SortOrder" />
-    <input type="hidden" name="pageSize" value="@Model.PageSize" />
-</form>
-
-<table class="table table-striped table-bordered table-sm">
-    <thead class="thead-light">
-        <tr>
-            <th style="width:40px;">#</th>
-            <th>
-                <a asp-action="Index"
-                   asp-route-sortOrder="@(ToggleSort("user_asc", "user_desc"))"
-                   asp-route-search="@Model.Search"
-                   asp-route-roleFilter="@Model.RoleFilter"
-                   asp-route-baseFilter="@Model.BaseFilter"
-                   asp-route-isActiveFilter="@Model.IsActiveFilter"
-                   asp-route-pageSize="@Model.PageSize">
-                    Username
-                </a>
-            </th>
-            <th>Display name</th>
-            <th>
-                <a asp-action="Index"
-                   asp-route-sortOrder="@(ToggleSort("email_asc", "email_desc"))"
-                   asp-route-search="@Model.Search"
-                   asp-route-roleFilter="@Model.RoleFilter"
-                   asp-route-baseFilter="@Model.BaseFilter"
-                   asp-route-isActiveFilter="@Model.IsActiveFilter"
-                   asp-route-pageSize="@Model.PageSize">
-                    Email
-                </a>
-            </th>
-            <th>Roles</th>
-            <th>Base</th>
-            <th style="width:100px;">
-                <a asp-action="Index"
-                   asp-route-sortOrder="@(ToggleSort("created_asc", "created_desc"))"
-                   asp-route-search="@Model.Search"
-                   asp-route-roleFilter="@Model.RoleFilter"
-                   asp-route-baseFilter="@Model.BaseFilter"
-                   asp-route-isActiveFilter="@Model.IsActiveFilter"
-                   asp-route-pageSize="@Model.PageSize">
-                    Created
-                </a>
-            </th>
-            <th style="width:160px;">
-                <a asp-action="Index"
-                   asp-route-sortOrder="@(ToggleSort("lastlogin_asc", "lastlogin_desc"))"
-                   asp-route-search="@Model.Search"
-                   asp-route-roleFilter="@Model.RoleFilter"
-                   asp-route-baseFilter="@Model.BaseFilter"
-                   asp-route-isActiveFilter="@Model.IsActiveFilter"
-                   asp-route-pageSize="@Model.PageSize">
-                    Last login
-                </a>
-            </th>
-            <th class="text-nowrap" style="width:220px;">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (!Model.Users?.Any() ?? true)
+    // Helper local functions to get display names from dictionaries passed in ViewBag
+    Func<int?, string> getNameFromDict = id =>
+    {
+        if (!id.HasValue) return "";
+        var d = ViewBag.DisplayMaps as System.Collections.Generic.IDictionary<string, System.Collections.Generic.Dictionary<int, string>>;
+        if (d == null) return id.ToString() ?? "";
+        // attempt base/wing/department/squadron keys
+        foreach (var kv in d)
         {
-            <tr>
-                <td colspan="9" class="text-center text-muted">No users found.</td>
-            </tr>
-        }
-        else
-        {
-            var idx = (Model.Users.PageIndex - 1) * Model.Users.PageSize + 1;
-            foreach (var u in Model.Users)
+            if (kv.Value.TryGetValue(id.Value, out var name))
             {
-                <tr>
-                    <td>@idx</td>
-                    <td>@u.UserName</td>
-                    <td>@u.DisplayName</td>
-                    <td>@u.Email</td>
-                    <td>@(string.IsNullOrWhiteSpace(u.Roles) ? "—" : u.Roles)</td>
-                    <td>@(string.IsNullOrWhiteSpace(u.BaseName) ? "—" : u.BaseName)</td>
-                    <td>@(u.IsActive ? "Yes" : "No")</td>
-                    <td>
-                        @if (u.LastLoginUtc.HasValue)
-                        {
-                            @u.LastLoginUtc.Value.ToLocalTime().ToString("g")
-                        }
-                        else
-                        {
-                            <span class="text-muted">never</span>
-                        }
-                    </td>
-                    <td>
-                        <a class="btn btn-sm btn-info" asp-action="Details" asp-route-id="@u.Id">Details</a>
-                        <a class="btn btn-sm btn-secondary" asp-action="Edit" asp-route-id="@u.Id">Edit</a>
-                        <a class="btn btn-sm btn-danger" asp-action="Delete" asp-route-id="@u.Id">Delete</a>
-                    </td>
-                </tr>
-                idx++;
+                return name;
             }
         }
-    </tbody>
-</table>
+        return id.ToString() ?? "";
+    };
+}
 
-<div class="d-flex justify-content-between align-items-center">
-    <div>
-        <form method="get" class="form-inline">
-            <label class="mr-2">Page size</label>
-            <select name="pageSize" class="form-control mr-2" onchange="this.form.submit()">
-                @* <option value="true" selected="@(Model.IsActiveFilter == true ? "selected" : null)">Active</option> *@
-                <option value="10" selected="@(Model.PageSize == 10 ? "selected" : null)">10</option>
+<section class="card mb-3 p-3">
+    <form asp-action="Index" method="get" class="form-inline">
+        <div class="form-group mr-2">
+            <input type="text" name="q" value="@Model.Search" class="form-control" placeholder="Search email, name..." />
+        </div>
 
-                <option value="20" selected="@(Model.PageSize == 20 ? "selected" : null)">20</option>
-                <option value="50" selected="@(Model.PageSize == 50 ? "selected" : null)">50</option>
-                <option value="100" selected="@(Model.PageSize == 100 ? "selected" : null)">100</option>
-            </select>
-            <input type="hidden" name="search" value="@Model.Search" />
-            <input type="hidden" name="sortOrder" value="@Model.SortOrder" />
-            <input type="hidden" name="roleFilter" value="@Model.RoleFilter" />
-            <input type="hidden" name="baseFilter" value="@Model.BaseFilter" />
-            <input type="hidden" name="isActiveFilter" value="@(Model.IsActiveFilter?.ToString().ToLower())" />
-        </form>
-    </div>
-
-    <nav>
-        <ul class="pagination mb-0">
-            <li class="page-item @(Model.Users.HasPreviousPage ? "" : "disabled")">
-                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Users.PageIndex - 1, pageSize = Model.PageSize, search = Model.Search, sortOrder = Model.SortOrder, roleFilter = Model.RoleFilter, baseFilter = Model.BaseFilter, isActiveFilter = Model.IsActiveFilter })">Prev</a>
-            </li>
-
-            @for (int i = 1; i <= Model.Users.TotalPages; i++)
-            {
-                if (i == Model.Users.PageIndex)
+        <div class="form-group mr-2">
+            <select name="baseId" class="form-control">
+                <option value="">All Bases</option>
+                @foreach (var b in Model.BaseList)
                 {
-                    <li class="page-item active"><span class="page-link">@i</span></li>
+                    var isSelected = (b.Value ?? "") == (Model.BaseFilter?.ToString() ?? "");
+                    if (isSelected)
+                    {
+                        <option value="@b.Value" selected>@b.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@b.Value">@b.Text</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-group mr-2">
+            <select name="role" class="form-control">
+                <option value="">All Roles</option>
+                @foreach (var r in Model.AvailableRoles)
+                {
+                    var isSelected = (r.Value ?? "") == (Model.RoleFilter ?? "");
+                    if (isSelected)
+                    {
+                        <option value="@r.Value" selected>@r.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@r.Value">@r.Text</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-group mr-2">
+            <select name="isActive" class="form-control">
+                <option value="">Any status</option>
+                @if (Model.IsActiveFilter == true || isActiveFilter == "true")
+                {
+                    <option value="true" selected>Active</option>
                 }
                 else
                 {
-                    <li class="page-item">
-                        <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, pageSize = Model.PageSize, search = Model.Search, sortOrder = Model.SortOrder, roleFilter = Model.RoleFilter, baseFilter = Model.BaseFilter, isActiveFilter = Model.IsActiveFilter })">@i</a>
-                    </li>
+                    <option value="true">Active</option>
+                }
+
+                @if (Model.IsActiveFilter == false || isActiveFilter == "false")
+                {
+                    <option value="false" selected>Inactive</option>
+                }
+                else
+                {
+                    <option value="false">Inactive</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group mr-2">
+            <select name="sortOrder" class="form-control">
+                <option value="">Sort</option>
+                @if (Model.SortOrder == "email_asc" || sortOrder == "email_asc")
+                {
+                    <option value="email_asc" selected>Email ↑</option>
+                }
+                else
+                {
+                    <option value="email_asc">Email ↑</option>
+                }
+
+                @if (Model.SortOrder == "email_desc" || sortOrder == "email_desc")
+                {
+                    <option value="email_desc" selected>Email ↓</option>
+                }
+                else
+                {
+                    <option value="email_desc">Email ↓</option>
+                }
+
+                @if (Model.SortOrder == "created_asc" || sortOrder == "created_asc")
+                {
+                    <option value="created_asc" selected>Created ↑</option>
+                }
+                else
+                {
+                    <option value="created_asc">Created ↑</option>
+                }
+
+                @if (Model.SortOrder == "created_desc" || sortOrder == "created_desc")
+                {
+                    <option value="created_desc" selected>Created ↓</option>
+                }
+                else
+                {
+                    <option value="created_desc">Created ↓</option>
+                }
+
+                @if (Model.SortOrder == "base_asc" || sortOrder == "base_asc")
+                {
+                    <option value="base_asc" selected>Base ↑</option>
+                }
+                else
+                {
+                    <option value="base_asc">Base ↑</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a asp-action="Index" class="btn btn-secondary ml-2">Reset</a>
+        </div>
+    </form>
+</section>
+
+<section class="table-responsive">
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th>
+                    <a asp-action="Index" asp-route-sortOrder="email_asc" asp-route-q="@Model.Search" asp-route-baseId="@Model.BaseFilter" asp-route-role="@Model.RoleFilter" asp-route-isActive="@(Model.IsActiveFilter?.ToString() ?? "")">Email</a>
+                </th>
+                <th>
+                    <a asp-action="Index" asp-route-sortOrder="created_desc" asp-route-q="@Model.Search">Created</a>
+                </th>
+                <th>Name</th>
+                <th>Base</th>
+                <th>Wing</th>
+                <th>Department</th>
+                <th>Squadron</th>
+                <th>AC Group</th>
+                <th>Active</th>
+                <th>Roles</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model == null || Model.Users == null || !Model.Users.Any())
+            {
+                <tr>
+                    <td colspan="11" class="text-center">No users found</td>
+                </tr>
+            }
+            else
+            {
+                foreach (var u in Model.Users)
+                {
+                    <tr>
+                        <td>@u.Email</td>
+                        <td>@(u.CreatedAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "")</td>
+                        <td>@(string.IsNullOrWhiteSpace(u.FirstName) && string.IsNullOrWhiteSpace(u.LastName) ? u.UserName : $"{u.FirstName} {u.LastName}")</td>
+                        <td>@(string.IsNullOrWhiteSpace(u.BaseName) ? (u.BaseId?.ToString() ?? "") : u.BaseName)</td>
+                        <td>@(string.IsNullOrWhiteSpace(u.WingName) ? (u.WingId?.ToString() ?? "") : u.WingName)</td>
+                        <td>@(string.IsNullOrWhiteSpace(u.DepartmentName) ? (u.DepartmentId?.ToString() ?? "") : u.DepartmentName)</td>
+                        <td>@(string.IsNullOrWhiteSpace(u.SquadronName) ? (u.SquadronId?.ToString() ?? "") : u.SquadronName)</td>
+                        <td>@(string.IsNullOrWhiteSpace(u.AcMainGroupName) ? (u.AcMainGroupId?.ToString() ?? "") : u.AcMainGroupName)</td>
+                        <td>@(u.IsActive ? "Yes" : "No")</td>
+                        <td>@(u.Roles != null ? string.Join(", ", u.Roles) : "")</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a asp-action="Details" asp-route-id="@u.Id" class="btn btn-sm btn-outline-info">Details</a>
+                            <a asp-action="Delete" asp-route-id="@u.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    </tr>
                 }
             }
+        </tbody>
+    </table>
+</section>
 
-            <li class="page-item @(Model.Users.HasNextPage ? "" : "disabled")">
-                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Users.PageIndex + 1, pageSize = Model.PageSize, search = Model.Search, sortOrder = Model.SortOrder, roleFilter = Model.RoleFilter, baseFilter = Model.BaseFilter, isActiveFilter = Model.IsActiveFilter })">Next</a>
-            </li>
-        </ul>
-    </nav>
-</div>
+@section Scripts {
+    <script>
+        // submit filter form when selects change
+        (function () {
+            document.querySelectorAll('select[name="baseId"], select[name="role"], select[name="isActive"], select[name="sortOrder"]').forEach(function (el) {
+                el.addEventListener('change', function () {
+                    var f = document.querySelector('form[method="get"]');
+                    if (f) f.submit();
+                });
+            });
+        })();
+    </script>
+}

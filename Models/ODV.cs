@@ -20,6 +20,10 @@ namespace FRAProject.Models
         public int SquadronId { get; set; }
         public Squadron? Squadron { get; set; }
 
+        // NEW: denormalized base FK for fast filtering
+        public int? BaseId { get; set; }
+        public Base? Base { get; set; } // optional navigation if you have a Base entity
+
         public int MissionId { get; set; }
         public Mission? Mission { get; set; }
 

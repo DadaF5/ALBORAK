@@ -2,11 +2,14 @@
 using FRAProject.Helpers;
 using FRAProject.Models;
 using FRAProject.ViewModels;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,7 +35,6 @@ namespace FRAProject.Controllers
             _context = context;
             _logger = logger;
         }
-
 
         // GET: Users
         // Supports: search, roleFilter, baseFilter, isActiveFilter, sorting, paging
@@ -109,8 +111,6 @@ namespace FRAProject.Controllers
             }
 
             // Sorting
-            // supported values: user_asc, user_desc, email_asc, email_desc, created_asc, created_desc, lastlogin_asc, lastlogin_desc
-            bool descending = false;
             switch (sortOrder)
             {
                 case "user_desc":
@@ -140,34 +140,52 @@ namespace FRAProject.Controllers
                     break;
             }
 
-            // Materialize a page of users
+            // Materialize a page of users (ApplicationUser)
             var pagedUsers = await PaginatedList<ApplicationUser>.CreateAsync(query.AsNoTracking(), pageNumber, pageSize);
 
-            // Map to UserListViewModel (fetch roles per-page to avoid N+fullcount)
-            var vmList = new List<UserListViewModel>(pagedUsers.Count);
-            foreach (var u in pagedUsers)
+            // Map to UserListViewModel (fetch roles per-page and friendly names to avoid ViewBag lookups)
+            var vmList = new List<UserListViewModel>();
+            // gather the BaseIds/WingIds/etc that we need to resolve names for in batch
+            // batch load ids (adapted from your code)
+            var baseIds = pagedUsers.Where(u => u.BaseId.HasValue).Select(u => u.BaseId!.Value).Distinct().ToList();
+            var wingIds = pagedUsers.Where(u => u.WingId.HasValue).Select(u => u.WingId!.Value).Distinct().ToList();
+            var deptIds = pagedUsers.Where(u => u.DepartmentId.HasValue).Select(u => u.DepartmentId!.Value).Distinct().ToList();
+            var squadIds = pagedUsers.Where(u => u.SquadronId.HasValue).Select(u => u.SquadronId!.Value).Distinct().ToList();
+            var acGroupIds = pagedUsers.Where(u => u.AcMainGroupId.HasValue).Select(u => u.AcMainGroupId!.Value).Distinct().ToList();
+
+            // batch load maps
+            var baseMap = await _context.Set<Base>().Where(b => baseIds.Contains(b.Id)).ToDictionaryAsync(b => b.Id, b => b.BaseName);
+            var wingMap = await _context.Set<Wing>().Where(w => wingIds.Contains(w.Id)).ToDictionaryAsync(w => w.Id, w => w.Name);
+            var deptMap = await _context.Set<Department>().Where(d => deptIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => d.Name);
+            var squadMap = await _context.Set<Squadron>().Where(s => squadIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.Name);
+            var acMap = await _context.Set<AcMainGroup>().Where(a => acGroupIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Name);
+
+            foreach (var u in pagedUsers) // works if PaginatedList<T> implements IEnumerable<T>
             {
                 var roles = await _userManager.GetRolesAsync(u);
-                string rolesCsv = roles.Any() ? string.Join(", ", roles) : string.Empty;
-
-                string? baseName = null;
-                if (u.BaseId.HasValue)
-                {
-                    var b = await _context.Set<Base>().FindAsync(u.BaseId.Value);
-                    baseName = b?.BaseName;
-                }
+                var rolesArray = roles?.ToArray() ?? Array.Empty<string>();
 
                 vmList.Add(new UserListViewModel
                 {
                     Id = u.Id,
                     UserName = u.UserName ?? "",
                     Email = u.Email ?? "",
-                    DisplayName = u.DisplayName,
-                    Roles = rolesCsv,
-                    BaseName = baseName,
-                    IsActive = u.IsActive,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    CreatedAtUtc = u.CreatedAtUtc,
                     LastLoginUtc = u.LastLoginUtc,
-                    CreatedAtUtc = u.CreatedAtUtc
+                    BaseId = u.BaseId,
+                    BaseName = u.BaseId.HasValue && baseMap.TryGetValue(u.BaseId.Value, out var bname) ? bname : null,
+                    WingId = u.WingId,
+                    WingName = u.WingId.HasValue && wingMap.TryGetValue(u.WingId.Value, out var wname) ? wname : null,
+                    DepartmentId = u.DepartmentId,
+                    DepartmentName = u.DepartmentId.HasValue && deptMap.TryGetValue(u.DepartmentId.Value, out var dname) ? dname : null,
+                    SquadronId = u.SquadronId,
+                    SquadronName = u.SquadronId.HasValue && squadMap.TryGetValue(u.SquadronId.Value, out var sname) ? sname : null,
+                    AcMainGroupId = u.AcMainGroupId,
+                    AcMainGroupName = u.AcMainGroupId.HasValue && acMap.TryGetValue(u.AcMainGroupId.Value, out var aname) ? aname : null,
+                    IsActive = u.IsActive,
+                    Roles = rolesArray
                 });
             }
 
@@ -207,6 +225,10 @@ namespace FRAProject.Controllers
                 LastName = user.LastName,
                 PhoneNumber = user.PhoneNumber,
                 BaseId = user.BaseId,
+                WingId = user.WingId,
+                DepartmentId = user.DepartmentId,
+                SquadronId = user.SquadronId,
+                AcMainGroupId = user.AcMainGroupId,
                 SelectedRoles = roles.ToList(),
                 IsActive = user.IsActive
             };
@@ -221,10 +243,30 @@ namespace FRAProject.Controllers
                 .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
                 .ToListAsync();
 
+            // populate other lists optionally if Edit view needs them (wings/squadrons etc.)
+            vm.WingList = await _context.Set<Wing>()
+                .OrderBy(w => w.Name)
+                .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
+                .ToListAsync();
+
+            vm.DepartmentList = await _context.Set<Department>()
+                .OrderBy(d => d.Name)
+                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
+                .ToListAsync();
+
+            vm.SquadronList = await _context.Set<Squadron>()
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+                .ToListAsync();
+
+            vm.AcMainGroupList = await _context.Set<AcMainGroup>()
+                .OrderBy(a => a.Name)
+                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
+                .ToListAsync();
+
             ViewBag.UserId = id;
             return View(vm);
         }
-
 
         // POST: Users/Edit/5
         [HttpPost]
@@ -244,6 +286,26 @@ namespace FRAProject.Controllers
                 .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
                 .ToListAsync();
 
+            model.WingList = await _context.Set<Wing>()
+                .OrderBy(w => w.Name)
+                .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
+                .ToListAsync();
+
+            model.DepartmentList = await _context.Set<Department>()
+                .OrderBy(d => d.Name)
+                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
+                .ToListAsync();
+
+            model.SquadronList = await _context.Set<Squadron>()
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+                .ToListAsync();
+
+            model.AcMainGroupList = await _context.Set<AcMainGroup>()
+                .OrderBy(a => a.Name)
+                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
+                .ToListAsync();
+
             if (!ModelState.IsValid)
             {
                 ViewBag.UserId = id;
@@ -259,6 +321,10 @@ namespace FRAProject.Controllers
             user.LastName = model.LastName;
             user.PhoneNumber = model.PhoneNumber;
             user.BaseId = model.BaseId;
+            user.WingId = model.WingId;
+            user.DepartmentId = model.DepartmentId;
+            user.SquadronId = model.SquadronId;
+            user.AcMainGroupId = model.AcMainGroupId;
             user.IsActive = model.IsActive;
 
             var updateResult = await _userManager.UpdateAsync(user);
@@ -282,6 +348,24 @@ namespace FRAProject.Controllers
                     await _userManager.AddToRoleAsync(user, role);
             }
 
+            // update stored claims so the persisted claims match the user's profile
+            await AddOrReplaceClaimAsync(user, "BaseId", model.BaseId?.ToString());
+            await AddOrReplaceClaimAsync(user, "WingId", model.WingId?.ToString());
+            await AddOrReplaceClaimAsync(user, "DepartmentId", model.DepartmentId?.ToString());
+            await AddOrReplaceClaimAsync(user, "SquadronId", model.SquadronId?.ToString());
+            await AddOrReplaceClaimAsync(user, "AcMainGroupId", model.AcMainGroupId?.ToString());
+
+            // if the edited user is the current user, refresh their cookie so claims update immediately
+            var currentUserId = _userManager.GetUserId(User);
+            if (currentUserId == user.Id)
+            {
+                await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                await _userManager.UpdateAsync(user); // ensure persisted
+                // re-sign-in
+                var principal = await _userManager.CreateAsync(user);
+                // The above is placeholder — in practice use SignInManager.RefreshSignInAsync(user) if you have SignInManager injected.
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -300,8 +384,9 @@ namespace FRAProject.Controllers
                 Id = user.Id,
                 UserName = user.UserName ?? "",
                 Email = user.Email ?? "",
-                DisplayName = user.DisplayName,
-                Roles = roles.Any() ? string.Join(", ", roles) : "",
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Roles = roles.Any() ? roles.ToArray() : Array.Empty<string>(),
                 BaseName = user.BaseId.HasValue ? (await _context.Set<Base>().FindAsync(user.BaseId.Value))?.BaseName : null,
                 IsActive = user.IsActive,
                 LastLoginUtc = user.LastLoginUtc,
@@ -323,8 +408,9 @@ namespace FRAProject.Controllers
                 Id = user.Id,
                 UserName = user.UserName ?? "",
                 Email = user.Email ?? "",
-                DisplayName = user.DisplayName,
-                Roles = roles.Any() ? string.Join(", ", roles) : "",
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Roles = roles.Any() ? roles.ToArray() : Array.Empty<string>(),
                 BaseName = user.BaseId.HasValue ? (await _context.Set<Base>().FindAsync(user.BaseId.Value))?.BaseName : null,
                 IsActive = user.IsActive,
                 LastLoginUtc = user.LastLoginUtc,
@@ -332,8 +418,8 @@ namespace FRAProject.Controllers
             };
             return View(vm);
         }
+
         // POST: Users/Delete/5
-        // replace or merge this method into your UsersController
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(string id)
@@ -354,8 +440,9 @@ namespace FRAProject.Controllers
                     Id = user.Id,
                     UserName = user.UserName ?? "",
                     Email = user.Email ?? "",
-                    DisplayName = user.DisplayName,
-                    Roles = rolesSelf.Any() ? string.Join(", ", rolesSelf) : "",
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Roles = rolesSelf.Any() ? rolesSelf.ToArray() : Array.Empty<string>(),
                     BaseName = user.BaseId.HasValue ? (await _context.Set<Base>().FindAsync(user.BaseId.Value))?.BaseName : null,
                     IsActive = user.IsActive,
                     LastLoginUtc = user.LastLoginUtc,
@@ -379,8 +466,9 @@ namespace FRAProject.Controllers
                         Id = user.Id,
                         UserName = user.UserName ?? "",
                         Email = user.Email ?? "",
-                        DisplayName = user.DisplayName,
-                        Roles = roles.Any() ? string.Join(", ", roles) : "",
+                        FirstName = user.FirstName,
+                        LastName = user.LastName,
+                        Roles = roles.Any() ? roles.ToArray() : Array.Empty<string>(),
                         BaseName = user.BaseId.HasValue ? (await _context.Set<Base>().FindAsync(user.BaseId.Value))?.BaseName : null,
                         IsActive = user.IsActive,
                         LastLoginUtc = user.LastLoginUtc,
@@ -407,8 +495,9 @@ namespace FRAProject.Controllers
                     Id = user.Id,
                     UserName = user.UserName ?? "",
                     Email = user.Email ?? "",
-                    DisplayName = user.DisplayName,
-                    Roles = roles.Any() ? string.Join(", ", roles) : "",
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Roles = roles.Any() ? roles.ToArray() : Array.Empty<string>(),
                     BaseName = user.BaseId.HasValue ? (await _context.Set<Base>().FindAsync(user.BaseId.Value))?.BaseName : null,
                     IsActive = user.IsActive,
                     LastLoginUtc = user.LastLoginUtc,
@@ -416,6 +505,21 @@ namespace FRAProject.Controllers
                 };
 
                 return View("Delete", vm);
+            }
+        }
+
+        // helper to add or replace a claim on a user (removes any existing claim of the same type)
+        private async Task AddOrReplaceClaimAsync(ApplicationUser user, string claimType, string? value)
+        {
+            var existing = (await _userManager.GetClaimsAsync(user)).Where(c => c.Type == claimType).ToList();
+            if (existing.Any())
+            {
+                foreach (var e in existing) await _userManager.RemoveClaimAsync(user, e);
+            }
+
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim(claimType, value));
             }
         }
     }

@@ -47,9 +47,30 @@ namespace FRAProject.Controllers
                 .Select(r => new SelectListItem(r.Name, r.Name))
                 .ToListAsync();
 
+            // populate all organizational lists so admin can choose defaults for the new user
             vm.BaseList = await _context.Set<Base>()
                 .OrderBy(b => b.BaseName)
                 .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
+                .ToListAsync();
+
+            vm.WingList = await _context.Set<Wing>()
+                .OrderBy(w => w.Name)
+                .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
+                .ToListAsync();
+
+            vm.DepartmentList = await _context.Set<Department>()
+                .OrderBy(d => d.Name)
+                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
+                .ToListAsync();
+
+            vm.SquadronList = await _context.Set<Squadron>()
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+                .ToListAsync();
+
+            vm.AcMainGroupList = await _context.Set<AcMainGroup>()
+                .OrderBy(a => a.Name)
+                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
                 .ToListAsync();
 
             return View(vm);
@@ -72,6 +93,26 @@ namespace FRAProject.Controllers
                 .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
                 .ToListAsync();
 
+            model.WingList = await _context.Set<Wing>()
+                .OrderBy(w => w.Name)
+                .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
+                .ToListAsync();
+
+            model.DepartmentList = await _context.Set<Department>()
+                .OrderBy(d => d.Name)
+                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
+                .ToListAsync();
+
+            model.SquadronList = await _context.Set<Squadron>()
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+                .ToListAsync();
+
+            model.AcMainGroupList = await _context.Set<AcMainGroup>()
+                .OrderBy(a => a.Name)
+                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
+                .ToListAsync();
+
             if (!ModelState.IsValid)
                 return View(model);
 
@@ -84,6 +125,10 @@ namespace FRAProject.Controllers
                 LastName = model.LastName,
                 PhoneNumber = model.PhoneNumber,
                 BaseId = model.BaseId,
+                WingId = model.WingId,
+                DepartmentId = model.DepartmentId,
+                SquadronId = model.SquadronId,
+                AcMainGroupId = model.AcMainGroupId,
                 EmailConfirmed = true, // adjust per your policy
                 IsActive = true
             };
@@ -106,21 +151,30 @@ namespace FRAProject.Controllers
                 }
             }
 
-            // Ensure BaseId claim is present if you rely on claims in other parts of the app
-            if (model.BaseId.HasValue)
-            {
-                // add or replace claim
-                var existing = (await _userManager.GetClaimsAsync(user)).FirstOrDefault(c => c.Type == "BaseId");
-                if (existing != null)
-                {
-                    await _userManager.RemoveClaimAsync(user, existing);
-                }
-                await _userManager.AddClaimAsync(user, new Claim("BaseId", model.BaseId.Value.ToString()));
-            }
+            // Add or replace organization-scoping claims so the user's cookie (and CurrentUserService) will include them
+            await AddOrReplaceClaimAsync(user, "BaseId", model.BaseId?.ToString());
+            await AddOrReplaceClaimAsync(user, "WingId", model.WingId?.ToString());
+            await AddOrReplaceClaimAsync(user, "DepartmentId", model.DepartmentId?.ToString());
+            await AddOrReplaceClaimAsync(user, "SquadronId", model.SquadronId?.ToString());
+            await AddOrReplaceClaimAsync(user, "AcMainGroupId", model.AcMainGroupId?.ToString());
 
             _logger.LogInformation("Admin {Admin} created user {User}.", User.Identity?.Name, user.UserName);
 
             return RedirectToAction("Index", "Users");
+        }
+        // helper to add or replace a claim on a user (removes any existing claim of the same type)
+        private async Task AddOrReplaceClaimAsync(ApplicationUser user, string claimType, string? value)
+        {
+            var existing = (await _userManager.GetClaimsAsync(user)).Where(c => c.Type == claimType).ToList();
+            if (existing.Any())
+            {
+                foreach (var e in existing) await _userManager.RemoveClaimAsync(user, e);
+            }
+
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                await _userManager.AddClaimAsync(user, new Claim(claimType, value));
+            }
         }
 
         // Login/Logout actions omitted for brevity; keep existing SignInManager<ApplicationUser> usage

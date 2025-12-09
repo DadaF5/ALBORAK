@@ -223,7 +223,6 @@ namespace FRAProject.Data
             modelBuilder.Entity<Odv>(b =>
             {
                 b.ToTable("Odvs");
-
                 b.HasKey(x => x.Id);
 
                 // date-only column
@@ -274,30 +273,49 @@ namespace FRAProject.Data
                     .WithMany()
                     .HasForeignKey(x => x.AcMainGroupId)
                     .OnDelete(DeleteBehavior.Restrict);
+                // Useful indexes
+                b.HasIndex(o=> new {o.BaseId, o.OdvDate}).HasDatabaseName("IX_Odvs_BaseId_OdvDate");
+                b.HasIndex(o=> new {o.SquadronId, o.OdvDate}).HasDatabaseName("IX_Odvs_SquadronId_OdvDate");
+                b.HasIndex(o=> o.AcMainGroupId).HasDatabaseName("IX_Odvs_AcMainGroupId");
             });
 
             // Sortie configuration
+            // inside OnModelCreating:
             modelBuilder.Entity<Sortie>(b =>
             {
                 b.ToTable("Sorties");
                 b.HasKey(s => s.Id);
 
-                // FK to Odv
                 b.HasOne(s => s.Odv)
-                    .WithMany(o => o.Sorties)
-                    .HasForeignKey(s => s.OdvId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                 .WithMany(o => o.Sorties)
+                 .HasForeignKey(s => s.OdvId)
+                 .OnDelete(DeleteBehavior.Cascade);
 
-                // Optional FK to Aircraft (restrict delete to avoid cascade removing sorties when removing aircraft)
-                b.HasOne(s => s.Aircraft).WithMany().HasForeignKey(s => s.AircraftId).OnDelete(DeleteBehavior.Restrict);
+                b.Property(s => s.FuelQuantity).HasColumnType("decimal(10,2)");
 
-                // column types
-                b.Property(s => s.FuelQuantity).HasColumnType("decimal(10,2)"); // adjust precision as needed
                 b.Property(s => s.StartTime).HasColumnType("datetime2");
                 b.Property(s => s.LandingTime).HasColumnType("datetime2");
                 b.Property(s => s.TOFF).HasColumnType("time");
-                b.Property(s => s.IsCompleted).HasDefaultValue(false);
+
+                b.Property(s => s.CreatedAtUtc).HasColumnType("datetime2").IsRequired();
+                b.Property(s => s.UpdatedAtUtc).HasColumnType("datetime2");
                 b.Property(s => s.CompletedAtUtc).HasColumnType("datetime2");
+
+                b.Property(s => s.CreatedBy).HasMaxLength(200);
+                b.Property(s => s.UpdatedBy).HasMaxLength(200);
+                b.Property(s => s.CompletedBy).HasMaxLength(200);
+
+                // RowVersion concurrency token
+                b.Property(s => s.RowVersion).IsRowVersion().IsConcurrencyToken();
+
+                // Useful indexes
+                b.HasIndex(s => s.OdvId);
+                b.HasIndex(s => s.IsCompleted);
+
+                // index sorties by base + date or by odv for fast joins
+                b.HasIndex(s => new { s.BaseId, s.StartTime }).HasDatabaseName("IX_Sorties_Base_StartTime");
+                b.HasIndex(s => s.OdvId).HasDatabaseName("IX_Sorties_OdvId");
+                b.HasIndex(s => new { s.OdvId, s.IsCompleted }).HasDatabaseName("IX_Sorties_Odv_Completed");
             });
             // SortieCrew configuration
             modelBuilder.Entity<SortieCrew>(b =>

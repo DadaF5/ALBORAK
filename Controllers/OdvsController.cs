@@ -116,7 +116,7 @@ namespace FRAProject.Controllers
                 };
                 SetCreatedAudit(odv);
                 _context.Odvs.Add(odv);
-                
+
                 // Add sorties and crew. Set sortie.CreatedAtUtc = odv.CreatedAtUtc so created-time matches for those added together.
                 if (vm.Sorties != null)
                 {
@@ -136,7 +136,7 @@ namespace FRAProject.Controllers
                             CreatedBy = User?.Identity?.Name
                         };
 
-                        
+
                         SetCreatedAudit(sortie, odv.CreatedAtUtc);
                         _context.Sorties.Add(sortie);
 
@@ -249,8 +249,8 @@ namespace FRAProject.Controllers
                 odv.AcMainGroupId = vm.AcMainGroupID;
                 odv.CallSign = vm.CallSignId;
                 odv.Obs = vm.Obs;
-                odv.UpdatedAtUtc = DateTime.UtcNow; 
-                
+                odv.UpdatedAtUtc = DateTime.UtcNow;
+
                 SetUpdatedAudit(odv);
 
                 // Remove existing sorties and their crew assignments
@@ -260,7 +260,7 @@ namespace FRAProject.Controllers
                     var sortieIds = existingSorties.Select(s => s.Id).ToList();
                     var assigns = await _context.SortieCrews.Where(sc => sortieIds.Contains(sc.SortieId)).ToListAsync();
                     _context.SortieCrews.RemoveRange(assigns);
-                    _context.Sorties.RemoveRange(existingSorties);                    
+                    _context.Sorties.RemoveRange(existingSorties);
                     await _context.SaveChangesAsync();
                 }
 
@@ -320,9 +320,9 @@ namespace FRAProject.Controllers
                 }
 
                 await _context.SaveChangesAsync();
-               
+
                 _context.Odvs.Update(odv);
-               
+
                 await _context.SaveChangesAsync();
 
                 await tx.CommitAsync();
@@ -450,6 +450,7 @@ namespace FRAProject.Controllers
                     IsCompleted = s.IsCompleted,
                     Crew = s.SortieCrews?.Select(sc => new SortieCrewVm
                     {
+                        // Store CrewMemberId into VM.PersonId - this matches the Create/Edit lookup logic which first tries to find a CrewMember by the supplied PersonId
                         PersonId = sc.CrewMemberId,
                         Role = sc.Role,
                         IsPrimary = sc.IsPrimary,
@@ -520,15 +521,23 @@ namespace FRAProject.Controllers
             var t = entity.GetType();
 
             var propCreatedAt = t.GetProperty("CreatedAtUtc", BindingFlags.Public | BindingFlags.Instance);
-            if (propCreatedAt != null && propCreatedAt.CanWrite && propCreatedAt.PropertyType.IsAssignableFrom(typeof(DateTime)))
+            if (propCreatedAt != null && propCreatedAt.CanWrite)
             {
-                propCreatedAt.SetValue(entity, now);
+                var propType = propCreatedAt.PropertyType;
+                if (propType == typeof(DateTime) || propType == typeof(DateTime?))
+                {
+                    propCreatedAt.SetValue(entity, now);
+                }
             }
 
             var propCreatedBy = t.GetProperty("CreatedBy", BindingFlags.Public | BindingFlags.Instance);
             if (propCreatedBy != null && propCreatedBy.CanWrite && propCreatedBy.PropertyType.IsAssignableFrom(typeof(string)))
             {
-                propCreatedBy.SetValue(entity, GetCurrentUserName());
+                var name = GetCurrentUserName();
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    propCreatedBy.SetValue(entity, name);
+                }
             }
         }
 
@@ -540,15 +549,23 @@ namespace FRAProject.Controllers
             var t = entity.GetType();
 
             var propUpdatedAt = t.GetProperty("UpdatedAtUtc", BindingFlags.Public | BindingFlags.Instance);
-            if (propUpdatedAt != null && propUpdatedAt.CanWrite && propUpdatedAt.PropertyType.IsAssignableFrom(typeof(DateTime?)) || (propUpdatedAt != null && propUpdatedAt.CanWrite && propUpdatedAt.PropertyType.IsAssignableFrom(typeof(DateTime))))
+            if (propUpdatedAt != null && propUpdatedAt.CanWrite)
             {
-                propUpdatedAt.SetValue(entity, now);
+                var propType = propUpdatedAt.PropertyType;
+                if (propType == typeof(DateTime) || propType == typeof(DateTime?))
+                {
+                    propUpdatedAt.SetValue(entity, now);
+                }
             }
 
             var propUpdatedBy = t.GetProperty("UpdatedBy", BindingFlags.Public | BindingFlags.Instance);
             if (propUpdatedBy != null && propUpdatedBy.CanWrite && propUpdatedBy.PropertyType.IsAssignableFrom(typeof(string)))
             {
-                propUpdatedBy.SetValue(entity, GetCurrentUserName());
+                var name = GetCurrentUserName();
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    propUpdatedBy.SetValue(entity, name);
+                }
             }
         }
 

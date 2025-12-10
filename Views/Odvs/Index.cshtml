@@ -1,0 +1,209 @@
+﻿@model IEnumerable<FRAProject.Models.Odv>
+
+@{
+    ViewData["Title"] = "ODVs";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>ODVs</h2>
+
+    <div>
+        @* Full-page create link (fallback) *@
+        <a asp-action="Create" class="btn btn-primary me-2">Create ODV</a>
+
+        @* AJAX modal create (uses ?modal=true or X-Requested-With) *@
+        <button type="button" id="btn-create-ajax" class="btn btn-outline-primary">Create (modal)</button>
+    </div>
+</div>
+
+@if (!Model?.Any() ?? true)
+{
+    <div class="alert alert-info">No ODV records found.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Squadron</th>
+                    <th>Mission</th>
+                    <th>TOFF</th>
+                    <th>Status</th>
+                    <th>Sorties</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var odv in Model)
+                {
+                    <tr data-odv-id="@odv.Id">
+                        <td>@odv.OdvDate.ToString("yyyy-MM-dd")</td>
+                        <td>@(odv.Squadron?.Name ?? "-")</td>
+                        <td>@(odv.Mission?.Name ?? "-")</td>
+                        <td>@(odv.TOFF?.ToString() ?? "-")</td>
+                        <td>@odv.OdvStatus</td>
+                        <td>@(odv.Sorties?.Count() ?? 0)</td>
+                        <td class="text-end">
+                            <div class="btn-group" role="group">
+                                <a asp-action="Details" asp-route-id="@odv.Id" class="btn btn-sm btn-outline-secondary me-1">View</a>
+
+                                @* AJAX modal details *@
+                                <button type="button" class="btn btn-sm btn-outline-secondary ajax-modal" data-url="@Url.Action("Details", new { id = odv.Id })">View (modal)</button>
+
+                                <a asp-action="Edit" asp-route-id="@odv.Id" class="btn btn-sm btn-outline-success ms-1">Edit</a>
+
+                                @* AJAX modal edit *@
+                                <button type="button" class="btn btn-sm btn-outline-success ajax-modal" data-url="@Url.Action("Edit", new { id = odv.Id })">Edit (modal)</button>
+
+                                <a asp-action="Delete" asp-route-id="@odv.Id" class="btn btn-sm btn-outline-danger ms-1">Delete</a>
+
+                                @* AJAX modal delete *@
+                                <button type="button" class="btn btn-sm btn-outline-danger ajax-modal" data-url="@Url.Action("Delete", new { id = odv.Id })">Delete (modal)</button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@* Placeholder where modal partial HTML will be injected *@
+<div id="modal-placeholder"></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // Helper to do AJAX fetch with X-Requested-With header
+            function fetchWithAjax(url, options) {
+                options = options || {};
+                options.headers = Object.assign({}, options.headers || {}, {
+                    'X-Requested-With': 'XMLHttpRequest'
+                });
+                return fetch(url, options);
+            }
+
+            // Open modal by loading partial HTML from server
+            async function openModal(url) {
+                try {
+                    const res = await fetchWithAjax(url, { credentials: 'same-origin' });
+                    const text = await res.text();
+
+                    const placeholder = document.getElementById('modal-placeholder');
+                    placeholder.innerHTML = text;
+
+                    // Find the modal element inside the partial
+                    const modalEl = placeholder.querySelector('.modal');
+                    if (!modalEl) {
+                        console.warn('Modal content did not contain .modal element.');
+                        return;
+                    }
+
+                    // Initialize and show bootstrap modal
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+
+                    // Hook up form submission inside modal (if any)
+                    const form = modalEl.querySelector('form');
+                    if (form) {
+                        form.addEventListener('submit', function (e) {
+                            e.preventDefault();
+                            submitModalForm(form, modal);
+                        });
+                    }
+                } catch (err) {
+                    console.error('Failed to load modal content', err);
+                    alert('Failed to load dialog: ' + err);
+                }
+            }
+
+            // Submit a form inside a modal using fetch; if server returns JSON { success: true } -> reload
+            // If server returns HTML (validation errors) -> replace modal content
+            async function submitModalForm(form, modalInstance) {
+                try {
+                    const url = form.getAttribute('action') || window.location.href;
+                    const method = (form.getAttribute('method') || 'post').toUpperCase();
+                    const formData = new FormData(form);
+
+                    const res = await fetchWithAjax(url, {
+                        method: method,
+                        body: formData,
+                        credentials: 'same-origin'
+                    });
+
+                    const contentType = res.headers.get('content-type') || '';
+
+                    if (contentType.indexOf('application/json') !== -1) {
+                        const json = await res.json();
+                        if (json && json.success) {
+                            // close modal and reload to reflect changes
+                            modalInstance.hide();
+                            // small delay to allow modal hide animation
+                            setTimeout(function () { location.reload(); }, 200);
+                            return;
+                        } else {
+                            // Unexpected JSON: reload for safety
+                            location.reload();
+                            return;
+                        }
+                    } else {
+                        // Treat as HTML
+                        const html = await res.text();
+                        // Replace modal placeholder content
+                        const placeholder = document.getElementById('modal-placeholder');
+                        placeholder.innerHTML = html;
+                        const newModalEl = placeholder.querySelector('.modal');
+                        if (newModalEl) {
+                            // Re-initialize modal instance and hook form submit again
+                            const newModal = new bootstrap.Modal(newModalEl);
+                            newModal.show();
+
+                            const newForm = newModalEl.querySelector('form');
+                            if (newForm) {
+                                newForm.addEventListener('submit', function (e) {
+                                    e.preventDefault();
+                                    submitModalForm(newForm, newModal);
+                                });
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to submit form', err);
+                    alert('Failed to submit: ' + err);
+                }
+            }
+
+            // Wire up global handlers for elements with .ajax-modal
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('.ajax-modal');
+                if (!btn) return;
+
+                e.preventDefault();
+                const url = btn.getAttribute('data-url') || btn.getAttribute('href');
+                if (!url) return;
+
+                // append modal=true query if not already present so server will return modal partials when it checks QueryModalFlag()
+                const hasQuery = url.indexOf('?') !== -1;
+                const modalUrl = url + (hasQuery ? '&modal=true' : '?modal=true');
+
+                openModal(modalUrl);
+            });
+
+            // Create modal button
+            const btnCreateAjax = document.getElementById('btn-create-ajax');
+            if (btnCreateAjax) {
+                btnCreateAjax.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    // use Create action with modal=true
+                    const url = '@Url.Action("Create")';
+                    const modalUrl = url + '?modal=true';
+                    openModal(modalUrl);
+                });
+            }
+
+            // Optional: if you want clicking the non-ajax "View/Edit/Delete" links to open modals too, you can add handlers
+        })();
+    </script>
+}

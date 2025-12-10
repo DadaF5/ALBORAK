@@ -1,0 +1,314 @@
+﻿@model FRAProject.ViewModels.OdvCreateVm
+
+@{
+    // Build HTML options for dynamic templates
+    var squadronList = (SelectList?)ViewData["Squadrons"];
+    var missionList = (SelectList?)ViewData["Missions"];
+    var aircraftList = (SelectList?)ViewData["Aircrafts"];
+    var crewList = (SelectList?)ViewData["CrewMembers"];
+
+    string SquadOptions() => squadronList == null ? "" : string.Join("", squadronList.Select(i => $"<option value=\"{i.Value}\">{i.Text}</option>"));
+    string MissionOptions() => missionList == null ? "" : string.Join("", missionList.Select(i => $"<option value=\"{i.Value}\">{i.Text}</option>"));
+    string AircraftOptions() => aircraftList == null ? "" : string.Join("", aircraftList.Select(i => $"<option value=\"{i.Value}\">{i.Text}</option>"));
+    string CrewOptions() => crewList == null ? "" : string.Join("", crewList.Select(i => $"<option value=\"{i.Value}\">{i.Text}</option>"));
+}
+
+<form asp-action="Create" method="post" id="odv-create-form">
+    @Html.AntiForgeryToken()
+
+    <div class="mb-3">
+        <label asp-for="SquadronID" class="form-label">Squadron</label>
+        @* Use @(squadronList) so Razor evaluates the C# variable expression correctly inside the attribute *@
+        <select asp-for="SquadronID" asp-items="@(squadronList)" class="form-select"></select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="MissionId" class="form-label">Mission</label>
+        <select asp-for="MissionId" asp-items="@(missionList)" class="form-select"></select>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label asp-for="OdvDate" class="form-label">ODV Date</label>
+            <input asp-for="OdvDate" class="form-control" type="date" />
+        </div>
+        <div class="col-md-3 mb-3">
+            <label asp-for="TOFF" class="form-label">TOFF</label>
+            <input asp-for="TOFF" class="form-control" type="time" />
+        </div>
+        <div class="col-md-3 mb-3">
+            <label asp-for="ZoneID" class="form-label">Zone</label>
+            <input asp-for="ZoneID" class="form-control" />
+        </div>
+        <div class="col-md-3 mb-3">
+            <label asp-for="MissionTypeID" class="form-label">Mission Type</label>
+            <input asp-for="MissionTypeID" class="form-control" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Area" class="form-label">Area</label>
+        <input asp-for="Area" class="form-control" />
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label asp-for="AcMainGroupID" class="form-label">Aircraft Main Group</label>
+            <input asp-for="AcMainGroupID" class="form-control" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="CallSignId" class="form-label">Call Sign</label>
+            <input asp-for="CallSignId" class="form-control" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="OdvStatus" class="form-label">Status</label>
+            <input asp-for="OdvStatus" class="form-control" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Obs" class="form-label">Observations</label>
+        <textarea asp-for="Obs" class="form-control" rows="3"></textarea>
+    </div>
+
+    <hr />
+
+    <h5>Sorties</h5>
+    <div class="mb-2">
+        <button type="button" id="add-sortie" class="btn btn-sm btn-primary">Add Sortie</button>
+    </div>
+
+    <div id="sorties-container">
+        @* Render an initial empty sortie (index 0) so non-JS users can post *@
+        <div class="sortie-item border rounded p-2 mb-2" data-sortie-index="0">
+            <div class="d-flex justify-content-between align-items-start">
+                <strong>Sortie</strong>
+                <button type="button" class="btn btn-sm btn-danger remove-sortie">Remove</button>
+            </div>
+
+            <div class="row mt-2">
+                <div class="col-md-4 mb-2">
+                    <label>Aircraft</label>
+                    <select name="Sorties[0].AircraftId" class="form-select">
+                        @Html.Raw(AircraftOptions())
+                    </select>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label>Configuration</label>
+                    <input name="Sorties[0].Configuration" class="form-control" />
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label>Fuel Quantity</label>
+                    <input name="Sorties[0].FuelQuantity" class="form-control" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3 mb-2">
+                    <label>Start Time</label>
+                    <input name="Sorties[0].StartTime" type="time" class="form-control" />
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label>Landing Time</label>
+                    <input name="Sorties[0].LandingTime" type="time" class="form-control" />
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label>TOFF</label>
+                    <input name="Sorties[0].TOFF" type="time" class="form-control" />
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label>Completed</label>
+                    <select name="Sorties[0].IsCompleted" class="form-select">
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <label>Notes</label>
+                <input name="Sorties[0].Notes" class="form-control" />
+            </div>
+
+            <div class="mt-2">
+                <strong>Crew</strong>
+                <button type="button" class="btn btn-sm btn-secondary ms-2 add-crew">Add Crew</button>
+                <div class="crew-container mt-2">
+                    @* No crew rows initially *@
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+    <div class="mt-3">
+        <button type="submit" class="btn btn-success">Create ODV</button>
+        <a asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+</form>
+
+@* Hidden templates for cloning (placeholders __index__ and __crewindex__ will be replaced by JS) *@
+<div id="templates" style="display:none;">
+    <div id="sortie-template">
+        <div class="sortie-item border rounded p-2 mb-2" data-sortie-index="__index__">
+            <div class="d-flex justify-content-between align-items-start">
+                <strong>Sortie</strong>
+                <button type="button" class="btn btn-sm btn-danger remove-sortie">Remove</button>
+            </div>
+
+            <div class="row mt-2">
+                <div class="col-md-4 mb-2">
+                    <label>Aircraft</label>
+                    <select name="Sorties[__index__].AircraftId" class="form-select">
+                        @Html.Raw(AircraftOptions())
+                    </select>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label>Configuration</label>
+                    <input name="Sorties[__index__].Configuration" class="form-control" />
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label>Fuel Quantity</label>
+                    <input name="Sorties[__index__].FuelQuantity" class="form-control" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3 mb-2">
+                    <label>Start Time</label>
+                    <input name="Sorties[__index__].StartTime" type="time" class="form-control" />
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label>Landing Time</label>
+                    <input name="Sorties[__index__].LandingTime" type="time" class="form-control" />
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label>TOFF</label>
+                    <input name="Sorties[__index__].TOFF" type="time" class="form-control" />
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label>Completed</label>
+                    <select name="Sorties[__index__].IsCompleted" class="form-select">
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <label>Notes</label>
+                <input name="Sorties[__index__].Notes" class="form-control" />
+            </div>
+
+            <div class="mt-2">
+                <strong>Crew</strong>
+                <button type="button" class="btn btn-sm btn-secondary ms-2 add-crew">Add Crew</button>
+                <div class="crew-container mt-2">
+                    @* crew rows are added dynamically *@
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="crew-template">
+        <div class="crew-row d-flex gap-2 align-items-end mb-2" data-crew-index="__crewindex__">
+            <div style="flex:1">
+                <label>Member</label>
+                @* Use Html.Raw for the options to avoid nested-quote issues inside the template *@
+                <select name="Sorties[__index__].Crew[__crewindex__].PersonId" class="form-select">
+                    @Html.Raw(CrewOptions())
+                </select>
+            </div>
+            <div style="width:140px">
+                <label>Role</label>
+                <input name="Sorties[__index__].Crew[__crewindex__].Role" class="form-control" />
+            </div>
+            <div style="width:100px">
+                <label>Primary</label>
+                <select name="Sorties[__index__].Crew[__crewindex__].IsPrimary" class="form-select">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                </select>
+            </div>
+            <div style="width:180px">
+                <label>Remarks</label>
+                <input name="Sorties[__index__].Crew[__crewindex__].Remarks" class="form-control" />
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-danger remove-crew">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const sortirContainer = document.getElementById('sorties-container');
+            const sortieTemplateHtml = document.getElementById('sortie-template').innerHTML;
+            const crewTemplateHtml = document.getElementById('crew-template').innerHTML;
+
+            let nextSortieIndex = (function () {
+                const existing = sortirContainer.querySelectorAll('.sortie-item');
+                return existing.length; // next index after pre-rendered items
+            })();
+
+            // Add sortie
+            document.getElementById('add-sortie').addEventListener('click', function () {
+                const html = sortieTemplateHtml.replace(/__index__/g, nextSortieIndex);
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = html;
+                // append node
+                sortirContainer.appendChild(wrapper.firstElementChild);
+                nextSortieIndex++;
+            });
+
+            // Delegate removal and crew actions
+            document.addEventListener('click', function (e) {
+                const target = e.target;
+
+                // Remove sortie
+                if (target.matches('.remove-sortie')) {
+                    const node = target.closest('.sortie-item');
+                    if (node) node.remove();
+                    return;
+                }
+
+                // Add crew inside appropriate sortie
+                if (target.matches('.add-crew')) {
+                    const sortieNode = target.closest('.sortie-item');
+                    if (!sortieNode) return;
+
+                    const sortieIndex = sortieNode.getAttribute('data-sortie-index');
+                    const crewContainer = sortieNode.querySelector('.crew-container');
+                    const existingCrew = crewContainer.querySelectorAll('.crew-row');
+                    const nextCrewIndex = existingCrew.length;
+
+                    let crewHtml = crewTemplateHtml.replace(/__index__/g, sortieIndex).replace(/__crewindex__/g, nextCrewIndex);
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = crewHtml;
+                    crewContainer.appendChild(wrapper.firstElementChild);
+                    return;
+                }
+
+                // Remove crew
+                if (target.matches('.remove-crew')) {
+                    const row = target.closest('.crew-row');
+                    if (row) row.remove();
+                    return;
+                }
+            });
+
+            // When cloning via add-sortie we need to set the data-sortie-index on the created element.
+            // The template contains data-sortie-index="__index__" which was replaced by index already.
+            // Ensure existing pre-rendered sortie has data-sortie-index set:
+            (function setPreRenderedSortieIndices() {
+                const nodes = sortirContainer.querySelectorAll('.sortie-item');
+                nodes.forEach(function (n, idx) {
+                    if (!n.getAttribute('data-sortie-index')) n.setAttribute('data-sortie-index', idx);
+                });
+            })();
+
+        })();
+    </script>
+}

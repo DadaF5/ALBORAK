@@ -1,4 +1,5 @@
-﻿@using Microsoft.AspNetCore.Mvc.Rendering
+﻿@using System.Linq
+@using Microsoft.AspNetCore.Mvc.Rendering
 @using FRAProject.Models
 @{
     // Model expected: IEnumerable<ApplicationUser>
@@ -173,7 +174,7 @@
             </tr>
         </thead>
         <tbody>
-            @if (Model == null || Model.Users == null || !Model.Users.Any())
+            @if (Model == null || Model.Users == null || Model.Users.Count == 0)
             {
                 <tr>
                     <td colspan="11" class="text-center">No users found</td>

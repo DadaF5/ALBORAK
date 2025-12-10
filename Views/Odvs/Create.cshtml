@@ -112,7 +112,7 @@
         @Html.Raw(ViewBag.PlannedOdvsHtml ?? string.Empty)
     </div>
 
-    <div id="sorties-container">
+    <div id="sorties-container" style="display:none;">
         @* Server-rendered initial sorties (if any) *@
         @for (int si = 0; si < Model.Sorties.Count; si++)
         {
@@ -186,10 +186,7 @@
         <button type="button" id="btn-add-sortie" class="btn btn-primary">Add Sortie</button>
     </div>
 
-    <div class="mb-3">
-        <button type="submit" class="btn btn-success">Save ODV & Sorties</button>
-        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-    </div>
+   
 </form>
 
 <!-- Hidden template used by JS when adding a new sortie -->

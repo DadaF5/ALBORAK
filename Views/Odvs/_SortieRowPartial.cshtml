@@ -1,0 +1,22 @@
+﻿@model FRAProject.Models.Sortie
+<tr data-sortie-id="@Model.Id">
+    <td>@Model.Id</td>
+    <td>@(Model.Aircraft?.DisplayName ?? "-")</td>
+    <td>@(Model.StartTime?.ToString("HH:mm") ?? "-")</td>
+    <td>
+        @if (Model.SortieCrews?.Any() == true)
+        {
+            <ul>
+                @foreach(var sc in Model.SortieCrews)
+                {
+                    <li>@(sc.CrewMember?.Captain ?? sc.CrewMemberId.ToString())</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <span class="text-muted">No crew</span>
+        }
+    </td>
+    <td><button class="btn btn-sm btn-secondary btn-add-crew" data-sortie-id="@Model.Id">Add Crew</button></td>
+</tr>

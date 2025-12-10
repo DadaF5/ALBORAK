@@ -1,0 +1,31 @@
+﻿@model (int odvId, FRAProject.ViewModels.SortieVm vm)
+@{
+    var odvId = Model.odvId;
+    var vm = Model.vm;
+}
+<form id="add-sortie-form">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="odvId" value="@odvId" />
+    <div class="mb-2">
+        <label>Aircraft</label>
+        <select name="AircraftId" class="form-select">
+            <option value="">-- select --</option>
+            @foreach (var a in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Aircrafts)
+            {
+                <option value="@a.Value">@a.Text</option>
+            }
+        </select>
+    </div>
+    <div class="mb-2">
+        <label>Configuration</label>
+        <input name="Configuration" class="form-control" />
+    </div>
+    <div class="mb-2">
+        <label>Planned Start</label>
+        <input name="StartTime" class="form-control" type="datetime-local" />
+    </div>
+    <div class="d-flex justify-content-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary ms-2">Add Sortie</button>
+    </div>
+</form>

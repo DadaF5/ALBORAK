@@ -94,14 +94,155 @@ namespace FRAProject.Controllers
             return View(odv);
         }
 
-        // GET: Odvs/Create
+        //--------------------------------------
+        //---................-------------------------
+        // GET: /Odvs/AddSortieModal?odvId=123
         [HttpGet]
         [Authorize(Roles = "Squadron,CrewChief")]
+        public async Task<IActionResult> AddSortieModal(int odvId)
+        {
+            var odv = await _context.Odvs.AsNoTracking().FirstOrDefaultAsync(o => o.Id == odvId);
+            if (odv == null) return NotFound();
+
+            var vm = new SortieVm
+            {
+                // prefill TOFF/planned date etc. if desired
+            };
+
+            ViewBag.Aircrafts = await _context.Aircrafts
+                .OrderBy(a => a.Registration)
+                .Select(a => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(a.DisplayName, a.Id.ToString()))
+                .ToListAsync();
+
+            return PartialView("_AddSortieModal", (odvId, vm));
+        }
+
+        // POST: /Odvs/AddSortie (AJAX)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Squadron,CrewChief, Admin")]
+        public async Task<IActionResult> AddSortie(int odvId, SortieVm vm)
+        {
+            if (odvId <= 0 || vm == null) return BadRequest(new { success = false, error = "Invalid data" });
+
+            var odv = await _context.Odvs.FirstOrDefaultAsync(o => o.Id == odvId);
+            if (odv == null) return NotFound(new { success = false, error = "ODV not found" });
+
+            // Basic server validation
+            if (!ModelState.IsValid)
+            {
+                // return validation failures
+                var errors = ModelState.Where(kvp => kvp.Value.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { success = false, errors });
+            }
+
+            try
+            {
+                var now = DateTime.UtcNow;
+                var sortie = new Sortie
+                {
+                    OdvId = odvId,
+                    AircraftId = vm.AircraftId,
+                    Configuration = vm.Configuration,
+                    FuelQuantity = vm.FuelQuantity,
+                    StartTime = vm.StartTime,
+                    LandingTime = vm.LandingTime,
+                    TOFF = vm.TOFF,
+                    CreatedAtUtc = now,
+                    CreatedBy = GetCurrentUserName(),
+                    Status = SortieStatus.Planned
+                };
+
+                _context.Sorties.Add(sortie);
+                await _context.SaveChangesAsync();
+
+                // render the new sortie row partial to HTML to send back
+                var sortieHtml = await this.RenderViewAsync("_SortieRowPartial", sortie, true);
+
+                return Json(new { success = true, sortieId = sortie.Id, sortieHtml });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "AddSortie failed for ODV {OdvId}", odvId);
+                return StatusCode(500, new { success = false, error = ex.Message });
+            }
+        }
+
+        // Helper: Render an ODV row partial (useful to refresh the entire ODV row if needed)
+        [HttpGet]
+        [Authorize(Roles = "Squadron,CrewChief,Tower,Admin")]
+        public async Task<IActionResult> OdvRowPartial(int odvId)
+        {
+            var odv = await _context.Odvs
+                .Include(o => o.Sorties)
+                    .ThenInclude(s => s.Aircraft)
+                .Include(o => o.Sorties)
+                    .ThenInclude(s => s.SortieCrews)
+                        .ThenInclude(sc => sc.CrewMember)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == odvId);
+
+            if (odv == null) return NotFound();
+            return PartialView("_OdvRowPartial", odv);
+        }
+
+        //---.................------------------------
+        // Add these methods to your OdvsController (same partial)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Squadron,CrewChief,Admin")]
+        public async Task<IActionResult> CreateHeader([FromForm] OdvCreateVm vm)
+        {
+            // Only handle header fields here. Do not require sorties.
+            if (vm == null) return BadRequest("Invalid payload");
+
+            // Validate required header fields
+            if (!ModelState.IsValid)
+            {
+                // return validation errors as JSON; client will display them
+                var errors = ModelState.Where(kvp => kvp.Value.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { success = false, errors });
+            }
+
+            try
+            {
+                var now = DateTime.UtcNow;
+                var odv = new Odv
+                {
+                    SquadronId = vm.SquadronId,
+                    MissionId = vm.MissionId,
+                    OdvDate = vm.OdvDate,
+                    Zone = vm.ZoneID,
+                    MissionType = vm.MissionTypeId,
+                    Area = vm.Area,
+                    Obs = vm.Obs,
+                    CreatedAtUtc = now,
+                    CallSign = vm.CallSignId,
+                    // set other header fields as needed
+                };
+                SetCreatedAudit(odv);
+
+                _context.Odvs.Add(odv);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, odvId = odv.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CreateHeader failed");
+                return StatusCode(500, new { success = false, error = ex.Message });
+            }
+        }
+
+        // GET: Odvs/Create
+        [HttpGet]
+        [Authorize(Roles = "Squadron,CrewChief, Admin")]
         public async Task<IActionResult> Create()
         {
             // prepare vm with a single empty sortie input so the dynamic UI has an initial row
-            var vm = new OdvCreateVm();
-            vm.Sorties.Add(new SortieVm { Crew = new System.Collections.Generic.List<SortieCrewVm> { new SortieCrewVm() } });
+            var vm = new OdvCreateVm();          
 
             await PopulateSelectListsAsync();
 
@@ -488,127 +629,7 @@ namespace FRAProject.Controllers
         // --- Inline Sortie API: Add / Update / Delete with crew mapping and warnings (non-blocking) ---
         //
 
-        // POST: Odvs/AddSortie
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddSortie(int odvId, SortieVm vm)
-        {
-            if (odvId <= 0) return BadRequest("odvId is required.");
-            if (vm == null) return BadRequest("Sortie data is required.");
-
-            var odv = await _context.Odvs
-                .Include(o => o.Sorties)
-                .FirstOrDefaultAsync(o => o.Id == odvId);
-
-            if (odv == null) return NotFound($"ODV {odvId} not found.");
-
-            // Enforce preflight approval: CrewChief/TWR cannot add sorties until Squadron approves preflight
-            if (!odv.IsPreflightApproved)
-            {
-                return StatusCode(409, new { success = false, error = "ODV is not preflight-approved by Squadron. Cannot add sorties." });
-            }
-
-            var now = DateTime.UtcNow;
-            var sortie = new Sortie
-            {
-                OdvId = odv.Id,
-                AircraftId = vm.AircraftId,
-                Configuration = vm.Configuration,
-                FuelQuantity = vm.FuelQuantity,
-                StartTime = vm.StartTime,
-                LandingTime = vm.LandingTime,
-                TOFF = vm.TOFF,
-                Notes = vm.Notes ?? string.Empty,
-                CreatedAtUtc = now,
-                CreatedBy = GetCurrentUserName(),
-                IsCompleted = vm.IsCompleted,
-                Status = SortieStatus.Planned
-            };
-
-            _context.Sorties.Add(sortie);
-
-            var globalWarnings = new List<string>();
-
-            if (vm.Crew != null)
-            {
-                foreach (var c in vm.Crew)
-                {
-                    if (c == null || c.PersonId == 0) continue;
-
-                    CrewMember? cm = await _context.CrewMembers.FindAsync(c.PersonId);
-                    if (cm == null)
-                    {
-                        cm = await _context.CrewMembers.FirstOrDefaultAsync(x => x.PersonId == c.PersonId);
-                    }
-
-                    if (cm == null)
-                    {
-                        globalWarnings.Add($"Crew member with id/personId {c.PersonId} not found.");
-                        continue;
-                    }
-
-                    var memberWarnings = new List<string>();
-
-                    try
-                    {
-                        if (odv.SquadronId != 0 && cm.SquadronId != 0 && cm.SquadronId != odv.SquadronId)
-                        {
-                            memberWarnings.Add($"Not in ODV squadron (member sq {cm.SquadronId}).");
-                        }
-                    }
-                    catch { }
-
-                    DateTime? medicalExpiry = GetDateProperty(cm, new[] { "MedicalExpiry", "MedicalExpiryDate", "MedicalCertificateExpiry", "MedicalCertificateExpiryDate" });
-                    DateTime? licenseExpiry = GetDateProperty(cm, new[] { "LicenseExpiry", "LicenseExpiryDate", "LicensingExpiry", "LicenseValidUntil" });
-
-                    if (medicalExpiry.HasValue)
-                    {
-                        if (medicalExpiry.Value.Date < now.Date) memberWarnings.Add($"Medical expired {medicalExpiry.Value:yyyy-MM-dd}");
-                        else if (medicalExpiry.Value.Date <= now.Date.AddDays(30)) memberWarnings.Add($"Medical due {medicalExpiry.Value:yyyy-MM-dd}");
-                    }
-
-                    if (licenseExpiry.HasValue)
-                    {
-                        if (licenseExpiry.Value.Date < now.Date) memberWarnings.Add($"License expired {licenseExpiry.Value:yyyy-MM-dd}");
-                        else if (licenseExpiry.Value.Date <= now.Date.AddDays(30)) memberWarnings.Add($"License due {licenseExpiry.Value:yyyy-MM-dd}");
-                    }
-
-                    var sc = new SortieCrew
-                    {
-                        Sortie = sortie,
-                        CrewMemberId = cm.Id,
-                        Role = c.Role,
-                        IsPrimary = c.IsPrimary,
-                        Remarks = memberWarnings.Any() ? string.Join("; ", memberWarnings) : null
-                    };
-
-                    _context.SortieCrews.Add(sc);
-
-                    if (memberWarnings.Any())
-                    {
-                        globalWarnings.Add($"Crew {GetCrewDisplay(cm)}: {string.Join("; ", memberWarnings)}");
-                    }
-                }
-            }
-
-            try
-            {
-                await _context.SaveChangesAsync();
-
-                return Json(new
-                {
-                    success = true,
-                    sortieId = sortie.Id,
-                    odvId = odv.Id,
-                    warnings = globalWarnings
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to add sortie to ODV {OdvId}", odvId);
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
-        }
+  
 
         // POST: Odvs/UpdateSortie
         [HttpPost]

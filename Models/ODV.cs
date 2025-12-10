@@ -1,6 +1,7 @@
-﻿using System;
+﻿using FRAProject.Enums;
+using System;
 using System.Collections.Generic;
-using FRAProject.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace FRAProject.Models
 {
@@ -47,6 +48,14 @@ namespace FRAProject.Models
 
         // call sign / identifier
         public string? CallSign { get; set; }
+
+        // Preflight approval/validation flag controlled by Squadron
+        // When false, CrewChief/TWR actions that change sorties are blocked.
+        public bool IsPreflightApproved { get; set; } = false;
+
+        // optional RowVersion on ODV as well if you plan concurrent edits
+        [Timestamp]
+        public byte[]? RowVersion { get; set; }
 
         // audit fields (use UTC)
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

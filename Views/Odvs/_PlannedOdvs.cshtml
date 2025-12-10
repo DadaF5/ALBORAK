@@ -1,0 +1,77 @@
+﻿@model IEnumerable<FRAProject.Models.Odv>
+
+@*
+  Renders planned ODVs for a selected squadron and date.
+  If Model is empty this partial renders nothing (keeps lower area blank).
+*@
+@if (Model != null && Model.Any())
+{
+    <div class="planned-odvs-list mt-3">
+        @foreach (var odv in Model)
+        {
+            <div class="card mb-2">
+                <div class="card-header">
+                    <strong>ODV @odv.Id</strong>
+                    <small class="text-muted ms-2">Date: @odv.OdvDate.ToString("yyyy-MM-dd")</small>
+                    <span class="ms-3 text-muted">Area: @odv.Area</span>
+                </div>
+                <div class="card-body">
+                    @if (odv.Sorties != null && odv.Sorties.Any())
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Sortie</th>
+                                    <th>Aircraft</th>
+                                    <th>Configuration</th>
+                                    <th>Start</th>
+                                    <th>Landing</th>
+                                    <th>Crew</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in odv.Sorties)
+                                {
+                                    <tr>
+                                        <td>@s.Id</td>
+                                        <td>@(s.Aircraft?.DisplayName ?? "-")</td>
+                                        <td>@(s.Configuration ?? "-")</td>
+                                        <td>@(s.StartTime?.ToString("HH:mm") ?? "-")</td>
+                                        <td>@(s.LandingTime?.ToString("HH:mm") ?? "-")</td>
+                                        <td>
+                                            @if (s.SortieCrews != null && s.SortieCrews.Any())
+                                            {
+                                                <ul class="mb-0 ps-3">
+                                                    @foreach (var sc in s.SortieCrews)
+                                                    {
+                                                        <li>@(sc.CrewMember?.Captain ?? ("Id:" + sc.CrewMemberId)) @if(!string.IsNullOrWhiteSpace(sc.Role)){
+                                                        <span class="text-muted">(@sc.Role)</span>
+                                                    }
+                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                                        else
+                                        {
+                                            <span class="text-muted">No crew assigned</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                        else
+                {
+                    <div class="text-muted">No sorties planned for this ODV.</div>
+                }
+            </div>
+        </div>
+    }
+</div>
+}
+else
+{
+    // Render nothing to keep the lower area blank when no planned ODVs exist.
+    @:<div></div>
+}

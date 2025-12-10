@@ -1,0 +1,107 @@
+﻿@using FRAProject.Helpers
+@model FRAProject.Models.Sortie
+
+@{
+    var crew = Model.SortieCrews;
+    var aircraft = Model.Aircraft; // requires Sortie.Aircraft navigation in Index
+    string aircraftDisplay = Model.Configuration;
+    if (string.IsNullOrWhiteSpace(aircraftDisplay))
+    {
+        if (Model.AircraftId > 0) aircraftDisplay = aircraft?.Registration ?? ("AC#" + Model.AircraftId);
+        else aircraftDisplay = "Aircraft";
+    }
+
+    string aircraftStatusText = aircraft != null ? aircraft.Status.ToString() : "N/A";
+
+    // Show the "Open selector" button only if user is CrewChief and sortie in Planned state and ODV approved
+    bool showSelector = User.IsInRole("CrewChief") && Model.Status == FRAProject.Models.SortieStatus.Planned && (Model.Odv?.IsPreflightApproved ?? false);
+}
+
+<div class="list-group-item p-2 d-flex justify-content-between align-items-start" data-sortie-id="@Model.Id">
+    <div>
+        <div>
+            <strong>@Html.Raw(System.Net.WebUtility.HtmlEncode(aircraftDisplay))</strong>
+            <small class="text-muted ms-2">(@Html.Raw(System.Net.WebUtility.HtmlEncode(aircraftStatusText)))</small>
+            — @Html.Raw(System.Net.WebUtility.HtmlEncode(Model.Configuration))
+        </div>
+
+        <div class="small text-muted">Start: @(Model.StartTime?.ToString() ?? "-") &nbsp; Land: @(Model.LandingTime?.ToString() ?? "-")</div>
+        @if (!string.IsNullOrWhiteSpace(Model.Notes))
+        {
+            <div class="small">Notes: @Html.Raw(System.Net.WebUtility.HtmlEncode(Model.Notes))</div>
+        }
+
+        @if (crew != null && crew.Any())
+        {
+            <div class="mt-1 small">
+                Crew:
+                @foreach (var sc in crew)
+                {
+                    <span class="badge bg-light text-dark me-1">@((sc.CrewMember?.NickName) ?? (sc.CrewMember?.Person != null ? sc.CrewMember.Person.FirstName + " " + sc.CrewMember.Person.LastName : "CM#" + sc.CrewMemberId))</span>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="d-flex flex-column align-items-end">
+        <div class="btn-group btn-group-sm mb-1">
+            @if (showSelector)
+            {
+                <button type="button" class="btn btn-outline-primary btn-sm" data-action="open-aircraft-selector" data-sortie-id="@Model.Id">Select Aircraft</button>
+            }
+            else if (User.IsInRole("CrewChief"))
+            {
+                <button type="button" class="btn btn-outline-secondary btn-sm" disabled title="Cannot select aircraft: either ODV not approved or sortie not in Planned state">Select Aircraft</button>
+            }
+
+            @* TWR actions: show only for Tower role and when appropriate *@
+            @if (User.IsInRole("Tower") && Model.Status == FRAProject.Models.SortieStatus.AircraftAssigned)
+            {
+                <button type="button" class="btn btn-outline-success btn-sm" data-action="set-toff" data-sortie-id="@Model.Id">Set TOFF</button>
+            }
+
+            <button type="button" class="btn btn-outline-danger btn-sm" data-action="delete-sortie" data-sortie-id="@Model.Id">Remove</button>
+        </div>
+
+        @{
+            var warnings = Model.SortieCrews?.Select(sc => sc.Remarks).Where(r => !string.IsNullOrWhiteSpace(r)).ToList() ?? new List<string>();
+            if (warnings.Any())
+            {
+                <small class="text-warning">@Html.Raw(System.Net.WebUtility.HtmlEncode(string.Join("; ", warnings)))</small>
+            }
+        }
+    </div>
+</div>
+<div class="mt-2">
+    @if (Model.IsFinalized == true || Model.Status == FRAProject.Models.SortieStatus.Finalized)
+    {
+        <div class="small text-muted">
+            <strong>Duration:</strong> @TimeFormatting.FormatMinutesAsHMM(Model.DurationMinutes)
+            @if (Model.Interceptions.HasValue)
+            {
+                <span class="ms-3"><strong>Interceptions:</strong> @Model.Interceptions</span>
+            }
+            @if (Model.RadarContacts.HasValue)
+            {
+                <span class="ms-3"><strong>Radar:</strong> @Model.RadarContacts</span>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.SquadronReportNotes))
+        {
+            <div class="mt-1 small text-wrap">
+                <strong>Squadron notes:</strong>
+                <div class="card p-2 bg-light">@Html.Raw(System.Net.WebUtility.HtmlEncode(Model.SquadronReportNotes))</div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="small text-muted">Not finalized</div>
+    }
+</div>
+@* Note: this partial no longer contains the inline "prompt" script. Include the aircraft selector client script in Index view:
+   <script src="~/js/odv-aircraft-select.js"></script>
+   Also ensure you render a hidden antiforgery token on Index so the JS can pick it up:
+   <form style="display:none">@Html.AntiForgeryToken()</form>
+*@

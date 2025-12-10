@@ -20,6 +20,11 @@
 
         // Optional per-sortie TOFF (time of day)
         public TimeSpan? TOFF { get; set; }
+        // Real times
+        public DateTime? RealTOFF { get; set; }
+        public DateTime? RealLandingTime { get; set; }
+        
+
 
         public string? Notes { get; set; }
 

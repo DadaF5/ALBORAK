@@ -1,9 +1,297 @@
 ﻿@model FRAProject.ViewModels.OdvCreateVm
-
+@using System
+@using System.Linq
+@using FRAProject.Models
+@using FRAProject.Enums
 @{
     ViewData["Title"] = "Create ODV";
+    // Ensure ViewBag contains the necessary SelectList objects:
+    // ViewBag.Squadrons (Id, Name), ViewBag.Missions (Id, Name),
+    // ViewBag.Aircrafts (Id, Display), ViewBag.CrewMembers (Id, Display),
+    // ViewBag.AcMainGroups (Id, Name) and optionally ViewBag.CallSigns (string list)
 }
 
-<h2>Create ODV</h2>
+<h4>Create ODV (Planning)</h4>
 
-@Html.Partial("_CreateEditForm", Model)
+@* Validation summary *@
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<form asp-action="Create" method="post" id="odv-create-form" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div class="row g-1 align-items-end">
+        <div class="col-md-2">
+            <label asp-for="OdvDate" class="form-label"></label>
+            <input asp-for="OdvDate" class="form-control" type="date" />
+            <span asp-validation-for="OdvDate" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-2">
+            <label asp-for="SquadronId" class="form-label"></label>
+            <select id="SquadronId" asp-for="SquadronId" asp-items="ViewBag.Squadrons" class="form-select">
+                <option value="">-- select squadron --</option>
+            </select>
+            <span asp-validation-for="SquadronId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-2">
+            <label asp-for="MissionId" class="form-label"></label>
+            <select asp-for="MissionId" asp-items="ViewBag.Missions" class="form-select">
+                <option value="">-- select mission --</option>
+            </select>
+            <span asp-validation-for="MissionId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-2">
+            <label asp-for="ZoneID" class="form-label"></label>
+            <select asp-for="ZoneID" asp-items="Html.GetEnumSelectList<Zone>()" class="form-select">
+                <option value="">-- select zone --</option>
+            </select>
+            <span asp-validation-for="ZoneID" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-2">
+            <label asp-for="MissionTypeId" class="form-label"></label>
+            <select asp-for="MissionTypeId" asp-items="Html.GetEnumSelectList<MissionType>()" class="form-select">
+                <option value="">-- select mission type --</option>
+            </select>
+            <span asp-validation-for="MissionTypeId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-2 d-flex justify-content-end">
+            <!-- Create button placed to the right of the top rows -->
+            <button type="submit" class="btn btn-success">Create ODV</button>
+        </div>
+    </div>
+
+    <div class="row g-1 mt-2 align-items-end">
+        <div class="col-md-1">
+            <label asp-for="TOFF" class="form-label"></label>
+            <input asp-for="TOFF" class="form-control" type="time" />
+            <span asp-validation-for="TOFF" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-2">
+            <label asp-for="OdvStatus" class="form-label"></label>
+            <select asp-for="OdvStatus" asp-items="Html.GetEnumSelectList<OdvStatus>()" class="form-select">
+                <option value="">-- select status --</option>
+            </select>
+            <span asp-validation-for="OdvStatus" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-2">
+            <label asp-for="Area" class="form-label"></label>
+            <input asp-for="Area" class="form-control" />
+            <span asp-validation-for="Area" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-2">
+            <label asp-for="CallSignId" class="form-label"></label>
+            <select asp-for="CallSignId" class="form-select" asp-items="ViewBag.CallSigns">
+                <option value="">-- select callsign --</option>
+            </select>
+            <span asp-validation-for="CallSignId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-3">
+            <label asp-for="Obs" class="form-label"></label>
+            <input asp-for="Obs" class="form-control" />
+            <span asp-validation-for="Obs" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-2">
+            <!-- placeholder column so layout sums to 12 and keeps button right-aligned above -->
+        </div>
+    </div>
+
+    <hr />
+
+    <!-- LOWER: will be blank if no planned ODVs exist; otherwise replaced with partial -->
+    <div id="planned-odvs-container" class="mt-3">
+        @* Initially server may render nothing here; JS will request PlannedOdvs on change of squadron/date *@
+        @Html.Raw(ViewBag.PlannedOdvsHtml ?? string.Empty)
+    </div>
+
+    <div id="sorties-container">
+        @* Server-rendered initial sorties (if any) *@
+        @for (int si = 0; si < Model.Sorties.Count; si++)
+        {
+            <div class="card mb-2 sortie-block" data-sortie-index="@si">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h5 class="card-title">Sortie @(si + 1)</h5>
+                        <button type="button" class="btn btn-sm btn-danger btn-remove-sortie">Remove</button>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label">Aircraft</label>
+                            <select name="Sorties[@si].AircraftId" class="form-select">
+                                <option value="">-- none --</option>
+                                @if (ViewBag.Aircrafts is IEnumerable<SelectListItem> acs)
+                                {
+                                    foreach (var a in acs) { <option value="@a.Value">@a.Text</option>; }
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Configuration</label>
+                            <input name="Sorties[@si].Configuration" class="form-control" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Fuel Quantity</label>
+                            <input name="Sorties[@si].FuelQuantity" class="form-control" type="number" step="0.1" />
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        <h6>Crew</h6>
+                        <table class="table table-sm crew-table">
+                            <thead>
+                                <tr><th>Member</th><th>Role</th><th>Primary</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                @for (int ci = 0; ci < Model.Sorties[si].Crew.Count; ci++)
+                                {
+                                    <tr data-crew-index="@ci">
+                                        <td>
+                                            <select name="Sorties[@si].Crew[@ci].PersonId" class="form-select">
+                                                <option value="">-- select crew --</option>
+                                                @if (ViewBag.CrewMembers is IEnumerable<SelectListItem> cms)
+                                                {
+                                                    foreach (var cm in cms) { <option value="@cm.Value">@cm.Text</option>; }
+                                                }
+                                            </select>
+                                        </td>
+                                        <td><input name="Sorties[@si].Crew[@ci].Role" class="form-control" /></td>
+                                        <td>
+                                            <input name="Sorties[@si].Crew[@ci].IsPrimary" type="checkbox" value="true" />
+                                        </td>
+                                        <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-crew">Remove</button></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-add-crew" data-sortie-index="@si">Add Crew</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="mb-3">
+        <button type="button" id="btn-add-sortie" class="btn btn-primary">Add Sortie</button>
+    </div>
+
+    <div class="mb-3">
+        <button type="submit" class="btn btn-success">Save ODV & Sorties</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<!-- Hidden template used by JS when adding a new sortie -->
+<template id="template-sortie">
+    <div class="card mb-2 sortie-block" data-sortie-index="__IDX__">
+        <div class="card-body">
+            <div class="d-flex justify-content-between">
+                <h5 class="card-title">Sortie __NUM__</h5>
+                <button type="button" class="btn btn-sm btn-danger btn-remove-sortie">Remove</button>
+            </div>
+
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label">Aircraft</label>
+                    <select name="Sorties[__IDX__].AircraftId" class="form-select">
+                        <option value="">-- none --</option>
+                        @if (ViewBag.Aircrafts is IEnumerable<SelectListItem> acs2)
+                        {
+                            foreach (var a in acs2) { <option value="@a.Value">@a.Text</option>; }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Configuration</label>
+                    <input name="Sorties[__IDX__].Configuration" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Fuel Quantity</label>
+                    <input name="Sorties[__IDX__].FuelQuantity" class="form-control" type="number" step="0.1" />
+                </div>
+            </div>
+
+            <div class="mt-2">
+                <h6>Crew</h6>
+                <table class="table table-sm crew-table">
+                    <thead>
+                        <tr><th>Member</th><th>Role</th><th>Primary</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr data-crew-index="0">
+                            <td>
+                                <select name="Sorties[__IDX__].Crew[0].PersonId" class="form-select">
+                                    <option value="">-- select crew --</option>
+                                    @if (ViewBag.CrewMembers is IEnumerable<SelectListItem> cms2)
+                                    {
+                                        foreach (var cm in cms2) { <option value="@cm.Value">@cm.Text</option>; }
+                                    }
+                                </select>
+                            </td>
+                            <td><input name="Sorties[__IDX__].Crew[0].Role" class="form-control" /></td>
+                            <td><input name="Sorties[__IDX__].Crew[0].IsPrimary" type="checkbox" value="true" /></td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-crew">Remove</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <button type="button" class="btn btn-sm btn-outline-primary btn-add-crew" data-sortie-index="__IDX__">Add Crew</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+@section Scripts {
+    <script>
+        (function () {
+            // Fetch planned ODVs when squadron or date changes and replace the lower area.
+            function fetchPlanned() {
+                var squadron = document.getElementById('SquadronId')?.value;
+                var odvDateInput = document.querySelector('input[name="OdvDate"]')?.value;
+                if (!squadron || !odvDateInput) {
+                    // empty when either not selected
+                    document.getElementById('planned-odvs-container').innerHTML = '';
+                    return;
+                }
+                // Build query (Date should be yyyy-MM-dd)
+                var url = '/Odvs/PlannedOdvs?squadronId=' + encodeURIComponent(squadron) + '&odvDate=' + encodeURIComponent(odvDateInput);
+                fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (res) { return res.text(); })
+                    .then(function (html) {
+                        document.getElementById('planned-odvs-container').innerHTML = html;
+                        // Optionally hide or show the dynamic sorties area depending on whether planned ODVs exist
+                        var hasPlanned = html && html.trim().length > 10;
+                        var sortiesArea = document.getElementById('sorties-container');
+                        if (sortiesArea) sortiesArea.style.display = hasPlanned ? 'block' : 'none';
+                    })
+                    .catch(function (err) {
+                        console.error('Failed to load planned ODVs', err);
+                    });
+            }
+
+            document.getElementById('SquadronId')?.addEventListener('change', fetchPlanned);
+            document.querySelector('input[name="OdvDate"]')?.addEventListener('change', fetchPlanned);
+
+            // run once on load to populate if the page was rendered with values
+            document.addEventListener('DOMContentLoaded', function () {
+                fetchPlanned();
+            });
+        })();
+    </script>
+    <script src="~/js/odv-create.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+}

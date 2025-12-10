@@ -4,6 +4,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Models
 {
+    public enum AircraftStatus
+    {
+        Available = 0,
+        Assigned = 10,      // assigned to a sortie but still on ground
+        Airborne = 20,      // airborne (TWR should release back to Available)
+        Unserviceable = 30  // aircraft declared unserviceable / maintenance
+    }
     public class Aircraft
     {
         [Key]
@@ -47,7 +54,7 @@ namespace FRAProject.Models
         // Foreign Keys + Navigation
         // --------------------------
         public int AcTypeId { get; set; }
-        public AcType AcType { get; set; } = default!;
+        public AcType AcType { get; set; }
 
         public int AcStatusTypeId { get; set; }
         public AcStatusType AcStatusType { get; set; } = default!;
@@ -58,7 +65,10 @@ namespace FRAProject.Models
         [NotMapped]
         public string DisplayName => $"{Registration} ({TailNo})";
 
+        public AircraftStatus Status { get; set; } = AircraftStatus.Available;
 
+        [System.ComponentModel.DataAnnotations.Timestamp]
+        public byte[]? RowVersion { get; set; }
         // --------------------------
         // collection navigation properties
         public ICollection<Sortie>? Sorties { get; set; }

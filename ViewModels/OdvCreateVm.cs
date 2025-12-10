@@ -1,28 +1,57 @@
 ﻿using FRAProject.Enums;
+using FRAProject.Models; // adjust if your enums live elsewhere
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace FRAProject.ViewModels
 {
+    // ViewModel for creating or editing an ODV with nested sorties & crew
     public class OdvCreateVm
     {
-        // ODV header fields (note naming matches your controller usage: SquadronID, AcMainGroupID etc.)
-        public int SquadronID { get; set; }
+        public int? Id { get; set; }
+
+        // Squadron selection - required for create
+        [Required(ErrorMessage = "Please select a squadron")]
+        [Display(Name = "Squadron")]
+        public int SquadronId { get; set; }
+
+        // Mission selection - required
+        [Required(ErrorMessage = "Please select a mission")]
+        [Display(Name = "Mission")]
         public int MissionId { get; set; }
 
-        // date only
+        // Date only (use <input type="date" /> in view)
+        [Required]
+        [DataType(DataType.Date)]
         public DateTime OdvDate { get; set; } = DateTime.UtcNow.Date;
 
-        // Enums (use your Zone / MissionType / OdvStatus enums)
+        // Use your Zone enum; default provided. If you want user to choose, render select with enum values.
+        [Display(Name = "Zone")]
         public Zone ZoneID { get; set; } = Zone.North;
-        public MissionType MissionTypeID { get; set; } = MissionType.Other;
 
-        public string Area { get; set; } = string.Empty;
-        public OdvStatus? OdvStatus { get; set; } = Enums.OdvStatus.Planned;
+        // Mission type enum
+        [Display(Name = "Mission Type")]
+        public MissionType MissionTypeId { get; set; } = MissionType.Training;
 
-        // optional ODV-level TOFF
+        [Display(Name = "Area")]
+        public string? Area { get; set; }
+
+        // Use the same enum type for ODV status as in your Models namespace
+        [Display(Name = "ODV Status")]
+        public OdvStatus? OdvStatus { get; set; } = FRAProject.Enums.OdvStatus.Planned;
+
+        // Optional planned TOFF: bind using <input type="time" /> or accept a string and parse on server
+        [Display(Name = "Planned TOFF")]
         public TimeSpan? TOFF { get; set; }
 
-        public int AcMainGroupID { get; set; }
+        [Display(Name = "Aircraft Main Group")]
+        public int AcMainGroupId { get; set; }
+
+        [Display(Name = "Call Sign")]
         public string? CallSignId { get; set; }
+
+        [Display(Name = "Observations")]
         public string? Obs { get; set; }
 
         // Nested sorties to create/edit with this ODV

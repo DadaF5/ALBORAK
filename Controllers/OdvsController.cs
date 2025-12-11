@@ -242,7 +242,7 @@ namespace FRAProject.Controllers
                     MissionType = vm.MissionTypeId,
                     Area = vm.Area,
                     Obs = vm.Obs,
-                    CallSign = vm.CallSignId,
+                    CallSignId = vm.CallSignId,
                     AcMainGroupId = vm.AcMainGroupId, // safe now because we validated it exists
                     CreatedAtUtc = now
                 };
@@ -374,10 +374,10 @@ namespace FRAProject.Controllers
 
                         if (sVm.Crew != null)
                         {
-                            foreach (var cVm in sVm.Crew.Where(c => c != null && c.PersonId > 0))
+                            foreach (var cVm in sVm.Crew.Where(c => c != null && c.CrewMemberId > 0))
                             {
                                 // Attempt to resolve CrewMember by PersonId or direct Id
-                                var cm = await _context.CrewMembers.FirstOrDefaultAsync(x => x.PersonId == cVm.PersonId || x.Id == cVm.PersonId);
+                                var cm = await _context.CrewMembers.FirstOrDefaultAsync(x => x.PersonId == cVm.CrewMemberId || x.Id == cVm.CrewMemberId);
                                 if (cm == null)
                                 {
                                     // Option: skip or create a CrewMember entry if your flow supports it.
@@ -507,7 +507,7 @@ namespace FRAProject.Controllers
                 odv.OdvStatus = vm.OdvStatus;
                 odv.TOFF = vm.TOFF;
                 odv.AcMainGroupId = vm.AcMainGroupId;
-                odv.CallSign = vm.CallSignId;
+                odv.CallSignId = vm.CallSignId;
                 odv.Obs = vm.Obs;
                 odv.UpdatedAtUtc = DateTime.UtcNow;
 
@@ -549,14 +549,14 @@ namespace FRAProject.Controllers
                         {
                             foreach (var c in sVm.Crew)
                             {
-                                if (c.PersonId == 0) continue;
+                                if (c.CrewMemberId == 0) continue;
 
                                 int? crewMemberId = null;
-                                var cm = await _context.CrewMembers.FindAsync(c.PersonId);
+                                var cm = await _context.CrewMembers.FindAsync(c.CrewMemberId);
                                 if (cm != null) crewMemberId = cm.Id;
                                 else
                                 {
-                                    var cmByPerson = await _context.CrewMembers.FirstOrDefaultAsync(x => x.PersonId == c.PersonId);
+                                    var cmByPerson = await _context.CrewMembers.FirstOrDefaultAsync(x => x.PersonId == c.CrewMemberId);
                                     if (cmByPerson != null) crewMemberId = cmByPerson.Id;
                                 }
 
@@ -693,18 +693,18 @@ namespace FRAProject.Controllers
             var now = DateTime.UtcNow;
             var warnings = new List<string>();
 
-            var desired = vm.Crew?.Where(c => c != null && c.PersonId != 0).ToList() ?? new List<SortieCrewVm>();
+            var desired = vm.Crew?.Where(c => c != null && c.CrewMemberId != 0).ToList() ?? new List<SortieCrewVm>();
             var existing = sortie.SortieCrews?.ToList() ?? new List<SortieCrew>();
 
             var desiredResolved = new List<(int crewMemberId, SortieCrewVm vm)>();
             foreach (var d in desired)
             {
                 int? crewMemberId = null;
-                var cm = await _context.CrewMembers.FindAsync(d.PersonId);
+                var cm = await _context.CrewMembers.FindAsync(d.CrewMemberId);
                 if (cm != null) crewMemberId = cm.Id;
                 else
                 {
-                    var cmByPerson = await _context.CrewMembers.FirstOrDefaultAsync(x => x.PersonId == d.PersonId);
+                    var cmByPerson = await _context.CrewMembers.FirstOrDefaultAsync(x => x.PersonId == d.CrewMemberId);
                     if (cmByPerson != null) crewMemberId = cmByPerson.Id;
                 }
 
@@ -714,7 +714,7 @@ namespace FRAProject.Controllers
                 }
                 else
                 {
-                    warnings.Add($"Crew person {d.PersonId} not found as CrewMember.");
+                    warnings.Add($"Crew person {d.CrewMemberId} not found as CrewMember.");
                 }
             }
 
@@ -1203,7 +1203,7 @@ namespace FRAProject.Controllers
                 OdvStatus = odv.OdvStatus,
                 TOFF = odv.TOFF,
                 AcMainGroupId = odv.AcMainGroupId,
-                CallSignId = odv.CallSign,
+                CallSignId = odv.CallSignId,
                 Obs = odv.Obs,
                 Sorties = odv.Sorties?.Select(s => new SortieVm
                 {
@@ -1218,7 +1218,7 @@ namespace FRAProject.Controllers
                     IsCompleted = s.IsCompleted,
                     Crew = s.SortieCrews?.Select(sc => new SortieCrewVm
                     {
-                        PersonId = sc.CrewMemberId,
+                        CrewMemberId = sc.CrewMemberId,
                         Role = sc.Role,
                         IsPrimary = sc.IsPrimary
                     }).ToList() ?? new List<SortieCrewVm>()

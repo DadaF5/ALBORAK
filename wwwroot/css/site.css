@@ -7,7 +7,19 @@ html {
     font-size: 16px;
   }
 }
+/* spacing and visual to match the example */
+.table-primary th {
+    background: #2f6fb2;
+    color: #fff;
+}
 
+.table-secondary th {
+    background: #e9eef8;
+}
+
+.card {
+    background: #fff;
+}
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }

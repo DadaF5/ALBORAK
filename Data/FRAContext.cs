@@ -5,7 +5,6 @@ using FRAProject.Models;
 using FRAProject.Enums;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
-
 namespace FRAProject.Data
 {
     public partial class FRAContext : IdentityDbContext<ApplicationUser>
@@ -44,7 +43,7 @@ namespace FRAProject.Data
         // Crew Member Related DbSets
         public DbSet<CrewMember> CrewMembers { get; set; } = null!;
         public DbSet<Qualification> Qualifications { get; set; } = null!;
-        public DbSet<CrewMemberQualification> CrewMemberQualifications { get; set; } = null!;  
+        public DbSet<CrewMemberQualification> CrewMemberQualifications { get; set; } = null!;
         //===============================
         // User Related DbSets
         public DbSet<UserDocument> UserDocuments { get; set; } = null!;
@@ -93,15 +92,10 @@ namespace FRAProject.Data
                 e.HasIndex(f => f.AircraftId);
             });
         }
+
         private void ConfigureMaintenance(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<FlightLog>(e =>
-            {
-                e.HasKey(f => f.Id);
-                e.HasOne(f => f.Sortie).WithOne().HasForeignKey<FlightLog>(f => f.SortieId).OnDelete(DeleteBehavior.Cascade);
-                e.HasOne(f => f.Aircraft).WithMany().HasForeignKey(f => f.AircraftId).OnDelete(DeleteBehavior.Restrict);
-            });
-
+            // Configure maintenance related entities (do not duplicate FlightLog mapping here)
             modelBuilder.Entity<MaintenanceComponent>(e =>
             {
                 e.HasKey(c => c.Id);
@@ -121,30 +115,32 @@ namespace FRAProject.Data
                 e.HasOne(w => w.Component).WithMany().HasForeignKey(w => w.ComponentId).OnDelete(DeleteBehavior.Restrict);
             });
         }
-                   
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Decimal precision configuration in partial class
+            // Use the dedicated configuration classes / partials for entity configuration.
+            // Do not duplicate relationship configuration in multiple places.
+
+            modelBuilder.ApplyConfiguration(new EntityConfigurations.OdvConfiguration());
+            modelBuilder.ApplyConfiguration(new EntityConfigurations.SortieConfiguration());
+
+            // Decimal precision configuration
             ConfigureDecimalPrecision(modelBuilder);
 
-            // Sortie configuration in partial class
+            // Configure Sorties and SortieCrew mapping (single canonical place)
             ConfigureSorties(modelBuilder);
 
-            // Maintenance configuration in partial class
+            // Maintenance & FlightLog configuration (single canonical methods)
             ConfigureMaintenance(modelBuilder);
-
-            // FlightLog configuration in partial class
             ConfigureFlightLog(modelBuilder);
 
             // CallSign configuration in partial class
-            ConfigureCallSign (modelBuilder);
+            ConfigureCallSign(modelBuilder);
 
             // Menu configuration in partial class
             ConfigureMenus(modelBuilder);
-
 
             // Enforce 1:1 relationship between Person and CrewMember by making PersonId unique
             modelBuilder.Entity<CrewMember>(b =>
@@ -154,7 +150,7 @@ namespace FRAProject.Data
                 b.HasIndex(cm => cm.PersonId).IsUnique();    // enforces 1:1
 
                 b.HasOne(cm => cm.Person)
-                    .WithOne(p => p.CrewMember)             // make sure Person has a CrewMember nav property
+                    .WithOne(p => p.CrewMember)
                     .HasForeignKey<CrewMember>(cm => cm.PersonId)
                     .OnDelete(DeleteBehavior.Restrict);
 
@@ -218,140 +214,8 @@ namespace FRAProject.Data
             var zoneConverter = new EnumToStringConverter<Zone>();
             var missionTypeConverter = new EnumToStringConverter<MissionType>();
             var odvStatusConverter = new EnumToStringConverter<OdvStatus>();
-            
-            // Odv configuration
-            modelBuilder.Entity<Odv>(b =>
-            {
-                b.ToTable("Odvs");
-                b.HasKey(x => x.Id);
+        }
 
-                // date-only column
-                b.Property(x => x.OdvDate)
-                    .HasColumnType("date")
-                    .IsRequired();
-
-                // TimeSpan -> SQL time
-                b.Property(x => x.TOFF)
-                    .HasColumnType("time");
-
-                // Audit columns
-                b.Property(x => x.CreatedAtUtc)
-                    .HasColumnType("datetime2")
-                    .IsRequired();
-
-                b.Property(x => x.UpdatedAtUtc)
-                    .HasColumnType("datetime2");
-
-               
-                b.Property(x => x.Zone)
-                    .HasConversion(zoneConverter)
-                    .HasMaxLength(50)
-                    .HasColumnName("Zone");
-
-                b.Property(x => x.MissionType)
-                    .HasConversion(missionTypeConverter)
-                    .HasMaxLength(50)
-                    .HasColumnName("MissionType");
-
-                b.Property(x => x.OdvStatus)
-                    .HasConversion(odvStatusConverter)
-                    .HasMaxLength(50)
-                    .HasColumnName("OdvStatus");
-
-                // FKs naming (optional explicit configuration)
-                b.HasOne(x => x.Squadron)
-                    .WithMany() // adjust if Squadron entity has collection navigation
-                    .HasForeignKey(x => x.SquadronId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                b.HasOne(x => x.Mission)
-                    .WithMany()
-                    .HasForeignKey(x => x.MissionId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                b.HasOne(x => x.AcMainGroup)
-                    .WithMany()
-                    .HasForeignKey(x => x.AcMainGroupId)
-                    .OnDelete(DeleteBehavior.Restrict);
-                // Useful indexes
-                b.HasIndex(o=> new {o.BaseId, o.OdvDate}).HasDatabaseName("IX_Odvs_BaseId_OdvDate");
-                b.HasIndex(o=> new {o.SquadronId, o.OdvDate}).HasDatabaseName("IX_Odvs_SquadronId_OdvDate");
-                b.HasIndex(o=> o.AcMainGroupId).HasDatabaseName("IX_Odvs_AcMainGroupId");
-            });
-
-            // Sortie configuration
-            // inside OnModelCreating:
-            modelBuilder.Entity<Sortie>(b =>
-            {
-                b.ToTable("Sorties");
-                b.HasKey(s => s.Id);
-
-                b.HasOne(s => s.Odv)
-                 .WithMany(o => o.Sorties)
-                 .HasForeignKey(s => s.OdvId)
-                 .OnDelete(DeleteBehavior.Cascade);
-
-                b.Property(s => s.FuelQuantity).HasColumnType("decimal(10,2)");
-
-                b.Property(s => s.StartTime).HasColumnType("datetime2");
-                b.Property(s => s.LandingTime).HasColumnType("datetime2");
-                b.Property(s => s.TOFF).HasColumnType("time");
-
-                b.Property(s => s.CreatedAtUtc).HasColumnType("datetime2").IsRequired();
-                b.Property(s => s.UpdatedAtUtc).HasColumnType("datetime2");
-                b.Property(s => s.CompletedAtUtc).HasColumnType("datetime2");
-
-                b.Property(s => s.CreatedBy).HasMaxLength(200);
-                b.Property(s => s.UpdatedBy).HasMaxLength(200);
-                b.Property(s => s.CompletedBy).HasMaxLength(200);
-
-                // RowVersion concurrency token
-                b.Property(s => s.RowVersion).IsRowVersion().IsConcurrencyToken();
-
-                // Useful indexes
-                b.HasIndex(s => s.OdvId);
-                b.HasIndex(s => s.IsCompleted);
-
-                // index sorties by base + date or by odv for fast joins
-                b.HasIndex(s => new { s.BaseId, s.StartTime }).HasDatabaseName("IX_Sorties_Base_StartTime");
-                b.HasIndex(s => s.OdvId).HasDatabaseName("IX_Sorties_OdvId");
-                b.HasIndex(s => new { s.OdvId, s.IsCompleted }).HasDatabaseName("IX_Sorties_Odv_Completed");
-            });
-            // SortieCrew configuration
-            modelBuilder.Entity<SortieCrew>(b =>
-            {
-                b.ToTable("SortieCrews");
-                b.HasKey(c => c.Id);
-
-                b.HasOne(c => c.Sortie).WithMany(s => s.SortieCrews).HasForeignKey(c => c.SortieId).OnDelete(DeleteBehavior.Cascade);
-                b.HasOne(c => c.CrewMember).WithMany().HasForeignKey(c => c.CrewMemberId).OnDelete(DeleteBehavior.Restrict);
-
-                b.Property(c => c.Role).HasMaxLength(100);
-                b.Property(c => c.IsPrimary).HasDefaultValue(false);
-                b.Property(c => c.Remarks).HasMaxLength(1000);
-            });
-            // --- Ensure Squadron and Mission have Odv navigations (if not already configured elsewhere) ---
-            modelBuilder.Entity<Squadron>(entity =>
-            {
-                entity.HasMany(s => s.Odvs)
-                      .WithOne(o => o.Squadron)
-                      .HasForeignKey(o => o.SquadronId);
-            });
-
-            modelBuilder.Entity<Mission>(entity =>
-            {
-                entity.HasMany(m => m.Odvs)
-                      .WithOne(o => o.Mission)
-                      .HasForeignKey(o => o.MissionId);
-            }
-            
-            );
-            
-
-        // Additional model configuration (Wings, Bases, AcMainGroups, etc.) should be kept
-
-        // in their respective configuration areas if you split configuration into partials.
-    }
         private void ConfigureDecimalPrecision(ModelBuilder modelBuilder)
         {
             // Sortie fuel
@@ -380,7 +244,7 @@ namespace FRAProject.Data
             // Add other decimal properties here as needed
         }
 
-        // In your OnModelCreating (or a partial), add:
+        // Corrected ConfigureSorties: single canonical mapping for Sortie and SortieCrew
         private void ConfigureSorties(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Sortie>(entity =>
@@ -395,13 +259,14 @@ namespace FRAProject.Data
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(s => s.Aircraft)
-                      .WithMany(a => a.Sorties) // add ICollection<Sortie> Sorties in Aircraft model if desired
+                      .WithMany(a => a.Sorties) // ensure Aircraft.Sorties exists or use .WithMany() if not
                       .HasForeignKey(s => s.AircraftId)
                       .OnDelete(DeleteBehavior.SetNull);
 
                 entity.HasIndex(s => new { s.OdvId });
             });
 
+            // Canonical SortieCrew mapping (fixed FK)
             modelBuilder.Entity<SortieCrew>(entity =>
             {
                 entity.HasKey(sc => sc.Id);
@@ -412,9 +277,13 @@ namespace FRAProject.Data
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(sc => sc.CrewMember)
-                      .WithMany() // optionally add navigation ICollection<SortieCrew> to Person
-                      .HasForeignKey(sc => sc.Id)
+                      .WithMany() // if CrewMember has ICollection<SortieCrew>, replace with .WithMany(cm => cm.SortieCrews)
+                      .HasForeignKey(sc => sc.CrewMemberId)   // <-- CORRECT FK property
                       .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(c => c.Role).HasMaxLength(100);
+                entity.Property(c => c.IsPrimary).HasDefaultValue(false);
+                entity.Property(c => c.Remarks).HasMaxLength(1000);
 
                 entity.HasIndex(sc => new { sc.SortieId });
             });

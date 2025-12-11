@@ -3,7 +3,7 @@
     public class SortieCrewVm
     {
         // Selected crew member id from dropdown (can be CrewMember.Id or Person.Id depending on your UI)
-        public int PersonId { get; set; }
+        public int CrewMemberId { get; set; }
 
         // Role in the sortie e.g. "Pilot", "Copilot", "Observer"
         public string? Role { get; set; }

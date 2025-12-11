@@ -1,209 +1,172 @@
-﻿@model IEnumerable<FRAProject.Models.Odv>
-
+﻿@model FRAProject.ViewModels.OdvIndexVm
 @{
-    ViewData["Title"] = "ODVs";
+    ViewData["Title"] = "Squadron Flying Program";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>ODVs</h2>
-
-    <div>
-        @* Full-page create link (fallback) *@
-        <a asp-action="Create" class="btn btn-primary me-2">Create ODV</a>
-
-        @* AJAX modal create (uses ?modal=true or X-Requested-With) *@
-        <button type="button" id="btn-create-ajax" class="btn btn-outline-primary">Create (modal)</button>
+<div class="text-center mb-4">
+    <h1>Squadron Flying Program</h1>
+    <div class="d-flex justify-content-center align-items-center gap-5 mt-3">
+        <div>
+            <div class="small text-muted">Squadron</div>
+            <div>@(Model.SelectedSquadronId.HasValue ? (Model.Squadrons.FirstOrDefault(s => s.Value == Model.SelectedSquadronId.ToString())?.Text ?? "") : "")</div>
+        </div>
+        <div>
+            <div class="small text-muted">Date</div>
+            <div>@(Model.SelectedDate?.ToString("dd-MM-yyyy") ?? "")</div>
+        </div>
+        <div>
+            <div class="small text-muted">Aircraft main Group</div>
+            <div>@(Model.SelectedAcMainGroupId.HasValue ? (Model.AcMainGroups.FirstOrDefault(g => g.Value == Model.SelectedAcMainGroupId.ToString())?.Text ?? "") : "")</div>
+        </div>
     </div>
 </div>
 
-@if (!Model?.Any() ?? true)
+<div class="mb-4">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Date</label>
+            <input type="date" name="odvDate" class="form-control" value="@(Model.SelectedDate?.ToString("yyyy-MM-dd") ?? "")" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Squadron</label>
+            <select name="squadronId" class="form-select">
+                <option value="">-- all --</option>
+                @foreach (var s in Model.Squadrons)
+                {
+                    var isSel = Model.SelectedSquadronId.HasValue && Model.SelectedSquadronId.ToString() == s.Value;
+                    if (isSel)
+                    {
+                        <option value="@s.Value" selected="selected">@s.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@s.Value">@s.Text</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Aircraft Main Group</label>
+            <select name="acMainGroupId" class="form-select">
+                <option value="">-- all --</option>
+                @foreach (var g in Model.AcMainGroups) 
+                {
+                    var isSelected = Model.SelectedAcMainGroupId.HasValue && Model.SelectedAcMainGroupId.ToString() == g.Value;
+                    if (isSelected)
+                    {
+                        <option value="@g.Value" selected="selected">@g.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@g.Value">@g.Text</option>
+                    }
+
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a asp-action="Index" class="btn btn-outline-secondary ms-2">Reset</a>
+            <a asp-action="Create" class="btn btn-success float-end">Create ODV</a>
+        </div>
+    </form>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="border p-3">
+            @{ await Html.RenderPartialAsync("_OdvDetailsPartial", Model); }
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="border p-3">
+            @{ await Html.RenderPartialAsync("_SortieDetailsPartial", Model); }
+        </div>
+    </div>
+</div>
+
+@if (!Model.Odvs.Any())
 {
-    <div class="alert alert-info">No ODV records found.</div>
+    <div class="alert alert-info">No ODVs for the selected filters.</div>
 }
 else
 {
-    <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
-            <thead class="table-light">
+    <table class="table table-bordered table-sm">
+        <thead class="table-primary">
+            <tr>
+                <th>Delete</th>
+                <th>Edit</th>
+                <th>Mission</th>
+                <th>TOFF</th>
+                <th>Call-Sign</th>
+                <th>Area</th>
+                <th>PRV</th>
+                <th>Status</th>
+                <th style="width:400px">Sortie Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model.Odvs)
+            {
                 <tr>
-                    <th>Date</th>
-                    <th>Squadron</th>
-                    <th>Mission</th>
-                    <th>TOFF</th>
-                    <th>Status</th>
-                    <th>Sorties</th>
-                    <th class="text-end">Actions</th>
+                    <td>
+                        <form asp-action="DeleteOdv" asp-route-id="@o.Id" method="post" onsubmit="return confirm('Delete ODV?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-danger btn-sm">X</button>
+                        </form>
+                    </td>
+                    <td><a asp-action="Edit" asp-route-id="@o.Id" class="btn btn-warning btn-sm">✎</a></td>
+                    <td>@(o.Mission?.Name ?? "MSN-" + o.Id)</td>
+                    <td>@(o.TOFF?.ToString(@"hh\:mm") ?? "-")</td>
+                    <td>@o.CallSign</td>
+                    <td>@o.Area</td>                    
+                    <td>@o.OdvStatus.ToString()</td>
+
+                    <td>
+                        @* Nested table for sortie details *@
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr class="table-secondary">
+                                    <th>Id</th>
+                                    <th>Pilot</th>
+                                    <th>Copilot</th>
+                                    <th>AcType</th>
+                                    <th>Fuel</th>
+                                    <th>Config</th>
+                                    <th>Delete</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (o.Sorties != null && o.Sorties.Any())
+                                {
+                                    foreach (var s in o.Sorties)
+                                    {
+                                        <tr>
+                                            <td>@s.Id.ToString("D3")</td>
+                                            <td>@(s.SortieCrews?.FirstOrDefault(sc => sc.IsPrimary == true)?.CrewMember? .Captain ?? "--")</td>
+                                            <td>@(s.SortieCrews?.Where(sc => !sc.IsPrimary).FirstOrDefault()?.CrewMember?.Captain ?? "--")</td>
+                                            <td>@(s.Aircraft?.AcType?.Name ?? "--")</td>
+                                            <td>@(s.FuelQuantity?.ToString() ?? "-")</td>
+                                            <td>@(s.Configuration ?? "-")</td>
+                                            <td>
+                                                <form asp-action="DeleteSortie" method="post" onsubmit="return confirm('Delete sortie?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="sortieId" value="@s.Id" />
+                                                    <button type="submit" class="btn btn-danger btn-sm">X</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr><td colspan="7" class="text-muted">No sorties</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach (var odv in Model)
-                {
-                    <tr data-odv-id="@odv.Id">
-                        <td>@odv.OdvDate.ToString("yyyy-MM-dd")</td>
-                        <td>@(odv.Squadron?.Name ?? "-")</td>
-                        <td>@(odv.Mission?.Name ?? "-")</td>
-                        <td>@(odv.TOFF?.ToString() ?? "-")</td>
-                        <td>@odv.OdvStatus</td>
-                        <td>@(odv.Sorties?.Count() ?? 0)</td>
-                        <td class="text-end">
-                            <div class="btn-group" role="group">
-                                <a asp-action="Details" asp-route-id="@odv.Id" class="btn btn-sm btn-outline-secondary me-1">View</a>
-
-                                @* AJAX modal details *@
-                                <button type="button" class="btn btn-sm btn-outline-secondary ajax-modal" data-url="@Url.Action("Details", new { id = odv.Id })">View (modal)</button>
-
-                                <a asp-action="Edit" asp-route-id="@odv.Id" class="btn btn-sm btn-outline-success ms-1">Edit</a>
-
-                                @* AJAX modal edit *@
-                                <button type="button" class="btn btn-sm btn-outline-success ajax-modal" data-url="@Url.Action("Edit", new { id = odv.Id })">Edit (modal)</button>
-
-                                <a asp-action="Delete" asp-route-id="@odv.Id" class="btn btn-sm btn-outline-danger ms-1">Delete</a>
-
-                                @* AJAX modal delete *@
-                                <button type="button" class="btn btn-sm btn-outline-danger ajax-modal" data-url="@Url.Action("Delete", new { id = odv.Id })">Delete (modal)</button>
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
-
-@* Placeholder where modal partial HTML will be injected *@
-<div id="modal-placeholder"></div>
-
-@section Scripts {
-    <script>
-        (function () {
-            // Helper to do AJAX fetch with X-Requested-With header
-            function fetchWithAjax(url, options) {
-                options = options || {};
-                options.headers = Object.assign({}, options.headers || {}, {
-                    'X-Requested-With': 'XMLHttpRequest'
-                });
-                return fetch(url, options);
             }
-
-            // Open modal by loading partial HTML from server
-            async function openModal(url) {
-                try {
-                    const res = await fetchWithAjax(url, { credentials: 'same-origin' });
-                    const text = await res.text();
-
-                    const placeholder = document.getElementById('modal-placeholder');
-                    placeholder.innerHTML = text;
-
-                    // Find the modal element inside the partial
-                    const modalEl = placeholder.querySelector('.modal');
-                    if (!modalEl) {
-                        console.warn('Modal content did not contain .modal element.');
-                        return;
-                    }
-
-                    // Initialize and show bootstrap modal
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-
-                    // Hook up form submission inside modal (if any)
-                    const form = modalEl.querySelector('form');
-                    if (form) {
-                        form.addEventListener('submit', function (e) {
-                            e.preventDefault();
-                            submitModalForm(form, modal);
-                        });
-                    }
-                } catch (err) {
-                    console.error('Failed to load modal content', err);
-                    alert('Failed to load dialog: ' + err);
-                }
-            }
-
-            // Submit a form inside a modal using fetch; if server returns JSON { success: true } -> reload
-            // If server returns HTML (validation errors) -> replace modal content
-            async function submitModalForm(form, modalInstance) {
-                try {
-                    const url = form.getAttribute('action') || window.location.href;
-                    const method = (form.getAttribute('method') || 'post').toUpperCase();
-                    const formData = new FormData(form);
-
-                    const res = await fetchWithAjax(url, {
-                        method: method,
-                        body: formData,
-                        credentials: 'same-origin'
-                    });
-
-                    const contentType = res.headers.get('content-type') || '';
-
-                    if (contentType.indexOf('application/json') !== -1) {
-                        const json = await res.json();
-                        if (json && json.success) {
-                            // close modal and reload to reflect changes
-                            modalInstance.hide();
-                            // small delay to allow modal hide animation
-                            setTimeout(function () { location.reload(); }, 200);
-                            return;
-                        } else {
-                            // Unexpected JSON: reload for safety
-                            location.reload();
-                            return;
-                        }
-                    } else {
-                        // Treat as HTML
-                        const html = await res.text();
-                        // Replace modal placeholder content
-                        const placeholder = document.getElementById('modal-placeholder');
-                        placeholder.innerHTML = html;
-                        const newModalEl = placeholder.querySelector('.modal');
-                        if (newModalEl) {
-                            // Re-initialize modal instance and hook form submit again
-                            const newModal = new bootstrap.Modal(newModalEl);
-                            newModal.show();
-
-                            const newForm = newModalEl.querySelector('form');
-                            if (newForm) {
-                                newForm.addEventListener('submit', function (e) {
-                                    e.preventDefault();
-                                    submitModalForm(newForm, newModal);
-                                });
-                            }
-                        }
-                    }
-                } catch (err) {
-                    console.error('Failed to submit form', err);
-                    alert('Failed to submit: ' + err);
-                }
-            }
-
-            // Wire up global handlers for elements with .ajax-modal
-            document.addEventListener('click', function (e) {
-                const btn = e.target.closest('.ajax-modal');
-                if (!btn) return;
-
-                e.preventDefault();
-                const url = btn.getAttribute('data-url') || btn.getAttribute('href');
-                if (!url) return;
-
-                // append modal=true query if not already present so server will return modal partials when it checks QueryModalFlag()
-                const hasQuery = url.indexOf('?') !== -1;
-                const modalUrl = url + (hasQuery ? '&modal=true' : '?modal=true');
-
-                openModal(modalUrl);
-            });
-
-            // Create modal button
-            const btnCreateAjax = document.getElementById('btn-create-ajax');
-            if (btnCreateAjax) {
-                btnCreateAjax.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    // use Create action with modal=true
-                    const url = '@Url.Action("Create")';
-                    const modalUrl = url + '?modal=true';
-                    openModal(modalUrl);
-                });
-            }
-
-            // Optional: if you want clicking the non-ajax "View/Edit/Delete" links to open modals too, you can add handlers
-        })();
-    </script>
+        </tbody>
+    </table>
 }

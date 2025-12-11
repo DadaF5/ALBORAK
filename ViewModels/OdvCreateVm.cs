@@ -49,7 +49,7 @@ namespace FRAProject.ViewModels
         public int AcMainGroupId { get; set; }
 
         [Display(Name = "Call Sign")]
-        public string? CallSignId { get; set; }
+        public int CallSignId { get; set; }
 
         [Display(Name = "Observations")]
         public string? Obs { get; set; }

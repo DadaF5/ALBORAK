@@ -4,7 +4,7 @@
     {
         // optional when editing existing sortie
         public int? SortieId { get; set; }
-
+        public int OdvId { get; set; }  
         // FK to Aircraft (nullable if not selected)
         public int? AircraftId { get; set; }
 

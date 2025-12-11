@@ -1,0 +1,38 @@
+﻿@model FRAProject.ViewModels.OdvIndexVm
+@* Sortie details form (right panel) *@
+<div class="card p-3">
+    <h5>Sortie Details Part</h5>
+    <form asp-action="CreateSortie" method="post" class="row g-2">
+        @Html.AntiForgeryToken()
+        <div class="col-md-6">
+            <label class="form-label">Add Sortie to mission reference</label>
+            <select name="OdvId" class="form-select">
+                <option value="">-- select ODV --</option>
+                @* show only visible ODVs for the selected filters *@
+                @foreach (var o in Model.Odvs)
+                {
+                    <option value="@o.Id">MSN-@o.Id @o.OdvDate.ToString("HH:mm")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">F-16 Type</label>
+            <select name="AircraftId" class="form-select">
+                <option value="">--</option>
+                @foreach (var a in Model.Aircrafts)
+                {
+                    <option value="@a.Value">@a.Text</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Configuration</label>
+            <input name="Configuration" class="form-control" />
+        </div>
+
+        <div class="col-md-1 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary"> <i class="bi bi-plus-circle"></i> Add</button>
+        </div>
+    </form>
+</div>

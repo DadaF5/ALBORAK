@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Models
 {
@@ -43,11 +44,17 @@ namespace FRAProject.Models
 
         public string? Obs { get; set; }
 
+        // FK -> AcMainGroup
         public int AcMainGroupId { get; set; }
-        public AcMainGroup? AcMainGroup { get; set; }
+
+        // Navigation - name must match what OdvConfiguration expects
+        [ForeignKey(nameof(AcMainGroupId))]
+        public virtual AcMainGroup? AcMainGroup { get; set; }
 
         // call sign / identifier
-        public string? CallSign { get; set; }
+        [Column("CallSignId")]
+        public int CallSignId { get; set; }
+        public CallSign? CallSign { get; set; }
 
         // Preflight approval/validation flag controlled by Squadron
         // When false, CrewChief/TWR actions that change sorties are blocked.
@@ -61,7 +68,7 @@ namespace FRAProject.Models
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAtUtc { get; set; }
 
-        // navigation: sorties
-        public ICollection<Sortie> Sorties { get; set; } = new List<Sortie>();
+        // Navigation to sorties
+        public virtual ICollection<Sortie>? Sorties { get; set; }
     }
 }

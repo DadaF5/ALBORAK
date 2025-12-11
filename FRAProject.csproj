@@ -7,8 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Mapping\" />
+    <Folder Include="Migrations\" />
     <Folder Include="Repositories\" />
+    <Folder Include="Views\Planning\SortieCrew\" />
+    <Folder Include="Views\Planning\Sortie\" />
+    <Folder Include="Views\Planning\ODV\" />
   </ItemGroup>
 
   <ItemGroup>

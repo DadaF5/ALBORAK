@@ -60,7 +60,7 @@
 
         <div class="col-md-2 d-flex justify-content-end">
             <!-- Create button placed to the right of the top rows -->
-            <button type="submit" class="btn btn-success">Create ODV</button>
+            <button type="button" id="btn-create-odv" class="btn btn-success">Create ODV</button>
         </div>
     </div>
 
@@ -92,7 +92,13 @@
             </select>
             <span asp-validation-for="CallSignId" class="text-danger"></span>
         </div>
-
+        <div class="col-md-2">
+            <label asp-for="AcMainGroupId" class="form-label"></label>
+            <select asp-for="AcMainGroupId" class="form-select" asp-items="ViewBag.AcMainGroups">
+                <option value="">-- select Main Group --</option>
+            </select>
+            <span asp-validation-for="AcMainGroupId" class="text-danger"></span>
+        </div>
         <div class="col-md-3">
             <label asp-for="Obs" class="form-label"></label>
             <input asp-for="Obs" class="form-control" />
@@ -288,6 +294,7 @@
             });
         })();
     </script>
+    <script src="~/js/odv-create-header.js"></script>
     <script src="~/js/odv-create.js"></script>
     <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>

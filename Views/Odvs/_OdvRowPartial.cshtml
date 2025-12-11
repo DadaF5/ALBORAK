@@ -1,9 +1,10 @@
 ﻿@model FRAProject.Models.Odv
 <div class="odv-row" data-odv-id="@Model.Id">
-    <div><strong>ODV @Model.Id</strong> @Model.OdvDate.ToString("yyyy-MM-dd")</div>
-    <div>Area: @Model.Area</div>
-    <div>
-        <button class="btn btn-sm btn-primary btn-add-sortie" data-odv-id="@Model.Id">Add Sortie</button>
+    <div class="d-flex justify-content-between align-items-center">
+        <div><strong>ODV @Model.Id</strong> <small class="text-muted">@Model.OdvDate:yyyy-MM-dd</small></div>
+        <div>
+            <button class="btn btn-sm btn-primary btn-add-sortie" data-odv-id="@Model.Id">Add Sortie</button>
+        </div>
     </div>
     <div class="mt-2">
         @if (Model.Sorties != null && Model.Sorties.Any())

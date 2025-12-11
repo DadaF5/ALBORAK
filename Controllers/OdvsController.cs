@@ -194,15 +194,39 @@ namespace FRAProject.Controllers
         [Authorize(Roles = "Squadron,CrewChief,Admin")]
         public async Task<IActionResult> CreateHeader([FromForm] OdvCreateVm vm)
         {
-            // Only handle header fields here. Do not require sorties.
-            if (vm == null) return BadRequest("Invalid payload");
+            if (vm == null) return BadRequest(new { success = false, error = "Invalid payload" });
 
-            // Validate required header fields
+            // Basic model state validation first
             if (!ModelState.IsValid)
             {
-                // return validation errors as JSON; client will display them
-                var errors = ModelState.Where(kvp => kvp.Value.Errors.Count > 0)
+                var msErrors = ModelState.Where(kvp => kvp.Value.Errors.Count > 0)
                     .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { success = false, errors = msErrors });
+            }
+
+            // Validate referenced FK ids exist (Squadron, Mission, AcMainGroup)
+            var errors = new Dictionary<string, string[]>();
+
+            if (vm.SquadronId <= 0 || !await _context.Squadrons.AnyAsync(s => s.Id == vm.SquadronId))
+            {
+                errors["SquadronId"] = new[] { "Please select a valid Squadron." };
+            }
+
+            if (vm.MissionId <= 0 || !await _context.Missions.AnyAsync(m => m.Id == vm.MissionId))
+            {
+                errors["MissionId"] = new[] { "Please select a valid Mission." };
+            }
+
+            // If AcMainGroupId is required by the DB (non-nullable FK), enforce it here.
+            // If it's optional in your schema, you can skip this check or allow vm.AcMainGroupId == 0 to map to null.
+            if (vm.AcMainGroupId <= 0 || !await _context.AcMainGroups.AnyAsync(a => a.Id == vm.AcMainGroupId))
+            {
+                errors["AcMainGroupId"] = new[] { "Please select a valid Aircraft Main Group." };
+            }
+
+            if (errors.Any())
+            {
+                // merge into ModelState-like structure for client consumption
                 return BadRequest(new { success = false, errors });
             }
 
@@ -218,9 +242,9 @@ namespace FRAProject.Controllers
                     MissionType = vm.MissionTypeId,
                     Area = vm.Area,
                     Obs = vm.Obs,
-                    CreatedAtUtc = now,
                     CallSign = vm.CallSignId,
-                    // set other header fields as needed
+                    AcMainGroupId = vm.AcMainGroupId, // safe now because we validated it exists
+                    CreatedAtUtc = now
                 };
                 SetCreatedAudit(odv);
 
@@ -231,8 +255,15 @@ namespace FRAProject.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "CreateHeader failed");
-                return StatusCode(500, new { success = false, error = ex.Message });
+                _logger.LogError(ex, "CreateHeader failed while saving ODV header (debug).");
+
+                var inner = ex.InnerException?.Message ?? ex.GetBaseException()?.Message ?? ex.Message;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = "Save failed. See 'details' for DB error (development only).",
+                    details = inner
+                });
             }
         }
 
@@ -287,10 +318,10 @@ namespace FRAProject.Controllers
             if (vm == null) return BadRequest();
 
             // Basic server-side validation
-            if (vm.Sorties == null || !vm.Sorties.Any())
-            {
-                ModelState.AddModelError(string.Empty, "Please add at least one sortie.");
-            }
+            //if (vm.Sorties == null || !vm.Sorties.Any())
+            //{
+            //    ModelState.AddModelError(string.Empty, "Please add at least one sortie.");
+            //}
 
             if (!ModelState.IsValid)
             {

@@ -38,10 +38,6 @@ namespace FRAProject.Models
 
         public bool Active { get; set; } = true;
 
-        // Navigation
-        public ICollection<Odv>? Odvs { get; set; }
-       
-
         // Computed for display
         [NotMapped]
         public string FullName => $"{Name} ({Wing?.Name})";
@@ -49,6 +45,7 @@ namespace FRAProject.Models
         // Navigation: crew members belonging to this squadron
         // Initialize collection to avoid null checks in code.
         public ICollection<CrewMember> CrewMembers { get; set; } = new List<CrewMember>();
+        public ICollection<Odv> Odvs { get; set; } = new List<Odv>();
 
 
     }

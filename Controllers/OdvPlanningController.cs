@@ -1,12 +1,14 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using FRAProject.Data;
+using FRAProject.Models;
+using FRAProject.ViewModels;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using FRAProject.Data;
-using FRAProject.Models;
-using FRAProject.ViewModels;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FRAProject.Controllers
 {
@@ -14,13 +16,18 @@ namespace FRAProject.Controllers
     public class OdvPlanningController : Controller
     {
         private readonly FRAContext _context;
+        private readonly ILogger<OdvsController> _logger;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public OdvPlanningController(FRAContext context)
+        public OdvPlanningController(FRAContext context, ILogger<OdvsController> logger, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _logger = logger;
+            _userManager = userManager;
         }
 
         // GET: /Odvs
+        // list / filter / eager-load for display
         [HttpGet("")]
         public async Task<IActionResult> Index(int? squadronId, DateTime? odvDate, int? acMainGroupId)
         {
@@ -28,19 +35,49 @@ namespace FRAProject.Controllers
             {
                 SelectedSquadronId = squadronId,
                 SelectedDate = odvDate,
-                SelectedAcMainGroupId = acMainGroupId,
-                Squadrons = await _context.Squadrons.OrderBy(s => s.Name).Select(s => new SelectListItem(s.Name, s.Id.ToString())).ToListAsync(),
-                AcMainGroups = await _context.AcMainGroups.OrderBy(g => g.Name).Select(g => new SelectListItem(g.Name, g.Id.ToString())).ToListAsync(),
-                Missions = await _context.Missions.OrderBy(m => m.Name).Select(m => new SelectListItem(m.Name, m.Id.ToString())).ToListAsync(),
-                CallSigns = await _context.CallSigns.OrderBy(c => c.Code).Select(c => new SelectListItem(c.Code, c.Code)).ToListAsync(),
-                Aircrafts = await _context.Aircrafts.OrderBy(a => a.Registration).Select(a => new SelectListItem(a.DisplayName, a.Id.ToString())).ToListAsync(),
-                CrewMembers = await _context.CrewMembers
-                    .OrderBy(cm => cm.NickName)
-                    .Select(cm => new SelectListItem(cm.Captain, cm.Id.ToString()))
-                    .ToListAsync()
+                SelectedAcMainGroupId = acMainGroupId
             };
 
-            // Query ODVs eager loaded with sorties and crew (apply filters)
+            // populate select lists (small helper inline)
+            vm.Squadrons = await _context.Squadrons
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem(s.Name, s.Id.ToString()))
+                .ToListAsync();
+
+            vm.AcMainGroups = await _context.AcMainGroups
+                .OrderBy(g => g.Name)
+                .Select(g => new SelectListItem(g.Name, g.Id.ToString()))
+                .ToListAsync();
+
+            vm.Missions = await _context.Missions
+                .OrderBy(m => m.Name)
+                .Select(m => new SelectListItem(m.Name, m.Id.ToString()))
+                .ToListAsync();
+
+            vm.CallSigns = await _context.CallSigns
+                .OrderBy(c => c.Code)
+                .Select(c => new SelectListItem(c.Code, c.Id.ToString()))
+                .ToListAsync();
+
+            vm.Aircrafts = await _context.Aircrafts
+                .OrderBy(a => a.Registration)
+                .Select(a => new SelectListItem(a.DisplayName, a.Id.ToString()))
+                .ToListAsync();
+
+            vm.CrewMembers = await _context.CrewMembers
+                .OrderBy(cm => cm.NickName)
+                .Select(cm => new SelectListItem(cm.Captain, cm.Id.ToString()))
+                .ToListAsync();
+            vm.ZoneList = Enum.GetValues(typeof(Enums.Zone))
+                 .Cast<Enums.Zone>()
+                 .Select(z => new SelectListItem { Value = ((int)z).ToString(), Text = z.ToString() })
+                 .ToList();
+            vm.MissionTypeList = Enum.GetValues(typeof(Enums.MissionType))
+                .Cast<Enums.MissionType>()
+                .Select(mt => new SelectListItem { Value = ((int)mt).ToString(), Text = mt.ToString() })
+                .ToList();
+                
+            // build query and eager load what index view needs
             var q = _context.Odvs
                 .Include(o => o.Mission)
                 .Include(o => o.AcMainGroup)
@@ -62,13 +99,23 @@ namespace FRAProject.Controllers
         }
 
         // POST: Create ODV header
+        // Accepts OdvCreateVm (must exist in your ViewModels)
         [HttpPost("Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateOdv([FromForm] OdvCreateVm model)
+        public async Task<IActionResult> Create([FromForm] OdvCreateVm model)
         {
+            _logger?.LogDebug("Create POST - Request URL: {Url}", Request.Path);
+            _logger?.LogDebug("Create POST - Form keys: {@Form}", Request.Form.ToDictionary(k => k.Key, v => v.Value.ToString()));
+
             if (!ModelState.IsValid)
             {
-                // repopulate select-lists and re-render index with validation messages
+                var errors = ModelState
+                    .Where(kv => kv.Value.Errors.Count > 0)
+                    .ToDictionary(kv => kv.Key, kv => kv.Value.Errors
+                    .Select(e => e.ErrorMessage + (e.Exception != null ? " | ex:" + e.Exception.Message : "")).ToArray());
+                
+                _logger?.LogWarning("Create POST - ModelState invalid: {@Errors}", errors);
+                // repopulate selects and return Index to show validation
                 return await Index(model.SquadronId, model.OdvDate, model.AcMainGroupId);
             }
 
@@ -77,8 +124,8 @@ namespace FRAProject.Controllers
                 SquadronId = model.SquadronId,
                 MissionId = model.MissionId,
                 OdvDate = model.OdvDate,
-                Zone = model.ZoneID,
-                MissionType = model.MissionTypeId,
+                Zone = model.Zone,
+                MissionType = model.MissionType,
                 Area = model.Area,
                 Obs = model.Obs,
                 CallSignId = model.CallSignId,
@@ -89,77 +136,127 @@ namespace FRAProject.Controllers
             _context.Odvs.Add(odv);
             await _context.SaveChangesAsync();
 
-            // Redirect to Index with the same filters and highlight the new ODV (simple redirect)
-            return RedirectToAction(nameof(Index), 
-                new { squadronId = odv.SquadronId, 
-                    odvDate = odv.OdvDate.Date, 
-                    acMainGroupId = odv.AcMainGroupId });
-        }
-
-        // POST: Create sortie attached to an ODV
-        [HttpPost("AddSortie")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateSortie([FromForm] SortieVm model)
-        {
-            if (!ModelState.IsValid)
-            {
-                // when validation fails, re-render Index (you can display a message)
-                return RedirectToAction(nameof(Index), new { squadronId = Request.Form["SquadronId"].FirstOrDefault() });
-            }
-
-            var sortie = new Sortie
-            {
-                OdvId = model.OdvId,
-                AircraftId = model.AircraftId,
-                Configuration = model.Configuration,
-                FuelQuantity = model.FuelQuantity,
-                StartTime = model.StartTime,
-                LandingTime = model.LandingTime,
-                TOFF = model.TOFF,
-                CreatedAtUtc = DateTime.UtcNow,
-                CreatedBy = User?.Identity?.Name ?? "system",
-                Status = SortieStatus.Planned
-            };
-
-            _context.Sorties.Add(sortie);
-            await _context.SaveChangesAsync();
-
-            // optionally create SortieCrews here if model contains one crew entry
-            if (model.Crew != null)
-            {
-                foreach (var c in model.Crew.Where(c => c != null && c.CrewMemberId > 0))
+            return RedirectToAction(nameof(Index),
+                new
                 {
-                    var cm = await _context.CrewMembers.FindAsync(c.CrewMemberId);
-                    if (cm != null)
-                    {
-                        _context.SortieCrews.Add(new SortieCrew { SortieId = sortie.Id, CrewMemberId = cm.Id, Role = c.Role, IsPrimary = c.IsPrimary });
-                    }
-                }
-                await _context.SaveChangesAsync();
-            }
-
-            return RedirectToAction(nameof(Index), new { squadronId = (await _context.Odvs.FindAsync(model.OdvId)).SquadronId, odvDate = DateTime.Now.Date });
+                    squadronId = odv.SquadronId,
+                    odvDate = odv.OdvDate.Date,
+                    acMainGroupId = odv.AcMainGroupId
+                });
         }
 
-        // POST: Delete ODV (and cascade delete sorties/crews server-side)
-        [HttpPost("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteOdv(int id)
+        // GET: /Odvs/Edit/{id}
+        //[HttpGet("Edit/{id:int}")]
+        //public async Task<IActionResult> Edit(int id)
+        //{
+        //    var odv = await _context.Odvs
+        //        .AsNoTracking()
+        //        .Include(o => o.Sorties) // optional - included if Edit view needs sorties
+        //        .FirstOrDefaultAsync(o => o.Id == id);
+
+        //    if (odv == null) return NotFound();
+
+        //    var vm = new OdvEditVm
+        //    {
+        //        Id = odv.Id,
+        //        SquadronId = odv.SquadronId,
+        //        MissionId = odv.MissionId,
+        //        OdvDate = odv.OdvDate,
+        //        Zone = odv.Zone,
+        //        MissionType = odv.MissionType,
+        //        Area = odv.Area,
+        //        Obs = odv.Obs,
+        //        CallSignId = odv.CallSignId,
+        //        AcMainGroupId = odv.AcMainGroupId
+        //    };
+
+        //    await PopulateOdvSelectLists(vm);
+        //    return View("~/Views/Odvs/Edit.cshtml", vm);
+        //}
+
+        // POST: /Odvs/Edit/{id}
+        //[HttpPost("Edit/{id:int}")]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> UpdateOdv(int id, [FromForm] OdvEditVm model)
+        //{
+        //    if (id != model.Id) return BadRequest();
+
+        //    // repopulate selects if returning view
+        //    await PopulateOdvSelectLists(model);
+
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return View("~/Views/Odvs/Edit.cshtml", model);
+        //    }
+
+        //    var odv = await _context.Odvs.FirstOrDefaultAsync(o => o.Id == id);
+        //    if (odv == null) return NotFound();
+
+        //    // map editable properties
+        //    odv.SquadronId = model.SquadronId;
+        //    odv.MissionId = model.MissionId;
+        //    odv.OdvDate = model.OdvDate;
+        //    odv.Zone = model.Zone;
+        //    odv.MissionType = model.MissionType;
+        //    odv.Area = model.Area;
+        //    odv.Obs = model.Obs;
+        //    odv.CallSignId = model.CallSignId;
+        //    odv.AcMainGroupId = model.AcMainGroupId;
+        //    odv.UpdatedAtUtc = DateTime.UtcNow;
+
+        //    await _context.SaveChangesAsync();
+
+        //    return RedirectToAction(nameof(Index),
+        //        new
+        //        {
+        //            squadronId = odv.SquadronId,
+        //            odvDate = odv.OdvDate.Date,
+        //            acMainGroupId = odv.AcMainGroupId
+        //        });
+        //}
+
+        // small helper to populate select lists used by Edit/Create/Index
+        private async Task PopulateOdvSelectLists(OdvIndexVm vm)
         {
-            var odv = await _context.Odvs.Include(o => o.Sorties).ThenInclude(s => s.SortieCrews).FirstOrDefaultAsync(o => o.Id == id);
-            if (odv == null) return NotFound();
+            vm.Squadrons = await _context.Squadrons
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem(s.Name, s.Id.ToString()))
+                .ToListAsync();
 
-            // Remove nested entities then odv
-            var sortieIds = odv.Sorties.Select(s => s.Id).ToList();
-            var assigns = await _context.SortieCrews.Where(sc => sortieIds.Contains(sc.SortieId)).ToListAsync();
-            _context.SortieCrews.RemoveRange(assigns);
-            _context.Sorties.RemoveRange(odv.Sorties);
-            _context.Odvs.Remove(odv);
-            await _context.SaveChangesAsync();
+            vm.AcMainGroups = await _context.AcMainGroups
+                .OrderBy(g => g.Name)
+                .Select(g => new SelectListItem(g.Name, g.Id.ToString()))
+                .ToListAsync();
 
-            return RedirectToAction(nameof(Index));
+            vm.Missions = await _context.Missions
+                .OrderBy(m => m.Name)
+                .Select(m => new SelectListItem(m.Name, m.Id.ToString()))
+                .ToListAsync();
+
+            vm.CallSigns = await _context.CallSigns
+                .OrderBy(c => c.Code)
+                .Select(c => new SelectListItem(c.Code , c.Id.ToString()))
+                .ToListAsync();
+
+            vm.Aircrafts = await _context.Aircrafts
+                .OrderBy(a => a.Registration)
+                .Select(a => new SelectListItem(a.DisplayName, a.Id.ToString()))
+                .ToListAsync();
+
+            vm.CrewMembers = await _context.CrewMembers
+                .OrderBy(cm => cm.NickName)
+                .Select(cm => new SelectListItem(cm.Captain, cm.Id.ToString()))
+                .ToListAsync();
+            // enum select lists can be populated in the view directly
+            vm.ZoneList = Enum.GetValues(typeof(Enums.Zone))
+                .Cast<Enums.Zone>()
+                .Select(z => new SelectListItem { Value = ((int)z).ToString(), Text = z.ToString() })
+                .ToList();
+
+            vm.MissionTypeList = Enum.GetValues(typeof(Enums.MissionType))
+                .Cast<Enums.MissionType>()
+                .Select(mt => new SelectListItem { Value = ((int)mt).ToString(), Text = mt.ToString() })
+                .ToList();
         }
-
-        // Additional endpoints for edit, details, add/remove crew, set real TOFF etc. can be added similarly.
     }
 }

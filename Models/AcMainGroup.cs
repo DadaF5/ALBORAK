@@ -29,7 +29,8 @@ public class AcMainGroup
 
     // Navigation to AcTypes
     public ICollection<AcType> AcTypes { get; set; } = new HashSet<AcType>();
-    public ICollection<Odv>? Odvs { get; set; }
+    public ICollection<Odv> Odvs { get; set; } = new HashSet<Odv>();
+
 
 
 }

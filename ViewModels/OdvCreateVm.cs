@@ -28,13 +28,16 @@ namespace FRAProject.ViewModels
 
         // Use your Zone enum; default provided. If you want user to choose, render select with enum values.
         [Display(Name = "Zone")]
-        public Zone ZoneID { get; set; } = Zone.North;
+        [Required]
+        public Enums.Zone Zone { get; set; } = Enums.Zone.North;
 
         // Mission type enum
         [Display(Name = "Mission Type")]
-        public MissionType MissionTypeId { get; set; } = MissionType.Training;
+        [Required]
+        public Enums.MissionType MissionType { get; set; } = Enums.MissionType.Training;
 
         [Display(Name = "Area")]
+        [Required]
         public string? Area { get; set; }
 
         // Use the same enum type for ODV status as in your Models namespace
@@ -48,8 +51,10 @@ namespace FRAProject.ViewModels
         [Display(Name = "Aircraft Main Group")]
         public int AcMainGroupId { get; set; }
 
+        // in OdvCreateVm
         [Display(Name = "Call Sign")]
-        public int CallSignId { get; set; }
+        [Required]
+        public int CallSignId { get; set; }    // allow none
 
         [Display(Name = "Observations")]
         public string? Obs { get; set; }

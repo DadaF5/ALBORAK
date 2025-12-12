@@ -21,17 +21,20 @@ namespace FRAProject.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly FRAContext _context;
         private readonly ILogger<UsersController> _logger;
 
         public UsersController(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
+            SignInManager<ApplicationUser> signInManager,
             FRAContext context,
             ILogger<UsersController> logger)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _signInManager = signInManager;
             _context = context;
             _logger = logger;
         }
@@ -218,8 +221,10 @@ namespace FRAProject.Controllers
             if (user == null) return NotFound();
 
             var roles = await _userManager.GetRolesAsync(user);
-            var vm = new RegisterUserViewModel
+
+            var vm = new EditUserViewModel
             {
+                Id = user.Id,
                 Email = user.Email ?? "",
                 FirstName = user.FirstName,
                 LastName = user.LastName,
@@ -243,7 +248,6 @@ namespace FRAProject.Controllers
                 .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
                 .ToListAsync();
 
-            // populate other lists optionally if Edit view needs them (wings/squadrons etc.)
             vm.WingList = await _context.Set<Wing>()
                 .OrderBy(w => w.Name)
                 .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
@@ -271,10 +275,8 @@ namespace FRAProject.Controllers
         // POST: Users/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(string id, RegisterUserViewModel model)
+        public async Task<IActionResult> Edit(string id, EditUserViewModel model)
         {
-            if (string.IsNullOrEmpty(id)) return NotFound();
-
             // repopulate lists for redisplay
             model.AvailableRoles = await _roleManager.Roles
                 .OrderBy(r => r.Name)
@@ -308,6 +310,9 @@ namespace FRAProject.Controllers
 
             if (!ModelState.IsValid)
             {
+                _logger?.LogWarning("ModelState invalid for Users/Edit: {@Errors}", ModelState
+                    .Where(kv => kv.Value.Errors.Count > 0)
+                    .ToDictionary(kv => kv.Key, kv => kv.Value.Errors.Select(e => e.ErrorMessage).ToArray()));
                 ViewBag.UserId = id;
                 return View(model);
             }
@@ -315,6 +320,16 @@ namespace FRAProject.Controllers
             var user = await _userManager.FindByIdAsync(id);
             if (user == null) return NotFound();
 
+            // check email uniqueness
+            var existingByEmail = await _userManager.FindByEmailAsync(model.Email);
+            if (existingByEmail != null && existingByEmail.Id != user.Id)
+            {
+                ModelState.AddModelError(nameof(model.Email), "Email is already used by another account.");
+                ViewBag.UserId = id;
+                return View(model);
+            }
+
+            // map editable properties (only those coming from the edit form)
             user.Email = model.Email;
             user.UserName = model.Email;
             user.FirstName = model.FirstName;
@@ -330,14 +345,18 @@ namespace FRAProject.Controllers
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
             {
-                foreach (var err in updateResult.Errors) ModelState.AddModelError(string.Empty, err.Description);
+                foreach (var err in updateResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, err.Description);
+                    _logger?.LogWarning("User update failed: {Code} - {Desc}", err.Code, err.Description);
+                }
                 ViewBag.UserId = id;
                 return View(model);
             }
 
             var currentRoles = await _userManager.GetRolesAsync(user);
-            var toRemove = currentRoles.Except(model.SelectedRoles).ToArray();
-            var toAdd = model.SelectedRoles.Except(currentRoles).Distinct().ToArray();
+            var toRemove = currentRoles.Except(model.SelectedRoles ?? Enumerable.Empty<string>()).ToArray();
+            var toAdd = (model.SelectedRoles ?? Enumerable.Empty<string>()).Except(currentRoles).Distinct().ToArray();
 
             if (toRemove.Any())
                 await _userManager.RemoveFromRolesAsync(user, toRemove);
@@ -359,11 +378,7 @@ namespace FRAProject.Controllers
             var currentUserId = _userManager.GetUserId(User);
             if (currentUserId == user.Id)
             {
-                await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
-                await _userManager.UpdateAsync(user); // ensure persisted
-                // re-sign-in
-                var principal = await _userManager.CreateAsync(user);
-                // The above is placeholder — in practice use SignInManager.RefreshSignInAsync(user) if you have SignInManager injected.
+                await _signInManager.RefreshSignInAsync(user);
             }
 
             return RedirectToAction(nameof(Index));

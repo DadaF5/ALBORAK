@@ -38,6 +38,10 @@ namespace FRAProject.Data.EntityConfigurations
             builder.Property(s => s.FuelQuantity)
                 .HasColumnType("decimal(12,2)")
                 .IsRequired(false);
+            // Fuel used
+            builder.Property(s => s.FuelUsedLiters)
+                .HasColumnType("decimal(12,2)")
+                .IsRequired(false);
 
             // Text fields
             builder.Property(s => s.Configuration)

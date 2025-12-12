@@ -24,14 +24,14 @@ namespace FRAProject.Data.EntityConfigurations
             builder.Property(o => o.Area)
                 .HasMaxLength(200)
                 .IsRequired();
-            
+
             // CallSign
             builder.HasOne(o => o.CallSign)
-                .WithMany()
-                .HasForeignKey(o => o.CallSignId)
-                .OnDelete(DeleteBehavior.Restrict);
+                 .WithMany()
+                 .HasForeignKey(o => o.CallSignId)
+                 .OnDelete(DeleteBehavior.Restrict);
 
-           
+
             builder.Property(o => o.Obs)
                 .HasMaxLength(2000)
                 .IsRequired(false);
@@ -74,34 +74,34 @@ namespace FRAProject.Data.EntityConfigurations
                 .HasDatabaseName("UX_Odv_Squadron_OdvDate");
 
             builder.HasOne(o => o.Squadron)
-                .WithMany() // keep loose coupling; if Squadron has Odvs collection, change to WithMany(s => s.Odvs)
+                .WithMany(s => s.Odvs) // explicit: Squadron must have public ICollection<Odv> Odvs
                 .HasForeignKey(o => o.SquadronId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Base (optional)
             builder.HasOne(o => o.Base)
-                .WithMany()
+                .WithMany() // if Base does not expose Odvs collection, keep WithMany()
                 .HasForeignKey(o => o.BaseId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Mission
             builder.HasOne(o => o.Mission)
-                .WithMany()
-                .HasForeignKey(o => o.MissionId)
-                .OnDelete(DeleteBehavior.Restrict);
+               .WithMany(m => m.Odvs) // explicit: Mission must have public ICollection<Odv> Odvs
+               .HasForeignKey(o => o.MissionId)
+               .OnDelete(DeleteBehavior.Restrict);
 
             // AcMainGroup
             builder.HasOne(o => o.AcMainGroup)
-                .WithMany()
+                .WithMany(g => g.Odvs)
                 .HasForeignKey(o => o.AcMainGroupId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Sorties collection
             // Assumes Sortie has OdvId FK and Odv navigation property
             builder.HasMany(o => o.Sorties)
-                .WithOne(s => s.Odv!)
-                .HasForeignKey(s => s.OdvId)
-                .OnDelete(DeleteBehavior.Cascade);
+               .WithOne(s => s.Odv!)
+               .HasForeignKey(s => s.OdvId)
+               .OnDelete(DeleteBehavior.Cascade);
 
             // IsPreflightApproved default
             builder.Property(o => o.IsPreflightApproved)

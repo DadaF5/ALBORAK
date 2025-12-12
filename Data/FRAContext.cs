@@ -119,7 +119,7 @@ namespace FRAProject.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
+            
             // Use the dedicated configuration classes / partials for entity configuration.
             // Do not duplicate relationship configuration in multiple places.
 

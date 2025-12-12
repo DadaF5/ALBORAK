@@ -43,24 +43,25 @@
         </div>
 
         <div class="col-md-2">
-            <label asp-for="ZoneID" class="form-label"></label>
-            <select asp-for="ZoneID" asp-items="Html.GetEnumSelectList<Zone>()" class="form-select">
+            <label asp-for="Zone" class="form-label"></label>
+            <select asp-for="Zone" asp-items="Html.GetEnumSelectList<Zone>()" class="form-select">
                 <option value="">-- select zone --</option>
             </select>
-            <span asp-validation-for="ZoneID" class="text-danger"></span>
+            <span asp-validation-for="Zone" class="text-danger"></span>
         </div>
 
         <div class="col-md-2">
-            <label asp-for="MissionTypeId" class="form-label"></label>
-            <select asp-for="MissionTypeId" asp-items="Html.GetEnumSelectList<MissionType>()" class="form-select">
+            <label asp-for="MissionType" class="form-label"></label>
+            <select asp-for="MissionType" asp-items="Html.GetEnumSelectList<MissionType>()" class="form-select">
                 <option value="">-- select mission type --</option>
             </select>
-            <span asp-validation-for="MissionTypeId" class="text-danger"></span>
+            <span asp-validation-for="MissionType" class="text-danger"></span>
         </div>
 
         <div class="col-md-2 d-flex justify-content-end">
             <!-- Create button placed to the right of the top rows -->
-            <button type="button" id="btn-create-odv" class="btn btn-success">Create ODV</button>
+        public async Task<IActionResult> CreateOdv([FromForm] OdvCreateVm model)
+                <button type="button" id="btn-create-odv" class="btn btn-success">Create ODV</button>
         </div>
     </div>
 

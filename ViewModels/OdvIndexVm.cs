@@ -8,19 +8,26 @@ namespace FRAProject.ViewModels
     public class OdvIndexVm
     {
         // Filters
-        public DateTime? SelectedDate { get; set; }
         public int? SelectedSquadronId { get; set; }
+        public DateTime? SelectedDate { get; set; }
         public int? SelectedAcMainGroupId { get; set; }
 
-        // Select lists for filters and forms
-        public IEnumerable<SelectListItem> Squadrons { get; set; } = Array.Empty<SelectListItem>();
-        public IEnumerable<SelectListItem> AcMainGroups { get; set; } = Array.Empty<SelectListItem>();
-        public IEnumerable<SelectListItem> Missions { get; set; } = Array.Empty<SelectListItem>();
-        public IEnumerable<SelectListItem> CallSigns { get; set; } = Array.Empty<SelectListItem>();
-        public IEnumerable<SelectListItem> Aircrafts { get; set; } = Array.Empty<SelectListItem>();
-        public IEnumerable<SelectListItem> CrewMembers { get; set; } = Array.Empty<SelectListItem>();
+        // Create-model (bind the create form to this so posted values are preserved)
+        public OdvCreateVm? CreateModel { get; set; }
 
-        // Data to render
-        public IEnumerable<Odv> Odvs { get; set; } = Array.Empty<Odv>();
+        // Select lists for the page
+        public List<SelectListItem>? Squadrons { get; set; }
+        public List<SelectListItem>? AcMainGroups { get; set; }
+        public List<SelectListItem>? Missions { get; set; }
+        public List<SelectListItem>? CallSigns { get; set; } // Value = Id.ToString()
+        public List<SelectListItem>? Aircrafts { get; set; }
+        public List<SelectListItem>? CrewMembers { get; set; }
+
+        // in OdvIndexVm
+        public List<SelectListItem>? ZoneList { get; set; }
+        public List<SelectListItem>? MissionTypeList { get; set; }
+
+        // Data to display
+        public List<Odv>? Odvs { get; set; }
     }
 }

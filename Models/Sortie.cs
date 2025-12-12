@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Models
 {
@@ -83,6 +85,9 @@ namespace FRAProject.Models
         [Display(Name = "IFR Hours")]
         public double? IFRHours { get; set; }
         public int? Cycles { get; set; }
+
+        [Display(Name = "Fuel Used (Liters)")]
+        [Column(TypeName ="decimal(12,2)")]
         public decimal? FuelUsedLiters { get; set; }
         public string? Malfunctions { get; set; }
         public bool IsCompleted { get; set; }

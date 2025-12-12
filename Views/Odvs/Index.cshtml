@@ -1,172 +1,301 @@
 ﻿@model FRAProject.ViewModels.OdvIndexVm
+
 @{
-    ViewData["Title"] = "Squadron Flying Program";
+    ViewData["Title"] = "ODV Planning";
 }
+@* @{
+    var posted = ViewContext.HttpContext.Request.Form; 
+    var postedZone = posted["Zone"].FirstOrDefault() ?? ""; 
+    var postedMissionType = posted["MissionType"].FirstOrDefault() ?? ""; 
+    var postedSquadronId = posted["SquadronId"].FirstOrDefault() ?? ""; 
+    var postedCallSignId = posted["CallSignId"].FirstOrDefault() ?? "";
+} *@
+<h1>ODV Planning</h1>
 
-<div class="text-center mb-4">
-    <h1>Squadron Flying Program</h1>
-    <div class="d-flex justify-content-center align-items-center gap-5 mt-3">
-        <div>
-            <div class="small text-muted">Squadron</div>
-            <div>@(Model.SelectedSquadronId.HasValue ? (Model.Squadrons.FirstOrDefault(s => s.Value == Model.SelectedSquadronId.ToString())?.Text ?? "") : "")</div>
-        </div>
-        <div>
-            <div class="small text-muted">Date</div>
-            <div>@(Model.SelectedDate?.ToString("dd-MM-yyyy") ?? "")</div>
-        </div>
-        <div>
-            <div class="small text-muted">Aircraft main Group</div>
-            <div>@(Model.SelectedAcMainGroupId.HasValue ? (Model.AcMainGroups.FirstOrDefault(g => g.Value == Model.SelectedAcMainGroupId.ToString())?.Text ?? "") : "")</div>
-        </div>
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="form-inline">
+            <div class="form-row align-items-end w-100">
+                <div class="form-group col-md-3">
+                    <label for="squadronFilter">Squadron</label>
+                    <select id="squadronFilter" name="squadronId" class="form-control">
+                        <option value="">-- All --</option>
+                        @foreach (var s in Model.Squadrons)
+                        {
+                            var isSel = Model.SelectedSquadronId.HasValue && Model.SelectedSquadronId.ToString() == s.Value;
+                            if (isSel)
+                            {
+                                <option value="@s.Value" selected="selected">@s.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@s.Value">@s.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group col-md-3">
+                    <label for="dateFilter">Date</label>
+                    <input id="dateFilter" name="odvDate" type="date" class="form-control" value="@(Model.SelectedDate?.ToString("yyyy-MM-dd") ?? "")" />
+                </div>
+
+                <div class="form-group col-md-3">
+                    <label for="acGroupFilter">AC Main Group</label>
+                    <select id="acGroupFilter" name="acMainGroupId" class="form-control">
+                        <option value="">-- All --</option>
+                        @foreach (var g in Model.AcMainGroups)
+                        {
+                            var isSelected = Model.SelectedAcMainGroupId.HasValue && Model.SelectedAcMainGroupId.ToString() == g.Value;
+                            if (isSelected)
+                            {
+                                <option value="@g.Value" selected="selected">@g.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@g.Value">@g.Text</option>
+                            }
+
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group col-md-3">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary ml-2">Reset</a>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
-<div class="mb-4">
-    <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-3">
-            <label class="form-label">Date</label>
-            <input type="date" name="odvDate" class="form-control" value="@(Model.SelectedDate?.ToString("yyyy-MM-dd") ?? "")" />
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Squadron</label>
-            <select name="squadronId" class="form-select">
-                <option value="">-- all --</option>
-                @foreach (var s in Model.Squadrons)
-                {
-                    var isSel = Model.SelectedSquadronId.HasValue && Model.SelectedSquadronId.ToString() == s.Value;
-                    if (isSel)
-                    {
-                        <option value="@s.Value" selected="selected">@s.Text</option>
-                    }
-                    else
-                    {
-                        <option value="@s.Value">@s.Text</option>
-                    }
-                }
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Aircraft Main Group</label>
-            <select name="acMainGroupId" class="form-select">
-                <option value="">-- all --</option>
-                @foreach (var g in Model.AcMainGroups) 
-                {
-                    var isSelected = Model.SelectedAcMainGroupId.HasValue && Model.SelectedAcMainGroupId.ToString() == g.Value;
-                    if (isSelected)
-                    {
-                        <option value="@g.Value" selected="selected">@g.Text</option>
-                    }
-                    else
-                    {
-                        <option value="@g.Value">@g.Text</option>
-                    }
+<!-- Create ODV form -->
+<div class="card mb-4">
+    <div class="card-header">
+        Create new ODV
+    </div>
+    <div class="card-body">
+        <form action="@Url.Content("~/Odvs/Create")" method="post" class="needs-validation">
+            @Html.AntiForgeryToken()
 
-                }
-            </select>
-        </div>
-        <div class="col-md-3">
-            <button type="submit" class="btn btn-primary">Filter</button>
-            <a asp-action="Index" class="btn btn-outline-secondary ms-2">Reset</a>
-            <a asp-action="Create" class="btn btn-success float-end">Create ODV</a>
-        </div>
-    </form>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>Squadron</label>
+                    <select name="SquadronId" class="form-control" required>
+                        <option value="">-- select --</option>
+                        @foreach (var s in Model.Squadrons ?? 
+                        Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
+                        {
+                            <option value="@s.Value">@s.Text</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group col-md-3">
+                    <label>Mission</label>
+                    <select name="MissionId" class="form-control" required>
+                        <option value="">-- select --</option>
+                        @foreach (var m in Model.Missions ?? 
+                        Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
+                        {
+                            <option value="@m.Value">@m.Text</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group col-md-2">
+                    <label>Date</label>
+                    <input type="date" name="OdvDate" class="form-control" 
+                    value="@(DateTime.UtcNow.ToString("yyyy-MM-dd"))" required />
+                </div>
+
+                <div class="form-group col-md-2">
+                    <label>TOFF</label>
+                    <input asp-for="CreateModel.TOFF" type="time" class="form-control"  required/>
+                    <span asp-validation-for="CreateModel.TOFF" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-2">
+                    <label>AC Main Group</label>
+                    <select name="AcMainGroupId" class="form-control" required>
+                        <option value="">-- select --</option>
+                        @foreach (var g in Model.AcMainGroups ?? 
+                        Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
+                        {
+                            <option value="@g.Value">@g.Text</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- CallSign (nullable) -->
+                <div class="form-group col-md-2">
+
+                    <label>Call-sign</label>
+                    <select name="CallSignId" class="form-control" required>
+                        <option value="">-- select --</option>
+                        @foreach (var cs in Model.CallSigns ??
+                        Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
+                        {
+                            <option value="@cs.Value">@cs.Text</option>
+                        }
+                    </select>
+                    <span asp-validation-for="CreateModel.CallSignId" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <!-- Zone -->
+                <div class="form-group col-md-4">
+                    <label asp-for="CreateModel.Zone"></label>
+                    <select asp-for="CreateModel.Zone" asp-items="Model.ZoneList" class="form-control" required>
+                       
+                    </select>
+                    <span asp-validation-for="CreateModel.Zone" class="text-danger"></span>
+                </div>
+
+                <!-- MissionType -->
+                <div class="form-group col-md-4">
+                    <label asp-for="CreateModel.MissionType"></label>
+                    <select asp-for="CreateModel.MissionType" asp-items="Model.MissionTypeList" class="form-control" required>
+                       
+                    </select>
+                    <span asp-validation-for="CreateModel.MissionType" class="text-danger"></span>
+                </div>
+
+                <div class="form-group col-md-4">
+                    <label>Area</label>
+                    <input name="Area" class="form-control" required/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Observations</label>
+                <textarea name="Obs" class="form-control" rows="2"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-success">Create ODV</button>
+        </form>
+    </div>
 </div>
 
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="border p-3">
-            @{ await Html.RenderPartialAsync("_OdvDetailsPartial", Model); }
-        </div>
+<!-- ODV list -->
+<div class="card">
+    <div class="card-header">
+       @*  Planned ODVs (@(Model.Odvs?.Count ?? 0)) *@
     </div>
-    <div class="col-md-6">
-        <div class="border p-3">
-            @{ await Html.RenderPartialAsync("_SortieDetailsPartial", Model); }
-        </div>
-    </div>
-</div>
+    <div class="card-body p-0">
+        @if (Model.Odvs == null || !Model.Odvs.Any())
+        {
+            <div class="p-3">No ODVs found for the selected filters.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-striped mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Squadron</th>
+                            <th>Mission</th>
+                            <th>AC Group</th>
+                            <th>Zone</th>
+                            <th>Type</th>
+                            <th>Area</th>
+                            <th>Sorties</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var o in Model.Odvs)
+                        {
+                            <tr>
+                                <td>@o.Id</td>
+                                <td>@o.OdvDate.ToString("yyyy-MM-dd")</td>
+                                <td>@(o.Squadron != null ? o.Squadron.Name : (o.SquadronId > 0 ? $"Id:{o.SquadronId}" : "-"))</td>
+                                <td>@(o.Mission?.Name ?? "-")</td>
+                                <td>@(o.AcMainGroup?.Name ?? "-")</td>
+                                <td>@o.Zone</td>
+                                <td>@o.MissionType</td>
+                                <td>@o.Area</td>
+                                <td>@(o.Sorties?.Count() ?? 0)</td>
+                                <td class="text-right">
+                                    <a asp-action="Edit" asp-route-id="@o.Id" class="btn btn-sm btn-outline-primary">Edit</a>
 
-@if (!Model.Odvs.Any())
-{
-    <div class="alert alert-info">No ODVs for the selected filters.</div>
-}
-else
-{
-    <table class="table table-bordered table-sm">
-        <thead class="table-primary">
-            <tr>
-                <th>Delete</th>
-                <th>Edit</th>
-                <th>Mission</th>
-                <th>TOFF</th>
-                <th>Call-Sign</th>
-                <th>Area</th>
-                <th>PRV</th>
-                <th>Status</th>
-                <th style="width:400px">Sortie Details</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var o in Model.Odvs)
-            {
-                <tr>
-                    <td>
-                        <form asp-action="DeleteOdv" asp-route-id="@o.Id" method="post" onsubmit="return confirm('Delete ODV?');">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-danger btn-sm">X</button>
-                        </form>
-                    </td>
-                    <td><a asp-action="Edit" asp-route-id="@o.Id" class="btn btn-warning btn-sm">✎</a></td>
-                    <td>@(o.Mission?.Name ?? "MSN-" + o.Id)</td>
-                    <td>@(o.TOFF?.ToString(@"hh\:mm") ?? "-")</td>
-                    <td>@o.CallSign</td>
-                    <td>@o.Area</td>                    
-                    <td>@o.OdvStatus.ToString()</td>
+                                    <form action="/Odvs/Delete" method="post" class="d-inline-block" onsubmit="return confirm('Delete this ODV and its Sorties?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@o.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
 
-                    <td>
-                        @* Nested table for sortie details *@
-                        <table class="table table-sm mb-0">
-                            <thead>
-                                <tr class="table-secondary">
-                                    <th>Id</th>
-                                    <th>Pilot</th>
-                                    <th>Copilot</th>
-                                    <th>AcType</th>
-                                    <th>Fuel</th>
-                                    <th>Config</th>
-                                    <th>Delete</th>
+                            @* Optionally render nested sorties *@
+                            @if (o.Sorties != null && o.Sorties.Any())
+                            {
+                                <tr>
+                                    <td></td>
+                                    <td colspan="9" class="p-0">
+                                        <table class="table table-sm mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th class="small">Sortie</th>
+                                                    <th class="small">Aircraft</th>
+                                                    <th class="small">TOFF</th>
+                                                    <th class="small">Landing</th>
+                                                    <th class="small">Crew</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var s in o.Sorties)
+                                                {
+                                                    <tr>
+                                                        <td class="small">@s.Id</td>
+                                                        <td class="small">@s.Aircraft?.DisplayName ?? (s.AircraftId.HasValue ? $"Id:{s.AircraftId}" : "-")</td>
+                                                        <td class="small">@s.TOFF?.ToString()</td>
+                                                        <td class="small">@s.LandingTime?.ToString()</td>
+                                                        <td class="small">
+                                                            @if (s.SortieCrews != null && s.SortieCrews.Any())
+                                                            {
+                                                                <ul class="mb-0 pl-3">
+                                                                    @foreach (var sc in s.SortieCrews)
+                                                                    {
+                                                                        <li class="small">@sc.CrewMember?.Captain ?? ("Id:" + sc.CrewMemberId)</li>
+                                                                    }
+                                                                </ul>
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @if (o.Sorties != null && o.Sorties.Any())
-                                {
-                                    foreach (var s in o.Sorties)
-                                    {
-                                        <tr>
-                                            <td>@s.Id.ToString("D3")</td>
-                                            <td>@(s.SortieCrews?.FirstOrDefault(sc => sc.IsPrimary == true)?.CrewMember? .Captain ?? "--")</td>
-                                            <td>@(s.SortieCrews?.Where(sc => !sc.IsPrimary).FirstOrDefault()?.CrewMember?.Captain ?? "--")</td>
-                                            <td>@(s.Aircraft?.AcType?.Name ?? "--")</td>
-                                            <td>@(s.FuelQuantity?.ToString() ?? "-")</td>
-                                            <td>@(s.Configuration ?? "-")</td>
-                                            <td>
-                                                <form asp-action="DeleteSortie" method="post" onsubmit="return confirm('Delete sortie?');">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="sortieId" value="@s.Id" />
-                                                    <button type="submit" class="btn btn-danger btn-sm">X</button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                                else
-                                {
-                                    <tr><td colspan="7" class="text-muted">No sorties</td></tr>
-                                }
-                            </tbody>
-                        </table>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // bootstrap client-side validation helper (optional)
+        (function () {
+            'use strict';
+            var forms = document.getElementsByClassName('needs-validation');
+            Array.prototype.forEach.call(forms, function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (form.checkValidity() === false) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    </script>
 }
+```

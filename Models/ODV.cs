@@ -6,13 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Models
 {
-    /// <summary>
-    /// ODV (Air Activity) entity following EF naming conventions.
-    /// - PK is Id
-    /// - FK properties end with "Id"
-    /// - Navigation properties are nullable reference types
-    /// - Collections are initialized to avoid NREs
-    /// </summary>
+    
     public class Odv
     {
         // Primary key (EF convention)
@@ -33,8 +27,8 @@ namespace FRAProject.Models
         public DateTime OdvDate { get; set; }
 
         // enum-backed fields (we'll map enums to string columns via value converters in DbContext)
-        public Zone Zone { get; set; } = Zone.North;
-        public MissionType MissionType { get; set; } = MissionType.Other;
+        public Zone Zone { get; set; } = Enums.Zone.North;
+        public MissionType MissionType { get; set; } = Enums.MissionType.Training;
 
         public string Area { get; set; } = string.Empty;
         public OdvStatus? OdvStatus { get; set; } = Enums.OdvStatus.Planned;
@@ -53,6 +47,7 @@ namespace FRAProject.Models
 
         // call sign / identifier
         [Column("CallSignId")]
+        [Required]
         public int CallSignId { get; set; }
         public CallSign? CallSign { get; set; }
 

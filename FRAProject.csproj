@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Migrations\" />
     <Folder Include="Repositories\" />
     <Folder Include="Views\Planning\SortieCrew\" />
     <Folder Include="Views\Planning\Sortie\" />

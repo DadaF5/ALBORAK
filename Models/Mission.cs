@@ -20,8 +20,10 @@
         // renamed from Notes -> Description
         public string? Description { get; set; }
 
-        // Navigation
+        // Navigation - if you plan to serialize entities directly, avoid serializing collections
         public ICollection<Odv>? Odvs { get; set; }
+
+
 
 
     }

@@ -238,8 +238,8 @@ namespace FRAProject.Controllers
                     SquadronId = vm.SquadronId,
                     MissionId = vm.MissionId,
                     OdvDate = vm.OdvDate,
-                    Zone = vm.ZoneID,
-                    MissionType = vm.MissionTypeId,
+                    Zone = vm.Zone,
+                    MissionType = vm.MissionType,
                     Area = vm.Area,
                     Obs = vm.Obs,
                     CallSignId = vm.CallSignId,
@@ -339,8 +339,8 @@ namespace FRAProject.Controllers
                     SquadronId = vm.SquadronId,
                     MissionId = vm.MissionId,
                     OdvDate = vm.OdvDate,
-                    Zone = vm.ZoneID,
-                    MissionType = vm.MissionTypeId,
+                    Zone = vm.Zone,
+                    MissionType = vm.MissionType,
                     Area = vm.Area,
                     Obs = vm.Obs,
                     CreatedAtUtc = now
@@ -501,8 +501,8 @@ namespace FRAProject.Controllers
                 odv.SquadronId = vm.SquadronId;
                 odv.MissionId = vm.MissionId;
                 odv.OdvDate = vm.OdvDate;
-                odv.Zone = vm.ZoneID;
-                odv.MissionType = vm.MissionTypeId;
+                odv.Zone = vm.Zone;
+                odv.MissionType = vm.MissionType;
                 odv.Area = vm.Area ?? string.Empty;
                 odv.OdvStatus = vm.OdvStatus;
                 odv.TOFF = vm.TOFF;
@@ -1197,8 +1197,8 @@ namespace FRAProject.Controllers
                 SquadronId = odv.SquadronId,
                 MissionId = odv.MissionId,
                 OdvDate = odv.OdvDate,
-                ZoneID = odv.Zone,
-                MissionTypeId = odv.MissionType,
+                Zone = odv.Zone,
+                MissionType = odv.MissionType,
                 Area = odv.Area,
                 OdvStatus = odv.OdvStatus,
                 TOFF = odv.TOFF,

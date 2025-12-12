@@ -1,191 +1,25 @@
-﻿@model FRAProject.ViewModels.OdvIndexVm
+﻿
+@model FRAProject.ViewModels.OdvIndexVm
 
 @{
-    ViewData["Title"] = "ODV Planning";
+    ViewData["Title"] = "ODV Planning (Modal Create)";
 }
-@* @{
-    var posted = ViewContext.HttpContext.Request.Form; 
-    var postedZone = posted["Zone"].FirstOrDefault() ?? ""; 
-    var postedMissionType = posted["MissionType"].FirstOrDefault() ?? ""; 
-    var postedSquadronId = posted["SquadronId"].FirstOrDefault() ?? ""; 
-    var postedCallSignId = posted["CallSignId"].FirstOrDefault() ?? "";
-} *@
+
 <h1>ODV Planning</h1>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <form method="get" asp-action="Index" class="form-inline">
-            <div class="form-row align-items-end w-100">
-                <div class="form-group col-md-3">
-                    <label for="squadronFilter">Squadron</label>
-                    <select id="squadronFilter" name="squadronId" class="form-control">
-                        <option value="">-- All --</option>
-                        @foreach (var s in Model.Squadrons)
-                        {
-                            var isSel = Model.SelectedSquadronId.HasValue && Model.SelectedSquadronId.ToString() == s.Value;
-                            if (isSel)
-                            {
-                                <option value="@s.Value" selected="selected">@s.Text</option>
-                            }
-                            else
-                            {
-                                <option value="@s.Value">@s.Text</option>
-                            }
-                        }
-                    </select>
-                </div>
-
-                <div class="form-group col-md-3">
-                    <label for="dateFilter">Date</label>
-                    <input id="dateFilter" name="odvDate" type="date" class="form-control" value="@(Model.SelectedDate?.ToString("yyyy-MM-dd") ?? "")" />
-                </div>
-
-                <div class="form-group col-md-3">
-                    <label for="acGroupFilter">AC Main Group</label>
-                    <select id="acGroupFilter" name="acMainGroupId" class="form-control">
-                        <option value="">-- All --</option>
-                        @foreach (var g in Model.AcMainGroups)
-                        {
-                            var isSelected = Model.SelectedAcMainGroupId.HasValue && Model.SelectedAcMainGroupId.ToString() == g.Value;
-                            if (isSelected)
-                            {
-                                <option value="@g.Value" selected="selected">@g.Text</option>
-                            }
-                            else
-                            {
-                                <option value="@g.Value">@g.Text</option>
-                            }
-
-                        }
-                    </select>
-                </div>
-
-                <div class="form-group col-md-3">
-                    <button type="submit" class="btn btn-primary">Filter</button>
-                    <a asp-action="Index" class="btn btn-outline-secondary ml-2">Reset</a>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Create ODV form -->
-<div class="card mb-4">
-    <div class="card-header">
-        Create new ODV
-    </div>
-    <div class="card-body">
-        <form action="@Url.Content("~/Odvs/Create")" method="post" class="needs-validation">
-            @Html.AntiForgeryToken()
-
-            <div class="form-row">
-                <div class="form-group col-md-3">
-                    <label>Squadron</label>
-                    <select name="SquadronId" class="form-control" required>
-                        <option value="">-- select --</option>
-                        @foreach (var s in Model.Squadrons ?? 
-                        Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
-                        {
-                            <option value="@s.Value">@s.Text</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="form-group col-md-3">
-                    <label>Mission</label>
-                    <select name="MissionId" class="form-control" required>
-                        <option value="">-- select --</option>
-                        @foreach (var m in Model.Missions ?? 
-                        Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
-                        {
-                            <option value="@m.Value">@m.Text</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="form-group col-md-2">
-                    <label>Date</label>
-                    <input type="date" name="OdvDate" class="form-control" 
-                    value="@(DateTime.UtcNow.ToString("yyyy-MM-dd"))" required />
-                </div>
-
-                <div class="form-group col-md-2">
-                    <label>TOFF</label>
-                    <input asp-for="CreateModel.TOFF" type="time" class="form-control"  required/>
-                    <span asp-validation-for="CreateModel.TOFF" class="text-danger"></span>
-                </div>
-                <div class="form-group col-md-2">
-                    <label>AC Main Group</label>
-                    <select name="AcMainGroupId" class="form-control" required>
-                        <option value="">-- select --</option>
-                        @foreach (var g in Model.AcMainGroups ?? 
-                        Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
-                        {
-                            <option value="@g.Value">@g.Text</option>
-                        }
-                    </select>
-                </div>
-
-                <!-- CallSign (nullable) -->
-                <div class="form-group col-md-2">
-
-                    <label>Call-sign</label>
-                    <select name="CallSignId" class="form-control" required>
-                        <option value="">-- select --</option>
-                        @foreach (var cs in Model.CallSigns ??
-                        Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
-                        {
-                            <option value="@cs.Value">@cs.Text</option>
-                        }
-                    </select>
-                    <span asp-validation-for="CreateModel.CallSignId" class="text-danger"></span>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <!-- Zone -->
-                <div class="form-group col-md-4">
-                    <label asp-for="CreateModel.Zone"></label>
-                    <select asp-for="CreateModel.Zone" asp-items="Model.ZoneList" class="form-control" required>
-                       
-                    </select>
-                    <span asp-validation-for="CreateModel.Zone" class="text-danger"></span>
-                </div>
-
-                <!-- MissionType -->
-                <div class="form-group col-md-4">
-                    <label asp-for="CreateModel.MissionType"></label>
-                    <select asp-for="CreateModel.MissionType" asp-items="Model.MissionTypeList" class="form-control" required>
-                       
-                    </select>
-                    <span asp-validation-for="CreateModel.MissionType" class="text-danger"></span>
-                </div>
-
-                <div class="form-group col-md-4">
-                    <label>Area</label>
-                    <input name="Area" class="form-control" required/>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Observations</label>
-                <textarea name="Obs" class="form-control" rows="2"></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-success">Create ODV</button>
-        </form>
-    </div>
+<div class="mb-3">
+    <button type="button" id="btnOpenCreateModal" class="btn btn-primary" data-toggle="modal" data-target="#createOdvModal">Create ODV</button>
 </div>
 
 <!-- ODV list -->
 <div class="card">
     <div class="card-header">
-       @*  Planned ODVs (@(Model.Odvs?.Count ?? 0)) *@
+        Planned ODVs (@(Model.Odvs?.Count ?? 0))
     </div>
     <div class="card-body p-0">
         @if (Model.Odvs == null || !Model.Odvs.Any())
         {
-            <div class="p-3">No ODVs found for the selected filters.</div>
+            <div class="p-3">No ODVs found.</div>
         }
         else
         {
@@ -202,7 +36,6 @@
                             <th>Type</th>
                             <th>Area</th>
                             <th>Sorties</th>
-                            <th class="text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -211,66 +44,14 @@
                             <tr>
                                 <td>@o.Id</td>
                                 <td>@o.OdvDate.ToString("yyyy-MM-dd")</td>
-                                <td>@(o.Squadron != null ? o.Squadron.Name : (o.SquadronId > 0 ? $"Id:{o.SquadronId}" : "-"))</td>
+                                <td>@(o.Squadron?.Name ?? $"Id:{o.SquadronId}")</td>
                                 <td>@(o.Mission?.Name ?? "-")</td>
                                 <td>@(o.AcMainGroup?.Name ?? "-")</td>
                                 <td>@o.Zone</td>
                                 <td>@o.MissionType</td>
                                 <td>@o.Area</td>
                                 <td>@(o.Sorties?.Count() ?? 0)</td>
-                                <td class="text-right">
-                                    <a asp-action="Edit" asp-route-id="@o.Id" class="btn btn-sm btn-outline-primary">Edit</a>
-
-                                    <form action="/Odvs/Delete" method="post" class="d-inline-block" onsubmit="return confirm('Delete this ODV and its Sorties?');">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@o.Id" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                                    </form>
-                                </td>
                             </tr>
-
-                            @* Optionally render nested sorties *@
-                            @if (o.Sorties != null && o.Sorties.Any())
-                            {
-                                <tr>
-                                    <td></td>
-                                    <td colspan="9" class="p-0">
-                                        <table class="table table-sm mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th class="small">Sortie</th>
-                                                    <th class="small">Aircraft</th>
-                                                    <th class="small">TOFF</th>
-                                                    <th class="small">Landing</th>
-                                                    <th class="small">Crew</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach (var s in o.Sorties)
-                                                {
-                                                    <tr>
-                                                        <td class="small">@s.Id</td>
-                                                        <td class="small">@s.Aircraft?.DisplayName ?? (s.AircraftId.HasValue ? $"Id:{s.AircraftId}" : "-")</td>
-                                                        <td class="small">@s.TOFF?.ToString()</td>
-                                                        <td class="small">@s.LandingTime?.ToString()</td>
-                                                        <td class="small">
-                                                            @if (s.SortieCrews != null && s.SortieCrews.Any())
-                                                            {
-                                                                <ul class="mb-0 pl-3">
-                                                                    @foreach (var sc in s.SortieCrews)
-                                                                    {
-                                                                        <li class="small">@sc.CrewMember?.Captain ?? ("Id:" + sc.CrewMemberId)</li>
-                                                                    }
-                                                                </ul>
-                                                            }
-                                                        </td>
-                                                    </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                </tr>
-                            }
                         }
                     </tbody>
                 </table>
@@ -279,23 +60,314 @@
     </div>
 </div>
 
+<!-- ============================================================
+     Modal moved outside of any page containers to avoid stacking
+     context / transform issues. This modal markup sits *after*
+     the page content so it is not affected by ancestor CSS.
+     ============================================================ -->
+<!-- Create ODV Modal - placed at root of the view (after all containers) -->
+<div class="modal fade" id="createOdvModal" tabindex="-1" role="dialog" aria-labelledby="createOdvModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form id="createOdvForm" action="/Odvs/Create" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createOdvModalLabel">Create new ODV</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div id="createFormErrors" class="text-danger mb-2"></div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-3">
+                            <label>Squadron</label>
+                            @if (User.IsInRole("Admin") || User.IsInRole("Planner"))
+                            {
+                                <select name="CreateModel.SquadronId" class="form-control" required asp-items="Model.Squadrons">
+                                    <option value="">-- select --</option>
+                                </select>
+                            }
+                            else
+                            {
+                                <input type="hidden" name="CreateModel.SquadronId" value="@(Model.CreateModel?.SquadronId.ToString() ?? "")" />
+                                <div class="form-control-plaintext">
+                                    @Model.Squadrons?.FirstOrDefault(s => s.Value == Model.CreateModel?.SquadronId.ToString())?.Text
+                                </div>
+                            }
+                            <div class="invalid-feedback" data-valmsg-for="CreateModel.SquadronId"></div>
+                        </div>
+
+                        <div class="form-group col-md-3">
+                            <label>Mission</label>
+                            <select name="CreateModel.MissionId" class="form-control" required asp-items="Model.Missions">
+                                <option value="">-- select --</option>
+                            </select>
+                            <div class="invalid-feedback" data-valmsg-for="CreateModel.MissionId"></div>
+                        </div>
+
+                        <div class="form-group col-md-2">
+                            <label>Date</label>
+                            <input name="CreateModel.OdvDate" type="date" class="form-control" value="@(Model.CreateModel?.OdvDate.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" required />
+                            <div class="invalid-feedback" data-valmsg-for="CreateModel.OdvDate"></div>
+                        </div>
+
+                        <div class="form-group col-md-2">
+                            <label>AC Main Group</label>
+                            @if (User.IsInRole("Admin") || User.IsInRole("Planner"))
+                            {
+                                <select name="CreateModel.AcMainGroupId" class="form-control" required asp-items="Model.AcMainGroups">
+                                    <option value="">-- select --</option>
+                                </select>
+                            }
+                            else
+                            {
+                                <input type="hidden" name="CreateModel.AcMainGroupId" value="@(Model.CreateModel?.AcMainGroupId.ToString() ?? "")" />
+                                <div class="form-control-plaintext">
+                                    @Model.AcMainGroups?.FirstOrDefault(g => g.Value == Model.CreateModel?.AcMainGroupId.ToString())?.Text
+                                </div>
+                            }
+                            <div class="invalid-feedback" data-valmsg-for="CreateModel.AcMainGroupId"></div>
+                        </div>
+
+                        <div class="form-group col-md-2">
+                            <label>Call sign</label>
+                            <select name="CreateModel.CallSignId" class="form-control" asp-items="Model.CallSigns">
+                                <option value="">-- none --</option>
+                            </select>
+                            <div class="invalid-feedback" data-valmsg-for="CreateModel.CallSignId"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-2">
+                            <label>TOFF</label>
+                            <input asp-for="CreateModel.TOFF" type="time" class="form-control" required />
+                            <span asp-validation-for="CreateModel.TOFF" class="text-danger"></span>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Zone</label>
+                            <select name="CreateModel.Zone" class="form-control" asp-items="Model.ZoneList">
+                                <option value="">-- none --</option>
+                            </select>
+                            <div class="invalid-feedback" data-valmsg-for="CreateModel.Zone"></div>
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <label>Mission type</label>
+                            <select name="CreateModel.MissionType" class="form-control" asp-items="Model.MissionTypeList">
+                                <option value="">-- none --</option>
+                            </select>
+                            <div class="invalid-feedback" data-valmsg-for="CreateModel.MissionType"></div>
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <label>Area</label>
+                            <input name="CreateModel.Area" class="form-control" />
+                            <div class="invalid-feedback" data-valmsg-for="CreateModel.Area"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Observations</label>
+                        <textarea name="CreateModel.Obs" class="form-control" rows="2"></textarea>
+                        <div class="invalid-feedback" data-valmsg-for="CreateModel.Obs"></div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button id="createOdvSubmit" type="submit" class="btn btn-success">Create ODV</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <style>
+        /* Ensure modal sits above other overlays and is not clipped */
+        #createOdvModal.modal {
+            z-index: 2099 !important;
+        }
+
+            #createOdvModal.modal .modal-dialog {
+                transform: none !important;
+                top: 10vh !important;
+                margin: 1.75rem auto !important;
+            }
+
+        .modal-backdrop {
+            z-index: 2088 !important;
+        }
+    </style>
+
     <script>
-        // bootstrap client-side validation helper (optional)
-        (function () {
-            'use strict';
-            var forms = document.getElementsByClassName('needs-validation');
-            Array.prototype.forEach.call(forms, function (form) {
-                form.addEventListener('submit', function (event) {
-                    if (form.checkValidity() === false) {
-                        event.preventDefault();
-                        event.stopPropagation();
+        $(function () {
+            // Require jQuery
+            if (typeof $ === 'undefined') return;
+
+            var $modal = $('#createOdvModal');
+            if (!$modal.length) return;
+
+            // Ensure modal is a child of <body> to avoid stacking/context problems
+            if ($modal.parent()[0] !== document.body) {
+                $modal.appendTo('body');
+            }
+
+            var modalZ = 2099, backdropZ = 2088;
+            $modal.css('z-index', modalZ);
+            $('.modal-backdrop').css('z-index', backdropZ);
+
+            // Ensure the open button won't submit any enclosing form and reliably opens the modal
+            $('#btnOpenCreateModal').attr('type', 'button')
+                .off('click.modalFix')
+                .on('click.modalFix', function (e) {
+                    e.preventDefault();
+                    try {
+                        $modal.modal('show'); // Bootstrap 4 jQuery plugin
+                    } catch (err) {
+                        try {
+                            new bootstrap.Modal($modal[0]).show(); // Bootstrap 5 fallback
+                        } catch (err2) {
+                            console.error('Modal show failed', err, err2);
+                        }
                     }
-                    form.classList.add('was-validated');
-                }, false);
+                });
+
+            // Ensure proper styling and z-index when modal is shown
+            $modal.on('show.bs.modal', function () {
+                $modal.css({ display: 'block', visibility: 'visible', opacity: 1, 'z-index': modalZ });
+                $modal.find('.modal-dialog').css({
+                    position: 'relative',
+                    top: '10vh',
+                    left: 0,
+                    transform: 'none',
+                    margin: '1.75rem auto'
+                });
+                $('.modal-backdrop').css('z-index', backdropZ);
+                document.body.classList.add('modal-open');
             });
-        })();
+
+            // Close handlers: make sure X and Close buttons actually hide the modal
+            $modal.on('click', '[data-dismiss="modal"], [data-bs-dismiss="modal"], .close, .btn-close, .modal-footer .btn-secondary', function (e) {
+                e.preventDefault();
+                try {
+                    $modal.modal('hide');
+                } catch (err) {
+                    try {
+                        var inst = bootstrap.Modal.getInstance($modal[0]) || new bootstrap.Modal($modal[0]);
+                        inst.hide();
+                    } catch (err2) {
+                        // last-resort manual cleanup
+                        $modal.removeClass('show').css({ display: 'none', opacity: '' });
+                        $('.modal-backdrop').remove();
+                        document.body.classList.remove('modal-open');
+                    }
+                }
+            });
+
+            // Cleanup when modal is hidden
+            $modal.on('hidden.bs.modal', function () {
+                $('.modal-backdrop').remove();
+                document.body.classList.remove('modal-open');
+            });
+
+            // Clicking backdrop should also hide the modal (defensive)
+            $(document).on('click', '.modal-backdrop', function () {
+                if ($modal.hasClass('show')) {
+                    try {
+                        $modal.modal('hide');
+                    } catch (err) {
+                        $modal.removeClass('show').css({ display: 'none', opacity: '' });
+                        $('.modal-backdrop').remove();
+                        document.body.classList.remove('modal-open');
+                    }
+                } else {
+                    $('.modal-backdrop').remove();
+                    document.body.classList.remove('modal-open');
+                }
+            });
+
+            // AJAX submit handler for modal form
+            var form = document.getElementById('createOdvForm');
+            if (!form) return;
+
+            function clearErrors() {
+                var el = document.getElementById('createFormErrors');
+                if (el) el.innerText = '';
+                form.querySelectorAll('.is-invalid').forEach(function (node) { node.classList.remove('is-invalid'); });
+                form.querySelectorAll('[data-valmsg-for]').forEach(function (node) { node.innerText = ''; });
+            }
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                clearErrors();
+
+                var tokenEl = form.querySelector('input[name="__RequestVerificationToken"]');
+                var token = tokenEl ? tokenEl.value : '';
+
+                var fd = new FormData(form);
+
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'RequestVerificationToken': token
+                    },
+                    body: fd,
+                    credentials: 'same-origin'
+                }).then(function (resp) {
+                    if (resp.ok) {
+                        return resp.json().then(function (data) {
+                            if (data && data.success) {
+                                $modal.modal('hide');
+                                window.location.reload();
+                            } else {
+                                var errEl = document.getElementById('createFormErrors');
+                                if (errEl) errEl.innerText = 'Unexpected server response.';
+                            }
+                        });
+                    } else {
+                        return resp.json().then(function (errObj) {
+                            var globalMsgs = [];
+                            Object.keys(errObj).forEach(function (k) {
+                                var messages = errObj[k] || [];
+                                var inputName = k;
+                                var input = form.querySelector('[name="' + inputName + '"]');
+                                if (!input) {
+                                    var prop = inputName.split('.').pop();
+                                    input = form.querySelector('[name="CreateModel.' + prop + '"]');
+                                }
+                                if (input) {
+                                    input.classList.add('is-invalid');
+                                    var msgEl = form.querySelector('[data-valmsg-for="' + inputName + '"]') ||
+                                        form.querySelector('[data-valmsg-for="CreateModel.' + inputName.split('.').pop() + '"]');
+                                    if (msgEl) msgEl.innerText = (Array.isArray(messages) ? messages.join(' ') : messages);
+                                    else globalMsgs.push(Array.isArray(messages) ? messages.join(' ') : messages);
+                                } else {
+                                    globalMsgs.push(Array.isArray(messages) ? messages.join(' ') : messages);
+                                }
+                            });
+                            if (globalMsgs.length) {
+                                var errEl = document.getElementById('createFormErrors');
+                                if (errEl) errEl.innerText = globalMsgs.join(' ');
+                            }
+                        }).catch(function () {
+                            var errEl = document.getElementById('createFormErrors');
+                            if (errEl) errEl.innerText = 'Server error';
+                        });
+                    }
+                }).catch(function (err) {
+                    console.error(err);
+                    var errEl = document.getElementById('createFormErrors');
+                    if (errEl) errEl.innerText = 'Network or server error';
+                });
+            }, false);
+        });
     </script>
 }
-```

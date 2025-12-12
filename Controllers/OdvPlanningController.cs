@@ -27,123 +27,108 @@ namespace FRAProject.Controllers
         }
 
         // GET: /Odvs
-        // list / filter / eager-load for display
         [HttpGet("")]
-        public async Task<IActionResult> Index(int? squadronId, DateTime? odvDate, int? acMainGroupId)
+        public async Task<IActionResult> Index()
         {
             var vm = new OdvIndexVm
             {
-                SelectedSquadronId = squadronId,
-                SelectedDate = odvDate,
-                SelectedAcMainGroupId = acMainGroupId
+                CreateModel = new OdvCreateVm { OdvDate = DateTime.UtcNow.Date }
             };
 
-            // populate select lists (small helper inline)
-            vm.Squadrons = await _context.Squadrons
-                .OrderBy(s => s.Name)
-                .Select(s => new SelectListItem(s.Name, s.Id.ToString()))
-                .ToListAsync();
+            // If non-admin, prefill the user's squadron/ac-group here (claims or DB)
+            if (!User.IsInRole("Admin") && !User.IsInRole("Planner"))
+            {
+                var squadClaim = User.FindFirst("SquadronId")?.Value;
+                var agClaim = User.FindFirst("AcMainGroupId")?.Value;
+                if (int.TryParse(squadClaim, out var sq)) vm.CreateModel.SquadronId = sq;
+                if (int.TryParse(agClaim, out var ag)) vm.CreateModel.AcMainGroupId = ag;
+                // alternatively fetch from DB: current user record
+            }
 
-            vm.AcMainGroups = await _context.AcMainGroups
-                .OrderBy(g => g.Name)
-                .Select(g => new SelectListItem(g.Name, g.Id.ToString()))
-                .ToListAsync();
+            await PopulateSelectLists(vm);
 
-            vm.Missions = await _context.Missions
-                .OrderBy(m => m.Name)
-                .Select(m => new SelectListItem(m.Name, m.Id.ToString()))
-                .ToListAsync();
-
-            vm.CallSigns = await _context.CallSigns
-                .OrderBy(c => c.Code)
-                .Select(c => new SelectListItem(c.Code, c.Id.ToString()))
-                .ToListAsync();
-
-            vm.Aircrafts = await _context.Aircrafts
-                .OrderBy(a => a.Registration)
-                .Select(a => new SelectListItem(a.DisplayName, a.Id.ToString()))
-                .ToListAsync();
-
-            vm.CrewMembers = await _context.CrewMembers
-                .OrderBy(cm => cm.NickName)
-                .Select(cm => new SelectListItem(cm.Captain, cm.Id.ToString()))
-                .ToListAsync();
-            vm.ZoneList = Enum.GetValues(typeof(Enums.Zone))
-                 .Cast<Enums.Zone>()
-                 .Select(z => new SelectListItem { Value = ((int)z).ToString(), Text = z.ToString() })
-                 .ToList();
-            vm.MissionTypeList = Enum.GetValues(typeof(Enums.MissionType))
-                .Cast<Enums.MissionType>()
-                .Select(mt => new SelectListItem { Value = ((int)mt).ToString(), Text = mt.ToString() })
-                .ToList();
-                
-            // build query and eager load what index view needs
-            var q = _context.Odvs
+            vm.Odvs = await _context.Odvs
                 .Include(o => o.Mission)
                 .Include(o => o.AcMainGroup)
-                .Include(o => o.Sorties)
-                    .ThenInclude(s => s.Aircraft)
-                .Include(o => o.Sorties)
-                    .ThenInclude(s => s.SortieCrews)
-                        .ThenInclude(sc => sc.CrewMember)
-                            .ThenInclude(cm => cm.Person)
+                .Include(o => o.Sorties).ThenInclude(s => s.Aircraft)
                 .AsNoTracking()
-                .AsQueryable();
+                .OrderBy(o => o.Id)
+                .ToListAsync();
 
-            if (squadronId.HasValue) q = q.Where(o => o.SquadronId == squadronId.Value);
-            if (odvDate.HasValue) q = q.Where(o => o.OdvDate.Date == odvDate.Value.Date);
-            if (acMainGroupId.HasValue) q = q.Where(o => o.AcMainGroupId == acMainGroupId.Value);
-
-            vm.Odvs = await q.OrderBy(o => o.Id).ToListAsync();
             return View("~/Views/Odvs/Index.cshtml", vm);
         }
 
         // POST: Create ODV header
-        // Accepts OdvCreateVm (must exist in your ViewModels)
+        // Note: we expect inputs prefixed with CreateModel.* in the modal form, so bind with the prefix.
         [HttpPost("Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([FromForm] OdvCreateVm model)
+        public async Task<IActionResult> Create([FromForm, Bind(Prefix = "CreateModel")] OdvCreateVm model)
         {
-            _logger?.LogDebug("Create POST - Request URL: {Url}", Request.Path);
-            _logger?.LogDebug("Create POST - Form keys: {@Form}", Request.Form.ToDictionary(k => k.Key, v => v.Value.ToString()));
+            _logger?.LogDebug("Create POST (modal) - incoming model: {@Model}", model);
+
+            // Enforce server-side restrictions: non-admin users cannot set Squadron/AcMainGroup
+            if (!User.IsInRole("Admin") && !User.IsInRole("Planner"))
+            {
+                var squadClaim = User.FindFirst("SquadronId")?.Value;
+                if (int.TryParse(squadClaim, out var sq)) model.SquadronId = sq;
+
+                var agClaim = User.FindFirst("AcMainGroupId")?.Value;
+                if (int.TryParse(agClaim, out var ag)) model.AcMainGroupId = ag;
+            }
 
             if (!ModelState.IsValid)
             {
-                var errors = ModelState
-                    .Where(kv => kv.Value.Errors.Count > 0)
-                    .ToDictionary(kv => kv.Key, kv => kv.Value.Errors
-                    .Select(e => e.ErrorMessage + (e.Exception != null ? " | ex:" + e.Exception.Message : "")).ToArray());
-                
-                _logger?.LogWarning("Create POST - ModelState invalid: {@Errors}", errors);
-                // repopulate selects and return Index to show validation
-                return await Index(model.SquadronId, model.OdvDate, model.AcMainGroupId);
+                // Prepare ModelState errors keyed to the form field names (CreateModel.Property)
+                var errors = new Dictionary<string, string[]>();
+                foreach (var kv in ModelState.Where(k => k.Value.Errors.Count > 0))
+                {
+                    var key = kv.Key;
+                    // Ensure keys are prefixed as used in the form (CreateModel.PropertyName)
+                    if (!key.StartsWith("CreateModel.", StringComparison.OrdinalIgnoreCase))
+                        key = "CreateModel." + key;
+                    errors[key] = kv.Value.Errors.Select(e => string.IsNullOrEmpty(e.ErrorMessage) ? (e.Exception?.Message ?? "Invalid value") : e.ErrorMessage).ToArray();
+                }
+
+                _logger?.LogWarning("Create POST - validation failed: {@Errors}", errors);
+                return BadRequest(errors); // AJAX caller will handle errors
             }
 
             var odv = new Odv
             {
-                SquadronId = model.SquadronId,
-                MissionId = model.MissionId,
-                OdvDate = model.OdvDate,
+                SquadronId = model.SquadronId!,
+                MissionId = model.MissionId!,
+                OdvDate = model.OdvDate!,
                 Zone = model.Zone,
                 MissionType = model.MissionType,
                 Area = model.Area,
                 Obs = model.Obs,
+                TOFF=model.TOFF,
                 CallSignId = model.CallSignId,
-                AcMainGroupId = model.AcMainGroupId,
+                AcMainGroupId = model.AcMainGroupId!,
                 CreatedAtUtc = DateTime.UtcNow
             };
 
             _context.Odvs.Add(odv);
-            await _context.SaveChangesAsync();
 
-            return RedirectToAction(nameof(Index),
-                new
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, id = odv.Id });
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger?.LogError(dbEx, "Create POST - DbUpdateException saving ODV");
+                // handle other DB errors (FK violations, etc.)
+                return StatusCode(500, new Dictionary<string, string[]>
                 {
-                    squadronId = odv.SquadronId,
-                    odvDate = odv.OdvDate.Date,
-                    acMainGroupId = odv.AcMainGroupId
+                    { "CreateModel", new[] { "Unexpected database error saving the ODV. See server logs." } }
                 });
+            }
+
+           
+          
         }
+
 
         // GET: /Odvs/Edit/{id}
         //[HttpGet("Edit/{id:int}")]
@@ -216,46 +201,48 @@ namespace FRAProject.Controllers
         //}
 
         // small helper to populate select lists used by Edit/Create/Index
-        private async Task PopulateOdvSelectLists(OdvIndexVm vm)
+        // Helper to populate select lists (enum lists, call signs etc.)
+        private async Task PopulateSelectLists(OdvIndexVm vm)
         {
             vm.Squadrons = await _context.Squadrons
                 .OrderBy(s => s.Name)
-                .Select(s => new SelectListItem(s.Name, s.Id.ToString()))
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
                 .ToListAsync();
 
             vm.AcMainGroups = await _context.AcMainGroups
                 .OrderBy(g => g.Name)
-                .Select(g => new SelectListItem(g.Name, g.Id.ToString()))
+                .Select(g => new SelectListItem { Value = g.Id.ToString(), Text = g.Name })
                 .ToListAsync();
 
             vm.Missions = await _context.Missions
                 .OrderBy(m => m.Name)
-                .Select(m => new SelectListItem(m.Name, m.Id.ToString()))
+                .Select(m => new SelectListItem { Value = m.Id.ToString(), Text = m.Name })
                 .ToListAsync();
 
             vm.CallSigns = await _context.CallSigns
                 .OrderBy(c => c.Code)
-                .Select(c => new SelectListItem(c.Code , c.Id.ToString()))
+                .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Code })
                 .ToListAsync();
 
             vm.Aircrafts = await _context.Aircrafts
                 .OrderBy(a => a.Registration)
-                .Select(a => new SelectListItem(a.DisplayName, a.Id.ToString()))
+                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.DisplayName })
                 .ToListAsync();
 
             vm.CrewMembers = await _context.CrewMembers
                 .OrderBy(cm => cm.NickName)
-                .Select(cm => new SelectListItem(cm.Captain, cm.Id.ToString()))
+                .Select(cm => new SelectListItem { Value = cm.Id.ToString(), Text = cm.Captain })
                 .ToListAsync();
-            // enum select lists can be populated in the view directly
-            vm.ZoneList = Enum.GetValues(typeof(Enums.Zone))
-                .Cast<Enums.Zone>()
+
+            // enum lists (numeric values)
+            vm.ZoneList = Enum.GetValues(typeof(FRAProject.Enums.Zone))
+                .Cast<FRAProject.Enums.Zone>()
                 .Select(z => new SelectListItem { Value = ((int)z).ToString(), Text = z.ToString() })
                 .ToList();
 
-            vm.MissionTypeList = Enum.GetValues(typeof(Enums.MissionType))
-                .Cast<Enums.MissionType>()
-                .Select(mt => new SelectListItem { Value = ((int)mt).ToString(), Text = mt.ToString() })
+            vm.MissionTypeList = Enum.GetValues(typeof(FRAProject.Enums.MissionType))
+                .Cast<FRAProject.Enums.MissionType>()
+                .Select(m => new SelectListItem { Value = ((int)m).ToString(), Text = m.ToString() })
                 .ToList();
         }
     }

@@ -83,11 +83,35 @@ using (var scope = app.Services.CreateScope())
     {
         Console.WriteLine("Seeding error: " + ex.Message);
     }
+
 }
+    // Seed Phases/Missions (run once at startup)
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        try
+        {
+            var context = services.GetRequiredService<FRAContext>();
+        // Ensure DB schema is up to date
+        await context.Database.MigrateAsync();
 
-// after var app = builder.Build(); and after any role/user seeding
+        // Seed reference data
+        await PhaseSeeder.SeedAsync(context);
+        await MissionSeeder.SeedAsync(context);
+    }
+        catch (Exception ex)
+        {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(
+                    ex,
+                    "Error occurred during application startup while seeding Phase/Mission data."
+                );
+    }
+    }
 
-using (var scope = app.Services.CreateScope())
+    // after var app = builder.Build(); and after any role/user seeding
+
+    using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try

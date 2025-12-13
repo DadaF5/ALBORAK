@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using FRAProject.Models;
 using FRAProject.Enums;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using FRAProject.Data.EntityConfigurations;
 
 namespace FRAProject.Data
 {
@@ -123,8 +124,10 @@ namespace FRAProject.Data
             // Use the dedicated configuration classes / partials for entity configuration.
             // Do not duplicate relationship configuration in multiple places.
 
-            modelBuilder.ApplyConfiguration(new EntityConfigurations.OdvConfiguration());
-            modelBuilder.ApplyConfiguration(new EntityConfigurations.SortieConfiguration());
+            modelBuilder.ApplyConfiguration(new OdvConfiguration());
+            modelBuilder.ApplyConfiguration(new SortieConfiguration());           
+            modelBuilder.ApplyConfiguration(new MissionConfiguration());
+            modelBuilder.ApplyConfiguration(new PhaseConfiguration());
 
             // Decimal precision configuration
             ConfigureDecimalPrecision(modelBuilder);
@@ -187,6 +190,7 @@ namespace FRAProject.Data
 
                 b.HasIndex(cmq => new { cmq.CrewMemberId, cmq.QualificationId });
             });
+           
 
             // Wing -> Squadron: prevent cascade delete so deleting a Wing won't delete Squadrons
             modelBuilder.Entity<Wing>()
@@ -194,21 +198,7 @@ namespace FRAProject.Data
                 .WithOne(s => s.Wing)
                 .HasForeignKey(s => s.WingId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            // --- Mission -> Phase (required) and optional unique index for Code per Phase ---
-            modelBuilder.Entity<Mission>(entity =>
-            {
-                entity.HasOne(m => m.Phase)
-                      .WithMany(p => p.Missions)
-                      .HasForeignKey(m => m.PhaseId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                // Optional unique index on (PhaseId, Code) where Code is not null.
-                // HasFilter uses SQL Server syntax; remove or adapt for other providers.
-                entity.HasIndex(m => new { m.PhaseId, m.Code })
-                      .IsUnique()
-                      .HasFilter("[Code] IS NOT NULL");
-            });
+            
 
             // --- Enum-to-string converters for Odv enum-backed fields ---
             var zoneConverter = new EnumToStringConverter<Zone>();

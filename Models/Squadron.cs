@@ -46,6 +46,8 @@ namespace FRAProject.Models
         // Initialize collection to avoid null checks in code.
         public ICollection<CrewMember> CrewMembers { get; set; } = new List<CrewMember>();
         public ICollection<Odv> Odvs { get; set; } = new List<Odv>();
+        // ✅ NEW
+        public ICollection<Mission> Missions { get; set; } = new List<Mission>();
 
 
     }

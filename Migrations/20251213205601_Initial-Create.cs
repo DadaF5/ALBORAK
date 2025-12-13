@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FRAProject.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial_Create : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -137,8 +137,8 @@ namespace FRAProject.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -371,29 +371,6 @@ namespace FRAProject.Migrations
                         principalTable: "Bases",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Missions",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Code = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    PhaseId = table.Column<int>(type: "int", nullable: false),
-                    PlannedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Missions", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Missions_Phases_PhaseId",
-                        column: x => x.PhaseId,
-                        principalTable: "Phases",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -698,6 +675,37 @@ namespace FRAProject.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Missions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Code = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    PhaseId = table.Column<int>(type: "int", nullable: false),
+                    SquadronId = table.Column<int>(type: "int", nullable: true),
+                    PlannedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Missions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Missions_Phases_PhaseId",
+                        column: x => x.PhaseId,
+                        principalTable: "Phases",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Missions_Squadrons_SquadronId",
+                        column: x => x.SquadronId,
+                        principalTable: "Squadrons",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "MaintenanceThresholds",
                 columns: table => new
                 {
@@ -718,6 +726,37 @@ namespace FRAProject.Migrations
                         principalTable: "MaintenanceComponents",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CrewMemberQualifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CrewMemberId = table.Column<int>(type: "int", nullable: false),
+                    QualificationId = table.Column<int>(type: "int", nullable: false),
+                    ValidFrom = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ValidUntil = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IssuedBy = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Remarks = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CrewMemberQualifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CrewMemberQualifications_CrewMembers_CrewMemberId",
+                        column: x => x.CrewMemberId,
+                        principalTable: "CrewMembers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CrewMemberQualifications_Qualifications_QualificationId",
+                        column: x => x.QualificationId,
+                        principalTable: "Qualifications",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -774,37 +813,6 @@ namespace FRAProject.Migrations
                         name: "FK_Odvs_Squadrons_SquadronId",
                         column: x => x.SquadronId,
                         principalTable: "Squadrons",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CrewMemberQualifications",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CrewMemberId = table.Column<int>(type: "int", nullable: false),
-                    QualificationId = table.Column<int>(type: "int", nullable: false),
-                    ValidFrom = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ValidUntil = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IssuedBy = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Remarks = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CrewMemberQualifications", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_CrewMemberQualifications_CrewMembers_CrewMemberId",
-                        column: x => x.CrewMemberId,
-                        principalTable: "CrewMembers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_CrewMemberQualifications_Qualifications_QualificationId",
-                        column: x => x.QualificationId,
-                        principalTable: "Qualifications",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -1138,11 +1146,14 @@ namespace FRAProject.Migrations
                 columns: new[] { "ParentId", "SortOrder" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Missions_PhaseId_Code",
+                name: "IX_Missions_PhaseId",
                 table: "Missions",
-                columns: new[] { "PhaseId", "Code" },
-                unique: true,
-                filter: "[Code] IS NOT NULL");
+                column: "PhaseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Missions_SquadronId",
+                table: "Missions",
+                column: "SquadronId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Odvs_AcMainGroupId",
@@ -1337,10 +1348,10 @@ namespace FRAProject.Migrations
                 name: "RankTypes");
 
             migrationBuilder.DropTable(
-                name: "Squadrons");
+                name: "Phases");
 
             migrationBuilder.DropTable(
-                name: "Phases");
+                name: "Squadrons");
 
             migrationBuilder.DropTable(
                 name: "Wings");

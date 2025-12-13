@@ -781,14 +781,22 @@ namespace FRAProject.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Code")
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("PhaseId")
                         .HasColumnType("int");
@@ -796,13 +804,16 @@ namespace FRAProject.Migrations
                     b.Property<DateTime?>("PlannedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("SquadronId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("PhaseId", "Code")
-                        .IsUnique()
-                        .HasFilter("[Code] IS NOT NULL");
+                    b.HasIndex("PhaseId");
 
-                    b.ToTable("Missions");
+                    b.HasIndex("SquadronId");
+
+                    b.ToTable("Missions", (string)null);
                 });
 
             modelBuilder.Entity("FRAProject.Models.Odv", b =>
@@ -972,15 +983,17 @@ namespace FRAProject.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Phases");
+                    b.ToTable("Phases", (string)null);
                 });
 
             modelBuilder.Entity("FRAProject.Models.Qualification", b =>
@@ -1805,7 +1818,14 @@ namespace FRAProject.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("FRAProject.Models.Squadron", "Squadron")
+                        .WithMany("Missions")
+                        .HasForeignKey("SquadronId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Phase");
+
+                    b.Navigation("Squadron");
                 });
 
             modelBuilder.Entity("FRAProject.Models.Odv", b =>
@@ -2111,6 +2131,8 @@ namespace FRAProject.Migrations
             modelBuilder.Entity("FRAProject.Models.Squadron", b =>
                 {
                     b.Navigation("CrewMembers");
+
+                    b.Navigation("Missions");
 
                     b.Navigation("Odvs");
                 });

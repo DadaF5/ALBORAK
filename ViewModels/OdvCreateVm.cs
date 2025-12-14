@@ -46,14 +46,17 @@ namespace FRAProject.ViewModels
 
         // Optional planned TOFF: bind using <input type="time" /> or accept a string and parse on server
         [Display(Name = "Planned TOFF")]
+        [Required]
         public TimeSpan? TOFF { get; set; }
 
+        [Required]
         [Display(Name = "Aircraft Main Group")]
         public int AcMainGroupId { get; set; }
 
         // in OdvCreateVm
-        [Display(Name = "Call Sign")]
         [Required]
+        [Display(Name = "Call Sign")]
+       
         public int CallSignId { get; set; }    // allow none
 
         [Display(Name = "Observations")]

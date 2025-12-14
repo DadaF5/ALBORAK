@@ -9,7 +9,7 @@ namespace FRAProject.ViewModels
     {
         // Filters
         public int? SelectedSquadronId { get; set; }
-        public DateTime? SelectedDate { get; set; }
+        public DateTime SelectedDate { get; set; }
         public int? SelectedAcMainGroupId { get; set; }
 
         // Create-model (bind the create form to this so posted values are preserved)

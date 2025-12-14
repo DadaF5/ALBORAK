@@ -1,6 +1,8 @@
 ﻿using FRAProject.Data;
 using FRAProject.Models;
 using FRAProject.ViewModels;
+using Humanizer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -9,11 +11,13 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Threading.Tasks;
 
 namespace FRAProject.Controllers
 {
-    [Route("Odvs")]
+    [Route("Odvplanning")]
+    
     public class OdvPlanningController : Controller
     {
         private readonly FRAContext _context;
@@ -61,46 +65,71 @@ namespace FRAProject.Controllers
         // GET: /Odvs
         // =============================
         [HttpGet("")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(DateTime? odvDate)
         {
+            // 1️⃣ Determine effective date
+            var selectedDate = (odvDate ?? DateTime.UtcNow).Date;
+
             var vm = new OdvIndexVm
             {
+                SelectedDate = selectedDate,
                 CreateModel = new OdvCreateVm
                 {
-                    OdvDate = DateTime.UtcNow.Date
+                    OdvDate = selectedDate
                 }
             };
 
-            // Prefill squadron / AC group for non-admin users
+           
+            // 2️⃣ Apply user scope
             if (!IsAdmin)
             {
                 var user = await GetCurrentUserAsync();
 
-                if (!user.SquadronId.HasValue)
-                    throw new InvalidOperationException("Current user does not have a Squadron assigned.");
-
-                if (!user.AcMainGroupId.HasValue)
-                    throw new InvalidOperationException("Current user does not have an Aircraft Main Group assigned.");
+                if (!user.SquadronId.HasValue || !user.AcMainGroupId.HasValue)
+                    throw new InvalidOperationException("User is not properly configured.");
 
                 vm.CreateModel.SquadronId = user.SquadronId.Value;
                 vm.CreateModel.AcMainGroupId = user.AcMainGroupId.Value;
+
+                // 🔹 For display purposes only
+                ViewBag.SquadronName = await _context.Squadrons
+                    .Where(s => s.Id == user.SquadronId)
+                    .Select(s => s.Name)
+                    .FirstAsync();
+
+                ViewBag.AcMainGroupName = await _context.AcMainGroups
+                    .Where(g => g.Id == user.AcMainGroupId)
+                    .Select(g => g.Name)
+                    .FirstAsync();
+
             }
 
+            // 3️⃣ Populate dropdowns
             await PopulateSelectListsAsync(vm);
 
-            // Load existing ODVs (planning overview)
-            vm.Odvs = await _context.Odvs
+            // 4️⃣ Load ODVs for that date + scope
+            var odvQuery = _context.Odvs
                 .Include(o => o.Mission)
-                .Include(o => o.AcMainGroup)
-                .Include(o => o.Sorties)
-                    .ThenInclude(s => s.Aircraft)
+                .Include(o => o.AcMainGroup)  
+                .Include(o=> o.CallSign)
+                .Where(o => o.OdvDate == selectedDate);
+
+            if (!IsAdmin)
+            {
+                odvQuery = odvQuery.Where(o =>
+                    o.SquadronId == vm.CreateModel.SquadronId &&
+                    o.AcMainGroupId == vm.CreateModel.AcMainGroupId);
+            }
+
+            vm.Odvs = await odvQuery
                 .AsNoTracking()
-                .OrderByDescending(o => o.OdvDate)
-                .ThenBy(o => o.Id)
+                .OrderBy(o => o.TOFF)
                 .ToListAsync();
 
-            return View("~/Views/Odvs/Index.cshtml", vm);
-        }
+             
+
+            return View("~/Views/OdvPlanning/Index.cshtml", vm);
+        }   
 
         // =============================
         // POST: /Odvs/Create (P1)
@@ -111,66 +140,79 @@ namespace FRAProject.Controllers
         {
             _logger.LogDebug("ODV Create POST: {@Model}", model);
 
-            // Enforce squadron & AC group from server side for non-admins
+            bool acGroupExists = await _context.AcMainGroups
+            .AnyAsync(g => g.Id == model.AcMainGroupId);
+
+            if (!acGroupExists)
+            {
+                return BadRequest(new Dictionary<string, string[]>
+                {
+                    { "CreateModel.AcMainGroupId", new[] { "Aircraft Main Group does not exist." } }
+                });
+            }
+
+            if (model.AcMainGroupId <= 0)
+            {
+                return BadRequest(new Dictionary<string, string[]>
+            {
+                { "CreateModel.AcMainGroupId", new[] { "Aircraft Main Group is missing or invalid." } }
+            });
+            }
+            // 1️⃣ Enforce scope for non-admin
             if (!IsAdmin)
             {
                 var user = await GetCurrentUserAsync();
 
-                if (!user.SquadronId.HasValue)
-                    throw new InvalidOperationException("Current user does not have a Squadron assigned.");
-
-                if (!user.AcMainGroupId.HasValue)
-                    throw new InvalidOperationException("Current user does not have an Aircraft Main Group assigned.");
+                if (!user.SquadronId.HasValue || !user.AcMainGroupId.HasValue)
+                    throw new InvalidOperationException("User is not properly configured.");
 
                 model.SquadronId = user.SquadronId.Value;
                 model.AcMainGroupId = user.AcMainGroupId.Value;
             }
 
+            // 2️⃣ Validation
             if (!ModelState.IsValid)
             {
                 return BadRequest(ExtractModelStateErrors("CreateModel"));
             }
 
-            // Validate mission visibility/ownership
-            var allowedMission = await IsMissionAllowedAsync(model.MissionId!, model.SquadronId);
-            if (!allowedMission)
+            // 3️⃣ Mission ownership check
+            var missionAllowed = await IsMissionAllowedAsync(
+                model.MissionId!,
+                model.SquadronId);
+
+            if (!missionAllowed)
             {
                 return BadRequest(new Dictionary<string, string[]>
-                {
-                    { "CreateModel.MissionId", new[] { "Selected mission is not allowed." } }
+            {
+            { "CreateModel.MissionId", new[] { "Mission not allowed." } }
                 });
             }
 
+            // 4️⃣ Create ODV
             var odv = new Odv
             {
-                SquadronId = model.SquadronId!,
-                MissionId = model.MissionId!,
-                OdvDate = model.OdvDate!,
+                SquadronId = model.SquadronId,
+                AcMainGroupId = model.AcMainGroupId,
+                MissionId = model.MissionId,
+                OdvDate = model.OdvDate!.Date,
                 Zone = model.Zone,
                 MissionType = model.MissionType,
                 Area = model.Area,
-                Obs = model.Obs,
                 TOFF = model.TOFF,
+                Obs = model.Obs,
                 CallSignId = model.CallSignId,
-                AcMainGroupId = model.AcMainGroupId!,
                 CreatedAtUtc = DateTime.UtcNow
             };
 
             _context.Odvs.Add(odv);
+            await _context.SaveChangesAsync();
 
-            try
+            // 5️⃣ Redirect back to SAME DATE
+            return RedirectToAction(nameof(Index), new
             {
-                await _context.SaveChangesAsync();
-                return Json(new { success = true, id = odv.Id });
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Error saving ODV.");
-                return StatusCode(500, new Dictionary<string, string[]>
-                {
-                    { "CreateModel", new[] { "Unexpected database error while saving the ODV." } }
-                });
-            }
+                odvDate = model.OdvDate!.ToString("yyyy-MM-dd")
+            });
         }
 
         // =============================

@@ -1,0 +1,184 @@
+﻿@model FRAProject.ViewModels.OdvIndexVm
+@{
+    ViewData["Title"] = "Squadron Flying Program";
+    bool isAdmin = User.IsInRole("Admin");
+}
+
+@* <h2 class="mb-3 text-center"></h2> *@
+
+<!-- ============================= -->
+<!-- FILTER / CONTEXT HEADER     -->
+<!-- ============================= -->
+<form method="get" asp-action="Index" class="row mb-3" id="dateForm">
+    <div class="col-md-2">
+        <label class="form-label">Date</label>
+        <input type="date"
+               name="odvDate"
+               class="form-control"
+               value="@Model.SelectedDate.ToString("yyyy-MM-dd")"
+               onchange="this.form.submit()" />
+    </div>
+</form>
+
+<!-- ============================= -->
+<!-- ODV DETAILS (CREATE)         -->
+<!-- ============================= -->
+<div class="card mb-4" style="margin-top:0px;">
+    <div class="card-header fw-bold" style="font-size:16px;">Squadron Daily Flying Program</div>
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="CreateModel.OdvDate" id="createOdvDate" />
+            <div class="row g-3">
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="col-md-2">
+                    <label class="form-label">Aircraft Group</label>
+                    <select asp-for="CreateModel.AcMainGroupId" required
+                            class="form-control"
+                            asp-items="Model.AcMainGroups">
+                        <option value="">-- Select Group --</option>
+                       
+                        </select>
+                        <span asp-validation-for="CreateModel.AcMainGroupId"></span>
+
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Squadron</label>
+                        <select asp-for="CreateModel.SquadronId" required
+                            class="form-control"
+                            asp-items="Model.Squadrons">
+                        <option value="">-- Select Squadron --</option>                      
+
+                    </select>
+                        <span asp-validation-for="CreateModel.SquadronId"></span>
+                </div>
+
+                
+
+            }
+            else
+            {
+                    <input type="hidden" asp-for="CreateModel.SquadronId" />
+                    <input type="hidden" asp-for="CreateModel.AcMainGroupId" />
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <strong>Squadron:</strong> @ViewBag.SquadronName
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Aircraft Group:</strong> @ViewBag.AcMainGroupName
+                    </div>
+                    
+                </div>
+
+            }
+               
+                <div class="col-md-2">
+                    <label class="form-label">Call Sign</label>
+                    <select asp-for="CreateModel.CallSignId" class="form-control"
+                            asp-items="Model.CallSigns" required></select>
+                    <span asp-validation-for="CreateModel.CallSignId" class="text-danger"></span>
+                </div>
+
+            </div>
+            <div class="row g-3">                
+
+                <div class="col-md-2">
+                    <label class="form-label">Mission</label>
+                    <select asp-for="CreateModel.MissionId" class="form-control"
+                            asp-items="Model.Missions" required></select>
+                    <span asp-validation-for="CreateModel.MissionId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Area</label>
+                    <input asp-for="CreateModel.Area" class="form-control" required />
+                    <div class="invalid-feedback" data-valmsg-for="CreateModel.Area"></div>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">TOFF</label>
+                    <input asp-for="CreateModel.TOFF" type="time" class="form-control" required />
+                    <span asp-validation-for="CreateModel.TOFF" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Obs</label>
+                    <input asp-for="CreateModel.Obs" class="form-control" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Add</label>
+                    <button type="submit" class="btn btn-success w-100">+ Create</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================= -->
+<!-- PLANNED ODVs GRID            -->
+<!-- ============================= -->
+<table class="table table-bordered table-sm">
+    <thead class="table-primary text-center">
+        <tr>
+            <th>Mission</th>
+            <th>TOFF</th>
+            <th>Call Sign</th>
+            <th>Area</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Odvs.Any())
+        {
+            <tr>
+                <td colspan="5" class="text-center text-muted">No ODVs planned.</td>
+            </tr>
+        }
+        else
+        {
+            foreach (var odv in Model.Odvs)
+            {
+                <tr>
+                    <td>@odv.Mission?.Name</td>
+                    <td>@odv.TOFF</td>
+                    <td>@odv.CallSign?.Code</td>
+                    <td>@odv.Area</td>
+                    <td>@odv.OdvStatus</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        function syncDateAndSubmit() {
+            const date = document.getElementById('odvDatePicker').value;
+
+            // Sync date into Create form hidden field
+            const hidden = document.getElementById('createOdvDate');
+            if (hidden) {
+                hidden.value = date;
+            }
+
+            // Submit GET form
+            document.getElementById('dateForm').submit();
+        }
+
+        // Ensure Create form is synced on initial load
+        document.addEventListener("DOMContentLoaded", function () {
+            const date = document.getElementById('odvDatePicker').value;
+            const hidden = document.getElementById('createOdvDate');
+            if (hidden) {
+                hidden.value = date;
+            }
+        });
+    </script>
+}
+
+
+

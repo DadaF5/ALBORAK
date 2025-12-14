@@ -1173,13 +1173,7 @@ namespace FRAProject.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Odvs_MissionId",
                 table: "Odvs",
-                column: "MissionId");
-
-            migrationBuilder.CreateIndex(
-                name: "UX_Odv_Squadron_OdvDate",
-                table: "Odvs",
-                columns: new[] { "SquadronId", "OdvDate" },
-                unique: true);
+                column: "MissionId");           
 
             migrationBuilder.CreateIndex(
                 name: "IX_Persons_RankId",

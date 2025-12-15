@@ -131,6 +131,11 @@ namespace FRAProject.Controllers
                 .Include(o => o.Mission)
                 .Include(o => o.AcMainGroup)  
                 .Include(o=> o.CallSign)
+                .Include(o => o.Sorties)
+                    .ThenInclude(s => s.AcType)
+                .Include(o => o.Sorties)
+                    .ThenInclude(s => s.SortieCrews)
+                        .ThenInclude(sc => sc.CrewMember)
                 .Where(o => o.OdvDate == selectedDate);
 
            

@@ -32,7 +32,7 @@ namespace FRAProject.Controllers
             _context = context;
             _logger = logger;
             _userManager = userManager;
-        }
+        }       
 
         // =============================
         // Helpers (identity & scoping)
@@ -67,9 +67,27 @@ namespace FRAProject.Controllers
         [HttpGet("")]
         public async Task<IActionResult> Index(DateTime? odvDate)
         {
-            // 1️⃣ Determine effective date
-            var selectedDate = (odvDate ?? DateTime.UtcNow).Date;
+            // Persist board date
+            DateTime selectedDate;
 
+            if (odvDate.HasValue)
+            {
+                selectedDate = odvDate.Value.Date;
+                TempData["OdvDate"] = selectedDate.ToString("yyyy-MM-dd");
+            }
+            else if (TempData["OdvDate"] != null)
+            {
+                selectedDate = DateTime.Parse(TempData["OdvDate"]!.ToString()!);
+                TempData.Keep("OdvDate");
+            }
+            else
+            {
+                selectedDate = DateTime.Today;
+                TempData["OdvDate"] = selectedDate.ToString("yyyy-MM-dd");
+            }
+            // 1️⃣ Determine effective date
+            //var selectedDate = (odvDate ?? DateTime.UtcNow).Date;
+           
             var vm = new OdvIndexVm
             {
                 SelectedDate = selectedDate,
@@ -79,7 +97,15 @@ namespace FRAProject.Controllers
                 }
             };
 
-           
+            
+            vm.AcTypes = await _context.AcTypes
+                .OrderBy(a => a.Name)
+                .Select(a => new SelectListItem
+                {
+                    Value = a.Id.ToString(),
+                    Text = a.Name   // e.g. F-16C, F-16D
+                })
+                .ToListAsync();
             // 2️⃣ Apply user scope
             if (!IsAdmin)
             {
@@ -103,7 +129,7 @@ namespace FRAProject.Controllers
                     .FirstAsync();
 
             }
-
+           
             // 3️⃣ Populate dropdowns
             await PopulateSelectListsAsync(vm);
 
@@ -114,6 +140,8 @@ namespace FRAProject.Controllers
                 .Include(o=> o.CallSign)
                 .Where(o => o.OdvDate == selectedDate);
 
+           
+
             if (!IsAdmin)
             {
                 odvQuery = odvQuery.Where(o =>
@@ -122,10 +150,18 @@ namespace FRAProject.Controllers
             }
 
             vm.Odvs = await odvQuery
-                .AsNoTracking()
+                .AsNoTracking()                
                 .OrderBy(o => o.TOFF)
                 .ToListAsync();
 
+            vm.AcTypes= await _context.AcTypes
+                .OrderBy(a  => a.Name)
+                .Select(a => new SelectListItem
+                {
+                    Value=a.Id.ToString(),
+                    Text=a.Name,
+                })
+                .ToListAsync();
              
 
             return View("~/Views/OdvPlanning/Index.cshtml", vm);
@@ -214,6 +250,100 @@ namespace FRAProject.Controllers
                 odvDate = model.OdvDate!.ToString("yyyy-MM-dd")
             });
         }
+
+        // =============================
+        // GET: /Odvs/Edit/{id}
+
+        [HttpGet("Edit/{id}")]
+        public async Task<IActionResult> Edit(int id, DateTime? odvDate)
+        {
+            var odv = await _context.Odvs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (odv == null)
+                return NotFound();
+
+            var vm = new OdvEditVm
+            {
+                Id = odv.Id,
+               
+                MissionId = odv.MissionId,
+                CallSignId = odv.CallSignId,               
+                TOFF = odv.TOFF ?? TimeSpan.Zero,
+                Area = odv.Area,
+                Obs = odv.Obs
+            };
+
+            // reuse dropdown population
+            ViewBag.Missions = await _context.Missions
+                .Select(m => new SelectListItem { Value = m.Id.ToString(), Text = m.Name })
+                .ToListAsync();
+
+            ViewBag.CallSigns = await _context.CallSigns
+                .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Code })
+                .ToListAsync();
+
+            ViewBag.ReturnDate = odvDate;
+
+            return View(vm);
+        }
+
+        // Edit POST action would go here...
+        [HttpPost("Edit/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, OdvEditVm model, DateTime? odvDate)
+        {
+            if (id != model.Id)
+                return BadRequest();
+
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var odv = await _context.Odvs.FirstOrDefaultAsync(o => o.Id == id);
+            if (odv == null)
+                return NotFound();
+
+            odv.MissionId = model.MissionId;
+            odv.CallSignId = model.CallSignId;
+            odv.TOFF = model.TOFF;
+            odv.Area = model.Area;
+            odv.Obs = model.Obs;
+            odv.UpdatedAtUtc = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Index", new { odvDate });
+        }
+
+        // POST Add Sortie
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddSortie(SortieCreateVm model, DateTime? odvDate)
+        {
+            if (!ModelState.IsValid)
+                return RedirectToAction("Index", new { odvDate });
+
+            var sortie = new Sortie
+            {
+                OdvId = model.OdvId,
+                SortieCode = model.SortieCode,
+                AcTypeId = model.AcTypeId,
+                Configuration = model.Configuration,
+                Notes = model.Notes,
+                FuelQuantity = model.PlannedFuel,
+                Sequence = model.Sequence,
+                Status = SortieStatus.Planned, // SERVER decides
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            _context.Sorties.Add(sortie);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Index", new { odvDate });
+        }
+
+
 
         // =============================
         // Select-list population

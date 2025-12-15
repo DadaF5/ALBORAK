@@ -21,6 +21,7 @@ namespace FRAProject.ViewModels
         public List<SelectListItem>? Missions { get; set; }
         public List<SelectListItem>? CallSigns { get; set; } // Value = Id.ToString()
         public List<SelectListItem>? Aircrafts { get; set; }
+        public List<SelectListItem>? AcTypes { get; set; }
         public List<SelectListItem>? CrewMembers { get; set; }
 
         // in OdvIndexVm

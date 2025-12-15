@@ -8,6 +8,7 @@
         // FK to Aircraft (nullable if not selected)
         public int? AircraftId { get; set; }
 
+
         // Free-text configuration or config identifier
         public string? Configuration { get; set; }
 

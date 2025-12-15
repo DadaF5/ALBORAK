@@ -25,12 +25,15 @@ namespace FRAProject.Models
 
         // NEW: denormalized BaseId for fast multi-base queries on sorties
         public int? BaseId { get; set; }
-
+        // ✅ Aircraft TYPE requirement (planning phase)
+        public int AcTypeId { get; set; }
+        public AcType AcType { get; set; }
+        public string SortieCode { get; set; } = "";
         // aircraft & configuration for this sortie
         public int? AircraftId { get; set; }
         public Aircraft? Aircraft { get; set; }
         public string? Configuration { get; set; } // free text or FK to a config table
-
+        public int Sequence { get; set; }
         // fuel in chosen unit (store with precision)
         public decimal? FuelQuantity { get; set; }
 

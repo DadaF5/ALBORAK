@@ -17,6 +17,7 @@
                class="form-control"
                value="@Model.SelectedDate.ToString("yyyy-MM-dd")"
                onchange="this.form.submit()" />
+       
     </div>
 </form>
 
@@ -40,7 +41,7 @@
                         <option value="">-- Select Group --</option>
                        
                         </select>
-                        <span asp-validation-for="CreateModel.AcMainGroupId"></span>
+                        <span asp-validation-for="CreateModel.AcMainGroupId" class="text-danger"></span>
 
                 </div>
                 <div class="col-md-2">
@@ -51,7 +52,7 @@
                         <option value="">-- Select Squadron --</option>                      
 
                     </select>
-                        <span asp-validation-for="CreateModel.SquadronId"></span>
+                        <span asp-validation-for="CreateModel.SquadronId" class="text-danger"></span>
                 </div>
 
                 
@@ -93,7 +94,7 @@
                 <div class="col-md-2">
                     <label class="form-label">Area</label>
                     <input asp-for="CreateModel.Area" class="form-control" required />
-                    <div class="invalid-feedback" data-valmsg-for="CreateModel.Area"></div>
+                    <span asp-validation-for="CreateModel.Area" class="text-danger"></span>
                 </div>
 
                 <div class="col-md-2">
@@ -127,6 +128,8 @@
             <th>Call Sign</th>
             <th>Area</th>
             <th>Status</th>
+            <th>Actions</th>
+
         </tr>
     </thead>
     <tbody>
@@ -146,6 +149,99 @@
                     <td>@odv.CallSign?.Code</td>
                     <td>@odv.Area</td>
                     <td>@odv.OdvStatus</td>
+                    <td class="text-center">
+                        <a asp-action="Edit"
+                           asp-route-id="@odv.Id"
+                           asp-route-odvDate="@Model.SelectedDate.ToString("dd-MM-yyyy")"
+                           class="btn btn-sm btn-primary">
+                            Edit
+                        </a>
+                    </td>
+                </tr>
+                <tr class="table-secondary">
+                    <td colspan="6">
+                        <strong>@odv.Mission?.Name</strong>
+                        — TOFF @odv.TOFF
+                        — Callsign @odv.CallSign?.Code
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="6">
+                        <table class="table table-sm table-bordered mb-2">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Sortie</th>
+                                    <th>Configuration</th>
+                                    <th>Crew</th>
+                                    <th>Status</th>
+                                    <th style="width:120px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!odv.Sorties.Any())
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-muted text-center">
+                                            No sorties planned
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var sortie in odv.Sorties)
+                                    {
+                                        <tr>
+                                            <td>@sortie.Id</td>
+                                            <td>@sortie.Configuration</td>
+                                            <td>
+                                                @sortie.SortieCrews.Count crew
+                                            </td>
+                                            <td>@sortie.Status</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" disabled>
+                                                    Edit
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+
+                        <!-- ADD SORTIE -->
+                        <form asp-action="AddSortie" method="post" class="row g-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="OdvId" value="@odv.Id" />
+
+                            <div class="col-md-2">
+                                <input name="SortieCode"
+                                       class="form-control form-control-sm"
+                                       placeholder="Sortie"
+                                       required />
+                            </div>
+
+                            <div class="col-md-4">
+                                <input name="Configuration"
+                                       class="form-control form-control-sm"
+                                       placeholder="Configuration"
+                                       required />
+                            </div>
+
+                            <div class="col-md-4">
+                                <input name="Notes"
+                                       class="form-control form-control-sm"
+                                       placeholder="Notes" />
+                            </div>
+
+                            <div class="col-md-2">
+                                <button type="submit"
+                                        class="btn btn-sm btn-success w-100">
+                                    + Add Sortie
+                                </button>
+                            </div>
+                        </form>
+                    </td>
                 </tr>
             }
         }

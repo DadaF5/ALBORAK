@@ -1,0 +1,41 @@
+﻿@model FRAProject.ViewModels.OdvEditVm
+
+<h4>Edit ODV</h4>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    
+    <input type="hidden" name="odvDate" value="@ViewBag.ReturnDate" />
+
+    <div class="mb-2">
+        <label>Mission</label>
+        <select asp-for="MissionId" asp-items="ViewBag.Missions" class="form-control"></select>
+    </div>
+
+    <div class="mb-2">
+        <label>Call Sign</label>
+        <select asp-for="CallSignId" asp-items="ViewBag.CallSigns" class="form-control"></select>
+    </div>
+
+    <div class="mb-2">
+        <label>TOFF</label>
+        <input asp-for="TOFF" type="time" class="form-control" />
+    </div>
+
+    <div class="mb-2">
+        <label>Area</label>
+        <input asp-for="Area" class="form-control" />
+    </div>
+
+    <div class="mb-2">
+        <label>Obs</label>
+        <input asp-for="Obs" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a asp-action="Index"
+       asp-route-odvDate="@ViewBag.ReturnDate"
+       class="btn btn-secondary">Cancel</a>
+</form>
+

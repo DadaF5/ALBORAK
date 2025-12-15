@@ -71,7 +71,7 @@ namespace FRAProject.Models
         public byte[]? RowVersion { get; set; }
         // --------------------------
         // collection navigation properties
-        public ICollection<Sortie>? Sorties { get; set; }
+        public ICollection<Sortie> Sorties { get; set; } = new List<Sortie>();
         public ICollection<MaintenanceComponent>? Components { get; set; }
         public ICollection<FlightLog>? FlightLogs { get; set; }
         

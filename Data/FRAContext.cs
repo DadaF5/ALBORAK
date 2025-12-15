@@ -128,12 +128,9 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new SortieConfiguration());           
             modelBuilder.ApplyConfiguration(new MissionConfiguration());
             modelBuilder.ApplyConfiguration(new PhaseConfiguration());
-
+            modelBuilder.ApplyConfiguration(new SortieCrewConfiguration());
             // Decimal precision configuration
             ConfigureDecimalPrecision(modelBuilder);
-
-            // Configure Sorties and SortieCrew mapping (single canonical place)
-            ConfigureSorties(modelBuilder);
 
             // Maintenance & FlightLog configuration (single canonical methods)
             ConfigureMaintenance(modelBuilder);
@@ -198,6 +195,13 @@ namespace FRAProject.Data
                 .WithOne(s => s.Wing)
                 .HasForeignKey(s => s.WingId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Aircraft>()
+                .HasOne(a => a.AcType)
+                .WithMany(t => t.Aircrafts)
+                .HasForeignKey(a => a.AcTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             
 
             // --- Enum-to-string converters for Odv enum-backed fields ---
@@ -234,49 +238,6 @@ namespace FRAProject.Data
             // Add other decimal properties here as needed
         }
 
-        // Corrected ConfigureSorties: single canonical mapping for Sortie and SortieCrew
-        private void ConfigureSorties(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Sortie>(entity =>
-            {
-                entity.HasKey(s => s.Id);
-                entity.Property(s => s.Configuration).HasMaxLength(200);
-                entity.Property(s => s.Notes).HasColumnType("nvarchar(max)");
-
-                entity.HasOne(s => s.Odv)
-                      .WithMany(o => o.Sorties)
-                      .HasForeignKey(s => s.OdvId)
-                      .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(s => s.Aircraft)
-                      .WithMany(a => a.Sorties) // ensure Aircraft.Sorties exists or use .WithMany() if not
-                      .HasForeignKey(s => s.AircraftId)
-                      .OnDelete(DeleteBehavior.SetNull);
-
-                entity.HasIndex(s => new { s.OdvId });
-            });
-
-            // Canonical SortieCrew mapping (fixed FK)
-            modelBuilder.Entity<SortieCrew>(entity =>
-            {
-                entity.HasKey(sc => sc.Id);
-
-                entity.HasOne(sc => sc.Sortie)
-                      .WithMany(s => s.SortieCrews)
-                      .HasForeignKey(sc => sc.SortieId)
-                      .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(sc => sc.CrewMember)
-                      .WithMany() // if CrewMember has ICollection<SortieCrew>, replace with .WithMany(cm => cm.SortieCrews)
-                      .HasForeignKey(sc => sc.CrewMemberId)   // <-- CORRECT FK property
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                entity.Property(c => c.Role).HasMaxLength(100);
-                entity.Property(c => c.IsPrimary).HasDefaultValue(false);
-                entity.Property(c => c.Remarks).HasMaxLength(1000);
-
-                entity.HasIndex(sc => new { sc.SortieId });
-            });
-        }
+        
     }
 }

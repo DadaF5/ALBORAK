@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FRAProject.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Initial_create : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -508,7 +508,7 @@ namespace FRAProject.Migrations
                         column: x => x.AcTypeId,
                         principalTable: "AcTypes",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -863,8 +863,11 @@ namespace FRAProject.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     OdvId = table.Column<int>(type: "int", nullable: false),
                     BaseId = table.Column<int>(type: "int", nullable: true),
+                    AcTypeId = table.Column<int>(type: "int", nullable: false),
                     AircraftId = table.Column<int>(type: "int", nullable: true),
+                    SortieCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Configuration = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Sequence = table.Column<int>(type: "int", nullable: false),
                     FuelQuantity = table.Column<decimal>(type: "decimal(12,2)", precision: 10, scale: 2, nullable: true),
                     StartTime = table.Column<DateTime>(type: "datetime2", nullable: true),
                     LandingTime = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -872,7 +875,7 @@ namespace FRAProject.Migrations
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     RealTOFF = table.Column<DateTime>(type: "datetime2", nullable: true),
                     RealLandingTime = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Notes = table.Column<string>(type: "nvarchar(max)", maxLength: 2000, nullable: true),
+                    Notes = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
                     DayHours = table.Column<double>(type: "float", nullable: true),
                     NightHours = table.Column<double>(type: "float", nullable: true),
                     DurationMinutes = table.Column<int>(type: "int", nullable: true),
@@ -913,6 +916,12 @@ namespace FRAProject.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Sorties", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Sorties_AcTypes_AcTypeId",
+                        column: x => x.AcTypeId,
+                        principalTable: "AcTypes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Sorties_Aircrafts_AircraftId",
                         column: x => x.AircraftId,
@@ -1173,7 +1182,13 @@ namespace FRAProject.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Odvs_MissionId",
                 table: "Odvs",
-                column: "MissionId");           
+                column: "MissionId");
+
+            migrationBuilder.CreateIndex(
+                name: "UX_Odv_Squadron_OdvDate",
+                table: "Odvs",
+                columns: new[] { "SquadronId", "OdvDate" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Persons_RankId",
@@ -1214,6 +1229,11 @@ namespace FRAProject.Migrations
                 name: "IX_Sortie_OdvId",
                 table: "Sorties",
                 column: "OdvId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Sorties_AcTypeId",
+                table: "Sorties",
+                column: "AcTypeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Sorties_IsCompleted",

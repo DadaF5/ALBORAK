@@ -28,10 +28,14 @@ namespace FRAProject.Models
         // ✅ Aircraft TYPE requirement (planning phase)
         public int AcTypeId { get; set; }
         public AcType AcType { get; set; }
-        public string SortieCode { get; set; } = "";
-        // aircraft & configuration for this sortie
+
         public int? AircraftId { get; set; }
         public Aircraft? Aircraft { get; set; }
+
+        
+        public string SortieCode { get; set; } = "";
+        // aircraft & configuration for this sortie
+       
         public string? Configuration { get; set; } // free text or FK to a config table
         public int Sequence { get; set; }
         // fuel in chosen unit (store with precision)

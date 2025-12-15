@@ -1087,6 +1087,9 @@ namespace FRAProject.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AcTypeId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("AircraftId")
                         .HasColumnType("int");
 
@@ -1189,7 +1192,7 @@ namespace FRAProject.Migrations
 
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<int>("OdvId")
                         .HasColumnType("int");
@@ -1208,6 +1211,13 @@ namespace FRAProject.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion")
                         .HasColumnName("RowVersion");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SortieCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SquadronReportNotes")
                         .HasColumnType("nvarchar(max)");
@@ -1243,6 +1253,8 @@ namespace FRAProject.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AcTypeId");
 
                     b.HasIndex("AircraftId")
                         .HasDatabaseName("IX_Sortie_AircraftId");
@@ -1666,7 +1678,7 @@ namespace FRAProject.Migrations
                     b.HasOne("FRAProject.Models.AcType", "AcType")
                         .WithMany("Aircrafts")
                         .HasForeignKey("AcTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("AcStatusType");
@@ -1902,6 +1914,12 @@ namespace FRAProject.Migrations
 
             modelBuilder.Entity("FRAProject.Models.Sortie", b =>
                 {
+                    b.HasOne("FRAProject.Models.AcType", "AcType")
+                        .WithMany("Sorties")
+                        .HasForeignKey("AcTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("FRAProject.Models.Aircraft", "Aircraft")
                         .WithMany("Sorties")
                         .HasForeignKey("AircraftId")
@@ -1912,6 +1930,8 @@ namespace FRAProject.Migrations
                         .HasForeignKey("OdvId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("AcType");
 
                     b.Navigation("Aircraft");
 
@@ -2053,6 +2073,8 @@ namespace FRAProject.Migrations
             modelBuilder.Entity("FRAProject.Models.AcType", b =>
                 {
                     b.Navigation("Aircrafts");
+
+                    b.Navigation("Sorties");
                 });
 
             modelBuilder.Entity("FRAProject.Models.Aircraft", b =>

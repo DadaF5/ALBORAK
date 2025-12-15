@@ -2,6 +2,7 @@
 using FRAProject.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Reflection.Emit;
 
 
 namespace FRAProject.Data.EntityConfigurations
@@ -19,8 +20,19 @@ namespace FRAProject.Data.EntityConfigurations
                  .WithMany(o => o.Sorties)
                  .HasForeignKey(s => s.OdvId)
                  .OnDelete(DeleteBehavior.Cascade);
-           
-           
+
+            // Relationship to AcType (required)
+            builder.HasOne(s => s.AcType)
+                .WithMany(t => t.Sorties)
+                .HasForeignKey(s => s.AcTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Relationship to Aircraft (optional)
+            builder.HasOne(s => s.Aircraft)
+                .WithMany(a => a.Sorties)
+                .HasForeignKey(s => s.AircraftId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Date/time related fields
             builder.Property(s => s.StartTime)
                 .HasColumnType("datetime2")

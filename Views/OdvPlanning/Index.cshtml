@@ -15,7 +15,7 @@
         <input type="date"
                name="odvDate"
                class="form-control"
-               value="@Model.SelectedDate.ToString("yyyy-MM-dd")"
+               value="@(Model.SelectedDate.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))"
                onchange="this.form.submit()" />
        
     </div>
@@ -152,19 +152,12 @@
                     <td class="text-center">
                         <a asp-action="Edit"
                            asp-route-id="@odv.Id"
-                           asp-route-odvDate="@Model.SelectedDate.ToString("dd-MM-yyyy")"
+                           asp-route-odvDate="@Model.SelectedDate.ToString("yyyy-MM-dd")"
                            class="btn btn-sm btn-primary">
                             Edit
                         </a>
                     </td>
-                </tr>
-                <tr class="table-secondary">
-                    <td colspan="6">
-                        <strong>@odv.Mission?.Name</strong>
-                        — TOFF @odv.TOFF
-                        — Callsign @odv.CallSign?.Code
-                    </td>
-                </tr>
+                </tr>                
 
                 <tr>
                     <td colspan="6">
@@ -175,11 +168,12 @@
                                     <th>Configuration</th>
                                     <th>Crew</th>
                                     <th>Status</th>
+                                    <th>Aircraft Type</th>
                                     <th style="width:120px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @if (!odv.Sorties.Any())
+                                @if (odv.Sorties == null || !odv.Sorties.Any())
                                 {
                                     <tr>
                                         <td colspan="5" class="text-muted text-center">
@@ -198,6 +192,8 @@
                                                 @sortie.SortieCrews.Count crew
                                             </td>
                                             <td>@sortie.Status</td>
+                                            <td>@sortie.AcType?.Name</td>
+
                                             <td>
                                                 <button class="btn btn-sm btn-outline-primary" disabled>
                                                     Edit
@@ -212,68 +208,74 @@
                         <!-- ADD SORTIE -->
                         <form asp-action="AddSortie" method="post" class="row g-2">
                             @Html.AntiForgeryToken()
+
                             <input type="hidden" name="OdvId" value="@odv.Id" />
 
-                            <div class="col-md-2">
+                            <div class="col-md-1">
                                 <input name="SortieCode"
                                        class="form-control form-control-sm"
-                                       placeholder="Sortie"
+                                       placeholder="A"
                                        required />
                             </div>
 
-                            <div class="col-md-4">
+                            <!-- 🔑 Aircraft Type -->
+                            <div class="col-md-2">
+                                <select name="AcTypeId"
+                                        class="form-control form-control-sm"
+                                        required>
+                                    <option value="">Type</option>
+                                    @foreach (var t in Model.AcTypes)
+                                    {
+                                        <option value="@t.Value">@t.Text</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
                                 <input name="Configuration"
                                        class="form-control form-control-sm"
                                        placeholder="Configuration"
                                        required />
                             </div>
 
-                            <div class="col-md-4">
-                                <input name="Notes"
+                            <div class="col-md-2">
+                                <input name="Sequence"
+                                       type="number"
+                                       min="1"
                                        class="form-control form-control-sm"
-                                       placeholder="Notes" />
+                                       placeholder="Seq" />
+                            </div>
+
+                            <div class="col-md-2">
+                                <input name="PlannedFuel"
+                                       type="number"
+                                       step="0.1"
+                                       class="form-control form-control-sm"
+                                       placeholder="Fuel" />
                             </div>
 
                             <div class="col-md-2">
                                 <button type="submit"
                                         class="btn btn-sm btn-success w-100">
-                                    + Add Sortie
+                                    + Sortie
                                 </button>
                             </div>
                         </form>
+
                     </td>
                 </tr>
             }
         }
     </tbody>
 </table>
+
+
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-    <script>
-        function syncDateAndSubmit() {
-            const date = document.getElementById('odvDatePicker').value;
-
-            // Sync date into Create form hidden field
-            const hidden = document.getElementById('createOdvDate');
-            if (hidden) {
-                hidden.value = date;
-            }
-
-            // Submit GET form
-            document.getElementById('dateForm').submit();
-        }
-
-        // Ensure Create form is synced on initial load
-        document.addEventListener("DOMContentLoaded", function () {
-            const date = document.getElementById('odvDatePicker').value;
-            const hidden = document.getElementById('createOdvDate');
-            if (hidden) {
-                hidden.value = date;
-            }
-        });
-    </script>
+   
 }
 
 

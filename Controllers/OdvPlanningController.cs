@@ -98,14 +98,7 @@ namespace FRAProject.Controllers
             };
 
             
-            vm.AcTypes = await _context.AcTypes
-                .OrderBy(a => a.Name)
-                .Select(a => new SelectListItem
-                {
-                    Value = a.Id.ToString(),
-                    Text = a.Name   // e.g. F-16C, F-16D
-                })
-                .ToListAsync();
+           
             // 2️⃣ Apply user scope
             if (!IsAdmin)
             {
@@ -149,20 +142,23 @@ namespace FRAProject.Controllers
                     o.AcMainGroupId == vm.CreateModel.AcMainGroupId);
             }
 
+            // Execute query
             vm.Odvs = await odvQuery
                 .AsNoTracking()                
                 .OrderBy(o => o.TOFF)
                 .ToListAsync();
 
-            vm.AcTypes= await _context.AcTypes
-                .OrderBy(a  => a.Name)
-                .Select(a => new SelectListItem
-                {
-                    Value=a.Id.ToString(),
-                    Text=a.Name,
-                })
-                .ToListAsync();
-             
+            // 5️⃣ Load AcTypes for Sortie creation
+            vm.AcTypes = await _context.AcTypes
+               .OrderBy(a => a.Name)
+               .Select(a => new SelectListItem
+               {
+                   Value = a.Id.ToString(),
+                   Text = a.Name   // e.g. F-16C, F-16D
+               })
+               .ToListAsync();
+           
+
 
             return View("~/Views/OdvPlanning/Index.cshtml", vm);
         }   

@@ -29,7 +29,8 @@ namespace FRAProject.Models
         public AcMainGroup AcMainGroup { get; set; }
 
         // Optional navigation: Aircraft under this type
-        public ICollection<Aircraft> Aircrafts { get; set; } = new HashSet<Aircraft>();
+        public ICollection<Aircraft> Aircrafts { get; set; } = new List<Aircraft>();
+        public ICollection<Sortie> Sorties { get; set; } = new List<Sortie>();
     }
 }
 

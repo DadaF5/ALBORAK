@@ -180,6 +180,15 @@
                                             No sorties planned
                                         </td>
                                     </tr>
+                                    <tr>
+                                        <td colspan="6" class="table-light">
+                                            <strong>Crew:</strong>
+                                            <span class="text-muted">No crew assigned</span>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="6">
+                                           </td>
+                                    </tr>
                                 }
                                 else
                                 {
@@ -200,6 +209,109 @@
                                                 </button>
                                             </td>
                                         </tr>
+
+                                        <tr class="table-light">
+                                            <td colspan="6">
+                                                <strong>Crew:</strong>
+
+                                                @if (sortie.SortieCrews == null || !sortie.SortieCrews.Any())
+                                                {
+                                                    <span class="text-muted">No crew assigned</span>
+                                                }
+                                                else
+                                                {
+                                                    <table class="table table-sm table-bordered mt-2 mb-2">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Seat</th>
+                                                                <th>Name</th>
+                                                                <th>Role</th>
+                                                                <th>Primary</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var sc in sortie.SortieCrews)
+                                                            {
+                                                                <tr>
+                                                                    <td>@sc.Seat</td>
+                                                                    <td>@sc.CrewMember?.Captain</td>
+                                                                    <td>@sc.AircraftRole</td>
+                                                                    <td>
+                                                                        @(sc.IsPrimary ? "✔" : "")
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                }
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td colspan="6">
+                                                <form asp-action="AddCrew" method="post" class="row g-2 align-items-end">
+                                                    @Html.AntiForgeryToken()
+
+                                                    <input type="hidden" name="SortieId" value="@sortie.Id" />
+                                                    <input type="hidden" name="odvDate" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" />
+
+                                                    <!-- Crew member -->
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Crew</label>
+                                                        <select name="CrewMemberId" class="form-control form-control-sm" required>
+                                                            <option value="">-- Select Crew --</option>
+                                                            @foreach (var cm in Model.CrewMembers)
+                                                            {
+                                                                <option value="@cm.Value">@cm.Text</option>
+                                                            }
+                                                        </select>
+                                                    </div>
+
+                                                    <!-- Seat -->
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Seat</label>
+                                                        <select name="Seat" class="form-control form-control-sm" required>
+                                                            <option value="">-- Seat --</option>
+                                                            <option value="Front">Front</option>
+
+                                                            @* Rear seat only if AcType allows *@
+                                                            @if (sortie.AcType?.SeatCount == 2)
+                                                            {
+                                                                <option value="Rear">Rear</option>
+                                                            }
+                                                        </select>
+                                                    </div>
+
+                                                    <!-- Aircraft role -->
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Role</label>
+                                                        <select name="AircraftRole" class="form-control form-control-sm" required>
+                                                            @foreach (var role in Enum.GetValues(typeof(FRAProject.Enums.AircraftRole)))
+                                                            {
+                                                                <option value="@role">@role</option>
+                                                            }
+                                                        </select>
+                                                    </div>
+
+                                                    <!-- Primary -->
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Primary</label>
+                                                        <div class="form-check">
+                                                            <input type="checkbox" name="IsPrimary" class="form-check-input" />
+                                                            <label class="form-check-label">Captain</label>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Submit -->
+                                                    <div class="col-md-2">
+                                                        <button type="submit" class="btn btn-sm btn-primary w-100">
+                                                            + Crew
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </td>
+                                        </tr>
+
                                     }
                                 }
                             </tbody>

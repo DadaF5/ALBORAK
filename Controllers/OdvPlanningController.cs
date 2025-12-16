@@ -136,6 +136,7 @@ namespace FRAProject.Controllers
                 .Include(o => o.Sorties)
                     .ThenInclude(s => s.SortieCrews)
                         .ThenInclude(sc => sc.CrewMember)
+
                 .Where(o => o.OdvDate == selectedDate);
 
            
@@ -344,6 +345,56 @@ namespace FRAProject.Controllers
             return RedirectToAction("Index", new { odvDate });
         }
 
+        // POST Add Sortie Crew
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddCrew(SortieCrewCreateVm model, DateTime odvDate)
+        {
+            var sortie = await _context.Sorties
+                .Include(s => s.AcType)
+                .Include(s => s.SortieCrews)
+                .FirstOrDefaultAsync(s => s.Id == model.SortieId);
+
+            if (sortie == null)
+                return NotFound();
+
+            // Rule 1: seat count
+            if (sortie.SortieCrews.Count >= sortie.AcType.SeatCount)
+            {
+                ModelState.AddModelError("", "Maximum crew already assigned for this aircraft type.");
+            }
+
+            // Rule 2: duplicate crew
+            if (sortie.SortieCrews.Any(sc => sc.CrewMemberId == model.CrewMemberId))
+            {
+                ModelState.AddModelError("", "Crew member already assigned to this sortie.");
+            }
+
+            // Rule 3: seat already taken
+            if (sortie.SortieCrews.Any(sc => sc.Seat == model.Seat))
+            {
+                ModelState.AddModelError("", "This seat is already occupied.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return RedirectToAction("Index", new { odvDate });
+            }
+
+            var sortieCrew = new SortieCrew
+            {
+                SortieId = sortie.Id,
+                CrewMemberId = model.CrewMemberId,
+                Seat = model.Seat,
+                AircraftRole = model.AircraftRole,
+                IsPrimary = model.IsPrimary
+            };
+
+            _context.SortieCrews.Add(sortieCrew);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Index", new { odvDate });
+        }
 
 
         // =============================

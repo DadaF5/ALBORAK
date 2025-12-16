@@ -25,6 +25,15 @@ namespace FRAProject.Data.EntityConfigurations
             entity.Property(c => c.Remarks).HasMaxLength(1000);
 
             entity.HasIndex(sc => sc.SortieId);
+
+            // Additional configurations can be added here as needed
+            entity.Property(sc => sc.Seat)
+                  .HasConversion<int>()
+                  .HasMaxLength(10);
+
+            entity.Property(sc => sc.AircraftRole)
+                  .HasConversion<string>()
+                  .HasMaxLength(50);
         }
     }
 

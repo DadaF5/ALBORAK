@@ -18,6 +18,9 @@ namespace FRAProject.Models
         public double MaxGrossweight { get; set; }
         public int MaxPassengers { get; set; }
 
+        // 1 = single seat, 2 = dual seat
+        public int SeatCount { get; set; }
+
         [Required(ErrorMessage = "Max Engines is required")]
         public int MaxEngines { get; set; } = 1;
 

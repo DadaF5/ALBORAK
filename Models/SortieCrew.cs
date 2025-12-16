@@ -1,4 +1,6 @@
-﻿namespace FRAProject.Models
+﻿using FRAProject.Enums;
+
+namespace FRAProject.Models
 {
     // assignment of a Person to a Sortie (1..* crew members per sortie)
     public class SortieCrew
@@ -12,6 +14,8 @@
         public int CrewMemberId { get; set; }
         public CrewMember? CrewMember { get; set; }
 
+        public CrewSeat Seat { get; set; }
+
         // Role e.g. "Pilot", "Copilot", "Observer"
         public string? Role { get; set; }
 
@@ -19,5 +23,6 @@
         public bool IsPrimary { get; set; } = false;
 
         public string? Remarks { get; set; }
+        public AircraftRole AircraftRole { get; internal set; }
     }
 }

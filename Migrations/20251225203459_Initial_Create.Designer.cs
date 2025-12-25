@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    [Migration("20251216081324_Initial_Create")]
+    [Migration("20251225203459_Initial_Create")]
     partial class Initial_Create
     {
         /// <inheritdoc />
@@ -135,6 +135,9 @@ namespace FRAProject.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SeatCount")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -1284,6 +1287,11 @@ namespace FRAProject.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AircraftRole")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<int>("CrewMemberId")
                         .HasColumnType("int");
 
@@ -1299,6 +1307,10 @@ namespace FRAProject.Migrations
                     b.Property<string>("Role")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Seat")
+                        .HasMaxLength(10)
+                        .HasColumnType("int");
 
                     b.Property<int>("SortieId")
                         .HasColumnType("int");

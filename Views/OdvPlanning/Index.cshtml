@@ -129,7 +129,20 @@
             <th>Area</th>
             <th>Status</th>
             <th>Actions</th>
+            <th>Sorties Details
 
+   @*  <thead class="table-light">
+        <tr>
+            <th>Sortie</th>
+            <th>Configuration</th>
+            <th>Crew</th>
+            <th>Status</th>
+            <th>Aircraft Type</th>
+            <th style="width:120px;">Actions</th>
+        </tr>
+    </thead> *@
+
+            </th>
         </tr>
     </thead>
     <tbody>
@@ -156,22 +169,18 @@
                            class="btn btn-sm btn-primary">
                             Edit
                         </a>
-                    </td>
-                </tr>                
+                        <a asp-controller="Sorties"
+                               asp-action="Create"
+                               asp-route-odvId="@odv.Id"
+                               class="btn btn-sm btn-success">
+                            + Add Sortie
+                        </a>
 
-                <tr>
+                    </td>
+
                     <td colspan="6">
                         <table class="table table-sm table-bordered mb-2">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Sortie</th>
-                                    <th>Configuration</th>
-                                    <th>Crew</th>
-                                    <th>Status</th>
-                                    <th>Aircraft Type</th>
-                                    <th style="width:120px;">Actions</th>
-                                </tr>
-                            </thead>
+                            
                             <tbody>
                                 @if (odv.Sorties == null || !odv.Sorties.Any())
                                 {
@@ -187,7 +196,7 @@
                                     </tr>
                                     <tr>
                                         <td colspan="6">
-                                           </td>
+                                        </td>
                                     </tr>
                                 }
                                 else
@@ -204,9 +213,12 @@
                                             <td>@sortie.AcType?.Name</td>
 
                                             <td>
-                                                <button class="btn btn-sm btn-outline-primary" disabled>
+                                                <a asp-controller="Sorties"
+                                                   asp-action="Edit"
+                                                   asp-route-id="@sortie.Id"
+                                                   class="btn btn-sm btn-outline-primary">
                                                     Edit
-                                                </button>
+                                                </a>
                                             </td>
                                         </tr>
 
@@ -248,68 +260,7 @@
                                         </tr>
 
                                         <tr>
-                                            <td colspan="6">
-                                                <form asp-action="AddCrew" method="post" class="row g-2 align-items-end">
-                                                    @Html.AntiForgeryToken()
-
-                                                    <input type="hidden" name="SortieId" value="@sortie.Id" />
-                                                    <input type="hidden" name="odvDate" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" />
-
-                                                    <!-- Crew member -->
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Crew</label>
-                                                        <select name="CrewMemberId" class="form-control form-control-sm" required>
-                                                            <option value="">-- Select Crew --</option>
-                                                            @foreach (var cm in Model.CrewMembers)
-                                                            {
-                                                                <option value="@cm.Value">@cm.Text</option>
-                                                            }
-                                                        </select>
-                                                    </div>
-
-                                                    <!-- Seat -->
-                                                    <div class="col-md-2">
-                                                        <label class="form-label">Seat</label>
-                                                        <select name="Seat" class="form-control form-control-sm" required>
-                                                            <option value="">-- Seat --</option>
-                                                            <option value="Front">Front</option>
-
-                                                            @* Rear seat only if AcType allows *@
-                                                            @if (sortie.AcType?.SeatCount == 2)
-                                                            {
-                                                                <option value="Rear">Rear</option>
-                                                            }
-                                                        </select>
-                                                    </div>
-
-                                                    <!-- Aircraft role -->
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Role</label>
-                                                        <select name="AircraftRole" class="form-control form-control-sm" required>
-                                                            @foreach (var role in Enum.GetValues(typeof(FRAProject.Enums.AircraftRole)))
-                                                            {
-                                                                <option value="@role">@role</option>
-                                                            }
-                                                        </select>
-                                                    </div>
-
-                                                    <!-- Primary -->
-                                                    <div class="col-md-2">
-                                                        <label class="form-label">Primary</label>
-                                                        <div class="form-check">
-                                                            <input type="checkbox" name="IsPrimary" class="form-check-input" />
-                                                            <label class="form-check-label">Captain</label>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Submit -->
-                                                    <div class="col-md-2">
-                                                        <button type="submit" class="btn btn-sm btn-primary w-100">
-                                                            + Crew
-                                                        </button>
-                                                    </div>
-                                                </form>
-                                            </td>
+                                            <td colspan="6">  </td>
                                         </tr>
 
                                     }
@@ -317,65 +268,10 @@
                             </tbody>
                         </table>
 
-                        <!-- ADD SORTIE -->
-                        <form asp-action="AddSortie" method="post" class="row g-2">
-                            @Html.AntiForgeryToken()
-
-                            <input type="hidden" name="OdvId" value="@odv.Id" />
-
-                            <div class="col-md-1">
-                                <input name="SortieCode"
-                                       class="form-control form-control-sm"
-                                       placeholder="A"
-                                       required />
-                            </div>
-
-                            <!-- 🔑 Aircraft Type -->
-                            <div class="col-md-2">
-                                <select name="AcTypeId"
-                                        class="form-control form-control-sm"
-                                        required>
-                                    <option value="">Type</option>
-                                    @foreach (var t in Model.AcTypes)
-                                    {
-                                        <option value="@t.Value">@t.Text</option>
-                                    }
-                                </select>
-                            </div>
-
-                            <div class="col-md-3">
-                                <input name="Configuration"
-                                       class="form-control form-control-sm"
-                                       placeholder="Configuration"
-                                       required />
-                            </div>
-
-                            <div class="col-md-2">
-                                <input name="Sequence"
-                                       type="number"
-                                       min="1"
-                                       class="form-control form-control-sm"
-                                       placeholder="Seq" />
-                            </div>
-
-                            <div class="col-md-2">
-                                <input name="PlannedFuel"
-                                       type="number"
-                                       step="0.1"
-                                       class="form-control form-control-sm"
-                                       placeholder="Fuel" />
-                            </div>
-
-                            <div class="col-md-2">
-                                <button type="submit"
-                                        class="btn btn-sm btn-success w-100">
-                                    + Sortie
-                                </button>
-                            </div>
-                        </form>
-
                     </td>
-                </tr>
+                </tr>                
+
+               
             }
         }
     </tbody>

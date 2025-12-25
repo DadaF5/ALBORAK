@@ -405,6 +405,7 @@ namespace FRAProject.Migrations
                     Description = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
                     MaxGrossweight = table.Column<double>(type: "float", nullable: false),
                     MaxPassengers = table.Column<int>(type: "int", nullable: false),
+                    SeatCount = table.Column<int>(type: "int", nullable: false),
                     MaxEngines = table.Column<int>(type: "int", nullable: false),
                     AcMainGroupId = table.Column<int>(type: "int", nullable: false)
                 },
@@ -983,9 +984,11 @@ namespace FRAProject.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     SortieId = table.Column<int>(type: "int", nullable: false),
                     CrewMemberId = table.Column<int>(type: "int", nullable: false),
+                    Seat = table.Column<int>(type: "int", maxLength: 10, nullable: false),
                     Role = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     IsPrimary = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    Remarks = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true)
+                    Remarks = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    AircraftRole = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
                 {

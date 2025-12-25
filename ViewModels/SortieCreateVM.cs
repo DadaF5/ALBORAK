@@ -3,7 +3,11 @@
 namespace FRAProject.ViewModels
 {
     public class SortieCreateVm
+
+
     {
+        public int Id { get; set; }
+
         [Required]
         public int OdvId { get; set; }
 
@@ -17,6 +21,9 @@ namespace FRAProject.ViewModels
         [Required]
         [StringLength(100)]
         public string Configuration { get; set; } = "";
+
+        public decimal? FuelQuantity { get; set; }
+
 
         public int Sequence { get; set; } = 1;
 

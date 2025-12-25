@@ -1,0 +1,49 @@
+﻿@model FRAProject.ViewModels.SortieCreateVm
+
+@{
+    ViewData["Title"] = "Add Sortie";
+}
+
+<h4>Add Sortie</h4>
+<hr />
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="OdvId" />
+
+    <div class="mb-3">
+        <label class="form-label">Sortie Code</label>
+        <input asp-for="SortieCode" class="form-control" />
+        <span asp-validation-for="SortieCode" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Aircraft Type</label>
+        <select asp-for="AcTypeId" asp-items="ViewBag.AcTypes" class="form-control">
+            <option value="">-- Select Type --</option>
+        </select>
+        <span asp-validation-for="AcTypeId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Configuration</label>
+        <input asp-for="Configuration" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Sequence</label>
+        <input asp-for="Sequence" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a asp-controller="OdvPlanning"
+       asp-action="Index"
+       class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

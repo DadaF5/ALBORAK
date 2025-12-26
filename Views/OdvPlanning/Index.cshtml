@@ -9,28 +9,36 @@
 <!-- ============================= -->
 <!-- FILTER / CONTEXT HEADER     -->
 <!-- ============================= -->
-<form method="get" asp-action="Index" class="row mb-3" id="dateForm">
-    <div class="col-md-2">
-        <label class="form-label">Date</label>
-        <input type="date"
-               name="odvDate"
-               class="form-control"
-               value="@(Model.SelectedDate.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))"
-               onchange="this.form.submit()" />
-       
-    </div>
-</form>
+
 
 <!-- ============================= -->
 <!-- ODV DETAILS (CREATE)         -->
 <!-- ============================= -->
-<div class="card mb-4" style="margin-top:0px;">
-    <div class="card-header fw-bold" style="font-size:16px;">Squadron Daily Flying Program</div>
+<div class="card mb-8" style="margin-top:0px;">
+   
+   
     <div class="card-body">
+        <div class="row">
+            <div class="col-md-6" style="font-size:16px; padding-left:30px;"> Squadron Daily Flying Program</div>
+
+        </div>
+        <div class="col-md-2">
+
+            <form method="get" asp-action="Index" class="row mb-3" id="dateForm">
+                <label class="form-label">Date</label>
+                <input type="date"
+                       name="odvDate"
+                       class="form-control"
+                       value="@(Model.SelectedDate.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))"
+                       onchange="this.form.submit()" />
+            </form>
+
+        </div>
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="CreateModel.OdvDate" id="createOdvDate" />
             <div class="row g-3">
+
             @if (User.IsInRole("Admin"))
             {
                 <div class="col-md-2">
@@ -74,32 +82,33 @@
 
             }
                
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label class="form-label">Call Sign</label>
                     <select asp-for="CreateModel.CallSignId" class="form-control"
                             asp-items="Model.CallSigns" required></select>
                     <span asp-validation-for="CreateModel.CallSignId" class="text-danger"></span>
                 </div>
-
-            </div>
-            <div class="row g-3">                
-
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label class="form-label">Mission</label>
                     <select asp-for="CreateModel.MissionId" class="form-control"
                             asp-items="Model.Missions" required></select>
                     <span asp-validation-for="CreateModel.MissionId" class="text-danger"></span>
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label class="form-label">Area</label>
                     <input asp-for="CreateModel.Area" class="form-control" required />
                     <span asp-validation-for="CreateModel.Area" class="text-danger"></span>
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label class="form-label">TOFF</label>
-                    <input asp-for="CreateModel.TOFF" type="time" class="form-control" required />
+                    <input asp-for="CreateModel.TOFF" type="time"
+                           asp-format="{0:HH:mm}"
+                           class="form-control"
+                           
+                           pattern="[0-9]{2}:[0-9]{2}"
+                           required class="form-control" />
                     <span asp-validation-for="CreateModel.TOFF" class="text-danger"></span>
                 </div>
 
@@ -108,11 +117,12 @@
                     <input asp-for="CreateModel.Obs" class="form-control" />
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label class="form-label">Add</label>
                     <button type="submit" class="btn btn-success w-100">+ Create</button>
                 </div>
             </div>
+        
         </form>
     </div>
 </div>

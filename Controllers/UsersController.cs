@@ -269,6 +269,14 @@ namespace FRAProject.Controllers
                 .ToListAsync();
 
             ViewBag.UserId = id;
+
+            // Store current values in ViewBag for JavaScript
+            ViewBag.CurrentBaseId = user.BaseId;
+            ViewBag.CurrentDepartmentId = user.DepartmentId;
+            ViewBag.CurrentWingId = user.WingId;
+            ViewBag.CurrentSquadronId = user.SquadronId;
+            ViewBag.CurrentAcMainGroupId = user.AcMainGroupId;
+
             return View(vm);
         }
 
@@ -537,5 +545,54 @@ namespace FRAProject.Controllers
                 await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim(claimType, value));
             }
         }
+
+        // JSON: Get Department by Base
+        [HttpGet]
+        public async Task<JsonResult> GetDepartmentsByBase(int baseId)
+        {
+            var departments = await _context.Set<Department>()
+                .Where(d => d.BaseId == baseId)
+                .OrderBy(d => d.Name)
+                .Select(d => new { value = d.Id.ToString(), text = d.Name })
+                .ToListAsync();
+            return Json(departments);
+        }
+
+        // JSON: Get Wings by Department
+        [HttpGet]
+        public async Task<JsonResult> GetWingsByDepartment(int departmentId)
+        {
+            var wings = await _context.Set<Wing>()
+                .Where(w => w.DepartmentId == departmentId)
+                .OrderBy(w => w.Name)
+                .Select(w => new { value = w.Id.ToString(), text = w.Name })
+                .ToListAsync();
+            return Json(wings);
+        }
+
+        // JSON: Get Squadrons by Wing
+        [HttpGet]
+        public async Task<JsonResult> GetSquadronsByWing(int wingId)
+        {
+            var squadrons = await _context.Set<Squadron>()
+                .Where(s => s.WingId == wingId)
+                .OrderBy(s => s.Name)
+                .Select(s => new { value = s.Id.ToString(), text = s.Name })
+                .ToListAsync();
+            return Json(squadrons);
+        }
+
+        // JSON: Get AcMainGroup by Base
+        [HttpGet]
+        public async Task<JsonResult> GetAcMainGroupsByBase(int baseId)
+        {
+            var acGroups = await _context.Set<AcMainGroup>()
+                .Where(a => a.BaseId == baseId)
+                .OrderBy(a => a.Name)
+                .Select(a => new { value = a.Id.ToString(), text = a.Name })
+                .ToListAsync();
+            return Json(acGroups);
+        }
+        
     }
 }

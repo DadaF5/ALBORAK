@@ -8,7 +8,8 @@
         AvionicsEngineer,
         Instructor,
         Student,
-        FunctionalCheckPilot
-        
+        FunctionalCheckPilot,
+        Mechanic,
+
     }
 }

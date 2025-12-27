@@ -1,147 +1,56 @@
-﻿@using System.Linq
-@using Microsoft.AspNetCore.Mvc.Rendering
-@using FRAProject.Models
-@{
-    // Model expected: IEnumerable<ApplicationUser>
-    Layout = "_Layout";
-    var query = Context.Request.Query["q"].ToString();
-    var baseFilter = Context.Request.Query["baseId"].ToString();
-    var wingFilter = Context.Request.Query["wingId"].ToString();
-    var squadFilter = Context.Request.Query["squadronId"].ToString();
-    var roleFilter = Context.Request.Query["role"].ToString();
-    var isActiveFilter = Context.Request.Query["isActive"].ToString();
-    var sortOrder = Context.Request.Query["sortOrder"].ToString();
+﻿@model FRAProject.ViewModels.UsersIndexViewModel
 
-    // Helper local functions to get display names from dictionaries passed in ViewBag
-    Func<int?, string> getNameFromDict = id =>
-    {
-        if (!id.HasValue) return "";
-        var d = ViewBag.DisplayMaps as System.Collections.Generic.IDictionary<string, System.Collections.Generic.Dictionary<int, string>>;
-        if (d == null) return id.ToString() ?? "";
-        // attempt base/wing/department/squadron keys
-        foreach (var kv in d)
-        {
-            if (kv.Value.TryGetValue(id.Value, out var name))
-            {
-                return name;
-            }
-        }
-        return id.ToString() ?? "";
-    };
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Users";
 }
 
 <section class="card mb-3 p-3">
     <form asp-action="Index" method="get" class="form-inline">
         <div class="form-group mr-2">
-            <input type="text" name="q" value="@Model.Search" class="form-control" placeholder="Search email, name..." />
+            <input type="text" name="search" value="@Model.Search" class="form-control" placeholder="Search email, name..." />
         </div>
 
         <div class="form-group mr-2">
-            <select name="baseId" class="form-control">
+            <select name="baseFilter" class="form-control">
                 <option value="">All Bases</option>
                 @foreach (var b in Model.BaseList)
                 {
-                    var isSelected = (b.Value ?? "") == (Model.BaseFilter?.ToString() ?? "");
-                    if (isSelected)
-                    {
-                        <option value="@b.Value" selected>@b.Text</option>
-                    }
-                    else
-                    {
-                        <option value="@b.Value">@b.Text</option>
-                    }
+                    var selected = b.Value == (Model.BaseFilter?.ToString() ?? "");
+                    <option value="@b.Value" selected="@selected">@b.Text</option>
                 }
             </select>
         </div>
 
         <div class="form-group mr-2">
-            <select name="role" class="form-control">
+            <select name="roleFilter" class="form-control">
                 <option value="">All Roles</option>
                 @foreach (var r in Model.AvailableRoles)
                 {
-                    var isSelected = (r.Value ?? "") == (Model.RoleFilter ?? "");
-                    if (isSelected)
-                    {
-                        <option value="@r.Value" selected>@r.Text</option>
-                    }
-                    else
-                    {
-                        <option value="@r.Value">@r.Text</option>
-                    }
+                    var selected = r.Value == (Model.RoleFilter ?? "");
+                    <option value="@r.Value" selected="@selected">@r.Text</option>
                 }
             </select>
         </div>
 
         <div class="form-group mr-2">
-            <select name="isActive" class="form-control">
+            <select name="isActiveFilter" class="form-control">
                 <option value="">Any status</option>
-                @if (Model.IsActiveFilter == true || isActiveFilter == "true")
-                {
-                    <option value="true" selected>Active</option>
-                }
-                else
-                {
-                    <option value="true">Active</option>
-                }
-
-                @if (Model.IsActiveFilter == false || isActiveFilter == "false")
-                {
-                    <option value="false" selected>Inactive</option>
-                }
-                else
-                {
-                    <option value="false">Inactive</option>
-                }
+                <option value="true" selected="@(Model.IsActiveFilter == true)">Active</option>
+                <option value="false" selected="@(Model.IsActiveFilter == false)">Inactive</option>
             </select>
         </div>
 
         <div class="form-group mr-2">
             <select name="sortOrder" class="form-control">
-                <option value="">Sort</option>
-                @if (Model.SortOrder == "email_asc" || sortOrder == "email_asc")
-                {
-                    <option value="email_asc" selected>Email ↑</option>
-                }
-                else
-                {
-                    <option value="email_asc">Email ↑</option>
-                }
-
-                @if (Model.SortOrder == "email_desc" || sortOrder == "email_desc")
-                {
-                    <option value="email_desc" selected>Email ↓</option>
-                }
-                else
-                {
-                    <option value="email_desc">Email ↓</option>
-                }
-
-                @if (Model.SortOrder == "created_asc" || sortOrder == "created_asc")
-                {
-                    <option value="created_asc" selected>Created ↑</option>
-                }
-                else
-                {
-                    <option value="created_asc">Created ↑</option>
-                }
-
-                @if (Model.SortOrder == "created_desc" || sortOrder == "created_desc")
-                {
-                    <option value="created_desc" selected>Created ↓</option>
-                }
-                else
-                {
-                    <option value="created_desc">Created ↓</option>
-                }
-
-                @if (Model.SortOrder == "base_asc" || sortOrder == "base_asc")
-                {
-                    <option value="base_asc" selected>Base ↑</option>
-                }
-                else
-                {
-                    <option value="base_asc">Base ↑</option>
-                }
+                <option value="">Default (User Name)</option>
+                <option value="user_desc" selected="@(Model.SortOrder == "user_desc")">User Name ↓</option>
+                <option value="email_asc" selected="@(Model.SortOrder == "email_asc")">Email ↑</option>
+                <option value="email_desc" selected="@(Model.SortOrder == "email_desc")">Email ↓</option>
+                <option value="created_asc" selected="@(Model.SortOrder == "created_asc")">Created ↑</option>
+                <option value="created_desc" selected="@(Model.SortOrder == "created_desc")">Created ↓</option>
+                <option value="lastlogin_asc" selected="@(Model.SortOrder == "lastlogin_asc")">Last Login ↑</option>
+                <option value="lastlogin_desc" selected="@(Model.SortOrder == "lastlogin_desc")">Last Login ↓</option>
             </select>
         </div>
 
@@ -157,10 +66,42 @@
         <thead>
             <tr>
                 <th>
-                    <a asp-action="Index" asp-route-sortOrder="email_asc" asp-route-q="@Model.Search" asp-route-baseId="@Model.BaseFilter" asp-route-role="@Model.RoleFilter" asp-route-isActive="@(Model.IsActiveFilter?.ToString() ?? "")">Email</a>
+                    <a asp-action="Index"
+                       asp-route-search="@Model.Search"
+                       asp-roleFilter="@Model.RoleFilter"
+                       asp-route-baseFilter="@Model.BaseFilter"
+                       asp-route-isActiveFilter="@Model.IsActiveFilter"
+                       asp-route-pageNumber="1"
+                       asp-route-sortOrder="@(Model.SortOrder == "email_asc" ? "email_desc" : "email_asc")">
+                        Email
+                        @if (Model.SortOrder == "email_asc")
+                        {
+                            <span>↑</span>
+                        }
+                        else if (Model.SortOrder == "email_desc")
+                        {
+                            <span>↓</span>
+                        }
+                    </a>
                 </th>
                 <th>
-                    <a asp-action="Index" asp-route-sortOrder="created_desc" asp-route-q="@Model.Search">Created</a>
+                    <a asp-action="Index"
+                       asp-route-search="@Model.Search"
+                       asp-roleFilter="@Model.RoleFilter"
+                       asp-route-baseFilter="@Model.BaseFilter"
+                       asp-route-isActiveFilter="@Model.IsActiveFilter"
+                       asp-route-pageNumber="1"
+                       asp-route-sortOrder="@(Model.SortOrder == "created_asc" ? "created_desc" : "created_asc")">
+                        Created
+                        @if (Model.SortOrder == "created_asc")
+                        {
+                            <span>↑</span>
+                        }
+                        else if (Model.SortOrder == "created_desc")
+                        {
+                            <span>↓</span>
+                        }
+                    </a>
                 </th>
                 <th>Name</th>
                 <th>Base</th>
@@ -174,7 +115,7 @@
             </tr>
         </thead>
         <tbody>
-            @if (Model == null || Model.Users == null || Model.Users.Count == 0)
+            @if (Model.Users == null || !Model.Users.Any())
             {
                 <tr>
                     <td colspan="11" class="text-center">No users found</td>
@@ -186,19 +127,35 @@
                 {
                     <tr>
                         <td>@u.Email</td>
-                        <td>@(u.CreatedAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "")</td>
+                        <td>@u.CreatedAtUtc?.ToString("yyyy-MM-dd HH:mm")</td>
                         <td>@(string.IsNullOrWhiteSpace(u.FirstName) && string.IsNullOrWhiteSpace(u.LastName) ? u.UserName : $"{u.FirstName} {u.LastName}")</td>
-                        <td>@(string.IsNullOrWhiteSpace(u.BaseName) ? (u.BaseId?.ToString() ?? "") : u.BaseName)</td>
-                        <td>@(string.IsNullOrWhiteSpace(u.WingName) ? (u.WingId?.ToString() ?? "") : u.WingName)</td>
-                        <td>@(string.IsNullOrWhiteSpace(u.DepartmentName) ? (u.DepartmentId?.ToString() ?? "") : u.DepartmentName)</td>
-                        <td>@(string.IsNullOrWhiteSpace(u.SquadronName) ? (u.SquadronId?.ToString() ?? "") : u.SquadronName)</td>
-                        <td>@(string.IsNullOrWhiteSpace(u.AcMainGroupName) ? (u.AcMainGroupId?.ToString() ?? "") : u.AcMainGroupName)</td>
-                        <td>@(u.IsActive ? "Yes" : "No")</td>
-                        <td>@(u.Roles != null ? string.Join(", ", u.Roles) : "")</td>
+                        <td>@(u.BaseName ?? u.BaseId?.ToString() ?? "")</td>
+                        <td>@(u.WingName ?? u.WingId?.ToString() ?? "")</td>
+                        <td>@(u.DepartmentName ?? u.DepartmentId?.ToString() ?? "")</td>
+                        <td>@(u.SquadronName ?? u.SquadronId?.ToString() ?? "")</td>
+                        <td>@(u.AcMainGroupName ?? u.AcMainGroupId?.ToString() ?? "")</td>
                         <td>
-                            <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-outline-primary">Edit</a>
-                            <a asp-action="Details" asp-route-id="@u.Id" class="btn btn-sm btn-outline-info">Details</a>
-                            <a asp-action="Delete" asp-route-id="@u.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                            <span class="badge @(u.IsActive ? "badge-success" : "badge-secondary")">
+                                @(u.IsActive ? "Yes" : "No")
+                            </span>
+                        </td>
+                        <td>
+                            @if (u.Roles != null && u.Roles.Any())
+                            {
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var role in u.Roles)
+                                    {
+                                        <span class="badge badge-info">@role</span>
+                                    }
+                                </div>
+                            }
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <a asp-action="Details" asp-route-id="@u.Id" class="btn btn-sm btn-outline-info">Details</a>
+                                <a asp-action="Delete" asp-route-id="@u.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -207,16 +164,89 @@
     </table>
 </section>
 
+@if (Model.Users != null && Model.Users.TotalPages > 1)
+{
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            @if (Model.Users.HasPreviousPage)
+            {
+                <li class="page-item">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-search="@Model.Search"
+                       asp-roleFilter="@Model.RoleFilter"
+                       asp-route-baseFilter="@Model.BaseFilter"
+                       asp-route-isActiveFilter="@Model.IsActiveFilter"
+                       asp-route-sortOrder="@Model.SortOrder"
+                       asp-route-pageNumber="@(Model.Users.PageIndex - 1)">Previous</a>
+                </li>
+            }
+            else
+            {
+                <li class="page-item disabled">
+                    <span class="page-link">Previous</span>
+                </li>
+            }
+
+            @for (int i = 1; i <= Model.Users.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Users.PageIndex ? "active" : "")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-search="@Model.Search"
+                       asp-roleFilter="@Model.RoleFilter"
+                       asp-route-baseFilter="@Model.BaseFilter"
+                       asp-route-isActiveFilter="@Model.IsActiveFilter"
+                       asp-route-sortOrder="@Model.SortOrder"
+                       asp-route-pageNumber="@i">@i</a>
+                </li>
+            }
+
+            @if (Model.Users.HasNextPage)
+            {
+                <li class="page-item">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-search="@Model.Search"
+                       asp-roleFilter="@Model.RoleFilter"
+                       asp-route-baseFilter="@Model.BaseFilter"
+                       asp-route-isActiveFilter="@Model.IsActiveFilter"
+                       asp-route-sortOrder="@Model.SortOrder"
+                       asp-route-pageNumber="@(Model.Users.PageIndex + 1)">Next</a>
+                </li>
+            }
+            else
+            {
+                <li class="page-item disabled">
+                    <span class="page-link">Next</span>
+                </li>
+            }
+        </ul>
+    </nav>
+}
+
 @section Scripts {
     <script>
-        // submit filter form when selects change
-        (function () {
-            document.querySelectorAll('select[name="baseId"], select[name="role"], select[name="isActive"], select[name="sortOrder"]').forEach(function (el) {
-                el.addEventListener('change', function () {
-                    var f = document.querySelector('form[method="get"]');
-                    if (f) f.submit();
+        // Auto-submit form when dropdowns change
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form[method="get"]');
+            const selects = form.querySelectorAll('select[name]');
+
+            selects.forEach(select => {
+                select.addEventListener('change', function() {
+                    // Reset to page 1 when filters change
+                    const pageInput = form.querySelector('input[name="pageNumber"]');
+                    if (pageInput) pageInput.value = '1';
+                    form.submit();
                 });
             });
-        })();
+
+            // Add page number hidden field
+            const pageNumberInput = document.createElement('input');
+            pageNumberInput.type = 'hidden';
+            pageNumberInput.name = 'pageNumber';
+            pageNumberInput.value = '@Model.PageNumber';
+            form.appendChild(pageNumberInput);
+        });
     </script>
 }

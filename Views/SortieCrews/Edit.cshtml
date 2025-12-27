@@ -1,0 +1,107 @@
+﻿@model FRAProject.ViewModels.SortieCrewCreateVm
+
+@{
+    ViewData["Title"] = "Edit Crew Assignment";
+}
+
+<style>
+    .popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.75);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1050;
+        padding: 20px;
+    }
+
+    .popup-container {
+        background-color: #2d3748;
+        border-radius: 16px;
+        max-width: 500px;
+        width: 100%;
+    }
+
+    .popup-content {
+        padding: 30px;
+    }
+</style>
+
+<div class="popup-overlay">
+    <div class="popup-container">
+        <div class="popup-content">
+            <h4 class="text-white mb-4">Edit Crew Assignment: @Model.CrewMemberName</h4>
+
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="SortieId" />
+                <input type="hidden" asp-for="SortieCode" />
+
+                <div class="mb-3">
+                    <label class="form-label text-white">Crew Member</label>
+                    <select asp-for="CrewMemberId" asp-items="ViewBag.CrewMembers"
+                            class="form-select bg-dark text-white border-secondary" required>
+                        <option value="">-- Select Crew Member --</option>
+                    </select>
+                    <span asp-validation-for="CrewMemberId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-white">Seat</label>
+                    <select asp-for="Seat" asp-items="ViewBag.Seats"
+                            class="form-select bg-dark text-white border-secondary" required>
+                        <option value="">-- Select Seat --</option>
+                    </select>
+                    <span asp-validation-for="Seat" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-white">Aircraft Role</label>
+                    <select asp-for="AircraftRole" asp-items="ViewBag.AircraftRoles"
+                            class="form-select bg-dark text-white border-secondary" required>
+                        <option value="">-- Select Aircraft Role --</option>
+                    </select>
+                    <span asp-validation-for="AircraftRole" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-white">Role (Optional)</label>
+                    <input asp-for="Role" class="form-control bg-dark text-white border-secondary"
+                           placeholder="e.g., Mission Commander, Instructor" />
+                    <span asp-validation-for="Role" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" asp-for="IsPrimary" class="form-check-input" />
+                    <label class="form-check-label text-white" asp-for="IsPrimary">
+                        Mark as Primary for this role
+                    </label>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-white">Remarks</label>
+                    <textarea asp-for="Remarks" class="form-control bg-dark text-white border-secondary"
+                              rows="3" placeholder="Additional notes..."></textarea>
+                    <span asp-validation-for="Remarks" class="text-danger"></span>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="submit" class="btn btn-success">Update</button>
+                    <a asp-action="Index" asp-route-sortieId="@Model.SortieId"
+                       class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

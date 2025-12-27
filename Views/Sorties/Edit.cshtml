@@ -2,58 +2,170 @@
 
 @{
     ViewData["Title"] = "Edit Sortie";
+
+    // Define this variable at the top level so it's accessible everywhere
+    var acTypes = ViewBag.AcTypes as IEnumerable<SelectListItem>;
+    var hasAircraftTypes = acTypes != null && acTypes.Any();
 }
 
-<h4>Edit Sortie</h4>
-<hr />
+<style>
+    .popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.75);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1050;
+        padding: 20px;
+    }
 
-<form asp-action="Edit" method="post">
-    @Html.AntiForgeryToken()
+    .popup-container {
+        background-color: #2d3748;
+        border-radius: 16px;
+        max-width: 500px;
+        width: 100%;
+    }
 
-    <input type="hidden" asp-for="Id" />
-    <input type="hidden" asp-for="OdvId" />
+    .popup-content {
+        padding: 30px;
+    }
 
-    <div class="mb-3">
-        <label class="form-label">Sortie Code</label>
-        <input asp-for="SortieCode" class="form-control" />
-        <span asp-validation-for="SortieCode" class="text-danger"></span>
+    /* Disabled select styling */
+    .select-disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+        background-color: #4a5568 !important;
+    }
+</style>
+
+<div class="popup-overlay">
+    <div class="popup-container">
+        <div class="popup-content">
+            <h4 class="text-white mb-4">Edit Sortie</h4>
+
+            <!-- Display warning message if any -->
+            @if (TempData["Warning"] != null)
+            {
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    @TempData["Warning"]
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Display info message if any -->
+            @if (TempData["Info"] != null)
+            {
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    @TempData["Info"]
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <form asp-action="Edit" method="post" id="editSortieForm">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="OdvId" />
+
+                <div class="mb-3">
+                    <label class="form-label text-white">Sortie Code</label>
+                    <input asp-for="SortieCode" class="form-control bg-dark text-white border-secondary" />
+                    <span asp-validation-for="SortieCode" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-white">Aircraft Type</label>
+
+                    @{
+                        var acTypes = ViewBag.AcTypes as IEnumerable<SelectListItem>;
+                        var hasAircraftTypes = acTypes != null && acTypes.Any();
+                        var currentType = acTypes?.FirstOrDefault(t => t.Selected);
+                        var isRestricted = currentType?.Text?.Contains("(Currently Assigned)") ?? false;
+                    }
+
+                    @if (hasAircraftTypes)
+                    {
+                        <select asp-for="AcTypeId" asp-items="ViewBag.AcTypes"
+                                class="form-select bg-dark text-white border-secondary @(isRestricted ? "bg-warning text-dark" : "")">
+                            <option value="">-- Select Type --</option>
+                        </select>
+
+                        @if (isRestricted)
+                        {
+                            <div class="alert alert-warning mt-2 p-2">
+                                <small>
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    This aircraft type is from a different group. You can keep it or select from your available types.
+                                </small>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <select class="form-select bg-dark text-white border-secondary select-disabled" disabled>
+                            <option>No aircraft types available</option>
+                        </select>
+                        <input type="hidden" asp-for="AcTypeId" value="@Model.AcTypeId" />
+                    }
+
+                    <span asp-validation-for="AcTypeId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-white">Configuration</label>
+                    <input asp-for="Configuration" class="form-control bg-dark text-white border-secondary" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-white">Sequence</label>
+                    <input asp-for="Sequence" class="form-control bg-dark text-white border-secondary" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-white">Fuel Quantity</label>
+                    <input asp-for="FuelQuantity" class="form-control bg-dark text-white border-secondary" />
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end">
+                    @if (hasAircraftTypes)
+                    {
+                        <button type="submit" class="btn btn-success">Save Changes</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-success" disabled>Save Changes</button>
+                    }
+                    <a asp-controller="OdvPlanning"
+                       asp-action="Index"
+                       class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label class="form-label">Aircraft Type</label>
-        <select asp-for="AcTypeId" asp-items="ViewBag.AcTypes" class="form-control">
-            <option value="">-- Select Type --</option>
-        </select>
-        <span asp-validation-for="AcTypeId" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Configuration</label>
-        <input asp-for="Configuration" class="form-control" />
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Sequence</label>
-        <input asp-for="Sequence" class="form-control" />
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Planned Fuel</label>
-        <input asp-for="FuelQuantity" class="form-control" />
-    </div>
-
-    <button type="submit" class="btn btn-primary">Save</button>
-
-    <a asp-controller="OdvPlanning"
-       asp-action="Index"
-       class="btn btn-secondary">
-        Cancel
-    </a>
-</form>
+</div>
 
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-}
 
+    <script>
+        // Disable form submission if no aircraft types
+        document.addEventListener('DOMContentLoaded', function() {
+            var form = document.getElementById('editSortieForm');
+            var hasAircraftTypes = @Json.Serialize(hasAircraftTypes);
+
+            if (!hasAircraftTypes) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    alert('Cannot save changes: No aircraft types available for your account.');
+                    return false;
+                });
+            }
+        });
+    </script>
+}

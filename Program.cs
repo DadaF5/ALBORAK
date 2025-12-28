@@ -46,9 +46,9 @@ builder.Services.AddAuthorization(options =>
 
     // IMPORTANT: require authentication for every endpoint by default.
     // Controllers/actions or pages that should be public must use [AllowAnonymous].
-    options.FallbackPolicy = new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build();
+    //options.FallbackPolicy = new AuthorizationPolicyBuilder()
+    //    .RequireAuthenticatedUser()
+    //    .Build();
 });
 
 // If you scaffold or use Identity UI, register Razor Pages

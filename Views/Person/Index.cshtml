@@ -31,8 +31,8 @@
             </select>
         </div>
         <div class="col-md-2 form-check mt-3 pt-1">
-            <input type="checkbox" name="activeOnly" value="true" class="form-check-input" />
-            <label class="form-check-label">Active Only</label>
+            <input type="checkbox" name="activeOnly" value="true" class="form-check-input"  />
+            <label class="form-check-label" style="margin-left:20px;">Active Only</label>
         </div>
         <div class="col-md-2">
             <button type="button" id="btnFilter" class="btn btn-primary">Filter</button>
@@ -45,20 +45,39 @@
             </a>
         </div>
     </form>
-
+    <!-- Add this to your HTML -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div id="loadingIndicator" class="text-center" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span class="ms-2">Filtering...</span>
+            </div>
+        </div>
+    </div>
     <!-- Table container for AJAX -->
     <div id="personTableContainer"></div>
 </div>
 
 @section Scripts {
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/lib/js/jquery.min.js"></script>
     <script>
         function loadTable(page = 1) {
+                // Show loading
+
+            $("#loadingIndicator").show();
+            $("#personTableContainer").addClass("opacity-50");
+
             var formData = $("#filterForm").serializeArray();
             formData.push({ name: "page", value: page });
 
             $.get('@Url.Action("PersonTable")', formData, function (data) {
                 $("#personTableContainer").html(data);
+            }).always(function() {
+                // Hide loading
+                $("#loadingIndicator").hide();
+                $("#personTableContainer").removeClass("opacity-50");
             });
         }
 
@@ -70,7 +89,10 @@
             $("#btnFilter").click(function () {
                 loadTable();
             });
-
+            // Auto-filter when any filter changes
+        $("#filterForm select, #filterForm input[type='checkbox']").change(function () {
+            loadTable();
+        });
             // Reset button
             $("#btnReset").click(function () {
                 $("#filterForm")[0].reset();

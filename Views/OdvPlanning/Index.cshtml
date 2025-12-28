@@ -4,21 +4,18 @@
     bool isAdmin = User.IsInRole("Admin");
 }
 
-@* <h2 class="mb-3 text-center"></h2> *@
-
 <!-- ============================= -->
 <!-- ODV DETAILS (CREATE)         -->
 <!-- ============================= -->
 <div class="card mb-8" style="margin-top:0px;">
-   
-   
     <div class="card-body">
         <div class="row">
-            <div class="form-control" style="font-size:16px; padding-left:30px;background-color:aqua;"> Squadron Daily Flying Program</div>
-
+            <div class="form-control" style="font-size:18px; color:white; padding-left:30px; background-color:dodgerblue;">
+                Squadron Daily Flying Program
+            </div>
         </div>
+        
         <div class="col-md-2">
-
             <form method="get" asp-action="Index" class="row mb-1" id="dateForm">
                 <label class="form-label">Date</label>
                 <input type="date"
@@ -27,62 +24,54 @@
                        value="@(Model.SelectedDate.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))"
                        onchange="this.form.submit()" />
             </form>
-
         </div>
+        
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="CreateModel.OdvDate" id="createOdvDate" />
             <div class="row g-3">
-
-            @if (User.IsInRole("Admin"))
-            {
-                <div class="col-md-2">
-                    <label class="form-label">Aircraft Group</label>
-                    <select asp-for="CreateModel.AcMainGroupId" required
-                            class="form-control"
-                            asp-items="Model.AcMainGroups">
-                        <option value="">-- Select Group --</option>
-                       
+                @if (User.IsInRole("Admin"))
+                {
+                    <div class="col-md-2">
+                        <label class="form-label">Aircraft Group</label>
+                        <select asp-for="CreateModel.AcMainGroupId" required
+                                class="form-control"
+                                asp-items="Model.AcMainGroups">
+                            <option value="">-- Select Group --</option>
                         </select>
                         <span asp-validation-for="CreateModel.AcMainGroupId" class="text-danger"></span>
-
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Squadron</label>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Squadron</label>
                         <select asp-for="CreateModel.SquadronId" required
-                            class="form-control"
-                            asp-items="Model.Squadrons">
-                        <option value="">-- Select Squadron --</option>                      
-
-                    </select>
+                                class="form-control"
+                                asp-items="Model.Squadrons">
+                            <option value="">-- Select Squadron --</option>
+                        </select>
                         <span asp-validation-for="CreateModel.SquadronId" class="text-danger"></span>
-                </div>
-
-                
-
-            }
-            else
-            {
+                    </div>
+                }
+                else
+                {
                     <input type="hidden" asp-for="CreateModel.SquadronId" />
                     <input type="hidden" asp-for="CreateModel.AcMainGroupId" />
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <strong>Squadron:</strong> @ViewBag.SquadronName
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <strong>Squadron:</strong> @ViewBag.SquadronName
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Aircraft Group:</strong> @ViewBag.AcMainGroupName
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <strong>Aircraft Group:</strong> @ViewBag.AcMainGroupName
-                    </div>
-                    
-                </div>
-
-            }
-               
+                }
+                
                 <div class="col-md-2">
                     <label class="form-label">Call Sign</label>
                     <select asp-for="CreateModel.CallSignId" class="form-control"
                             asp-items="Model.CallSigns" required></select>
                     <span asp-validation-for="CreateModel.CallSignId" class="text-danger"></span>
                 </div>
+                
                 <div class="col-md-1">
                     <label class="form-label">Mission</label>
                     <select asp-for="CreateModel.MissionId" class="form-control"
@@ -100,9 +89,9 @@
                     <label class="form-label">TOFF</label>
                     <input asp-for="CreateModel.TOFF" type="time"
                            asp-format="{0:HH:mm}"
-                           class="form-control"                           
+                           class="form-control"
                            pattern="[0-9]{2}:[0-9]{2}"
-                           required class="form-control" />
+                           required />
                     <span asp-validation-for="CreateModel.TOFF" class="text-danger"></span>
                 </div>
 
@@ -116,14 +105,10 @@
                     <button type="submit" class="btn btn-success w-100">+ Create</button>
                 </div>
             </div>
-        
         </form>
     </div>
 </div>
 
-<!-- ============================= -->
-<!-- PLANNED ODVs GRID            -->
-<!-- ============================= -->
 <!-- ============================= -->
 <!-- PLANNED ODVs GRID            -->
 <!-- ============================= -->
@@ -145,7 +130,7 @@
             <th>Fuel</th>
             <th>Captain</th>
             <th>Copilot</th>
-            <th>MecaNav</th>
+            <th>Mechanic</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -192,17 +177,17 @@
                 {
                     foreach (var sortie in odv.Sorties.OrderBy(s => s.Sequence))
                     {
-                        // Helper method to get crew by role/seat
+                        // Get crew by role/seat - USING CORRECT ENUM VALUES
                         var captain = sortie.SortieCrews?.FirstOrDefault(sc =>
-                        sc.Seat == FRAProject.Enums.CrewSeat.Front &&
-                        sc.AircraftRole == FRAProject.Enums.AircraftRole.Captain);
+                            sc.Seat == FRAProject.Enums.CrewSeat.Front &&
+                            sc.AircraftRole == FRAProject.Enums.AircraftRole.Captain);
 
                         var copilot = sortie.SortieCrews?.FirstOrDefault(sc =>
-                        sc.Seat == FRAProject.Enums.CrewSeat.Rear &&
-                        sc.AircraftRole == FRAProject.Enums.AircraftRole.Instructor);
+                            sc.Seat == FRAProject.Enums.CrewSeat.Rear &&
+                            sc.AircraftRole == FRAProject.Enums.AircraftRole.Copilot);
 
-                        var mecanav = sortie.SortieCrews?.FirstOrDefault(sc =>
-                        sc.AircraftRole == FRAProject.Enums.AircraftRole.Mechanic);
+                        var mechanic = sortie.SortieCrews?.FirstOrDefault(sc =>
+                            sc.AircraftRole == FRAProject.Enums.AircraftRole.Mechanic);
 
                         <tr>
                             @if (sortieCounter == 0)
@@ -229,7 +214,6 @@
                             }
 
                             <td>
-                               @*  <span class="badge bg-info">@sortie.SortieCode</span> *@
                                 <small class="badge bg-info">@sortie.Status</small>
                             </td>
                             <td>@sortie.Configuration</td>
@@ -240,12 +224,11 @@
                             <td>
                                 @if (captain != null)
                                 {
-                                    <div class="crew-display">
+                                    <div class="crew-display captain">
                                         <strong>@captain.CrewMember?.Captain</strong>
-                                        @* <small class="d-block text-muted">@captain.CrewMember?.NickName</small> *@
-                                        @* @if (captain.IsPrimary)
+                                        @* @if (!string.IsNullOrEmpty(captain.Role))
                                         {
-                                            <span class="badge bg-success badge-sm">Primary</span>
+                                            <small class="d-block text-muted">@captain.Role</small>
                                         } *@
                                     </div>
                                 }
@@ -259,12 +242,11 @@
                             <td>
                                 @if (copilot != null)
                                 {
-                                    <div class="crew-display">
+                                    <div class="crew-display copilot">
                                         <strong>@copilot.CrewMember?.Captain</strong>
-                                        @* <small class="d-block text-muted">@copilot.CrewMember?.NickName</small>
-                                        @if (copilot.IsPrimary)
+                                        @* @if (!string.IsNullOrEmpty(copilot.Role))
                                         {
-                                            <span class="badge bg-success badge-sm">Primary</span>
+                                            <small class="d-block text-muted">@copilot.Role</small>
                                         } *@
                                     </div>
                                 }
@@ -274,16 +256,15 @@
                                 }
                             </td>
 
-                            <!-- MecaNav Column -->
+                            <!-- Mechanic Column -->
                             <td>
-                                @if (mecanav != null)
+                                @if (mechanic != null)
                                 {
-                                    <div class="crew-display">
-                                        <strong>@mecanav.CrewMember?.Captain</strong>
-                                       @*  <small class="d-block text-muted">@mecanav.CrewMember?.NickName</small>
-                                        @if (mecanav.IsPrimary)
+                                    <div class="crew-display mechanic">
+                                        <strong>@mechanic.CrewMember?.Captain</strong>
+                                        @* @if (!string.IsNullOrEmpty(mechanic.Role))
                                         {
-                                            <span class="badge bg-success badge-sm">Primary</span>
+                                            <small class="d-block text-muted">@mechanic.Role</small>
                                         } *@
                                     </div>
                                 }
@@ -323,7 +304,22 @@
     .crew-display {
         padding: 4px;
         border-radius: 4px;
-        background-color: rgba(0, 123, 255, 0.1);
+        margin: 2px 0;
+    }
+    
+    .crew-display.captain {
+        background-color: rgba(13, 110, 253, 0.1);
+        border-left: 3px solid #0d6efd;
+    }
+    
+    .crew-display.copilot {
+        background-color: rgba(25, 135, 84, 0.1);
+        border-left: 3px solid #198754;
+    }
+    
+    .crew-display.mechanic {
+        background-color: rgba(255, 193, 7, 0.1);
+        border-left: 3px solid #ffc107;
     }
 
     .badge-sm {
@@ -341,7 +337,41 @@
     tbody tr:nth-child(even) {
         background-color: rgba(0, 0, 0, 0.02);
     }
+    
+    /* Highlight rows with missing crew */
+    .crew-missing {
+        background-color: rgba(220, 53, 69, 0.05) !important;
+    }
+    
+    /* Highlight rows with full crew */
+    .crew-complete {
+        background-color: rgba(25, 135, 84, 0.05) !important;
+    }
 </style>
 
+<script>
+    // Optional: Add row highlighting based on crew completeness
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add CSS classes to rows based on crew status
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const captainCell = row.querySelector('td:nth-child(6)'); // Captain column
+            const copilotCell = row.querySelector('td:nth-child(7)'); // Copilot column
+            const mechanicCell = row.querySelector('td:nth-child(8)'); // Mechanic column
+            
+            // Check if cells exist (skip header rows)
+            if (captainCell && copilotCell) {
+                const hasCaptain = !captainCell.querySelector('.text-muted');
+                const hasCopilot = !copilotCell.querySelector('.text-muted');
+                
+                if (hasCaptain && hasCopilot) {
+                    row.classList.add('crew-complete');
+                } else if (!hasCaptain || !hasCopilot) {
+                    row.classList.add('crew-missing');
+                }
+            }
+        });
+    });
+</script>
 
 

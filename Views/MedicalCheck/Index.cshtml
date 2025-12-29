@@ -1,0 +1,386 @@
+﻿@model IEnumerable<FRAProject.Models.MedicalCheck>
+
+@{
+    ViewData["Title"] = "Visites Médicales";
+    var statusCounts = new Dictionary<string, int>
+    {
+        { "EXPIRÉ", Model.Count(m => m.IsExpired) },
+        { "À RENOUVELER", Model.Count(m => m.D_ToGo <= 30 && m.D_ToGo > 0) },
+        { "VALIDE", Model.Count(m => m.D_ToGo > 30 || !m.NextDueDate.HasValue) }
+    };
+    var totalBilans = Model.Sum(m => m.MedicalBilans?.Count ?? 0);
+    var pendingBilans = Model.Sum(m => m.MedicalBilans?.Count(b => !b.IsCompleted) ?? 0);
+    var overdueBilans = Model.Sum(m => m.MedicalBilans?.Count(b => b.IsOverdue) ?? 0);
+}
+
+<div class="container-fluid">
+    <!-- Dashboard Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h3 mb-2">@ViewData["Title"]</h1>
+            <p class="text-muted">Gestion des visites médicales du personnel</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Nouvelle Visite
+            </a>
+            <a asp-action="ExpiringSoon" class="btn btn-warning ms-2">
+                <i class="fas fa-exclamation-triangle"></i> Échéances Proches
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Dashboard -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-danger border-4 shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-danger text-uppercase mb-1">
+                                Expirées
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">@statusCounts["EXPIRÉ"]</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-ban fa-2x text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-warning border-4 shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">
+                                À Renouveler (30j)
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">@statusCounts["À RENOUVELER"]</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-success border-4 shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                                Valides
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">@statusCounts["VALIDE"]</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-info border-4 shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                Bilans en Attente
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">@pendingBilans</div>
+                            <div class="text-xs text-danger">
+                                @overdueBilans en retard
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 fw-bold text-primary">Recherche et Filtres</h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" name="searchString"
+                           value="@ViewData["CurrentFilter"]" placeholder="Nom, Prénom ou Matricule...">
+                </div>
+                <div class="col-md-4">
+                    <select name="statusFilter" class="form-select">
+                        <option value="">Tous les statuts</option>
+                        <option value="EXPIRÉ" selected="@(ViewData["StatusFilter"]?.ToString() == "EXPIRÉ")">Expiré</option>
+                        <option value="À RENOUVELER" selected="@(ViewData["StatusFilter"]?.ToString() == "À RENOUVELER")">À Renouveler</option>
+                        <option value="VALIDE" selected="@(ViewData["StatusFilter"]?.ToString() == "VALIDE")">Valide</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Rechercher
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Medical Checks Table -->
+    <div class="card shadow">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 fw-bold text-primary">Liste des Visites Médicales</h6>
+            <span class="badge bg-secondary">@Model.Count() visites</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="medicalChecksTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Personnel</th>
+                            <th>Type</th>
+                            <th>Date Visite</th>
+                            <th>Prochaine Échéance</th>
+                            <th>Jours Restants</th>
+                            <th>Visite Unité</th>
+                            <th>Bilans</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">@item.CrewMember?.Captain</div>
+                                    
+                                    <br>
+                                    <span class="badge bg-secondary">@item.CaptainType</span>
+                                    @if (!string.IsNullOrEmpty(item.Speciality))
+                                    {
+                                        <span class="badge bg-info">@item.Speciality</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge @(item.MedCheckType == "CEMPN" ? "bg-primary" : "bg-secondary")">
+                                        @item.MedCheckType
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (item.CheckDate.HasValue)
+                                    {
+                                        <span>@item.CheckDate.Value.ToString("dd-MMM-yyyy")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Non définie</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.NextDueDate.HasValue)
+                                    {
+                                        <span class="@(item.IsExpired ? "text-danger fw-bold" : "")">
+                                            @item.NextDueDate.Value.ToString("dd-MMM-yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Non définie</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.D_ToGo.HasValue)
+                                    {
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2 @GetDaysRemainingClass(item.D_ToGo.Value)">
+                                                @item.D_ToGo.Value jours
+                                            </span>
+                                            @if (item.D_ToGo.Value <= 30)
+                                            {
+                                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.Next_VU_Date.HasValue)
+                                    {
+                                        <div>
+                                            <span class="@(item.IsVU_Overdue ? "text-danger" : "")">
+                                                @item.Next_VU_Date.Value.ToString("dd-MMM-yy")
+                                            </span>
+                                            @if (item.D_ToGo_VU.HasValue)
+                                            {
+                                                <br>
+                                                <small class="text-muted">(@item.D_ToGo_VU.Value jours)</small>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Non définie</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.MedicalBilans?.Any() == true)
+                                    {
+                                        var completed = item.MedicalBilans.Count(b => b.IsCompleted);
+                                        var total = item.MedicalBilans.Count;
+                                        var overdue = item.MedicalBilans.Count(b => b.IsOverdue);
+
+                                        <div class="progress" style="height: 20px;" data-bs-toggle="tooltip"
+                                             title="@completed/@total complétés - @overdue en retard">
+                                            <div class="progress-bar bg-success" style="width: @((completed * 100) / total)%">
+                                                @completed
+                                            </div>
+                                            @if (overdue > 0)
+                                            {
+                                                <div class="progress-bar bg-danger" style="width: @((overdue * 100) / total)%">
+                                                    @overdue
+                                                </div>
+                                            }
+                                        </div>
+                                        <small class="text-muted">@total bilans</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Aucun bilan</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.Status == "EXPIRÉ")
+                                    {
+                                        <span class="badge bg-danger">@item.Status</span>
+                                    }
+                                    else if (item.Status == "À RENOUVELER")
+                                    {
+                                        <span class="badge bg-warning text-dark">@item.Status</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">@item.Status</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a asp-action="Details" asp-route-id="@item.MedCheckID"
+                                           class="btn btn-sm btn-info" title="Détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.MedCheckID"
+                                           class="btn btn-sm btn-warning" title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a asp-action="AddBilan" asp-route-id="@item.MedCheckID"
+                                           class="btn btn-sm btn-primary" title="Ajouter Bilan">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                        <a asp-action="History" asp-route-crewMemberId="@item.CrewMemberId"
+                                           class="btn btn-sm btn-secondary" title="Historique">
+                                            <i class="fas fa-history"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">Aucune visite médicale trouvée</h4>
+                    <p class="text-muted">Utilisez les filtres ou créez une nouvelle visite</p>
+                    <a asp-action="Create" class="btn btn-primary mt-3">
+                        <i class="fas fa-plus-circle"></i> Créer une visite
+                    </a>
+                </div>
+            }
+        </div>
+        <div class="card-footer text-muted">
+            <div class="row">
+                <div class="col-md-6">
+                    Dernière mise à jour : @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                </div>
+                <div class="col-md-6 text-end">
+                    <a asp-action="Overdue" class="btn btn-sm btn-outline-danger me-2">
+                        <i class="fas fa-exclamation-circle"></i> Voir les expirés
+                    </a>
+                    <a asp-action="OverdueBilans" class="btn btn-sm btn-outline-warning">
+                        <i class="fas fa-clock"></i> Bilans en retard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Initialize tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+
+            // DataTable initialization
+            $('#medicalChecksTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.11.5/i18n/fr-FR.json"
+                },
+                "pageLength": 25,
+                "order": [[3, 'asc']], // Sort by NextDueDate
+                "columnDefs": [
+                    { "orderable": false, "targets": [8] } // Disable sorting for Actions column
+                ]
+            });
+
+            // Status filter badge highlighting
+            $('select[name="statusFilter"]').change(function() {
+                $(this).addClass('is-valid');
+            });
+
+            // Days remaining color coding
+            $('.days-remaining').each(function() {
+                var days = parseInt($(this).text());
+                if (days <= 0) {
+                    $(this).addClass('text-danger fw-bold');
+                } else if (days <= 7) {
+                    $(this).addClass('text-danger');
+                } else if (days <= 30) {
+                    $(this).addClass('text-warning');
+                }
+            });
+        });
+
+        function exportToExcel() {
+            // Export functionality can be added here
+            alert('Export to Excel feature will be implemented.');
+        }
+    </script>
+}
+
+@functions {
+    string GetDaysRemainingClass(int days)
+    {
+        if (days <= 0) return "text-danger fw-bold";
+        if (days <= 7) return "text-danger";
+        if (days <= 30) return "text-warning";
+        return "text-success";
+    }
+}

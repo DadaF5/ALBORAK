@@ -45,6 +45,10 @@ namespace FRAProject.Data
         public DbSet<CrewMember> CrewMembers { get; set; } = null!;
         public DbSet<Qualification> Qualifications { get; set; } = null!;
         public DbSet<CrewMemberQualification> CrewMemberQualifications { get; set; } = null!;
+
+        public DbSet<MedicalCheck> MedicalChecks { get; set; } = null!;
+        public DbSet<MedicalBilan> MedicalBilans { get; set; } = null!;
+
         //===============================
         // User Related DbSets
         public DbSet<UserDocument> UserDocuments { get; set; } = null!;
@@ -163,7 +167,15 @@ namespace FRAProject.Data
                     .WithMany()
                     .HasForeignKey(cm => cm.PrimaryQualificationId)
                     .OnDelete(DeleteBehavior.SetNull);
+               
+
             });
+            modelBuilder.Entity<CrewMember>()
+                .HasMany(cm => cm.MedicalChecks)
+                .WithOne(mc => mc.CrewMember)
+                .HasForeignKey(mc => mc.CrewMemberId)                
+                .OnDelete(DeleteBehavior.Cascade);
+
 
             modelBuilder.Entity<Qualification>(b =>
             {
@@ -188,6 +200,13 @@ namespace FRAProject.Data
                 b.HasIndex(cmq => new { cmq.CrewMemberId, cmq.QualificationId });
             });
            
+            modelBuilder.Entity<MedicalCheck>()
+                .HasMany(mc => mc.MedicalBilans)
+                .WithOne(mb => mb.MedicalCheck)
+                .HasForeignKey(mb => mb.MedicalCheckId)
+                .OnDelete(DeleteBehavior.Cascade) ;
+
+               
 
             // Wing -> Squadron: prevent cascade delete so deleting a Wing won't delete Squadrons
             modelBuilder.Entity<Wing>()

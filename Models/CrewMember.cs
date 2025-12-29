@@ -76,6 +76,32 @@ namespace FRAProject.Models
 
         // All qualifications for the crew member (history/current)
         public ICollection<CrewMemberQualification> CrewMemberQualifications { get; set; } = new List<CrewMemberQualification>();
+        public ICollection<MedicalCheck> MedicalChecks { get; set; } = new List<MedicalCheck>();
+        // =============================================
+        // Relationships
+        // =============================================
+        // Helper Properties for easier access to related data
+        [NotMapped]
+        public MedicalCheck? LatestMedicalCheck => MedicalChecks
+            .OrderByDescending(mc => mc.CheckDate)
+            .FirstOrDefault();
+
+        [NotMapped]
+        public bool IsMedicallyFit => LatestMedicalCheck?.Aptitude == "APTE" && 
+                        !LatestMedicalCheck.IsExpired;
+
+        [NotMapped]
+        public DateTime? MedicalExpiry => LatestMedicalCheck?.NextDueDate;
+
+        [NotMapped]
+        public int? DaysToMedicalExpiry => DaysToMedicalExpiry.HasValue ?
+            (int?)(MedicalExpiry.Value-DateTime.Today).Days : null;
+
+        [NotMapped]
+        public List<MedicalBilan> PendingBilans => MedicalChecks
+            .SelectMany(mc => mc.MedicalBilans)
+            .Where(bilan => !bilan.IsCompleted)
+            .ToList();
 
         //Audit
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

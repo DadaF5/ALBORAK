@@ -1,592 +1,680 @@
 ﻿@model FRAProject.ViewModels.MedicalCheckCreateViewModel
-@using Microsoft.AspNetCore.Mvc.Rendering
-
 @{
     ViewData["Title"] = "Nouvelle Visite Médicale";
 }
 
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="h3 mb-2">@ViewData["Title"]</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item">@Html.ActionLink("Visites Médicales", "Index")</li>
-                    <li class="breadcrumb-item active">Nouvelle Visite</li>
-                </ol>
-            </nav>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>@ViewData["Title"]</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { padding: 20px; background-color: #f8f9fa; }
+        .required:after { content: " *"; color: #dc3545; }
+        
+        /* Card styling */
+        .card { border-radius: 10px; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .card-header { border-radius: 10px 10px 0 0 !important; padding: 1rem 1.5rem; }
+        
+        /* Tab styling */
+        .nav-tabs { border-bottom: 2px solid #dee2e6; }
+        .nav-tabs .nav-link { 
+            border: none; 
+            border-bottom: 3px solid transparent;
+            color: #6c757d;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .nav-tabs .nav-link:hover { 
+            color: #0d6efd;
+            background-color: rgba(13, 110, 253, 0.05);
+            border-bottom-color: rgba(13, 110, 253, 0.3);
+        }
+        .nav-tabs .nav-link.active { 
+            color: #0d6efd; 
+            background-color: transparent;
+            border-bottom-color: #0d6efd;
+            font-weight: 600;
+        }
+        
+        /* Form controls */
+        .form-control, .form-select {
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            padding: 0.5rem 0.75rem;
+            transition: all 0.3s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        
+        /* Switch styling */
+        .form-switch .form-check-input {
+            width: 3em;
+            height: 1.5em;
+            margin-top: 0.25em;
+        }
+        
+        /* Specialty fields */
+        .specialty-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border-left: 4px solid #0d6efd;
+            margin-top: 1rem;
+        }
+        
+        /* Badge styling */
+        .badge { font-size: 0.85em; padding: 0.35em 0.65em; }
+        
+        /* Alert styling */
+        .alert { border-radius: 8px; border: none; }
+        
+        /* Button styling */
+        .btn { border-radius: 6px; padding: 0.5rem 1.5rem; font-weight: 500; }
+        .btn-success { background: linear-gradient(135deg, #198754 0%, #157347 100%); }
+        .btn-primary { background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); }
+        
+        /* Ensure visibility */
+        .form-control, .form-select, .form-check-input, input, select, textarea {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .tab-content > .tab-pane {
+            display: none;
+        }
+        
+        .tab-content > .tab-pane.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-2 text-primary"><i class="fas fa-file-medical me-2"></i>@ViewData["Title"]</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="@Url.Action("Index", "MedicalCheck")" class="text-decoration-none">Visites Médicales</a></li>
+                        <li class="breadcrumb-item active">Nouvelle Visite</li>
+                    </ol>
+                </nav>
+            </div>
+            <a href="@Url.Action("Index", "MedicalCheck")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Retour
+            </a>
         </div>
-        <div class="col-md-4 text-end">
-            @Html.ActionLink("Retour", "Index", null, new { @class = "btn btn-secondary" })
-        </div>
-    </div>
 
-    <!-- Crew Member Selection Card -->
-    <div class="card shadow mb-4">
-        <div class="card-header bg-primary text-white">
-            <h6 class="m-0 fw-bold"><i class="fas fa-user me-2"></i>Sélection du Personnel</h6>
-        </div>
-        <div class="card-body">
-            @using (Html.BeginForm("Create", "MedicalCheck", FormMethod.Get, new { id = "crewMemberForm" }))
-            {
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label required">Personnel</label>
-                        @Html.DropDownList("crewMemberId", 
-                            ViewData["CrewMemberSelectList"] as SelectList, 
-                            "Sélectionnez un personnel", 
-                            new { @class = "form-select", onchange = "this.form.submit()" })
-                    </div>
-                </div>
-            }
-        </div>
-    </div>
-
-    @if (Model.CrewMemberId > 0)
-    {
-        <!-- Crew Member Info Card -->
-        <div class="card border-primary shadow mb-4">
-            <div class="card-header bg-primary text-white">
-                <h6 class="m-0 fw-bold"><i class="fas fa-user-md me-2"></i>Informations du Personnel Sélectionné</h6>
+        <!-- Crew Member Selection -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+                <i class="fas fa-user me-2"></i>
+                <span>Sélection du Personnel</span>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-2">
-                        <div class="text-center">
-                            <i class="fas fa-user-circle fa-4x text-primary mb-3"></i>
-                        </div>
-                    </div>
-                    <div class="col-md-10">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Nom Complet:</label>
-                                <p>@Model.FullName</p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Matricule:</label>
-                                <p><span class="badge bg-info">@Model.Matricule</span></p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Grade:</label>
-                                <p>@Model.Grade</p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Date de Naissance:</label>
-                                <p>@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Non définie")</p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Capitaine:</label>
-                                <p>@Model.Captain</p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Surnom:</label>
-                                <p>@Model.NickName</p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Rôle:</label>
-                                <p>@Model.Role</p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Unité:</label>
-                                <p>@Model.Unit</p>
+                <form method="get" action="@Url.Action("Create", "MedicalCheck")">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label required">Personnel</label>
+                            <select name="crewMemberId" class="form-select" onchange="this.form.submit()">
+                                <option value="">Sélectionnez un personnel</option>
+                                @if (ViewData["CrewMemberSelectList"] is SelectList crewList && crewList != null)
+                                {
+                                    foreach (SelectListItem item in crewList)
+                                    {
+                                        <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                                    }
+                                }
+                            </select>
+                            <div class="form-text text-muted mt-1">
+                                <i class="fas fa-info-circle me-1"></i> Sélectionnez un personnel pour créer une visite médicale
                             </div>
                         </div>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
 
-        <!-- Medical Check Form -->
-        @using (Html.BeginForm("Create", "MedicalCheck", FormMethod.Post, new { id = "medicalCheckForm" }))
+        @if (Model?.CrewMemberId > 0)
         {
-            @Html.AntiForgeryToken()
-            
-            <div class="alert alert-danger d-none" id="validationSummary">
-                <ul></ul>
-            </div>
-            
-            @Html.HiddenFor(m => m.CrewMemberId)
-            
-           <!-- Replace the ENTIRE tab navigation and content with this: -->
-<div class="card shadow">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="fas fa-file-medical me-2"></i>Nouvelle Visite Médicale</h5>
-    </div>
-    
-    <div class="card-body">
-        <!-- Section 1: Basic Information -->
-        <div class="mb-4">
-            <h6 class="border-bottom pb-2 mb-3">
-                <i class="fas fa-info-circle me-2 text-primary"></i>Informations de Base
-            </h6>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label required">Type de Visite</label>
-                    <select class="form-select" id="medCheckType" name="MedCheckType">
-                        <option value="">Sélectionnez un type</option>
-                        <option>CEMPN</option>
-                        <option>CONTROL</option>
-                        <option>VISITE A L'UNITE</option>
-                    </select>
+            <!-- Personnel Info -->
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-user-md me-2"></i>
+                        <span>Informations du Personnel Sélectionné</span>
+                    </div>
+                    <span class="badge bg-light text-primary">Actif</span>
                 </div>
-                
-                <div class="col-md-6">
-                    <label class="form-label required">Type de Personnel</label>
-                    <select class="form-select" id="captainType" name="CaptainType">
-                        <option value="">Sélectionnez un type</option>
-                        <option selected="selected">PILOT</option>
-                        <option>CONTROLLER</option>
-                        <option>DRIVER</option>
-                        <option>TECHNICIAN</option>
-                    </select>
-                </div>
-                
-                <div class="col-md-4">
-                    <label class="form-label required">Date de Visite</label>
-                    <input class="form-control" type="date" id="checkDate" name="CheckDate" value="2025-12-29">
-                </div>
-                
-                <div class="col-md-4">
-                    <label class="form-label required">Durée de Validité (Jours)</label>
-                    <input class="form-control" type="number" id="daysValid" name="DaysValid" placeholder="Ex: 365" value="365">
-                </div>
-                
-                <div class="col-md-4">
-                    <label class="form-label">Prochaine Échéance</label>
-                    <input class="form-control" id="nextDueDate" name="NextDueDate" readonly type="date">
-                </div>
-                
-                <div class="col-md-12">
-                    <label class="form-label">Observations</label>
-                    <textarea class="form-control" id="obs" name="Obs" rows="3" placeholder="Observations générales..."></textarea>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="text-muted small">Nom Complet</div>
+                            <div class="fw-bold">@Model.FullName</div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-muted small">Matricule</div>
+                            <div><span class="badge bg-info">@Model.Matricule</span></div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-muted small">Grade</div>
+                            <div class="fw-bold">@Model.Grade</div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-muted small">Capitaine</div>
+                            <div class="fw-bold">@Model.Captain</div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-muted small">Date de Naissance</div>
+                            <div>@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "N/A")</div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-muted small">Surnom</div>
+                            <div>@Model.NickName</div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-muted small">Rôle</div>
+                            <div>@Model.Role</div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-muted small">Unité/Squadron</div>
+                            <div>@Model.Unit</div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Section 2: Medical Examination -->
-        <div class="mb-4">
-            <h6 class="border-bottom pb-2 mb-3">
-                <i class="fas fa-stethoscope me-2 text-primary"></i>Examen Médical
-            </h6>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Décision Médicale</label>
-                    <select class="form-select" id="decision" name="Decision">
-                        <option value="">Sélectionnez une décision</option>
-                        <option>APTITUDE CONFIRMEE</option>
-                        <option>RESTRICTIONS</option>
-                        <option>SUSPENSION TEMPORAIRE</option>
-                        <option>INAptitude</option>
-                    </select>
-                </div>
+
+            <!-- Medical Check Form -->
+            <form method="post" action="@Url.Action("Create", "MedicalCheck")" id="medicalForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="CrewMemberId" value="@Model.CrewMemberId">
                 
-                <div class="col-md-6">
-                    <label class="form-label required">Aptitude</label>
-                    <select class="form-select" id="aptitudeSelect" name="Aptitude">
-                        <option value="">Sélectionnez une aptitude</option>
-                        <option>APTE</option>
-                        <option>APTE PAR DEROGATION</option>
-                        <option>INAPTE</option>
-                    </select>
-                </div>
-                
-                <div class="col-md-12">
-                    <label class="form-label">Constatations</label>
-                    <textarea class="form-control" id="constatations" name="Constatations" rows="4" placeholder="Détails des constatations médicales..."></textarea>
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="obesiteSwitch" name="OBESITE" value="true">
-                        <label class="form-check-label" for="obesiteSwitch">
-                            Obésité diagnostiquée
-                        </label>
+                <div class="card">
+                    <!-- Tab Navigation -->
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="medicalTabs">
+                            <li class="nav-item">
+                                <button class="nav-link active" type="button" onclick="switchTab('basic')">
+                                    <i class="fas fa-info-circle me-1"></i> Informations
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" type="button" onclick="switchTab('medical')">
+                                    <i class="fas fa-stethoscope me-1"></i> Examen
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" type="button" onclick="switchTab('specialty')">
+                                    <i class="fas fa-user-tag me-1"></i> Spécialité
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" type="button" onclick="switchTab('unit')">
+                                    <i class="fas fa-clinic-medical me-1"></i> Visite Unité
+                                </button>
+                            </li>
+                        </ul>
                     </div>
                     
-                    <div class="form-check form-switch mt-2">
-                        <input class="form-check-input" type="checkbox" id="optiqueSwitch" name="C_Optique" value="true">
-                        <label class="form-check-label" for="optiqueSwitch">
-                            Correction optique requise
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="col-md-6" id="derogationReason" style="display: none;">
-                    <label class="form-label">Raison du Retard/Dérogation</label>
-                    <input class="form-control" id="lateCheckReason" name="LateCheckReason" placeholder="Raison de la dérogation ou du retard...">
-                </div>
-            </div>
-        </div>
-        
-        <!-- Section 3: Specialty -->
-        <div class="mb-4">
-            <h6 class="border-bottom pb-2 mb-3">
-                <i class="fas fa-user-tag me-2 text-primary"></i>Spécialité
-            </h6>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label required">Spécialité</label>
-                    <select class="form-select" id="specialitySelect" name="Speciality">
-                        <option value="">Sélectionnez une spécialité</option>
-                        <option>PH</option>
-                        <option>PC</option>
-                        <option>MN</option>
-                        <option>CCA</option>
-                    </select>
-                    
-                    <div class="alert alert-info mt-3" id="specialtyInfo">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <span id="specialtyDescription">Sélectionnez une spécialité pour afficher les informations spécifiques</span>
-                    </div>
-                </div>
-                
-                <div class="col-md-6">
-                    <!-- Dynamic specialty fields (initially hidden) -->
-                    <div id="phFields" class="specialty-fields" style="display: none;">
-                        <h6 class="border-bottom pb-2">Spécifique PH (Hélicoptère)</h6>
-                        <div class="form-group">
-                            <label class="form-label">Heures de vol totales</label>
-                            <input class="form-control" type="number" step="0.1" id="flightHours" name="FlightHours">
+                    <!-- Tab Content -->
+                    <div class="card-body">
+                        <!-- Tab 1: Basic Information -->
+                        <div id="tab-basic" class="tab-pane active">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label required">Type de Visite</label>
+                                    <select name="MedCheckType" class="form-select" id="medCheckType" required>
+                                        <option value="">Sélectionnez</option>
+                                        <option value="CEMPN">CEMPN</option>
+                                        <option value="CONTROL">CONTROL</option>
+                                        <option value="VISITE A L'UNITE">VISITE A L'UNITE</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label required">Type de Personnel</label>
+                                    <select name="CaptainType" class="form-select" id="captainType" required>
+                                        <option value="">Sélectionnez</option>
+                                        <option value="PILOT">PILOT</option>
+                                        <option value="CONTROLLER">CONTROLLER</option>
+                                        <option value="DRIVER">DRIVER</option>
+                                        <option value="TECHNICIAN">TECHNICIAN</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label required">Spécialité</label>
+                                    <select name="Speciality" class="form-select" id="speciality" required 
+                                            onchange="updateSpecialtyFields()">
+                                        <option value="">Sélectionnez</option>
+                                        <option value="PH">PH (Personnel Hélicoptère)</option>
+                                        <option value="PC">PC (Personnel Chasse)</option>
+                                        <option value="MN">MN (Mécanique Navigation)</option>
+                                        <option value="CCA">CCA (Contrôleur CCA)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label required">Date de Visite</label>
+                                    <input type="date" name="CheckDate" class="form-control" 
+                                           id="checkDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" required
+                                           onchange="calculateAllDates()">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label required">Durée de Validité</label>
+                                    <div class="input-group">
+                                        <input type="number" name="DaysValid" class="form-control" 
+                                               id="daysValid" value="365" min="1" max="730" required
+                                               oninput="calculateAllDates()">
+                                        <span class="input-group-text">jours</span>
+                                    </div>
+                                    <div class="form-text">
+                                        <span id="durationMonths">~12 mois</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label">Prochaine Échéance</label>
+                                    <input type="date" name="NextDueDate" class="form-control bg-light" 
+                                           id="nextDueDate" readonly>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label class="form-label">Observations</label>
+                                    <textarea name="Obs" class="form-control" rows="2" 
+                                              placeholder="Observations générales..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tab 2: Medical Examination -->
+                        <div id="tab-medical" class="tab-pane" style="display: none;">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Décision Médicale</label>
+                                    <input type="text" name="Decision" class="form-control" 
+                                           placeholder="Décision médicale...">
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label required">Aptitude</label>
+                                    <select name="Aptitude" class="form-select" id="aptitude" required
+                                            onchange="toggleDerogationReason()">
+                                        <option value="">Sélectionnez</option>
+                                        <option value="APTE">APTE</option>
+                                        <option value="APTE PAR DEROGATION">APTE PAR DEROGATION</option>
+                                        <option value="INAPTE">INAPTE</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label class="form-label">Constatations</label>
+                                    <textarea name="Constatations" class="form-control" rows="4"
+                                              placeholder="Détails des constatations médicales..."></textarea>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="form-check form-switch">
+                                                <input type="checkbox" name="OBESITE" class="form-check-input" 
+                                                       id="obesite" value="true">
+                                                <label class="form-check-label fw-bold">Obésité diagnostiquée</label>
+                                            </div>
+                                            <div class="form-check form-switch mt-3">
+                                                <input type="checkbox" name="C_Optique" class="form-check-input" 
+                                                       id="cOptique" value="true">
+                                                <label class="form-check-label fw-bold">Correction optique requise</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="card" id="derogationCard" style="display: none;">
+                                        <div class="card-body">
+                                            <label class="form-label">Raison de dérogation</label>
+                                            <input type="text" name="LateCheckReason" class="form-control" 
+                                                   id="lateCheckReason" placeholder="Précisez la raison...">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tab 3: Specialty -->
+                        <div id="tab-specialty" class="tab-pane" style="display: none;">
+                            <div class="specialty-section">
+                                <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Informations Spécifiques à la Spécialité</h6>
+                                <div id="specialtyFields">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-exclamation-circle me-2"></i>
+                                        Sélectionnez une spécialité dans l'onglet "Informations" pour afficher les champs spécifiques.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tab 4: Unit Visit -->
+                        <div id="tab-unit" class="tab-pane" style="display: none;">
+                            <div class="alert alert-warning" id="cempnAlert" style="display: none;">
+                                <i class="fas fa-calculator me-2"></i>
+                                <strong>Calcul automatique pour CEMPN:</strong><br>
+                                • Durée ≥ 10 mois → Visite dans 6 mois<br>
+                                • Durée &lt; 7 mois → Visite dans 3 mois<br>
+                                • Aptitude avec dérogation → Visite dans 3 mois
+                            </div>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Date Visite Unité</label>
+                                    <input type="date" name="VU_Date" class="form-control" id="vuDate">
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label">Prochaine Visite Unité</label>
+                                    <input type="date" name="Next_VU_Date" class="form-control bg-light" 
+                                           id="nextVUDate" readonly>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label class="form-label">Raison retard Visite Unité</label>
+                                    <input type="text" name="VuLateCheckReason" class="form-control" 
+                                           placeholder="Raison du retard de visite unité...">
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <!-- Other specialty fields... -->
+                    <!-- Form Footer -->
+                    <div class="card-footer">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="confirmData" required>
+                                    <label class="form-check-label">
+                                        <i class="fas fa-check-circle me-1"></i> Je certifie l'exactitude des informations
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                                    <i class="fas fa-redo me-1"></i> Réinitialiser
+                                </button>
+                                <button type="submit" class="btn btn-success ms-2">
+                                    <i class="fas fa-save me-1"></i> Créer la Visite
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-user-md fa-4x text-muted mb-4"></i>
+                    <h4 class="text-muted">Sélectionnez un personnel</h4>
+                    <p class="text-muted">Veuillez sélectionner un personnel dans la liste déroulante pour créer une visite médicale.</p>
                 </div>
             </div>
-        </div>
-        
-        <!-- Section 4: Unit Visit -->
-        <div class="mb-4">
-            <h6 class="border-bottom pb-2 mb-3">
-                <i class="fas fa-calendar-alt me-2 text-primary"></i>Visite Unité
-            </h6>
-            <div class="alert alert-warning" id="cempnAlert" style="display: none;">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>Visite CEMPN:</strong> La date de prochaine visite unité sera calculée automatiquement selon les règles:
-                <ul class="mb-0 mt-1">
-                    <li>Durée ≥ 10 mois → Visite dans 6 mois</li>
-                    <li>Durée &lt; 7 mois → Visite dans 3 mois</li>
-                    <li>Aptitude avec dérogation → Visite dans 3 mois</li>
-                </ul>
-            </div>
-            
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Date de Visite Unité</label>
-                    <input class="form-control" type="date" id="vuDate" name="VU_Date">
-                </div>
-                
-                <div class="col-md-6">
-                    <label class="form-label">Prochaine Visite Unité</label>
-                    <input class="form-control" id="nextVUDate" name="Next_VU_Date" readonly type="date">
-                </div>
-                
-                <div class="col-md-12">
-                    <label class="form-label">Raison Retard Visite Unité</label>
-                    <input class="form-control" id="vuLateCheckReason" name="VuLateCheckReason" placeholder="Raison du retard de visite unité...">
-                </div>
-            </div>
-        </div>
+        }
     </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Form Footer -->
-    <div class="card-footer">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="confirmData">
-                    <label class="form-check-label" for="confirmData">
-                        Je certifie l'exactitude des informations saisies
-                    </label>
-                </div>
-            </div>
-            <div class="col-md-6 text-end">
-                <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                    <i class="fas fa-redo"></i> Réinitialiser
-                </button>
-                <button type="button" class="btn btn-success ms-2" id="submitBtn" onclick="validateAndSubmit()">
-                    <i class="fas fa-save me-1"></i> Créer la Visite Médicale
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-        }
-    }
-    else
-    {
-        <!-- Empty State when no crew member is selected -->
-        <div class="card shadow">
-            <div class="card-body text-center py-5">
-                <i class="fas fa-user-md fa-4x text-muted mb-3"></i>
-                <h4 class="text-muted">Sélectionnez d'abord un personnel</h4>
-                <p class="text-muted">Veuillez sélectionner un personnel dans la liste déroulante ci-dessus pour créer une visite médicale.</p>
-            </div>
-        </div>
-    }
-</div>
-
-@section Scripts {
     <script>
-        // Initialize when document is ready
-        $(document).ready(function() {
-            console.log("Document ready - initializing form");
-            
-            // Initialize Bootstrap tabs
-            var triggerTabList = [].slice.call(document.querySelectorAll('#medicalCheckTabs button'));
-            triggerTabList.forEach(function (triggerEl) {
-                var tabTrigger = new bootstrap.Tab(triggerEl);
-                triggerEl.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    tabTrigger.show();
-                });
+        // Tab Management
+        function switchTab(tabName) {
+            // Hide all tab panes
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.style.display = 'none';
+                pane.classList.remove('active');
             });
-
-            // Only initialize if form exists
-            if ($('#medicalCheckForm').length > 0) {
-                console.log("Medical form found, setting up event handlers");
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Show selected tab pane
+            const selectedPane = document.getElementById('tab-' + tabName);
+            if (selectedPane) {
+                selectedPane.style.display = 'block';
+                selectedPane.classList.add('active');
                 
-                // Set default values
-                setDefaultValues();
-                
-                // Set up event handlers
-                setupEventHandlers();
-                
-                // Initialize UI state
-                initializeUI();
-            }
-        });
-
-        function setDefaultValues() {
-            // Set today's date as default check date if not already set
-            if (!$('#checkDate').val()) {
-                var today = new Date().toISOString().split('T')[0];
-                $('#checkDate').val(today);
+                // Activate tab button
+                event.target.classList.add('active');
             }
             
-            // Set default duration if not already set
-            if (!$('#daysValid').val()) {
-                $('#daysValid').val(365);
+            // If switching to specialty tab, update fields
+            if (tabName === 'specialty') {
+                updateSpecialtyFields();
             }
             
-            // Calculate initial next due date
+            // If switching to unit tab, update calculations
+            if (tabName === 'unit') {
+                calculateNextVUDate();
+            }
+        }
+        
+        // Calculate all dates
+        function calculateAllDates() {
             calculateNextDueDate();
+            calculateDurationInMonths();
+            calculateNextVUDate();
         }
-
-        function setupEventHandlers() {
-            // Show CEMPN alert when CEMPN is selected
-            $('#medCheckType').change(function() {
-                if ($(this).val() === 'CEMPN') {
-                    $('#cempnAlert').show();
-                } else {
-                    $('#cempnAlert').hide();
-                }
-            });
-
-            // Calculate next due date on input change
-            $('#daysValid, #checkDate').on('input change', function() {
-                calculateNextDueDate();
-            });
-
-            // Show/hide derogation reason
-            $('#aptitudeSelect').change(function() {
-                if ($(this).val() === 'APTE PAR DEROGATION') {
-                    $('#derogationReason').show();
-                } else {
-                    $('#derogationReason').hide();
-                }
-            });
-
-            // Show specialty-specific fields
-            $('#specialitySelect').change(function() {
-                toggleSpecialtyFields();
-            });
-        }
-
-        function initializeUI() {
-            // Initialize specialty fields display
-            toggleSpecialtyFields();
-            
-            // Initialize derogation reason display
-            if ($('#aptitudeSelect').val() === 'APTE PAR DEROGATION') {
-                $('#derogationReason').show();
-            }
-            
-            // Initialize CEMPN alert
-            if ($('#medCheckType').val() === 'CEMPN') {
-                $('#cempnAlert').show();
-            }
-        }
-
+        
+        // Calculate next due date
         function calculateNextDueDate() {
-            var checkDate = $('#checkDate').val();
-            var daysValid = $('#daysValid').val();
+            const checkDate = document.getElementById('checkDate');
+            const daysValid = document.getElementById('daysValid');
+            const nextDueDate = document.getElementById('nextDueDate');
             
-            if (checkDate && daysValid) {
-                try {
-                    var date = new Date(checkDate);
-                    date.setDate(date.getDate() + parseInt(daysValid));
-                    $('#nextDueDate').val(date.toISOString().split('T')[0]);
-                } catch (e) {
-                    console.error('Error calculating next due date:', e);
+            if (checkDate && daysValid && nextDueDate && checkDate.value && daysValid.value) {
+                const date = new Date(checkDate.value);
+                date.setDate(date.getDate() + parseInt(daysValid.value));
+                nextDueDate.value = date.toISOString().split('T')[0];
+            }
+        }
+        
+        // Calculate duration in months
+        function calculateDurationInMonths() {
+            const daysValid = document.getElementById('daysValid');
+            const durationMonths = document.getElementById('durationMonths');
+            
+            if (daysValid && durationMonths && daysValid.value) {
+                const months = (parseInt(daysValid.value) / 30.44).toFixed(1);
+                durationMonths.textContent = `~${months} mois (${daysValid.value} jours)`;
+            }
+        }
+        
+        // Calculate Next_VU_Date based on business logic
+        function calculateNextVUDate() {
+            const medCheckType = document.getElementById('medCheckType')?.value;
+            const checkDate = document.getElementById('checkDate')?.value;
+            const daysValid = document.getElementById('daysValid')?.value;
+            const aptitude = document.getElementById('aptitude')?.value;
+            const nextVUDate = document.getElementById('nextVUDate');
+            const cempnAlert = document.getElementById('cempnAlert');
+            
+            if (!checkDate || !daysValid || !nextVUDate) return;
+            
+            const monthsValid = parseInt(daysValid) / 30.44;
+            const date = new Date(checkDate);
+            
+            // Show/hide CEMPN alert
+            if (cempnAlert) {
+                cempnAlert.style.display = medCheckType === 'CEMPN' ? 'block' : 'none';
+            }
+            
+            // Clear previous value
+            nextVUDate.value = '';
+            
+            // Apply your business logic
+            if (medCheckType === 'CEMPN') {
+                if (monthsValid >= 10 && aptitude !== 'APTE PAR DEROGATION') {
+                    date.setMonth(date.getMonth() + 6);
+                    nextVUDate.value = date.toISOString().split('T')[0];
+                } else if (monthsValid < 7 || aptitude === 'APTE PAR DEROGATION') {
+                    date.setMonth(date.getMonth() + 3);
+                    nextVUDate.value = date.toISOString().split('T')[0];
+                }
+            } else if (medCheckType && medCheckType.includes('CONTROL')) {
+                if (aptitude === 'APTE PAR DEROGATION') {
+                    if (monthsValid > 3) {
+                        date.setMonth(date.getMonth() + Math.floor(monthsValid / 2));
+                        nextVUDate.value = date.toISOString().split('T')[0];
+                    }
                 }
             }
         }
-
-        function calculateUnitVisit() {
-            var checkDate = $('#checkDate').val();
-            var daysValid = $('#daysValid').val();
-            var medCheckType = $('#medCheckType').val();
-            var aptitude = $('#aptitudeSelect').val();
+        
+        // Toggle derogation reason
+        function toggleDerogationReason() {
+            const aptitude = document.getElementById('aptitude');
+            const derogationCard = document.getElementById('derogationCard');
             
-            if (checkDate && daysValid && medCheckType === 'CEMPN') {
-                try {
-                    var date = new Date(checkDate);
-                    var vuDate;
+            if (aptitude && derogationCard) {
+                derogationCard.style.display = aptitude.value === 'APTE PAR DEROGATION' ? 'block' : 'none';
+            }
+            calculateNextVUDate();
+        }
+        
+        // Update specialty fields
+        function updateSpecialtyFields() {
+            const specialty = document.getElementById('speciality')?.value;
+            const specialtyFields = document.getElementById('specialtyFields');
+            
+            if (!specialtyFields) return;
+            
+            let html = '';
+            
+            switch(specialty) {
+                case 'PH':
+                    html = `
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Heures de vol totales</label>
+                                <input type="number" step="0.1" class="form-control" name="FlightHours">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Type d'appareil</label>
+                                <input type="text" class="form-control" name="AircraftType">
+                            </div>
+                        </div>
+                    `;
+                    break;
                     
-                    if (daysValid >= 300) { // 10 months
-                        date.setMonth(date.getMonth() + 6);
-                        vuDate = date;
-                    } else if (daysValid < 210 || aptitude === 'APTE PAR DEROGATION') { // <7 months or derogation
-                        date.setMonth(date.getMonth() + 3);
-                        vuDate = date;
-                    } else {
-                        // For other cases, don't auto-calculate
-                        return;
-                    }
+                case 'MN':
+                    html = `
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Certifications spécifiques</label>
+                                <textarea class="form-control" name="MN_Certifications" rows="3"></textarea>
+                            </div>
+                        </div>
+                    `;
+                    break;
                     
-                    if (vuDate) {
-                        $('#nextVUDate').val(vuDate.toISOString().split('T')[0]);
-                    }
-                } catch (e) {
-                    console.error('Error calculating unit visit:', e);
-                }
+                case 'CCA':
+                    html = `
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Numéro de certification CCA</label>
+                                <input type="text" class="form-control" name="CCA_Number">
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                default:
+                    html = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Sélectionnez une spécialité dans l'onglet "Informations" pour afficher les champs spécifiques.
+                        </div>
+                    `;
+            }
+            
+            specialtyFields.innerHTML = html;
+        }
+        
+        // Reset form
+        function resetForm() {
+            if (confirm('Êtes-vous sûr de vouloir réinitialiser le formulaire ? Toutes les données seront perdues.')) {
+                document.getElementById('medicalForm').reset();
+                calculateAllDates();
+                toggleDerogationReason();
+                updateSpecialtyFields();
+                switchTab('basic');
             }
         }
-
-        function toggleSpecialtyFields() {
-            var specialty = $('#specialitySelect').val();
+        
+        // Form validation
+        document.getElementById('medicalForm').addEventListener('submit', function(e) {
+            const requiredFields = this.querySelectorAll('[required]');
+            let isValid = true;
             
-            // Hide all specialty fields
-            $('.specialty-fields').hide();
-            
-            // Show selected specialty fields
-            if (specialty) {
-                $('#' + specialty.toLowerCase() + 'Fields').show();
-                
-                // Update specialty description
-                var descriptions = {
-                    'PH': 'Personnel Hélicoptère - Exigences spécifiques pour les pilotes d\'hélicoptère',
-                    'PC': 'Personnel Chasse - Exigences pour les pilotes de chasse',
-                    'MN': 'Mécanique Navigation - Personnel technique spécialisé',
-                    'CCA': 'Contrôleur CCA - Personnel de contrôle aérien'
-                };
-                $('#specialtyDescription').text(descriptions[specialty] || '');
-            } else {
-                $('#specialtyDescription').text('Sélectionnez une spécialité pour afficher les informations spécifiques');
-            }
-        }
-
-        function validateAndSubmit() {
-            console.log("Validating form...");
-            
-            // Hide previous validation messages
-            $('.is-invalid').removeClass('is-invalid');
-            $('.invalid-feedback').text('');
-            $('#validationSummary').addClass('d-none').find('ul').empty();
-            
-            var isValid = true;
-            var errors = [];
-            
-            // Required fields validation
-            var requiredFields = [
-                { id: 'medCheckType', name: 'Type de Visite' },
-                { id: 'captainType', name: 'Type de Personnel' },
-                { id: 'checkDate', name: 'Date de Visite' },
-                { id: 'daysValid', name: 'Durée de Validité' },
-                { id: 'aptitudeSelect', name: 'Aptitude' },
-                { id: 'specialitySelect', name: 'Spécialité' }
-            ];
-            
-            requiredFields.forEach(function(field) {
-                var value = $('#' + field.id).val();
-                if (!value || value.trim() === '') {
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
                     isValid = false;
-                    $('#' + field.id).addClass('is-invalid');
-                    $('#' + field.id + '-error').text('Ce champ est obligatoire');
-                    errors.push(field.name + ' est requis');
+                    field.classList.add('is-invalid');
+                    
+                    // Add error message
+                    if (!field.nextElementSibling || !field.nextElementSibling.classList.contains('invalid-feedback')) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'invalid-feedback';
+                        errorDiv.textContent = 'Ce champ est obligatoire';
+                        field.parentNode.appendChild(errorDiv);
+                    }
+                } else {
+                    field.classList.remove('is-invalid');
+                    const errorDiv = field.parentNode.querySelector('.invalid-feedback');
+                    if (errorDiv) errorDiv.remove();
                 }
             });
             
-            // Validate days valid range
-            var daysValid = $('#daysValid').val();
-            if (daysValid) {
-                var days = parseInt(daysValid);
-                if (days < 1 || days > 730) {
-                    isValid = false;
-                    $('#daysValid').addClass('is-invalid');
-                    $('#daysValid-error').text('La durée doit être entre 1 et 730 jours');
-                    errors.push('La durée de validité doit être entre 1 et 730 jours');
-                }
-            }
-            
-            // Validate confirmation checkbox
-            if (!$('#confirmData').is(':checked')) {
+            // Check confirmation checkbox
+            const confirmCheck = document.getElementById('confirmData');
+            if (confirmCheck && !confirmCheck.checked) {
                 isValid = false;
-                $('#confirmData').addClass('is-invalid');
-                $('#confirmData-error').text('Veuillez confirmer l\'exactitude des données');
-                errors.push('Confirmation des données requise');
+                confirmCheck.classList.add('is-invalid');
+                alert('Veuillez confirmer l\'exactitude des informations.');
             }
             
             if (!isValid) {
-                // Show validation summary
-                $('#validationSummary').removeClass('d-none');
-                var errorList = $('#validationSummary ul');
-                errors.forEach(function(error) {
-                    errorList.append('<li>' + error + '</li>');
-                });
-                
-                // Scroll to validation summary
-                $('#validationSummary')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return;
+                e.preventDefault();
+                alert('Veuillez remplir tous les champs obligatoires.');
             }
+        });
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            calculateAllDates();
+            updateSpecialtyFields();
             
-            // All validations passed, submit the form
-            console.log("Form validation passed, submitting...");
-            $('#submitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Création en cours...');
-            document.getElementById('medicalCheckForm').submit();
-        }
-
-        function resetForm() {
-            if (confirm('Voulez-vous vraiment réinitialiser le formulaire ? Toutes les données seront perdues.')) {
-                // Reset form fields
-                $('#medicalCheckForm')[0].reset();
-                
-                // Reset UI state
-                $('.is-invalid').removeClass('is-invalid');
-                $('.invalid-feedback').text('');
-                $('#validationSummary').addClass('d-none').find('ul').empty();
-                
-                // Reset dynamic UI elements
-                $('.specialty-fields').hide();
-                $('#specialtyDescription').text('Sélectionnez une spécialité pour afficher les informations spécifiques');
-                $('#cempnAlert').hide();
-                $('#derogationReason').hide();
-                
-                // Set default values again
-                setDefaultValues();
-                toggleSpecialtyFields();
-                
-                // Enable submit button
-                $('#submitBtn').prop('disabled', false).html('<i class="fas fa-save me-1"></i> Créer la Visite Médicale');
-                
-                // Scroll to top
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }
-
-        console.log("Form HTML:", $('#medicalCheckForm').html());
-        console.log("Form length:", $('#medicalCheckForm').length);
-        console.log("Tab content HTML:", $('#medicalCheckTabsContent').html());
+            // Add event listeners
+            document.getElementById('medCheckType')?.addEventListener('change', calculateNextVUDate);
+            document.getElementById('aptitude')?.addEventListener('change', toggleDerogationReason);
+            document.getElementById('speciality')?.addEventListener('change', updateSpecialtyFields);
+        });
     </script>
-}
+</body>
+</html>

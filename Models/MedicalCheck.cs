@@ -1,138 +1,118 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using FRAProject.Enums;
 
 namespace FRAProject.Models
 {
-    
     public class MedicalCheck
     {
         [Key]
-        [Column("MedCheckID")]
-        public int MedCheckID { get; set; }
+        public int Id { get; set; }
 
-        // Foreign Key to CrewMember (Parent)
-        
+        // ============================
+        // Identity & Scope
+        // ============================
+
         [Required]
-        [Display(Name = "Crew Member")]
         public int CrewMemberId { get; set; }
-        public CrewMember? CrewMember { get; set; }
+        public CrewMember CrewMember { get; set; } = null!;
 
         [Required]
-        [Column("MedCheckType")]
-        [StringLength(30)]
-        [Display(Name = "Type de Visite")]
-        public string MedCheckType { get; set; } = string.Empty; // CEMPN, CONTROL, VISITE A L'UNITE
+        public int BaseId { get; set; }
+        public Base Base { get; set; } = null!;
 
-        [Column("CheckDate")]
-        [DataType(DataType.Date)]
-        [Display(Name = "Date de Visite")]
-        public DateTime? CheckDate { get; set; }
+        // ============================
+        // Medical Check Classification
+        // ============================
 
-        [Column("DaysValid")]
-        [Display(Name = "Jours Valides")]
-        public int? DaysValid { get; set; }
+        [Required]
+        public MedicalCheckType CheckType { get; set; }
+        // CEMPN / CONTROL / UNITE
 
-        [Column("Obs")]
-        [StringLength(200)]
-        [Display(Name = "Observations")]
-        public string? Obs { get; set; }
+        [Required]
+        public DateTime CheckDate { get; set; }
 
+        // ============================
+        // Medical Decision & Aptitude
+        // ============================
+
+        [Required]
+        public MedicalDecision Decision { get; set; }
+        // FIT / UNFIT / FIT_WITH_RESTRICTIONS
+
+        /// <summary>
+        /// Free-text medical decision (official wording)
+        /// </summary>
         [Column("Decision")]
         [StringLength(100)]
         [Display(Name = "Décision")]
-        public string? Decision { get; set; }
+        public string? DecisionText { get; set; }
 
-        [Column("NextDueDate")]
-        [DataType(DataType.Date)]
-        [Display(Name = "Prochaine Échéance")]
+        /// <summary>
+        /// Medical derogation granted by authority
+        /// </summary>
+        public bool Derogation { get; set; } = false;
+
+        // ============================
+        // Regulatory Dates
+        // ============================
+
+        /// <summary>
+        /// Next mandatory medical deadline
+        /// </summary>
         public DateTime? NextDueDate { get; set; }
 
-        [Column("Speciality")]
-        [StringLength(10)]
-        [Display(Name = "Spécialité")]
-        public string? Speciality { get; set; } // PH, PC, MN, CCA
+        /// <summary>
+        /// Next visual / follow-up check
+        /// </summary>
+        public DateTime? NextVuDate { get; set; }
 
-        [Column("Constatations")]
-        [Display(Name = "Constatations")]
-        public string? Constatations { get; set; }
+        // ============================
+        // Late Check Governance
+        // ============================
 
-        [Column("OBESITE")]
-        [Display(Name = "Obésité")]
-        public bool? OBESITE { get; set; }
-
-        [Column("C_Optique")]
-        [Display(Name = "Correction Optique")]
-        public bool? C_Optique { get; set; }
-
-        [Column("Aptitude")]
-        [StringLength(30)]
-        [Display(Name = "Aptitude")]
-        public string? Aptitude { get; set; } // APTE, APTE PAR DEROGATION, INAPTE
-
-        [Column("Next_VU_Date")]
-        [DataType(DataType.Date)]
-        [Display(Name = "Prochaine Visite Unité")]
-        public DateTime? Next_VU_Date { get; set; }
-
-        [Column("VU_Date")]
-        [DataType(DataType.Date)]
-        [Display(Name = "Date Visite Unité")]
-        public DateTime? VU_Date { get; set; }
-
+        /// <summary>
+        /// Justification if CheckDate > NextDueDate
+        /// (Training, mission, command authorization, etc.)
+        /// </summary>
         [Column("LateCheckReason")]
         [StringLength(100)]
         [Display(Name = "Raison de Retard")]
         public string? LateCheckReason { get; set; }
 
-        [Column("CaptainType")]
-        [StringLength(20)]
-        [Display(Name = "Type de Personnel")]
-        public string? CaptainType { get; set; } // PILOT, CONTROLLER, DRIVER
+        // ============================
+        // Medical Indicators (Flags)
+        // ============================
 
-        [Column("vu_LateCheckReason")]
-        [StringLength(100)]
-        [Display(Name = "Raison Retard VU")]
-        public string? VuLateCheckReason { get; set; }
+        [Column("OBESITE")]
+        [Display(Name = "Obésité")]
+        public bool? Obesite { get; set; }
 
-        // =============================================
-        // RELATIONSHIPS
-        // =============================================
-                
+        [Column("C_Optique")]
+        [Display(Name = "Correction Optique")]
+        public bool? CorrectionOptique { get; set; }
 
-        // 2. Children Relationship: One MedicalCheck has Many MedicalBilans
-        public ICollection<MedicalBilan> MedicalBilans { get; set; } = new List<MedicalBilan>();
+        // ============================
+        // Audit & Authority
+        // ============================
 
-        // =============================================
-        // HELPER PROPERTIES (Not in Database)
-        // =============================================
+        [Required]
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
-        [NotMapped]
-        public int? D_ToGo => NextDueDate.HasValue ?
-            (int?)(NextDueDate.Value - DateTime.Today).Days : null;
+        public DateTime? UpdatedAtUtc { get; set; }
 
-        [NotMapped]
-        public int? D_ToGo_VU => Next_VU_Date.HasValue ?
-            (int?)(Next_VU_Date.Value - DateTime.Today).Days : null;
+        [StringLength(200)]
+        public string? CreatedBy { get; set; }
 
-        [NotMapped]
-        public string NextDueDateFormatted => NextDueDate?.ToString("dd-MMM-yy") ?? string.Empty;
+        [StringLength(200)]
+        public string? UpdatedBy { get; set; }
 
-        [NotMapped]
-        public string Next_VU_DateFormatted => Next_VU_Date?.ToString("dd-MMM-yy") ?? string.Empty;
+        // ============================
+        // Concurrency
+        // ============================
 
-        [NotMapped]
-        public string CheckDateFormatted => CheckDate?.ToString("dd-MMM-yy") ?? string.Empty;
-
-        [NotMapped]
-        public bool IsExpired => NextDueDate.HasValue && NextDueDate.Value < DateTime.Today;
-
-        [NotMapped]
-        public bool IsVU_Overdue => Next_VU_Date.HasValue && Next_VU_Date.Value < DateTime.Today;
-
-        [NotMapped]
-        public string Status => IsExpired ? "EXPIRÉ" :
-                               D_ToGo <= 30 ? "À RENOUVELER" : "VALIDE";
+        [Timestamp]
+        public byte[]? RowVersion { get; set; }
     }
 }

@@ -114,5 +114,8 @@ namespace FRAProject.Models
 
         [Timestamp]
         public byte[]? RowVersion { get; set; }
+
+        // Navigation property for related Bilans
+        public ICollection<MedicalBilan> Bilans { get; set; } = new List<MedicalBilan>();
     }
 }

@@ -3,6 +3,7 @@ using FRAProject.Infrastructure.Authorization;
 using FRAProject.Infrastructure.Identity;
 using FRAProject.Models;
 using FRAProject.Services;
+using FRAProject.Services.Medical;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,8 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 // custom claims factory
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppClaimsPrincipalFactory>();
 builder.Services.AddScoped<IMenuService,SampleMenuService>();
+builder.Services.AddScoped<IMedicalFitnessService, MedicalFitnessService>();
+
 
 // Authorization handlers & policies
 builder.Services.AddSingleton<IAuthorizationHandler, SameSquadronHandler>();

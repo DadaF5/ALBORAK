@@ -87,10 +87,6 @@ namespace FRAProject.Models
             .FirstOrDefault();
 
         [NotMapped]
-        public bool IsMedicallyFit => LatestMedicalCheck?.Aptitude == "APTE" && 
-                        !LatestMedicalCheck.IsExpired;
-
-        [NotMapped]
         public DateTime? MedicalExpiry => LatestMedicalCheck?.NextDueDate;
 
         [NotMapped]
@@ -99,7 +95,7 @@ namespace FRAProject.Models
 
         [NotMapped]
         public List<MedicalBilan> PendingBilans => MedicalChecks
-            .SelectMany(mc => mc.MedicalBilans)
+            .SelectMany(mc => mc.Bilans)
             .Where(bilan => !bilan.IsCompleted)
             .ToList();
 

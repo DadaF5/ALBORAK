@@ -4,86 +4,76 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Models
 {
-    
     public class MedicalBilan
     {
         [Key]
-        [Column("BilanID")]
-        public int BilanID { get; set; }
+        public int Id { get; set; }
 
-        // Foreign Key to MedicalCheck (Parent)
+        // ===============================
+        // Parent Medical Check
+        // ===============================
         [Required]
-        [Display(Name = "Medical Check")]
         public int MedicalCheckId { get; set; }
-
-        [Required]
-        [Column("BilanType")]
-        [StringLength(100)]
-        [Display(Name = "Type de Bilan")]
-        public string BilanType { get; set; } = string.Empty; // Blood Test, X-Ray, etc.
-
-        [Column("BilanDetails")]
-        [StringLength(500)]
-        [Display(Name = "Détails")]
-        public string? Details { get; set; }
-
-        [Column("DurationMonths")]
-        [Display(Name = "Durée (Mois)")]
-        public int DurationMonths { get; set; }
-
-        [Column("DurationDays")]
-        [Display(Name = "Durée (Jours)")]
-        public int DurationDays { get; set; }
-
-        [Column("RequiredDate")]
-        [DataType(DataType.Date)]
-        [Display(Name = "Date Requise")]
-        public DateTime? RequiredDate { get; set; }
-
-        [Column("IsCompleted")]
-        [Display(Name = "Complété")]
-        public bool IsCompleted { get; set; } = false;
-
-        [Column("CompletedDate")]
-        [DataType(DataType.Date)]
-        [Display(Name = "Date de Complétion")]
-        public DateTime? CompletedDate { get; set; }
-
-        [Column("Result")]
-        [StringLength(500)]
-        [Display(Name = "Résultat")]
-        public string? Result { get; set; }
-
-        [Column("Remarks")]
-        [StringLength(500)]
-        [Display(Name = "Remarques")]
-        public string? Remarks { get; set; }
-
-        // =============================================
-        // RELATIONSHIPS
-        // =============================================
-
-        // Parent Relationship: One MedicalCheck has Many MedicalBilans
-        [ForeignKey("MedicalCheckId")]
         public MedicalCheck? MedicalCheck { get; set; }
 
-        
-        // =============================================
-        // HELPER PROPERTIES
-        // =============================================
 
-        [NotMapped]
-        public bool IsOverdue => RequiredDate.HasValue &&
-                                 RequiredDate.Value < DateTime.Today &&
-                                 !IsCompleted;
+        // ===============================
+        // Snapshot of check date (SAFE)
+        // ===============================
+        [Required]
+        public DateTime CheckDate { get; set; }
 
-        [NotMapped]
-        public int DaysUntilDue => RequiredDate.HasValue ?
-            (RequiredDate.Value - DateTime.Today).Days : int.MaxValue;
+        // ===============================
+        // Bilan Request
+        // ===============================
+        [Required]
+        [StringLength(100)]
+        [Display(Name = "Bilan Type")]
+        public string BilanType { get; set; } = string.Empty;
+        // e.g. Blood test, ECG, Cholesterol, Vision test
 
+        [StringLength(500)]
+        [Display(Name = "Doctor Instructions")]
+        public string? Instructions { get; set; }
+        // e.g. "Diet for 4 months then cholesterol test"
+
+        // ===============================
+        // Follow-up timing (Doctor logic)
+        // ===============================
+        [Display(Name = "Follow-up After (Months)")]
+        public int? FollowUpMonths { get; set; }
+
+        [Display(Name = "Follow-up After (Days)")]
+        public int? FollowUpDays { get; set; }
+
+        // ===============================
+        // Completion tracking (non-medical)
+        // ===============================
+        [Display(Name = "Completed")]
+        public bool IsCompleted { get; set; } = false;
+
+        [DataType(DataType.Date)]
+        [Display(Name = "Completed Date")]
+        public DateTime? CompletedDate { get; set; }
+
+        // ===============================
+        // Derived helper (NOT persisted)
+        // ===============================
         [NotMapped]
-        public string Status => IsCompleted ? "COMPLÉTÉ" :
-                               IsOverdue ? "EN RETARD" :
-                               DaysUntilDue <= 7 ? "URGENT" : "EN ATTENTE";
+        public DateTime? ExpectedReturnDate
+        {
+            get
+            {
+                var date = CheckDate;
+
+                if (FollowUpMonths.HasValue)
+                    date = date.AddMonths(FollowUpMonths.Value);
+
+                if (FollowUpDays.HasValue)
+                    date = date.AddDays(FollowUpDays.Value);
+
+                return date;
+            }
+        }
     }
 }

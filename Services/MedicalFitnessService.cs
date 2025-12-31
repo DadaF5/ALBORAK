@@ -26,13 +26,17 @@ namespace FRAProject.Services.Medical
             // Priority: CEMPN > CONTROL > UNITE
             var lastCheck = await _context.MedicalChecks
                 .Where(m => m.CrewMemberId == crewMemberId)
-                .OrderByDescending(m => m.CheckDate)
+                .OrderByDescending(m =>
+                    m.CheckType == MedicalCheckType.CEMPN ? 3 :
+                    m.CheckType == MedicalCheckType.CONTROL ? 2 :
+                    m.CheckType == MedicalCheckType.UNITE ? 1 : 0)
+                .ThenByDescending(m => m.CheckDate)
                 .ThenByDescending(m => m.Id)
                 .FirstOrDefaultAsync();
 
+            // ❌ No medical check → grounded
             if (lastCheck == null)
             {
-                // No medical record = grounded
                 return new MedicalFitnessResult
                 {
                     Decision = MedicalDecision.UNFIT,
@@ -42,11 +46,9 @@ namespace FRAProject.Services.Medical
             }
 
             // 2️⃣ Doctor decision (authoritative)
-            var decision = lastCheck.Decision?.ToUpper() == "FIT"
-                ? MedicalDecision.FIT
-                : MedicalDecision.UNFIT;
+            bool isFitByDecision = lastCheck.Decision == MedicalDecision.FIT;
 
-            // 3️⃣ Compute remaining days
+            // 3️⃣ Compute remaining days (system authority)
             int? remainingDays = null;
             if (lastCheck.NextDueDate.HasValue)
             {
@@ -55,13 +57,27 @@ namespace FRAProject.Services.Medical
             }
 
             // 4️⃣ Validity (system authority)
-            var validity =
-                remainingDays.HasValue && remainingDays.Value <= 0
-                    ? MedicalValidity.EXPIRED
-                    : MedicalValidity.VALID;
+            MedicalValidity validity;
 
-            // 5️⃣ Build result
-            var result = new MedicalFitnessResult
+            if (!remainingDays.HasValue || remainingDays.Value <= 0)
+            {
+                // Date overdue ALWAYS grounds the crew
+                validity = MedicalValidity.EXPIRED;
+            }
+            else
+            {
+                validity = MedicalValidity.VALID;
+            }
+
+            // 5️⃣ Final decision resolution
+            // EXPIRED overrides doctor decision
+            var finalDecision =
+                validity == MedicalValidity.EXPIRED
+                    ? MedicalDecision.UNFIT
+                    : lastCheck.Decision;
+
+            // 6️⃣ Build result
+            return new MedicalFitnessResult
             {
                 MedicalCheckId = lastCheck.Id,
                 CheckType = lastCheck.CheckType,
@@ -69,12 +85,13 @@ namespace FRAProject.Services.Medical
                 NextDueDate = lastCheck.NextDueDate,
                 NextVuDate = lastCheck.NextVuDate,
                 RemainingDays = remainingDays,
-                Decision = decision,
+
+                Decision = finalDecision,
                 Validity = validity,
+
                 Notes = BuildNotes(lastCheck, remainingDays)
             };
-
-            return result;
+            
         }
 
         // ================================

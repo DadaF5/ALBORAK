@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FRAProject.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial_Create : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -761,6 +761,47 @@ namespace FRAProject.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "MedicalChecks",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CrewMemberId = table.Column<int>(type: "int", nullable: false),
+                    BaseId = table.Column<int>(type: "int", nullable: false),
+                    CheckType = table.Column<int>(type: "int", nullable: false),
+                    CheckDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Decision1 = table.Column<int>(type: "int", nullable: false),
+                    Decision = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Derogation = table.Column<bool>(type: "bit", nullable: false),
+                    NextDueDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    NextVuDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LateCheckReason = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    OBESITE = table.Column<bool>(type: "bit", nullable: true),
+                    C_Optique = table.Column<bool>(type: "bit", nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MedicalChecks", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MedicalChecks_Bases_BaseId",
+                        column: x => x.BaseId,
+                        principalTable: "Bases",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MedicalChecks_CrewMembers_CrewMemberId",
+                        column: x => x.CrewMemberId,
+                        principalTable: "CrewMembers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Odvs",
                 columns: table => new
                 {
@@ -854,6 +895,32 @@ namespace FRAProject.Migrations
                         column: x => x.ThresholdId,
                         principalTable: "MaintenanceThresholds",
                         principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MedicalBilans",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    MedicalCheckId = table.Column<int>(type: "int", nullable: false),
+                    CheckDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    BilanType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Instructions = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    FollowUpMonths = table.Column<int>(type: "int", nullable: true),
+                    FollowUpDays = table.Column<int>(type: "int", nullable: true),
+                    IsCompleted = table.Column<bool>(type: "bit", nullable: false),
+                    CompletedDate = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MedicalBilans", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MedicalBilans_MedicalChecks_MedicalCheckId",
+                        column: x => x.MedicalCheckId,
+                        principalTable: "MedicalChecks",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -1153,6 +1220,21 @@ namespace FRAProject.Migrations
                 column: "ThresholdId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MedicalBilans_MedicalCheckId",
+                table: "MedicalBilans",
+                column: "MedicalCheckId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MedicalChecks_BaseId",
+                table: "MedicalChecks",
+                column: "BaseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MedicalChecks_CrewMemberId",
+                table: "MedicalChecks",
+                column: "CrewMemberId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MenuItems_ParentId_SortOrder",
                 table: "MenuItems",
                 columns: new[] { "ParentId", "SortOrder" });
@@ -1302,6 +1384,9 @@ namespace FRAProject.Migrations
                 name: "MaintenanceWorkOrders");
 
             migrationBuilder.DropTable(
+                name: "MedicalBilans");
+
+            migrationBuilder.DropTable(
                 name: "MenuItems");
 
             migrationBuilder.DropTable(
@@ -1323,7 +1408,7 @@ namespace FRAProject.Migrations
                 name: "MaintenanceThresholds");
 
             migrationBuilder.DropTable(
-                name: "CrewMembers");
+                name: "MedicalChecks");
 
             migrationBuilder.DropTable(
                 name: "Sorties");
@@ -1332,10 +1417,7 @@ namespace FRAProject.Migrations
                 name: "MaintenanceComponents");
 
             migrationBuilder.DropTable(
-                name: "Persons");
-
-            migrationBuilder.DropTable(
-                name: "Qualifications");
+                name: "CrewMembers");
 
             migrationBuilder.DropTable(
                 name: "Odvs");
@@ -1344,10 +1426,10 @@ namespace FRAProject.Migrations
                 name: "Aircrafts");
 
             migrationBuilder.DropTable(
-                name: "Ranks");
+                name: "Persons");
 
             migrationBuilder.DropTable(
-                name: "SubDepartments");
+                name: "Qualifications");
 
             migrationBuilder.DropTable(
                 name: "CallSigns");
@@ -1362,13 +1444,19 @@ namespace FRAProject.Migrations
                 name: "AcTypes");
 
             migrationBuilder.DropTable(
-                name: "RankTypes");
+                name: "Ranks");
+
+            migrationBuilder.DropTable(
+                name: "SubDepartments");
 
             migrationBuilder.DropTable(
                 name: "Phases");
 
             migrationBuilder.DropTable(
                 name: "Squadrons");
+
+            migrationBuilder.DropTable(
+                name: "RankTypes");
 
             migrationBuilder.DropTable(
                 name: "Wings");

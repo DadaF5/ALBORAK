@@ -201,7 +201,7 @@ namespace FRAProject.Data
             });
            
             modelBuilder.Entity<MedicalCheck>()
-                .HasMany(mc => mc.MedicalBilans)
+                .HasMany(mc => mc.Bilans)
                 .WithOne(mb => mb.MedicalCheck)
                 .HasForeignKey(mb => mb.MedicalCheckId)
                 .OnDelete(DeleteBehavior.Cascade) ;

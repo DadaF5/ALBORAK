@@ -725,58 +725,40 @@ namespace FRAProject.Migrations
 
             modelBuilder.Entity("FRAProject.Models.MedicalBilan", b =>
                 {
-                    b.Property<int>("BilanID")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("BilanID");
+                        .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BilanID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("BilanType")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("BilanType");
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CheckDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("CompletedDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("CompletedDate");
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("Details")
+                    b.Property<int?>("FollowUpDays")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FollowUpMonths")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Instructions")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("BilanDetails");
-
-                    b.Property<int>("DurationDays")
-                        .HasColumnType("int")
-                        .HasColumnName("DurationDays");
-
-                    b.Property<int>("DurationMonths")
-                        .HasColumnType("int")
-                        .HasColumnName("DurationMonths");
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsCompleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsCompleted");
+                        .HasColumnType("bit");
 
                     b.Property<int>("MedicalCheckId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Remarks")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("Remarks");
-
-                    b.Property<DateTime?>("RequiredDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("RequiredDate");
-
-                    b.Property<string>("Result")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("Result");
-
-                    b.HasKey("BilanID");
+                    b.HasKey("Id");
 
                     b.HasIndex("MedicalCheckId");
 
@@ -785,94 +767,84 @@ namespace FRAProject.Migrations
 
             modelBuilder.Entity("FRAProject.Models.MedicalCheck", b =>
                 {
-                    b.Property<int>("MedCheckID")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("MedCheckID");
+                        .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MedCheckID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Aptitude")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
-                        .HasColumnName("Aptitude");
+                    b.Property<int>("BaseId")
+                        .HasColumnType("int");
 
-                    b.Property<bool?>("C_Optique")
+                    b.Property<DateTime>("CheckDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CheckType")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("CorrectionOptique")
                         .HasColumnType("bit")
                         .HasColumnName("C_Optique");
 
-                    b.Property<string>("CaptainType")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("CaptainType");
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("CheckDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("CheckDate");
-
-                    b.Property<string>("Constatations")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("Constatations");
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("CrewMemberId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("DaysValid")
-                        .HasColumnType("int")
-                        .HasColumnName("DaysValid");
+                    b.Property<int>("Decision")
+                        .HasColumnType("int");
 
-                    b.Property<string>("Decision")
+                    b.Property<string>("DecisionText")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("Decision");
+
+                    b.Property<bool>("Derogation")
+                        .HasColumnType("bit");
 
                     b.Property<string>("LateCheckReason")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("LateCheckReason");
 
-                    b.Property<string>("MedCheckType")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
-                        .HasColumnName("MedCheckType");
-
                     b.Property<DateTime?>("NextDueDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("NextDueDate");
+                        .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("Next_VU_Date")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("Next_VU_Date");
+                    b.Property<DateTime?>("NextVuDate")
+                        .HasColumnType("datetime2");
 
-                    b.Property<bool?>("OBESITE")
+                    b.Property<bool?>("Obesite")
                         .HasColumnType("bit")
                         .HasColumnName("OBESITE");
 
-                    b.Property<string>("Obs")
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .HasColumnName("Obs");
+                        .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("Speciality")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)")
-                        .HasColumnName("Speciality");
+                    b.HasKey("Id");
 
-                    b.Property<DateTime?>("VU_Date")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("VU_Date");
-
-                    b.Property<string>("VuLateCheckReason")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("vu_LateCheckReason");
-
-                    b.HasKey("MedCheckID");
+                    b.HasIndex("BaseId");
 
                     b.HasIndex("CrewMemberId");
 
-                    b.ToTable("MedicalChecks");
+                    b.ToTable("MedicalChecks", t =>
+                        {
+                            t.Property("Decision")
+                                .HasColumnName("Decision1");
+                        });
                 });
 
             modelBuilder.Entity("FRAProject.Models.MenuItem", b =>
@@ -1989,7 +1961,7 @@ namespace FRAProject.Migrations
             modelBuilder.Entity("FRAProject.Models.MedicalBilan", b =>
                 {
                     b.HasOne("FRAProject.Models.MedicalCheck", "MedicalCheck")
-                        .WithMany("MedicalBilans")
+                        .WithMany("Bilans")
                         .HasForeignKey("MedicalCheckId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1999,11 +1971,19 @@ namespace FRAProject.Migrations
 
             modelBuilder.Entity("FRAProject.Models.MedicalCheck", b =>
                 {
+                    b.HasOne("FRAProject.Models.Base", "Base")
+                        .WithMany()
+                        .HasForeignKey("BaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("FRAProject.Models.CrewMember", "CrewMember")
                         .WithMany("MedicalChecks")
                         .HasForeignKey("CrewMemberId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Base");
 
                     b.Navigation("CrewMember");
                 });
@@ -2300,7 +2280,7 @@ namespace FRAProject.Migrations
 
             modelBuilder.Entity("FRAProject.Models.MedicalCheck", b =>
                 {
-                    b.Navigation("MedicalBilans");
+                    b.Navigation("Bilans");
                 });
 
             modelBuilder.Entity("FRAProject.Models.Mission", b =>

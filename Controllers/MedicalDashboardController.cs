@@ -28,7 +28,6 @@ namespace FRAProject.Controllers
         {
             var referenceDate = DateTime.Today;
 
-            // 1️⃣ Load all crew members (even those with no medical check)
             var crewMembers = await _context.CrewMembers
                 .Include(c => c.Person)
                 .Include(c => c.Squadron)
@@ -45,44 +44,35 @@ namespace FRAProject.Controllers
             int opticalCorrectionCount = 0;
             int withBilansCount = 0;
 
-            // 2️⃣ Evaluate medical fitness per crew member
             foreach (var crew in crewMembers)
             {
                 var fitness = await _medicalFitnessService
                     .EvaluateAsync(crew.Id, referenceDate);
 
-                // Map fitness → UI status
-                MedicalFitnessStatus status;
+                var status = fitness.IsExpired
+                    ? MedicalFitnessStatus.Expired
+                    : MedicalFitnessStatus.Fit;
 
-                if (fitness.RemainingDays <= 0)
-                {
-                    status = MedicalFitnessStatus.Expired;
+                if (status == MedicalFitnessStatus.Expired)
                     expiredCount++;
-                }
-                
+                else if (fitness.RemainingDays <= 10)
+                    expiringCount++;
                 else
-                {
-                    status = MedicalFitnessStatus.Fit;
                     fitCount++;
+
+                MedicalCheck? lastCheck = null;
+
+                if (fitness.MedicalCheckId.HasValue)
+                {
+                    lastCheck = await _context.MedicalChecks
+                        .Include(m => m.Bilans)
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(m => m.Id == fitness.MedicalCheckId.Value);
                 }
 
-                // Flags from last medical check (if any)
-                bool hasObesity = fitness.MedicalCheckId > 0 &&
-                                  await _context.MedicalChecks
-                                      .Where(m => m.Id == fitness.MedicalCheckId)
-                                      .Select(m => m.Obesite == true)
-                                      .FirstOrDefaultAsync();
-
-                bool hasOpticalCorrection = fitness.MedicalCheckId > 0 &&
-                                  await _context.MedicalChecks
-                                      .Where(m => m.Id == fitness.MedicalCheckId)
-                                      .Select(m => m.CorrectionOptique == true)
-                                      .FirstOrDefaultAsync();
-
-                bool hasOpenBilans = fitness.MedicalCheckId > 0 &&
-                                  await _context.MedicalBilans
-                                      .AnyAsync(b => b.MedicalCheckId == fitness.MedicalCheckId &&
-                                                     b.IsCompleted == false);
+                bool hasObesity = lastCheck?.Obesite ?? false;
+                bool hasOpticalCorrection = lastCheck?.CorrectionOptique ?? false;
+                bool hasOpenBilans = lastCheck?.Bilans.Any(b => !b.IsCompleted) ?? false;
 
                 if (hasObesity) obesityCount++;
                 if (hasOpticalCorrection) opticalCorrectionCount++;
@@ -94,12 +84,19 @@ namespace FRAProject.Controllers
                     Name = crew.Person?.FullName ?? "—",
                     Squadron = crew.Squadron?.Name ?? "—",
 
-                    LastCheckDate = fitness.CheckDate,
-                    CheckType = fitness.CheckType,
-
+                    LastCheckDate = lastCheck?.CheckDate,
+                    CheckType = fitness.SourceCheckType,
                     Decision = fitness.Decision.ToString(),
-                    RemainingDays = fitness.RemainingDays ?? 0,
+
+                    RemainingDays = fitness.RemainingDays,
                     FitnessStatus = status,
+
+                    // NEW (Expiry & Duration)
+                    ExpiryDate = fitness.ExpiryDate,
+                    DurationYears = lastCheck?.DurationYears ?? 0,
+                    DurationMonths = lastCheck?.DurationMonths ?? 0,
+                    DurationDays = lastCheck?.DurationDays ?? 0,
+
 
                     HasObesity = hasObesity,
                     HasOpticalCorrection = hasOpticalCorrection,
@@ -107,13 +104,11 @@ namespace FRAProject.Controllers
                 });
             }
 
-            // 3️⃣ Sort (expired first, then closest expiry)
             rows = rows
                 .OrderBy(r => r.RemainingDays)
                 .ThenBy(r => r.Name)
                 .ToList();
 
-            // 4️⃣ Build dashboard VM
             var vm = new MedicalDashboardVm
             {
                 FitCount = fitCount,
@@ -129,5 +124,6 @@ namespace FRAProject.Controllers
 
             return View(vm);
         }
+
     }
 }

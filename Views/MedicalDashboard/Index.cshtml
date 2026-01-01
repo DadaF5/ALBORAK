@@ -2,151 +2,609 @@
 @using FRAProject.Enums
 
 @{
-    ViewData["Title"] = "Medical Fitness Dashboard";
+    ViewData["Title"] = "Medical Dashboard";
+    Layout = "_Layout";
 }
 
-<h2 class="mb-4">Medical Fitness Dashboard</h2>
+<div class="container-fluid px-0 py-3">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 px-3">
+        <div>
+            <h1 class="h3 font-weight-bold text-primary">
+                <i class="fas fa-clipboard-check mr-2"></i>Medical Dashboard
+            </h1>
+            <p class="text-muted mb-0">Monitor crew medical status and fitness indicators</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-outline-secondary mr-2" id="refreshBtn">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exportModal">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
 
-<!-- ============================= -->
-<!-- KPI CARDS                    -->
-<!-- ============================= -->
-<div class="row mb-4">
+    <!-- ========================= -->
+    <!-- FITNESS STATUS CARDS -->
+    <!-- ========================= -->
+    <div class="row mb-4 px-3">
+        <div class="col-12">
+            <h5 class="font-weight-bold mb-3 text-uppercase text-muted small">Fitness Status Overview</h5>
+        </div>
 
-    <div class="col-md-4">
-        <div class="card border-success">
-            <div class="card-body text-center text-success">
-                <h3>@Model.FitCount</h3>
-                <div>Fit</div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-left-success border-left-3 border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="font-weight-bold text-success mb-0">@Model.FitCount</h2>
+                            <p class="text-muted mb-0">Fit</p>
+                        </div>
+                        <div class="bg-success p-3 rounded-circle" style="opacity: 0.1;">
+                            <i class="fas fa-check-circle text-success fa-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">Crew members with valid medical clearance</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card border-left-warning border-left-3 border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="font-weight-bold text-warning mb-0">@Model.ExpiringCount</h2>
+                            <p class="text-muted mb-0">Expiring Soon</p>
+                        </div>
+                        <div class="bg-warning p-3 rounded-circle" style="opacity: 0.1;">
+                            <i class="fas fa-exclamation-triangle text-warning fa-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">Expiring within 10 days (≤ @DateTime.Now.AddDays(10).ToString("dd MMM yyyy"))</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card border-left-danger border-left-3 border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="font-weight-bold text-danger mb-0">@Model.ExpiredCount</h2>
+                            <p class="text-muted mb-0">Expired</p>
+                        </div>
+                        <div class="bg-danger p-3 rounded-circle" style="opacity: 0.1;">
+                            <i class="fas fa-times-circle text-danger fa-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">Requires immediate medical attention</small>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card border-warning">
-            <div class="card-body text-center text-warning">
-                <h3>@Model.ExpiringCount</h3>
-                <div>Expiring soon</div>
+    <!-- ========================= -->
+    <!-- MEDICAL WORKLOAD INDICATORS -->
+    <!-- ========================= -->
+    <div class="row mb-4 px-3">
+        <div class="col-12">
+            <h5 class="font-weight-bold mb-3 text-uppercase text-muted small">Medical Workload Indicators</h5>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 bg-light h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="font-weight-bold mb-1">@Model.ObesityCount</h3>
+                            <p class="text-muted mb-0">Obesity Cases</p>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-weight fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar bg-warning"
+                             style="width: @(Model.Crew.Count > 0 ? (Model.ObesityCount * 100 / Model.Crew.Count) : 0)%;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 bg-light h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="font-weight-bold mb-1">@Model.OpticalCorrectionCount</h3>
+                            <p class="text-muted mb-0">Optical Correction</p>
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-glasses fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar bg-info"
+                             style="width: @(Model.Crew.Count > 0 ? (Model.OpticalCorrectionCount * 100 / Model.Crew.Count) : 0)%;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 bg-light h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="font-weight-bold mb-1">@Model.WithBilansCount</h3>
+                            <p class="text-muted mb-0">Pending Bilans</p>
+                        </div>
+                        <div class="text-secondary">
+                            <i class="fas fa-clipboard-list fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar bg-secondary"
+                             style="width: @(Model.Crew.Count > 0 ? (Model.WithBilansCount * 100 / Model.Crew.Count) : 0)%;">
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card border-danger">
-            <div class="card-body text-center text-danger">
-                <h3>@Model.ExpiredCount</h3>
-                <div>Expired / Unfit</div>
+    <!-- ========================= -->
+    <!-- FILTERS AND SEARCH -->
+    <!-- ========================= -->
+    <div class="card border-0 shadow-sm mb-4 mx-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small font-weight-bold">Fitness Status</label>
+                    <select class="form-control form-control-sm" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="fit">Fit</option>
+                        <option value="expiring">Expiring Soon</option>
+                        <option value="expired">Expired</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small font-weight-bold">Squadron</label>
+                    <select class="form-control form-control-sm" id="squadronFilter">
+                        <option value="">All Squadrons</option>
+                        @foreach (var squadron in Model.Crew.Select(c => c.Squadron).Distinct().OrderBy(s => s))
+                        {
+                            <option value="@squadron">@squadron</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small font-weight-bold">Medical Flag</label>
+                    <select class="form-control form-control-sm" id="flagFilter">
+                        <option value="">All Flags</option>
+                        <option value="obesity">Obesity</option>
+                        <option value="optical">Optical Correction</option>
+                        <option value="bilans">Pending Bilans</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small font-weight-bold">Search</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" placeholder="Search crew..." id="searchInput">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- ========================= -->
+    <!-- CREW STATUS TABLE -->
+    <!-- ========================= -->
+    <div class="card border-0 shadow-sm mx-3">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0">Crew Medical Status</h5>
+            <div class="d-flex align-items-center">
+                <span class="badge badge-success mr-2">@Model.FitCount Fit</span>
+                <span class="badge badge-warning mr-2">@Model.ExpiringCount Expiring</span>
+                <span class="badge badge-danger">@Model.ExpiredCount Expired</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="crewTable">
+                    <thead class="thead-light">
+                        <tr>
+                            <th class="pl-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="selectAll">
+                                    <label class="custom-control-label" for="selectAll"></label>
+                                </div>
+                            </th>
+                            <th>Name</th>
+                            <th>Squadron</th>
+                            <th>Last Check</th>
+                            <th>Type</th>
+                            <th>Decision</th>
+                            <th>Duration</th>
+                            <th>Expiry Date</th>
+                            <th>Remaining</th>
+                            <th>Flags</th>
+                            <th class="text-right pr-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.Crew)
+                        {
+                            var statusClass = c.FitnessStatus == MedicalFitnessStatus.Expired ? "table-danger" :
+                            c.RemainingDays <= 10 ? "table-warning" :
+                            "table-success";
+                            var statusText = c.FitnessStatus == MedicalFitnessStatus.Expired ? "Expired" :
+                            c.RemainingDays <= 10 ? "Expiring Soon" : "Fit";
+
+                            <tr class="@statusClass" data-status="@statusText.ToLower().Replace(" ", "")" data-squadron="@c.Squadron">
+                                <td class="pl-4">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input row-select"
+                                               id="row_@c.CrewMemberId" value="@c.CrewMemberId">
+                                        <label class="custom-control-label" for="row_@c.CrewMemberId"></label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 mr-2">
+                                            <div class="avatar avatar-sm">
+                                                <span class="avatar-initials bg-primary text-white">
+                                                    @c.Name.Substring(0, 1)
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="font-weight-bold">@c.Name</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-light border">@c.Squadron</span>
+                                </td>
+                                <td>
+                                    @if (c.LastCheckDate.HasValue)
+                                    {
+                                        <div>@c.LastCheckDate.Value.ToString("dd MMM yyyy")</div>
+                                        <small class="text-muted">@c.LastCheckDate.Value.ToString("ddd")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge badge-light border">@(c.CheckType?.ToString() ?? "—")</span>
+                                </td>
+                                <td>
+                                    <span class="badge @(c.Decision == "Fit" ? "badge-success" : "badge-warning")">
+                                        @c.Decision
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (c.DurationYears + c.DurationMonths + c.DurationDays > 0)
+                                    {
+                                        <div class="text-nowrap">
+                                            @c.DurationYears<small class="text-muted">y</small>
+                                            @c.DurationMonths<small class="text-muted">m</small>
+                                            @c.DurationDays<small class="text-muted">d</small>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (c.ExpiryDate.HasValue)
+                                    {
+                                        <div>@c.ExpiryDate.Value.ToString("dd MMM yyyy")</div>
+                                        <small class="text-muted">@c.ExpiryDate.Value.ToString("ddd")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (c.FitnessStatus == MedicalFitnessStatus.Expired)
+                                    {
+                                        <span class="badge badge-danger">Expired</span>
+                                    }
+                                    else if (c.RemainingDays <= 10)
+                                    {
+                                        <div class="text-warning font-weight-bold">@c.RemainingDays days</div>
+                                        <div class="progress" style="height: 3px; width: 60px;">
+                                            <div class="progress-bar bg-warning"
+                                                 style="width: @(Math.Max(0, (10 - c.RemainingDays) * 10))%">
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-success font-weight-bold">@c.RemainingDays days</div>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap">
+                                        @if (c.HasObesity)
+                                        {
+                                            <span class="badge badge-warning mr-1 mb-1" data-flag="obesity">
+                                                <i class="fas fa-weight mr-1"></i>Obesity
+                                            </span>
+                                        }
+                                        @if (c.HasOpticalCorrection)
+                                        {
+                                            <span class="badge badge-info mr-1 mb-1" data-flag="optical">
+                                                <i class="fas fa-glasses mr-1"></i>Optical
+                                            </span>
+                                        }
+                                        @if (c.HasOpenBilans)
+                                        {
+                                            <span class="badge badge-secondary mr-1 mb-1" data-flag="bilans">
+                                                <i class="fas fa-clipboard-list mr-1"></i>Bilans
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-right pr-4">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a asp-controller="MedicalCheck"
+                                           asp-action="Create"
+                                           asp-route-crewMemberId="@c.CrewMemberId"
+                                           class="btn btn-primary"
+                                           title="New Medical Check">
+                                            <i class="fas fa-plus-circle"></i>
+                                        </a>
+                                        <a asp-controller="CrewMember"
+                                           asp-action="Details"
+                                           asp-route-id="@c.CrewMemberId"
+                                           class="btn btn-outline-secondary"
+                                           title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-controller="MedicalCheck"
+                                           asp-action="History"
+                                           asp-route-crewMemberId="@c.CrewMemberId"
+                                           class="btn btn-outline-secondary"
+                                           title="View History">
+                                            <i class="fas fa-history"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted">
+                        Showing @Model.Crew.Count crew members
+                        @if (Model.Crew.Count > 0)
+                        {
+                            <span> • Last updated: @DateTime.Now.ToString("HH:mm")</span>
+                        }
+                    </small>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="batchCheckBtn" disabled>
+                        <i class="fas fa-clipboard-check mr-1"></i>
+                        Batch Check (<span id="selectedCount">0</span>)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    @if (!Model.Crew.Any())
+    {
+        <div class="text-center py-5 mx-3">
+            <div class="mb-4">
+                <i class="fas fa-clipboard fa-4x text-muted"></i>
+            </div>
+            <h4 class="text-muted">No crew members found</h4>
+            <p class="text-muted">Add crew members or import data to get started</p>
+            <a asp-controller="CrewMember" asp-action="Create" class="btn btn-primary">
+                <i class="fas fa-user-plus mr-1"></i>Add Crew Member
+            </a>
+        </div>
+    }
 </div>
 
-<!-- ============================= -->
-<!-- CREW GRID                    -->
-<!-- ============================= -->
-<table class="table table-sm table-hover align-middle">
-    <thead class="table-light">
-        <tr>
-            <th>Crew</th>
-            <th>Squadron</th>
-            <th>Status</th>
-            <th>Remaining (days)</th>
-            <th>Last Check</th>
-            <th>Authority</th>
-            <th>Flags</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var crew in Model.Crew
-                .OrderBy(c => c.RemainingDays))
-        {
-            bool isExpired = crew.FitnessStatus == MedicalFitnessStatus.Expired;
-            bool isExpiring = crew.FitnessStatus == MedicalFitnessStatus.Fit
-            && crew.RemainingDays <= 10;
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Data</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Format</label>
+                    <select class="form-control" id="exportFormat">
+                        <option value="csv">CSV</option>
+                        <option value="excel">Excel</option>
+                        <option value="pdf">PDF</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Include</label>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="includeAll" checked>
+                        <label class="custom-control-label" for="includeAll">
+                            All crew members
+                        </label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="includeSelected">
+                        <label class="custom-control-label" for="includeSelected">
+                            Only selected rows
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="exportConfirm">Export</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-            string badgeClass;
-            string badgeText;
-
-            if (isExpired)
-            {
-                badgeClass = "badge bg-danger";
-                badgeText = "UNFIT";
-            }
-            else if (isExpiring)
-            {
-                badgeClass = "badge bg-warning text-dark";
-                badgeText = "FIT";
-            }
-            else
-            {
-                badgeClass = "badge bg-success";
-                badgeText = "FIT";
-            }
-
-            <tr>
-                <td>
-                    <strong>@crew.Name</strong>
-                </td>
-
-                <td>
-                    @crew.Squadron
-                </td>
-
-                <td>
-                    <span class="@badgeClass">@badgeText</span>
-                </td>
-
-                <td>
-                    @crew.RemainingDays
-                </td>
-
-                <td>
-                    @if (crew.LastCheckDate.HasValue)
-                    {
-                        <span>@crew.LastCheckDate.Value.ToString("dd/MM/yyyy")</span>
-                    }
-                    else
-                    {
-                        <span class="text-danger">No medical</span>
-                    }
-                </td>
-
-                <td>
-                    @if (crew.CheckType.HasValue)
-                    {
-                        <span class="badge bg-secondary">@crew.CheckType</span>
-                    }
-                    else
-                    {
-                        <span class="text-muted">—</span>
-                    }
-                </td>
-
-                <td>
-                    @if (crew.HasObesity)
-                    {
-                        <span class="badge bg-info">Obesity</span>
-                    }
-
-                    @if (crew.HasOpticalCorrection)
-                    {
-                        <span class="badge bg-info">Optical</span>
-                    }
-
-                    @if (crew.HasOpenBilans)
-                    {
-                        <span class="badge bg-secondary">Bilans</span>
-                    }
-
-                    @if (!crew.HasObesity &&
-                                    !crew.HasOpticalCorrection &&
-                                    !crew.HasOpenBilans)
-                    {
-                        <span class="text-muted">—</span>
-                    }
-                </td>
-            </tr>
+@section Styles {
+    <style>
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
         }
-    </tbody>
-</table>
 
+        .avatar-sm {
+            width: 24px;
+            height: 24px;
+            font-size: 12px;
+        }
+
+        .avatar-initials {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .border-left-3 {
+            border-left-width: 3px !important;
+        }
+
+        .table-hover tbody tr:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+
+        .card {
+            border-radius: .25rem;
+        }
+
+        .progress {
+            border-radius: 3px;
+        }
+
+        .custom-control-label::before,
+        .custom-control-label::after {
+            top: .15rem;
+        }
+
+        .badge-light {
+            color: #495057;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Table filtering
+            $('#statusFilter, #squadronFilter, #flagFilter').change(filterTable);
+            $('#searchInput').on('input', filterTable);
+
+            // Clear search
+            $('#clearSearch').click(function() {
+                $('#searchInput').val('').trigger('input');
+            });
+
+            // Row selection
+            $('#selectAll').change(function() {
+                $('.row-select').prop('checked', $(this).prop('checked'));
+                updateSelectedCount();
+            });
+
+            $('.row-select').change(updateSelectedCount);
+
+            // Refresh button
+            $('#refreshBtn').click(function() {
+                location.reload();
+            });
+
+            // Export functionality
+            $('#exportConfirm').click(function() {
+                const format = $('#exportFormat').val();
+                const includeSelected = $('#includeSelected').prop('checked');
+
+                // Implement export logic here
+                alert('Exporting as ' + format + '...');
+                $('#exportModal').modal('hide');
+            });
+
+            function filterTable() {
+                const status = $('#statusFilter').val();
+                const squadron = $('#squadronFilter').val();
+                const flag = $('#flagFilter').val();
+                const search = $('#searchInput').val().toLowerCase();
+
+                $('#crewTable tbody tr').each(function() {
+                    const $row = $(this);
+                    const rowStatus = $row.data('status');
+                    const rowSquadron = $row.data('squadron');
+                    const rowText = $row.text().toLowerCase();
+                    const rowFlags = $row.find('[data-flag]').map(function() {
+                        return $(this).data('flag');
+                    }).get();
+
+                    let show = true;
+
+                    if (status && rowStatus !== status) show = false;
+                    if (squadron && rowSquadron !== squadron) show = false;
+                    if (flag && !rowFlags.includes(flag)) show = false;
+                    if (search && !rowText.includes(search)) show = false;
+
+                    $row.toggle(show);
+                });
+            }
+
+            function updateSelectedCount() {
+                const count = $('.row-select:checked').length;
+                $('#selectedCount').text(count);
+                $('#batchCheckBtn').prop('disabled', count === 0);
+            }
+
+            // Initialize tooltips
+            $('[title]').tooltip();
+        });
+    </script>
+}

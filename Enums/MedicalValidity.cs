@@ -2,7 +2,7 @@
 {
     public enum MedicalValidity
     {
-        VALID,
-        EXPIRED
+        VALID       = 1,
+        EXPIRED     = 2
     }
 }

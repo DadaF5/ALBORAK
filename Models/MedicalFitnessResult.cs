@@ -1,32 +1,54 @@
 ﻿using FRAProject.Enums;
 
-namespace FRAProject.Models
+public class MedicalFitnessResult
 {
-    public class MedicalFitnessResult
-    {
-        // Doctor decision
-        public MedicalDecision Decision { get; set; }
+    // ============================
+    // Final operational decision
+    // ============================
 
-        // System-calculated validity
-        public MedicalValidity Validity { get; set; }
+    /// <summary>
+    /// Final decision after applying system rules
+    /// (EXPIRED always => UNFIT)
+    /// </summary>
+    public MedicalDecision Decision { get; set; }
 
-        // Convenience flags
-        public bool IsFit => Decision == MedicalDecision.FIT;
-        public bool IsExpired => Validity == MedicalValidity.EXPIRED;
+    /// <summary>
+    /// System-calculated validity based on duration
+    /// </summary>
+    public MedicalValidity Validity { get; set; }
 
-        // Dates
-        public DateTime? CheckDate { get; set; }
-        public DateTime? NextDueDate { get; set; }
-        public DateTime? NextVuDate { get; set; }
+    // ============================
+    // Convenience (SAFE)
+    // ============================
 
-        // Remaining days
-        public int? RemainingDays { get; set; }
+    public bool IsExpired => Validity == MedicalValidity.EXPIRED;
+    public bool IsFit => Decision == MedicalDecision.FIT && !IsExpired;
 
-        public string Notes { get; set; } = "";
+    // ============================
+    // Time computation
+    // ============================
 
-        // Source info
-        public int MedicalCheckId { get; set; }
-        public MedicalCheckType CheckType { get; set; }
-    }
+    /// <summary>
+    /// Number of days remaining until expiry (0 if expired or no check)
+    /// </summary>
+    public int RemainingDays { get; set; }
 
+    /// <summary>
+    /// Computed expiry date of the medical check
+    /// </summary>
+    public DateTime? ExpiryDate { get; set; }
+
+    // ============================
+    // Source (audit / UI)
+    // ============================
+
+    /// <summary>
+    /// Type of the medical check used for computation
+    /// </summary>
+    public MedicalCheckType? SourceCheckType { get; set; }
+
+    /// <summary>
+    /// ID of the medical check used (optional but useful)
+    /// </summary>
+    public int? MedicalCheckId { get; set; }
 }

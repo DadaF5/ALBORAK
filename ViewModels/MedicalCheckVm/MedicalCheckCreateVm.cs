@@ -17,7 +17,6 @@ namespace FRAProject.ViewModels.MedicalCheckVm
         // Display only (not posted back)
         public string CrewMemberName { get; set; } = "";
 
-        [Required]
         public int BaseId { get; set; }
 
         // ============================
@@ -34,6 +33,21 @@ namespace FRAProject.ViewModels.MedicalCheckVm
         public DateTime CheckDate { get; set; } = DateTime.Today;
 
         // ============================
+        // Validity Duration
+        [Range(0, 2)]
+        [Display(Name = "Duration (Years)")]
+        public int DurationYears { get; set; } = 0;
+
+        [Range(0, 11)]
+        [Display(Name = "Duration (Months)")]
+        public int DurationMonths { get; set; } = 0;
+
+        [Range(0, 30)]
+        [Display(Name = "Duration (Days)")]
+        public int DurationDays { get; set; } = 0;
+
+
+        // ============================
         // Doctor Decision
         // ============================
 
@@ -46,17 +60,17 @@ namespace FRAProject.ViewModels.MedicalCheckVm
         public string? DecisionText { get; set; }
 
         [Display(Name = "Derogation")]
-        public bool Derogation { get; set; }
+        public bool Derogation { get; set; } = false;
 
         // ============================
         // Medical Flags (Monitoring)
         // ============================
 
         [Display(Name = "Obesity")]
-        public bool? Obesite { get; set; }
+        public bool Obesite { get; set; } = false;
 
         [Display(Name = "Optical Correction")]
-        public bool? CorrectionOptique { get; set; }
+        public bool CorrectionOptique { get; set; } = false;
 
         // ============================
         // Administrative / Compliance
@@ -69,7 +83,10 @@ namespace FRAProject.ViewModels.MedicalCheckVm
         // ============================
         // Bilans (Complementary exams)
         // ============================
-
+        public bool HasDuration =>
+                DurationYears > 0 ||
+                DurationMonths > 0 ||
+                DurationDays > 0;
         public List<MedicalBilanCreateVm> Bilans { get; set; }
             = new List<MedicalBilanCreateVm>();
     }

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-[Authorize(Roles = "admin,CEMPN,MedicalAdmin")]
+[Authorize(Roles = "Admin,CEMPN,MedicalAdmin")]
 public class MedicalCheckController : Controller
 {
     private readonly FRAContext _context;
@@ -24,19 +24,29 @@ public class MedicalCheckController : Controller
     [HttpGet]
     public async Task<IActionResult> Create(int crewMemberId)
     {
-        var crew = await _context.CrewMembers
-            .Include(c => c.Person)
-            .FirstOrDefaultAsync(c => c.Id == crewMemberId);
-
-        if (crew == null)
+        var crewContext = await _context.CrewMembers
+            .Where (c => c.Id == crewMemberId)
+            .Select (c => new
+            {
+                c.Id,
+                CrewMemberName = c.Person != null ? c.Person.FullName : "—",
+                BaseId = c.Squadron
+                        .Wing
+                        .Base
+                        .Id
+            })
+            .FirstOrDefaultAsync();
+        if (crewContext == null)
             return NotFound();
-
         var vm = new MedicalCheckCreateVm
-        {
-            CrewMemberId = crew.Id,
-            CrewMemberName = crew.Person?.FullName ?? "—",
+            {
+            CrewMemberId = crewContext.Id,
+            CrewMemberName = crewContext.CrewMemberName,
+            BaseId = crewContext.BaseId,
             CheckDate = DateTime.Today
-        };
+        }
+
+        ;        
 
         return View(vm);
     }
@@ -51,23 +61,55 @@ public class MedicalCheckController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        // ⛔ Late check justification
-        var lastCheck = await _context.MedicalChecks
-            .Where(m => m.CrewMemberId == model.CrewMemberId &&
-                        m.CheckType == model.CheckType)
+        // ============================
+        // ⛔ Duration validation (MANDATORY)
+        // ============================
+        if (!model.HasDuration)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                "Medical validity duration must be specified."
+            );
+            return View(model);
+        }
+
+        // ============================
+        // ⛔ Overlap prevention (±7 days, same type)
+        // ============================
+        var overlapExists = await _context.MedicalChecks.AnyAsync(m =>
+            m.CrewMemberId == model.CrewMemberId &&
+            m.CheckType == model.CheckType &&
+            Math.Abs(EF.Functions.DateDiffDay(m.CheckDate, model.CheckDate)) <= 7
+        );
+
+        if (overlapExists)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                "A similar medical check already exists within the allowed period."
+            );
+            return View(model);
+        }
+
+        // ============================
+        // ⛔ Late check justification (AUTHORITY-AWARE)
+        // ============================
+        var lastSameTypeCheck = await _context.MedicalChecks
+            .Where(m =>
+                m.CrewMemberId == model.CrewMemberId &&
+                m.CheckType == model.CheckType)
             .OrderByDescending(m => m.CheckDate)
             .FirstOrDefaultAsync();
 
-        if (lastCheck != null)
+        if (lastSameTypeCheck != null)
         {
-            // Ask MedicalFitnessService to compute expected due date
-            var fitness = await _medicalFitnessService.EvaluateAsync(
-                model.CrewMemberId,
-                model.CheckDate
-            );
+            // Expected date = last check + its OWN duration
+            var expectedDate = lastSameTypeCheck.CheckDate
+                .AddYears(lastSameTypeCheck.DurationYears)
+                .AddMonths(lastSameTypeCheck.DurationMonths)
+                .AddDays(lastSameTypeCheck.DurationDays);
 
-            if (fitness.NextDueDate.HasValue &&
-                model.CheckDate > fitness.NextDueDate &&
+            if (model.CheckDate.Date > expectedDate.Date &&
                 string.IsNullOrWhiteSpace(model.LateCheckReason))
             {
                 ModelState.AddModelError(
@@ -78,36 +120,38 @@ public class MedicalCheckController : Controller
             }
         }
 
-        // ⛔ Overlap prevention (±7 days)
-        var overlapExists = await _context.MedicalChecks.AnyAsync(m =>
-            m.CrewMemberId == model.CrewMemberId &&
-            m.CheckType == model.CheckType &&
-            Math.Abs(EF.Functions.DateDiffDay(m.CheckDate, model.CheckDate)) <= 7
-        );
+        // ============================
+        // 🔑 Resolve BaseId (AUTHORITATIVE)
+        // ============================
+        var resolvedBaseId = await _context.CrewMembers
+            .Where(c => c.Id == model.CrewMemberId)
+            .Select(c => c.Squadron.Wing.Base.Id)
+            .FirstAsync();
 
-        if (overlapExists)
-        {
-            ModelState.AddModelError(string.Empty,
-                "A similar medical check already exists within the allowed period.");
-            return View(model);
-        }
-
+        // ============================
         // ✅ Create MedicalCheck
+        // ============================
         var medicalCheck = new MedicalCheck
         {
             CrewMemberId = model.CrewMemberId,
+            BaseId = resolvedBaseId,
+
             CheckType = model.CheckType,
             CheckDate = model.CheckDate,
 
             Decision = model.Decision,
             DecisionText = model.DecisionText,
-            Derogation = model.Derogation,
 
+            Derogation = model.Derogation,
             Obesite = model.Obesite,
             CorrectionOptique = model.CorrectionOptique,
 
+            // 🔑 VALIDITY DURATION (CRITICAL)
+            DurationYears = model.DurationYears,
+            DurationMonths = model.DurationMonths,
+            DurationDays = model.DurationDays,
+
             LateCheckReason = model.LateCheckReason,
-            BaseId = model.BaseId,
 
             CreatedAtUtc = DateTime.UtcNow,
             CreatedBy = User.Identity?.Name
@@ -116,7 +160,9 @@ public class MedicalCheckController : Controller
         _context.MedicalChecks.Add(medicalCheck);
         await _context.SaveChangesAsync();
 
+        // ============================
         // 🧪 Optional Bilans (NON-AUTHORITATIVE)
+        // ============================
         if (model.Bilans != null && model.Bilans.Any())
         {
             foreach (var b in model.Bilans)
@@ -144,6 +190,7 @@ public class MedicalCheckController : Controller
 
         return RedirectToAction("Index", "MedicalDashboard");
     }
+
 
     // ============================
     // DETAILS (READ-ONLY)

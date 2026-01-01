@@ -19,102 +19,65 @@ namespace FRAProject.Services.Medical
         }
 
         public async Task<MedicalFitnessResult> EvaluateAsync(
-            int crewMemberId,
-            DateTime referenceDate)
+    int crewMemberId,
+    DateTime referenceDate)
         {
-            // 1️⃣ Get the most recent AUTHORITATIVE medical check
-            // Priority: CEMPN > CONTROL > UNITE
-            var lastCheck = await _context.MedicalChecks
+            // 1️⃣ Select last authoritative medical check
+            var check = await _context.MedicalChecks
                 .Where(m => m.CrewMemberId == crewMemberId)
                 .OrderByDescending(m =>
                     m.CheckType == MedicalCheckType.CEMPN ? 3 :
                     m.CheckType == MedicalCheckType.CONTROL ? 2 :
                     m.CheckType == MedicalCheckType.UNITE ? 1 : 0)
                 .ThenByDescending(m => m.CheckDate)
-                .ThenByDescending(m => m.Id)
                 .FirstOrDefaultAsync();
 
-            // ❌ No medical check → grounded
-            if (lastCheck == null)
+            // 2️⃣ No medical check = grounded
+            if (check == null)
             {
                 return new MedicalFitnessResult
                 {
                     Decision = MedicalDecision.UNFIT,
                     Validity = MedicalValidity.EXPIRED,
-                    Notes = "No medical check on record"
+                    RemainingDays = 0,
+                    ExpiryDate = null,
+                    SourceCheckType = null,
+                    MedicalCheckId = null
                 };
             }
 
-            // 2️⃣ Doctor decision (authoritative)
-            bool isFitByDecision = lastCheck.Decision == MedicalDecision.FIT;
+            // 3️⃣ Compute expiry date using Duration
+            var expiryDate = check.CheckDate
+                .AddYears(check.DurationYears)
+                .AddMonths(check.DurationMonths)
+                .AddDays(check.DurationDays);
 
-            // 3️⃣ Compute remaining days (system authority)
-            int? remainingDays = null;
-            if (lastCheck.NextDueDate.HasValue)
-            {
-                remainingDays =
-                    (lastCheck.NextDueDate.Value.Date - referenceDate.Date).Days;
-            }
+            // 4️⃣ Remaining days (date-only logic)
+            int remainingDays = (expiryDate.Date - referenceDate.Date).Days;
 
-            // 4️⃣ Validity (system authority)
-            MedicalValidity validity;
+            // 5️⃣ Validity (system authority)
+            var validity = remainingDays > 0
+                ? MedicalValidity.VALID
+                : MedicalValidity.EXPIRED;
 
-            if (!remainingDays.HasValue || remainingDays.Value <= 0)
-            {
-                // Date overdue ALWAYS grounds the crew
-                validity = MedicalValidity.EXPIRED;
-            }
-            else
-            {
-                validity = MedicalValidity.VALID;
-            }
+            // 6️⃣ Final decision
+            // Expired ALWAYS grounds the crew member
+            var finalDecision = validity == MedicalValidity.EXPIRED
+                ? MedicalDecision.UNFIT
+                : check.Decision;
 
-            // 5️⃣ Final decision resolution
-            // EXPIRED overrides doctor decision
-            var finalDecision =
-                validity == MedicalValidity.EXPIRED
-                    ? MedicalDecision.UNFIT
-                    : lastCheck.Decision;
-
-            // 6️⃣ Build result
             return new MedicalFitnessResult
             {
-                MedicalCheckId = lastCheck.Id,
-                CheckType = lastCheck.CheckType,
-                CheckDate = lastCheck.CheckDate,
-                NextDueDate = lastCheck.NextDueDate,
-                NextVuDate = lastCheck.NextVuDate,
-                RemainingDays = remainingDays,
-
                 Decision = finalDecision,
                 Validity = validity,
-
-                Notes = BuildNotes(lastCheck, remainingDays)
+                RemainingDays = remainingDays,
+                ExpiryDate = expiryDate,
+                SourceCheckType = check.CheckType,
+                MedicalCheckId = check.Id
             };
-            
         }
 
-        // ================================
-        // Helper: Notes builder
-        // ================================
-        private string BuildNotes(MedicalCheck check, int? remainingDays)
-        {
-            var sb = new StringBuilder();
 
-            if (check.CorrectionOptique == true)
-                sb.Append("Optical correction required. ");
-
-            if (check.Obesite == true)
-                sb.Append("Obesity flagged. ");
-
-            if (check.Derogation == true)
-                sb.Append("Derogation applied. ");
-
-            if (remainingDays.HasValue && remainingDays.Value <= 0)
-                sb.Append("Medical check expired.");
-
-            return sb.ToString().Trim();
-        }
     }
 }
 

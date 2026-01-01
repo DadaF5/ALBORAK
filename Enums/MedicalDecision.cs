@@ -2,7 +2,7 @@
 {
     public enum MedicalDecision
     {
-        FIT,
-        UNFIT
+        FIT = 0,
+        UNFIT = 1
     }
 }

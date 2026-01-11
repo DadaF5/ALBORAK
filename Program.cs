@@ -29,7 +29,7 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddDefaultTokenProviders()
     .AddDefaultUI(); // ensures /Identity/Account/Login etc are available
 
-// custom claims factory
+// Custom claims factory for user identity customization
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppClaimsPrincipalFactory>();
 
 

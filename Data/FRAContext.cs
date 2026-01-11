@@ -72,7 +72,7 @@ namespace FRAProject.Data
         public DbSet<FlightLog> FlightLogs { get; set; } = null!;               // Flight hour/cycle tracking
         public DbSet<MaintenanceComponent> MaintenanceComponents { get; set; } = null!;     // Aircraft components
         public DbSet<MaintenanceThreshold> MaintenanceThresholds { get; set; } = null!;     // Maintenance intervals
-        public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;     // Maintenance work orders;
+        public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;     // Maintenance work orders
 
         private void ConfigureFlightLog(ModelBuilder modelBuilder)
         {

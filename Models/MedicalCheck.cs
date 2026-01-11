@@ -7,6 +7,26 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Models
 {
+    /// <summary>
+    /// DOMAIN: Medical Care Center
+    /// Represents a medical examination/check for a crew member.
+    /// Educational Purpose: Critical entity that determines if a crew member is medically FIT to fly.
+    /// 
+    /// Key Relationships:
+    /// - MedicalCheck → CrewMember (Many-to-One): Links medical records to operational crew
+    /// - MedicalCheck → Base (Many-to-One): Where the medical check was performed
+    /// - MedicalCheck → MedicalBilans (One-to-Many): Detailed examination results (lab, physical, etc.)
+    /// 
+    /// Decision Workflow:
+    /// 1. Flight surgeon performs examination and creates MedicalCheck record
+    /// 2. Decision (FIT/FIT_RESTRICTIONS/UNFIT) determines operational status
+    /// 3. Validity period (DurationYears/Months/Days) determines when next check is due
+    /// 4. MedicalFitnessService evaluates most recent check to determine current flight status
+    /// 5. Only FIT or FIT_RESTRICTIONS crew members can be assigned to sorties
+    /// 
+    /// This demonstrates how Medical Care Center domain gates access to Squadron Operations,
+    /// ensuring flight safety and regulatory compliance.
+    /// </summary>
     public class MedicalCheck
     {
         // ============================

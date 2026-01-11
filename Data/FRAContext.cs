@@ -16,56 +16,63 @@ namespace FRAProject.Data
         }
 
         // =====================================
-        // DbSets (Base, Department and Person related DbSets)
+        // DOMAIN: HR (Human Resources)
+        // Manages employee records, organizational structure, and personnel hierarchy
         // =====================================
-        public DbSet<Person> Persons { get; set; } = null!;
-        public DbSet<Rank> Ranks { get; set; } = null!;
-        public DbSet<RankType> RankTypes { get; set; } = null!;
-        public DbSet<Base> Bases { get; set; } = null!;
-        public DbSet<Department> Departments { get; set; } = null!;
-        public DbSet<SubDepartment> SubDepartments { get; set; } = null!;
-        public DbSet<Wing> Wings { get; set; } = null!;
-        public DbSet<Squadron> Squadrons { get; set; } = null!;
+        public DbSet<Person> Persons { get; set; } = null!;                      // Employee records
+        public DbSet<Rank> Ranks { get; set; } = null!;                          // Military/organizational ranks
+        public DbSet<RankType> RankTypes { get; set; } = null!;                  // Rank categories
+        public DbSet<Base> Bases { get; set; } = null!;                          // Military bases/locations
+        public DbSet<Department> Departments { get; set; } = null!;              // Organizational departments
+        public DbSet<SubDepartment> SubDepartments { get; set; } = null!;        // Sub-organizational units
+        public DbSet<Wing> Wings { get; set; } = null!;                          // Wing-level organization
+        public DbSet<Squadron> Squadrons { get; set; } = null!;                  // Squadron-level organization
 
-        // Scheduling / assignments table (ODV)
-        public DbSet<Odv> Odvs { get; set; } = null!;
-        public DbSet<Sortie> Sorties { get; set; } = null!;
-        public DbSet<SortieCrew> SortieCrews { get; set; } = null!;
+        // =====================================
+        // DOMAIN: Squadron Operations
+        // Manages flight scheduling, missions, and operational planning
+        // Links: Personnel (CrewMembers) → Sorties → Aircraft
+        // =====================================
+        public DbSet<Odv> Odvs { get; set; } = null!;                           // Operational Daily Flight schedule
+        public DbSet<Sortie> Sorties { get; set; } = null!;                     // Flight missions/sorties
+        public DbSet<SortieCrew> SortieCrews { get; set; } = null!;             // Crew assignments to sorties
+        public DbSet<Mission> Missions { get; set; } = null!;                   // Mission types (training, combat, etc.)
+        public DbSet<Phase> Phases { get; set; } = null!;                       // Mission phases
+        public DbSet<CallSign> CallSigns { get; set; } = null!;                 // Radio call signs
+        public DbSet<CrewMember> CrewMembers { get; set; } = null!;             // Flight crew personnel
+        public DbSet<Qualification> Qualifications { get; set; } = null!;       // Crew qualifications/certifications
+        public DbSet<CrewMemberQualification> CrewMemberQualifications { get; set; } = null!; // Links crew to qualifications
 
-        // =============================
-        // Air activity Related DbSets
-        // =============================
-        public DbSet<Mission> Missions { get; set; } = null!;
-        public DbSet<Phase> Phases { get; set; } = null!;
-        public DbSet<CallSign> CallSigns { get; set; } = null!;
-        public DbSet<MenuItem> MenuItems { get; set; } = null!;
+        // =====================================
+        // DOMAIN: Medical Care Center
+        // Manages crew member medical fitness, examinations, and health records
+        // Links: CrewMembers → MedicalChecks → Medical fitness decisions
+        // =====================================
+        public DbSet<MedicalCheck> MedicalChecks { get; set; } = null!;         // Medical examination records
+        public DbSet<MedicalBilan> MedicalBilans { get; set; } = null!;         // Detailed medical assessment results
 
-        // =============================
-        // Crew Member Related DbSets
-        public DbSet<CrewMember> CrewMembers { get; set; } = null!;
-        public DbSet<Qualification> Qualifications { get; set; } = null!;
-        public DbSet<CrewMemberQualification> CrewMemberQualifications { get; set; } = null!;
+        // =====================================
+        // DOMAIN: User Management (Cross-cutting)
+        // User-specific documents and qualifications for Identity users
+        // =====================================
+        public DbSet<UserDocument> UserDocuments { get; set; } = null!;         // User uploaded documents
+        public DbSet<UserQualification> UserQualifications { get; set; } = null!; // User qualifications
+        public DbSet<MenuItem> MenuItems { get; set; } = null!;                 // Application menu structure
 
-        public DbSet<MedicalCheck> MedicalChecks { get; set; } = null!;
-        public DbSet<MedicalBilan> MedicalBilans { get; set; } = null!;
-
-        //===============================
-        // User Related DbSets
-        public DbSet<UserDocument> UserDocuments { get; set; } = null!;
-        public DbSet<UserQualification> UserQualifications { get; set; } = null!;
-
-        //===============================
-        // Aircraft Related DbSets
-        //===============================
-        public DbSet<AcCategory> AcCategories { get; set; } = null!;
-        public DbSet<AcMainGroup> AcMainGroups { get; set; } = null!;
-        public DbSet<AcType> AcTypes { get; set; } = null!;
-        public DbSet<AcStatusType> AcStatusTypes { get; set; } = null!;
-        public DbSet<Aircraft> Aircrafts { get; set; } = null!;
-        public DbSet<FlightLog> FlightLogs { get; set; } = null!;
-        public DbSet<MaintenanceComponent> MaintenanceComponents { get; set; } = null!;
-        public DbSet<MaintenanceThreshold> MaintenanceThresholds { get; set; } = null!;
-        public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;
+        // =====================================
+        // DOMAIN: Aircraft Maintenance
+        // Manages aircraft inventory, maintenance tracking, and serviceability
+        // Links: Aircraft → MaintenanceWorkOrders → Components → Flight availability
+        // =====================================
+        public DbSet<AcCategory> AcCategories { get; set; } = null!;            // Aircraft categories
+        public DbSet<AcMainGroup> AcMainGroups { get; set; } = null!;           // Aircraft main groups
+        public DbSet<AcType> AcTypes { get; set; } = null!;                     // Aircraft types/models
+        public DbSet<AcStatusType> AcStatusTypes { get; set; } = null!;         // Aircraft status types
+        public DbSet<Aircraft> Aircrafts { get; set; } = null!;                 // Aircraft inventory
+        public DbSet<FlightLog> FlightLogs { get; set; } = null!;               // Flight hour/cycle tracking
+        public DbSet<MaintenanceComponent> MaintenanceComponents { get; set; } = null!;     // Aircraft components
+        public DbSet<MaintenanceThreshold> MaintenanceThresholds { get; set; } = null!;     // Maintenance intervals
+        public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;     // Maintenance work orders
 
         private void ConfigureFlightLog(ModelBuilder modelBuilder)
         {

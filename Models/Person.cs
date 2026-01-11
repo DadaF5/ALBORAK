@@ -2,6 +2,19 @@
 
 namespace FRAProject.Models
 {
+    /// <summary>
+    /// DOMAIN: HR (Human Resources)
+    /// Represents an employee/person in the organization.
+    /// Educational Purpose: Core HR entity that links to organizational structure (Department/SubDepartment)
+    /// and can optionally link to CrewMember for flight operations personnel.
+    /// 
+    /// Key Relationships:
+    /// - Person → Rank (Many-to-One): Each person has a military/organizational rank
+    /// - Person → SubDepartment → Department → Base (Many-to-One chain): Organizational hierarchy
+    /// - Person → CrewMember (One-to-One, optional): If person is flight crew, links to operational records
+    /// 
+    /// This demonstrates how HR data integrates with operational domains (Squadron Ops, Medical Care).
+    /// </summary>
     public class Person
     {
         [Key]

@@ -1,4 +1,5 @@
-﻿@model FRAProject.Models.Sortie
+﻿@using FRAProject.Areas.SquadronOps.Models
+@model Sortie
 <tr data-sortie-id="@Model.Id">
     <td>@Model.Id</td>
     <td>@(Model.Aircraft?.DisplayName ?? "-")</td>

@@ -1,0 +1,56 @@
+﻿@using FRAProject.Areas.SquadronOps.Models
+@model IEnumerable<CallSign>
+
+@{
+    ViewData["Title"] = "Call Signs";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Call Signs</h2>
+
+    @if (User?.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+    {
+        <a class="btn btn-primary" asp-action="Create">Create New CallSign</a>
+    }
+</div>
+
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Code</th>
+            <th>Description</th>
+            <th>Base</th>
+            <th>Squadron</th>
+            <th>Active</th>
+            <th style="width:150px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.Code</td>
+                <td>@item.Description</td>
+                <td>
+                    @* If navigation property exists, show its name; otherwise show BaseId *@
+                    @(item.Base?.BaseName ?? (item.BaseId.HasValue ? item.BaseId.ToString() : "Global"))
+                </td>
+                <td>
+                    @(item.Squadron?.Name ?? (item.SquadronId.HasValue ? item.SquadronId.ToString() : "—"))
+                </td>
+                <td>@(item.IsActive ? "Yes" : "No")</td>
+                <td>
+                    <a class="btn btn-sm btn-info" asp-action="Details" asp-route-id="@item.Id">Details</a>
+
+                    @if (User?.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+                    {
+                        <a class="btn btn-sm btn-secondary" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                        <a class="btn btn-sm btn-danger" asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

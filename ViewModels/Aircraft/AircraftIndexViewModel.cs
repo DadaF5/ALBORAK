@@ -1,5 +1,5 @@
 ﻿
-using FRAProject.Models;
+using FRAProject.Areas.AircraftMaintenance.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FRAProject.ViewModels

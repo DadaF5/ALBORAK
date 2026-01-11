@@ -1,4 +1,4 @@
-﻿using FRAProject.Models;
+﻿using FRAProject.Areas.SquadronOps.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Data

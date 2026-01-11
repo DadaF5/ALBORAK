@@ -1,5 +1,5 @@
-﻿using FRAProject.DTOs;
-using FRAProject.Models;
+﻿using FRAProject.Areas.HR.Models;
+using FRAProject.DTOs;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FRAProject.ViewModels

@@ -145,6 +145,8 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
@@ -154,9 +156,20 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Endpoint middleware
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllerRoute(
+        name: "areas",
+        pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+    endpoints.MapDefaultControllerRoute();
+});
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+
 
 // Map Razor Pages so Identity UI (if used) is reachable at /Identity/Account/Login etc.
 app.MapRazorPages();

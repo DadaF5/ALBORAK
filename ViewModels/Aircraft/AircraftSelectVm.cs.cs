@@ -1,4 +1,4 @@
-﻿using FRAProject.Models;
+﻿using FRAProject.Areas.AircraftMaintenance.Models;
 
 namespace FRAProject.ViewModels
 {

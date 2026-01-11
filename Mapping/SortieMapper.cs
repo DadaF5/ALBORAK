@@ -1,4 +1,5 @@
-﻿using FRAProject.Models;
+﻿using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Models;
 using FRAProject.ViewModels;
 
 namespace FRAProject.Mapping

@@ -1,4 +1,7 @@
-﻿using FRAProject.Enums;
+﻿using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.HR.Models;
+using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Enums;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

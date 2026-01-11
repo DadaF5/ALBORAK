@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Data;
 using FRAProject.Models;
 using Microsoft.EntityFrameworkCore;

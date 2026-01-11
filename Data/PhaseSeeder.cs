@@ -1,4 +1,4 @@
-﻿using FRAProject.Models;
+﻿using FRAProject.Areas.SquadronOps.Models;
 
 namespace FRAProject.Data
 {

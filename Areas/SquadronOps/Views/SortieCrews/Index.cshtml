@@ -1,0 +1,155 @@
+﻿@using FRAProject.Areas.SquadronOps.Models
+@model IEnumerable<SortieCrew>
+
+@{
+    ViewData["Title"] = "Sortie Crew Assignments";
+    var sortieId = ViewBag.SortieId;
+    var sortieCode = ViewBag.SortieCode;
+}
+
+<style>
+    .popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.75);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1050;
+        padding: 20px;
+    }
+
+    .popup-container {
+        background-color: #2d3748;
+        border-radius: 16px;
+        max-width: 800px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .popup-content {
+        padding: 30px;
+    }
+</style>
+
+<div class="popup-overlay">
+    <div class="popup-container">
+        <div class="popup-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="text-white mb-0">Crew Assignments - @sortieCode</h4>
+                <a asp-controller="OdvPlanning" asp-action="Index" class="btn-close btn-close-white"></a>
+            </div>
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="d-flex justify-content-between mb-3">
+                <a asp-action="Create" asp-route-sortieId="@sortieId"
+                   class="btn btn-success">
+                    <i class="fas fa-plus"></i> Add Crew Member
+                </a>
+
+                <div>
+                    <a asp-controller="Sorties" asp-action="Edit" asp-route-id="@sortieId"
+                       class="btn btn-outline-light me-2">
+                        <i class="fas fa-edit"></i> Edit Sortie
+                    </a>
+                    <a asp-controller="OdvPlanning" asp-action="Index"
+                       class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Close
+                    </a>
+                </div>
+            </div>
+
+            @if (!Model.Any())
+            {
+                <div class="alert alert-info text-center">
+                    No crew members assigned to this sortie yet.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover">
+                        <thead>
+                            <tr>
+                                <th>Crew Member</th>
+                                <th>Nickname</th>
+                                <th>Seat</th>
+                                <th>Role</th>
+                                <th>Aircraft Role</th>
+                                <th>Primary</th>
+                                <th>Remarks</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var assignment in Model)
+                            {
+                                <tr>
+                                    <td>@assignment.CrewMember?.Captain</td>
+                                    <td>@assignment.CrewMember?.NickName</td>
+                                    <td>
+                                        <span class="badge bg-primary">@assignment.Seat</span>
+                                    </td>
+                                    <td>@assignment.Role</td>
+                                    <td>
+                                        <span class="badge bg-info">@assignment.AircraftRole</span>
+                                    </td>
+                                    <td>
+                                        @if (assignment.IsPrimary)
+                                        {
+                                            <span class="badge bg-success">Yes</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">No</span>
+                                        }
+                                    </td>
+                                    <td>@assignment.Remarks</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-action="Edit" asp-route-id="@assignment.Id"
+                                               class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <form asp-action="Delete" method="post"
+                                                  onsubmit="return confirm('Are you sure you want to remove this crew member?');">
+                                                <input type="hidden" name="id" value="@assignment.Id" />
+                                                <button type="submit" class="btn btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Close popup when clicking outside
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.popup-overlay').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    window.location.href = '@Url.Action("Index", "OdvPlanning")';
+                }
+            });
+        });
+    </script>
+}

@@ -1,4 +1,6 @@
-﻿using FRAProject.Data;
+﻿using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Data;
 using FRAProject.Models;
 using FRAProject.ViewModels;
 using Microsoft.AspNetCore.Authorization;

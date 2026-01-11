@@ -1,5 +1,5 @@
 ﻿
-using FRAProject.Models;
+using FRAProject.Areas.SquadronOps.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.Reflection.Emit;

@@ -1,5 +1,6 @@
-﻿@using FRAProject.Helpers
-@model FRAProject.Models.Sortie
+﻿@using FRAProject.Areas.SquadronOps.Models
+@using FRAProject.Helpers
+@model Sortie
 
 @{
     var crew = Model.SortieCrews;
@@ -14,7 +15,7 @@
     string aircraftStatusText = aircraft != null ? aircraft.Status.ToString() : "N/A";
 
     // Show the "Open selector" button only if user is CrewChief and sortie in Planned state and ODV approved
-    bool showSelector = User.IsInRole("CrewChief") && Model.Status == FRAProject.Models.SortieStatus.Planned && (Model.Odv?.IsPreflightApproved ?? false);
+    bool showSelector = User.IsInRole("CrewChief") && Model.Status == SortieStatus.Planned && (Model.Odv?.IsPreflightApproved ?? false);
 }
 
 <div class="list-group-item p-2 d-flex justify-content-between align-items-start" data-sortie-id="@Model.Id">
@@ -55,7 +56,7 @@
             }
 
             @* TWR actions: show only for Tower role and when appropriate *@
-            @if (User.IsInRole("Tower") && Model.Status == FRAProject.Models.SortieStatus.AircraftAssigned)
+            @if (User.IsInRole("Tower") && Model.Status == SortieStatus.AircraftAssigned)
             {
                 <button type="button" class="btn btn-outline-success btn-sm" data-action="set-toff" data-sortie-id="@Model.Id">Set TOFF</button>
             }
@@ -73,7 +74,7 @@
     </div>
 </div>
 <div class="mt-2">
-    @if (Model.IsFinalized == true || Model.Status == FRAProject.Models.SortieStatus.Finalized)
+    @if (Model.IsFinalized == true || Model.Status == SortieStatus.Finalized)
     {
         <div class="small text-muted">
             <strong>Duration:</strong> @TimeFormatting.FormatMinutesAsHMM(Model.DurationMinutes)

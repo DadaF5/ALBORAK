@@ -5,6 +5,10 @@ using FRAProject.Models;
 using FRAProject.Enums;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using FRAProject.Data.EntityConfigurations;
+using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.HR.Models;
+using FRAProject.Areas.Medical.Models;
+using FRAProject.Areas.SquadronOps.Models;
 
 namespace FRAProject.Data
 {

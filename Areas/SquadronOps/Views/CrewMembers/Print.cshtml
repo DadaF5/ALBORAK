@@ -1,0 +1,175 @@
+﻿@using FRAProject.Areas.SquadronOps.Models
+@model CrewMember
+@{
+    Layout = null; // standalone print page
+    string? photoUrl = null;
+    if (!string.IsNullOrWhiteSpace(Model.Photo))
+    {
+        try { photoUrl = Url.Content(Model.Photo!); } catch { photoUrl = Model.Photo; }
+    }
+    string dateFmt = "yyyy-MM-dd";
+}
+
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@Model.NickName — CV</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        @@page { size: A4; margin: 18mm; }
+        html, body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; color: #222; background: #fff; margin: 0; padding: 0; }
+        .print-cv { max-width: 800px; margin: 0 auto; padding: 8px 0; color: #111; }
+        .cv-header { position: relative; padding-bottom: 12px; border-bottom: 1px solid #ddd; margin-bottom: 12px; }
+        .cv-photo-print { position: absolute; top: 0; right: 0; width: 160px; height: 160px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; background: #fafafa; }
+        h1 { margin: 0; font-size: 22px; }
+        .muted { color: #666; font-size: 13px; margin-top: 4px; }
+        dl { margin: 8px 0 16px 0; }
+        dt { font-weight: 600; float: left; width: 200px; clear: left; }
+        dd { margin-left: 210px; margin-bottom: 8px; }
+        .section { margin-top: 14px; page-break-inside: avoid; }
+        @@media print { .no-print { display: none !important; } a { color: #000; text-decoration: none; } img { -webkit-print-color-adjust: exact; } }
+    </style>
+</head>
+<body>
+    <div class="print-cv">
+        <div class="cv-header">
+            <div>
+                <h1>@Model.NickName @if (!string.IsNullOrWhiteSpace(Model.Captain)) { <small style="font-weight:400">(@Model.Captain)</small> }</h1>
+                <div class="muted">@Model.CrewMemberType &nbsp;•&nbsp; @Model.Status &nbsp;•&nbsp; @(Model.Active ? "Active" : "Inactive")</div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(photoUrl))
+            {
+                <img class="cv-photo-print" src="@photoUrl" alt="Photo of @Model.NickName" />
+            }
+        </div>
+
+        <div class="section">
+            <h3>Contact & Personal</h3>
+            <dl>
+                <dt>Full Name</dt>
+                <dd>@(Model.Person != null ? (Model.Person.FirstName + " " + Model.Person.LastName) : "—")</dd>
+
+                <dt>Rank</dt>
+                <dd>@Model.Person?.Rank ?? "—"</dd>
+
+                <dt>Matricule</dt>
+                <dd>@Model.Person?.Matricule ?? "—"</dd>
+
+                <dt>Country</dt>
+                <dd>@Model.Person?.Country ?? "—"</dd>
+
+                <dt>Date of Birth</dt>
+                <dd>@(Model.Person?.DateOfBirth != null ? Model.Person.DateOfBirth.Value.ToString(dateFmt) : "—")</dd>
+            </dl>
+        </div>
+
+        <div class="section">
+            <h3>Crew Details</h3>
+            <dl>
+                <dt>NickName</dt><dd>@Model.NickName</dd>
+                <dt>Type</dt><dd>@Model.CrewMemberType</dd>
+                <dt>Status</dt><dd>@Model.Status</dd>
+                <dt>Squadron</dt><dd>@Model.Squadron?.Name ?? "—"</dd>
+                <dt>Primary Qualification</dt><dd>@Model.PrimaryQualification?.Name ?? "—"</dd>
+                <dt>Role</dt><dd>@Model.Role ?? "—"</dd>
+                <dt>Mobile</dt><dd>@Model.Mobile ?? "—"</dd>
+            </dl>
+        </div>
+
+        <div class="section">
+            <h3>Qualifications (by date of issue)</h3>
+            @if (Model.CrewMemberQualifications != null && Model.CrewMemberQualifications.Any())
+            {
+                <table style="width:100%; border-collapse:collapse; margin-top:6px" border="0">
+                    <thead>
+                        <tr style="text-align:left; border-bottom:1px solid #ddd;">
+                            <th style="padding:6px 4px">Qualification</th>
+                            <th style="padding:6px 4px">Issued</th>
+                            <th style="padding:6px 4px">Valid until</th>
+                            <th style="padding:6px 4px">Issued by</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var q in Model.CrewMemberQualifications.OrderByDescending(x => x.ValidFrom))
+                    {
+                        <tr>
+                            <td style="padding:6px 4px">@q.Qualification?.Name ?? q.QualificationId.ToString()</td>
+                            <td style="padding:6px 4px">@((q.ValidFrom != null) ? ((DateTime?)q.ValidFrom)?.ToString(dateFmt) : "-")</td>
+                            <td style="padding:6px 4px">@((q.ValidUntil != null) ? ((DateTime?)q.ValidUntil)?.ToString(dateFmt) : "-")</td>
+                            <td style="padding:6px 4px">@q.IssuedBy ?? "-"</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="muted">No qualifications recorded.</p>
+            }
+        </div>
+
+        <div class="section" style="margin-top:24px;">
+            <div class="muted">Generated: @DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm 'UTC'")</div>
+        </div>
+
+        <div style="height:20px;"></div>
+        <div class="no-print" style="text-align:center; margin-top:12px;">
+            <button onclick="window.print()" style="padding:8px 12px;">Print / Save as PDF</button>
+        </div>
+    </div>
+
+    <script>
+        // Wait for images to load (or timeout) before calling print to avoid blank output.
+        (function () {
+            function waitForImages(timeoutMs) {
+                var imgs = Array.from(document.images || []);
+                if (imgs.length === 0) return Promise.resolve();
+                var promises = imgs.map(function (img) {
+                    return new Promise(function (resolve) {
+                        if (img.complete && img.naturalWidth !== 0) return resolve();
+                        var onEnd = function () {
+                            cleanup();
+                            resolve();
+                        };
+                        var onError = function () {
+                            cleanup();
+                            resolve();
+                        };
+                        function cleanup() {
+                            img.removeEventListener('load', onEnd);
+                            img.removeEventListener('error', onError);
+                        }
+                        img.addEventListener('load', onEnd);
+                        img.addEventListener('error', onError);
+                    });
+                });
+                return Promise.race([
+                    Promise.all(promises),
+                    new Promise(function (resolve) { setTimeout(resolve, timeoutMs); })
+                ]);
+            }
+
+            window.addEventListener('load', function () {
+                // give small delay then wait for images (max 1500ms), then print
+                setTimeout(function () {
+                    waitForImages(1500).then(function () {
+                        try {
+                            window.print();
+                        } catch (e) { console.warn('Print failed', e); }
+                    });
+                }, 200);
+            });
+
+            // Try not to close the window automatically; only attempt if it was opened via window.open
+            window.onafterprint = function () {
+                try {
+                    // Only close if this window has opener (was opened by script); avoids surprise closes
+                    if (window.opener) window.close();
+                } catch (e) { }
+            };
+        })();
+    </script>
+</body>
+</html>

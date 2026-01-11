@@ -11,6 +11,23 @@ namespace FRAProject.Models
         Airborne = 20,      // airborne (TWR should release back to Available)
         Unserviceable = 30  // aircraft declared unserviceable / maintenance
     }
+
+    /// <summary>
+    /// DOMAIN: Aircraft Maintenance
+    /// Represents an aircraft in the fleet inventory.
+    /// Educational Purpose: Central entity linking maintenance tracking to flight operations.
+    /// 
+    /// Key Relationships:
+    /// - Aircraft → AcType (Many-to-One): Aircraft model/type (F-16, C-130, etc.)
+    /// - Aircraft → AcStatusType (Many-to-One): Operational status (Mission Capable, etc.)
+    /// - Aircraft → MaintenanceComponents (One-to-Many): Trackable aircraft components
+    /// - Aircraft → MaintenanceWorkOrders (One-to-Many): Maintenance actions and repairs
+    /// - Aircraft → Sorties (One-to-Many): Flight missions this aircraft has flown
+    /// - Aircraft → FlightLogs (One-to-Many): Flight hour/cycle tracking for maintenance
+    /// 
+    /// The Serviceable flag and AircraftStatus determine if aircraft can be assigned to sorties.
+    /// This demonstrates how maintenance domain directly impacts squadron operations scheduling.
+    /// </summary>
     public class Aircraft
     {
         [Key]

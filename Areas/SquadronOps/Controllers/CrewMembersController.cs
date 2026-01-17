@@ -39,6 +39,8 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // GET: CrewMembers
         // searchString searches NickName, Role, Mobile, Status, PrimaryQualification.Name and Person FullName
         // sortOrder supports: "name_asc/desc", "squadron_asc/desc", "type_asc/desc", "status_asc/desc"
+
+        // From here ==================
         public async Task<IActionResult> Index(string sortOrder, string? searchString, int pageNumber = 1, int pageSize = 25)
         {
             ViewData["CurrentSort"] = sortOrder ?? "name_asc";
@@ -84,8 +86,10 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             ViewData["TotalItems"] = totalItems;
             ViewData["PageNumber"] = pageNumber;
 
-            return View(items);
+            return View("Index", items);
         }
+
+        // To Here ============================
 
         // GET: CrewMembers/Create
         [Authorize(Roles = "Admin")]
@@ -330,21 +334,14 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 .Include(cm => cm.PrimaryQualification)
                 .Include(cm => cm.CrewMemberQualifications)
                     .ThenInclude(cmq => cmq.Qualification)
+                .Include(cm => cm.MedicalChecks)  // Add this line if you want medical info
+                    .ThenInclude(mc => mc.Bilans) // Add this line if you want bilans
                 .AsNoTracking()
                 .FirstOrDefaultAsync(cm => cm.Id == id);
 
             if (crewMember == null) return NotFound();
 
-            // If this was requested as AJAX (X-Requested-With) or ?modal=true, return the modal partial
-            var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
-            var modalQuery = (Request.Query["modal"].ToString() ?? "").ToLowerInvariant() == "true";
-
-            if (isAjax || modalQuery)
-            {
-                return PartialView("_DetailsModal", crewMember);
-            }
-
-            // Otherwise render the full Details page (existing full view)
+            // Just return the regular view (not modal partial)
             return View(crewMember);
         }
 

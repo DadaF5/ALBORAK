@@ -3,6 +3,7 @@
 
 @{
     ViewData["Title"] = "Delete Qualification";
+    Layout = "~/Views/Shared/_Layout.cshtml";
     var crewMemberName = $"{Model.CrewMember?.Captain} ({Model.CrewMember?.NickName})";
     var qualificationName = Model.Qualification?.Name;
 }

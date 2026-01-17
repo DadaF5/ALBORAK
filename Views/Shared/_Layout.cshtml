@@ -14,8 +14,8 @@
     <link rel="stylesheet" href="~/plugins/fontawesome-free/css/all.min.css" />
     <!-- AdminLTE CSS -->
     <link rel="stylesheet" href="~/css/adminlte.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />    
+    <link rel="stylesheet" href ="~/css/bootstrap-icons.css" />
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -47,24 +47,24 @@
                     @if (User?.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
                     {
                         <li class="nav-item d-none d-sm-inline-block">
-                            <a asp-controller="Users" asp-action="Index" class="nav-link">
+                            <a asp-controller="Users" asp-area = "" asp-action="Index" class="nav-link">
                                 <i class="fas fa-users-cog mr-1"></i> Manage Users
                             </a>
                         </li>
 
                         <li class="nav-item d-none d-sm-inline-block">
-                            <a asp-controller="Account" asp-action="Create" class="nav-link">
+                            <a asp-controller="Account" asp-area = "" asp-action="Create" class="nav-link">
                                 <i class="fas fa-user-plus mr-1"></i> Create User
                             </a>
                         </li>
 
                         <li class="nav-item d-none d-sm-inline-block">
-                            <a asp-controller="MenuItems" asp-action="Index" class="nav-link">
+                            <a asp-controller="MenuItems" asp-area = "" asp-action="Index" class="nav-link">
                                 <i class="fas fa-th-list mr-1"></i> Manage Menu
                             </a>
                         </li>
                         <li class="nav-item d-none d-sm-inline-block">
-                            <a asp-controller="MedicalDashboard" asp-action="Index" class="nav-link">
+                            <a asp-controller="MedicalDashboard" asp-area="Medical" asp-action="Index" class="nav-link">
                                 <i class="fas fa-th-list mr-1"></i> Medical Dashboard
                             </a>
                         </li>
@@ -102,8 +102,9 @@
     <script src="~/plugins/jquery/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/lib/dist/js/adminlte.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+   
     <script src="~/js/crewmember-details-modal.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>

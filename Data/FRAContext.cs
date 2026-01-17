@@ -12,7 +12,7 @@ using FRAProject.Areas.SquadronOps.Models;
 
 namespace FRAProject.Data
 {
-    public partial class FRAContext : IdentityDbContext<ApplicationUser>
+    public partial class FRAContext : IdentityDbContext<ApplicationUser> 
     {
         public FRAContext(DbContextOptions<FRAContext> options)
             : base(options)

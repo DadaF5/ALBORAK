@@ -50,6 +50,7 @@ namespace FRAProject.Services
                         Controller = m.Controller,
                         Action = m.Action,
                         Url = m.Url,
+                        Area = m.Area,
                         ParentId = m.ParentId,
                         SortOrder = m.SortOrder,
                         DepartmentId = m.DepartmentId,

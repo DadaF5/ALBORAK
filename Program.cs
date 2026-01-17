@@ -1,6 +1,10 @@
+using FRAProject.Areas.AircraftMaintenance.Repositories;
 using FRAProject.Data;
+using FRAProject.Infrastructure;
 using FRAProject.Infrastructure.Authorization;
 using FRAProject.Infrastructure.Identity;
+using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Infrastructure.Repositories;
 using FRAProject.Models;
 using FRAProject.Services;
 using FRAProject.Services.Medical;
@@ -38,6 +42,10 @@ builder.Services.AddSingleton<IAuthorizationHandler, SameSquadronHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, SameBaseHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, SquadronOrBaseMaintenanceHandler>();
 
+// Register repositories and unit of work if applicable UnitOfWork
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+builder.Services.AddScoped<IAcMainGroupRepository, AcMainGroupRepository>();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("SameSquadron", p => p.Requirements.Add(new SameSquadronRequirement()));

@@ -61,7 +61,7 @@ namespace FRAProject.Controllers
         // POST: /MenuItems/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Title,IconClass,Controller,Action,Url,ParentId,SortOrder,DepartmentId,BaseId,Roles")] MenuItem menuItem)
+        public async Task<IActionResult> Create([Bind("Title,IconClass,Controller,Action,Url, Area ,ParentId,SortOrder,DepartmentId,BaseId,Roles")] MenuItem menuItem)
         {
             if (!ModelState.IsValid)
             {
@@ -110,7 +110,7 @@ namespace FRAProject.Controllers
         // POST: /MenuItems/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,IconClass,Controller,Action,Url,ParentId,SortOrder,DepartmentId,BaseId,Roles")] MenuItem menuItem)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,IconClass,Controller,Action,Url, Area ,ParentId,SortOrder,DepartmentId,BaseId,Roles")] MenuItem menuItem)
         {
             if (id != menuItem.Id) return NotFound();
 
@@ -145,6 +145,7 @@ namespace FRAProject.Controllers
                 dbEntity.Controller = menuItem.Controller;
                 dbEntity.Action = menuItem.Action;
                 dbEntity.Url = menuItem.Url;
+                dbEntity.Area = menuItem.Area;
                 dbEntity.ParentId = menuItem.ParentId;
                 dbEntity.SortOrder = menuItem.SortOrder;
                 dbEntity.DepartmentId = menuItem.DepartmentId;

@@ -25,6 +25,8 @@ namespace FRAProject.Models
         [MaxLength(500)]
         public string? Url { get; set; }
 
+        public string? Area { get; set; }
+
         // Hierarchy / ordering
         public int? ParentId { get; set; }
 

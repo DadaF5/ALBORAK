@@ -1,118 +1,209 @@
-﻿@using FRAProject.Areas.SquadronOps.Models
-@model CrewMember
+﻿@model FRAProject.Areas.SquadronOps.Models.CrewMember
 
-@* Shared form fields for Create/Edit. This partial does NOT include the <form> tag. *@
+@{
+    var persons = ViewData["Persons"] as SelectList ?? new SelectList(new List<object>());
+    var squadrons = ViewData["Squadrons"] as SelectList ?? new SelectList(new List<object>());
+    var qualifications = ViewData["Qualifications"] as SelectList ?? new SelectList(new List<object>());
 
-<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    // Handle nullable crew member types and statuses
+    var crewMemberTypes = ViewData["CrewMemberTypes"] as List<SelectListItem>;
+    if (crewMemberTypes == null)
+    {
+        crewMemberTypes = new List<SelectListItem>();
+        foreach (var value in Enum.GetValues(typeof(FRAProject.Enums.CrewMemberType)))
+        {
+            crewMemberTypes.Add(new SelectListItem
+            {
+                Text = value.ToString(),
+                Value = value.ToString(),
+                Selected = Model != null && Model.CrewMemberType.ToString() == value.ToString()
+            });
+        }
+    }
 
-<div class="form-row">
-    <div class="form-group col-md-2">
-        <label asp-for="SequenceNo" class="control-label"></label>
-        <input asp-for="SequenceNo" class="form-control" />
-        <span asp-validation-for="SequenceNo" class="text-danger"></span>
+    var crewMemberStatuses = ViewData["CrewMemberStatuses"] as List<SelectListItem>;
+    if (crewMemberStatuses == null)
+    {
+        crewMemberStatuses = new List<SelectListItem>();
+        foreach (var value in Enum.GetValues(typeof(FRAProject.Enums.CrewMemberStatus)))
+        {
+            crewMemberStatuses.Add(new SelectListItem
+            {
+                Text = value.ToString(),
+                Value = value.ToString(),
+                Selected = Model != null && Model.Status.ToString() == value.ToString()
+            });
+        }
+    }
+}
+
+<div class="row">
+    <!-- Left Column -->
+    <div class="col-md-6">
+        <!-- Basic Information -->
+        <div class="form-group row">
+            <label asp-for="SequenceNo" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8">
+                <input asp-for="SequenceNo" class="form-control form-control-sm" />
+                <span asp-validation-for="SequenceNo" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label asp-for="NickName" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8">
+                <input asp-for="NickName" class="form-control form-control-sm" />
+                <span asp-validation-for="NickName" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label asp-for="Captain" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8">
+                <input asp-for="Captain" class="form-control form-control-sm" />
+                <span asp-validation-for="Captain" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label asp-for="PersonId" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8">
+                <select asp-for="PersonId" asp-items="persons" class="form-control form-control-sm">
+                    <option value="">-- Select Person --</option>
+                </select>
+                <span asp-validation-for="PersonId" class="text-danger small"></span>
+                <small class="form-text text-muted">Each person can be assigned to at most one crew member.</small>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label asp-for="SquadronId" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8">
+                <select asp-for="SquadronId" asp-items="squadrons" class="form-control form-control-sm">
+                    <option value="">-- Select Squadron --</option>
+                </select>
+                <span asp-validation-for="SquadronId" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label asp-for="PrimaryQualificationId" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8">
+                <select asp-for="PrimaryQualificationId" asp-items="qualifications" class="form-control form-control-sm">
+                    <option value="">-- Select Qualification --</option>
+                </select>
+                <span asp-validation-for="PrimaryQualificationId" class="text-danger small"></span>
+            </div>
+        </div>
     </div>
 
-    <div class="form-group col-md-3">
-        <label asp-for="NickName" class="control-label"></label>
-        <input asp-for="NickName" class="form-control" />
-        <span asp-validation-for="NickName" class="text-danger"></span>
-    </div>
+    <!-- Right Column -->
+    <div class="col-md-6">
+        <div class="form-group row">
+            <label asp-for="CrewMemberType" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8">
+                <select asp-for="CrewMemberType" class="form-control form-control-sm">
+                    <option value="">-- Select Type --</option>
+                    @foreach (var type in crewMemberTypes)
+                    {
+                        <option value="@type.Value" selected="@type.Selected">@type.Text</option>
+                    }
+                </select>
+                <span asp-validation-for="CrewMemberType" class="text-danger small"></span>
+            </div>
+        </div>
 
-    <div class="form-group col-md-3">
-        <label asp-for="Captain" class="control-label"></label>
-        <input asp-for="Captain" class="form-control" />
-        <span asp-validation-for="Captain" class="text-danger"></span>
-    </div>
+        <div class="form-group row">
+            <label asp-for="Role" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8">
+                <input asp-for="Role" class="form-control form-control-sm" />
+                <span asp-validation-for="Role" class="text-danger small"></span>
+            </div>
+        </div>
 
-    <div class="form-group col-md-4">
-        <label asp-for="PersonId" class="control-label">Person</label>
-        <select asp-for="PersonId" asp-items="@(ViewData["Persons"] as SelectList)" class="form-control">
-            <option value="">-- Select Person --</option>
-        </select>
-        <small class="form-text text-muted">Each person can be assigned to at most one crew member.</small>
-        <span asp-validation-for="PersonId" class="text-danger"></span>
+        <div class="form-group row">
+            <label asp-for="Mobile" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8">
+                <input asp-for="Mobile" class="form-control form-control-sm" />
+                <span asp-validation-for="Mobile" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label asp-for="Status" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8">
+                <select asp-for="Status" class="form-control form-control-sm">
+                    <option value="">-- Select Status --</option>
+                    @foreach (var status in crewMemberStatuses)
+                    {
+                        <option value="@status.Value" selected="@status.Selected">@status.Text</option>
+                    }
+                </select>
+                <span asp-validation-for="Status" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label asp-for="AllowedToSign" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8 pt-2">
+                <div class="custom-control custom-checkbox">
+                    <input asp-for="AllowedToSign" class="custom-control-input" />
+                    <label asp-for="AllowedToSign" class="custom-control-label">-</label>
+                </div>
+                <span asp-validation-for="AllowedToSign" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label asp-for="Active" class="col-sm-4 col-form-label col-form-label-sm text-lg-right"></label>
+            <div class="col-sm-8 pt-2">
+                <div class="custom-control custom-checkbox">
+                    <input asp-for="Active" class="custom-control-input" />
+                    <label asp-for="Active" class="custom-control-label">- </label>
+                </div>
+                <span asp-validation-for="Active" class="text-danger small"></span>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="form-row">
-    <div class="form-group col-md-4">
-        <label asp-for="SquadronId" class="control-label">Squadron</label>
-        <select asp-for="SquadronId" asp-items="@(ViewData["Squadrons"] as SelectList)" class="form-control">
-            <option value="">-- Select Squadron --</option>
-        </select>
-        <span asp-validation-for="SquadronId" class="text-danger"></span>
-    </div>
-
-    <div class="form-group col-md-4">
-        <label asp-for="PrimaryQualificationId" class="control-label">Primary Qualification</label>
-        <select asp-for="PrimaryQualificationId" asp-items="@(ViewData["Qualifications"] as SelectList)" class="form-control">
-            <option value="">-- None --</option>
-        </select>
-        <span asp-validation-for="PrimaryQualificationId" class="text-danger"></span>
-    </div>
-
-    <div class="form-group col-md-4">
-        <label asp-for="CrewMemberType" class="control-label">Type</label>
-        <select asp-for="CrewMemberType" class="form-control" asp-items="@(ViewData["CrewMemberTypes"] as IEnumerable<SelectListItem>)">
-            <option value="">-- Select Type --</option>
-        </select>
-        <span asp-validation-for="CrewMemberType" class="text-danger"></span>
-    </div>
-</div>
-
-<div class="form-row">
-    <div class="form-group col-md-4">
-        <label asp-for="Role" class="control-label"></label>
-        <input asp-for="Role" class="form-control" />
-        <span asp-validation-for="Role" class="text-danger"></span>
-    </div>
-
-    <div class="form-group col-md-4">
-        <label asp-for="Mobile" class="control-label"></label>
-        <input asp-for="Mobile" class="form-control" />
-        <span asp-validation-for="Mobile" class="text-danger"></span>
-    </div>
-
-    <div class="form-group col-md-4">
-        <label asp-for="AllowedToSign" class="control-label"></label>
-        <div class="form-check">
-            <input asp-for="AllowedToSign" class="form-check-input" />
-            <label asp-for="AllowedToSign" class="form-check-label"></label>
+<!-- Photo Section - Full Width -->
+<div class="row mt-3">
+    <div class="col-12">
+        <hr class="my-2">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <div class="form-group mb-0">
+                    <label class="form-label-sm font-weight-bold mb-1">Photo (URL or upload)</label>
+                    <input type="text" name="Photo" id="photoUrlInput" style="width:80%;" 
+                            class="form-control form-control-sm"
+                            value="@Model?.Photo" placeholder="Enter image URL">
+                    <small class="form-text text-muted">Enter a direct image URL or upload a file below</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group mb-0">
+                    <label class="form-label-sm font-weight-bold mb-1">Upload photo</label>
+                    <div class="custom-file custom-file-sm">
+                        <input type="file" class="custom-file-input" id="photoFileInput" name="PhotoFile">
+                        <label class="custom-file-label" for="photoFileInput" id="photoFileLabel">Choose file</label>
+                    </div>
+                    <small class="form-text text-muted">Max 2MB. Allowed: JPG, PNG, GIF, WEBP</small>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="mb-2">
+                    <img id="photoPreview" src="@Model?.Photo"
+                         class="img-thumbnail" style="max-height: 120px; max-width: 120px; display: @(!string.IsNullOrEmpty(Model?.Photo) ? "block" : "none")">
+                    <div id="photoPlaceholder" class="text-muted" style="display: @(string.IsNullOrEmpty(Model?.Photo) ? "block" : "none")">
+                        <i class="fas fa-user-circle fa-3x"></i>
+                        <div class="small mt-1">No photo</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearPhoto()">
+                    <i class="fas fa-times mr-1"></i>Clear Photo
+                </button>
+            </div>
         </div>
-        <span asp-validation-for="AllowedToSign" class="text-danger"></span>
-    </div>
-</div>
-
-<div class="form-row">
-    <div class="form-group col-md-4">
-        <label asp-for="Status" class="control-label">Status</label>
-        <select asp-for="Status" class="form-control" asp-items="@(ViewData["CrewMemberStatuses"] as IEnumerable<SelectListItem>)">
-            <option value="">-- Select Status --</option>
-        </select>
-        <span asp-validation-for="Status" class="text-danger"></span>
-    </div>
-
-    <div class="form-group col-md-4">
-        <label class="control-label">Photo (URL or upload)</label>
-        <input asp-for="Photo" class="form-control" placeholder="Enter image URL to use or upload below" />
-        <span asp-validation-for="Photo" class="text-danger"></span>
-
-        <div class="mt-2">
-            <label class="control-label">Upload photo</label>
-            <input type="file" name="PhotoFile" accept="image/*" class="form-control-file" id="photoFileInput" />
-        </div>
-
-        <div id="photoPreviewWrapper" class="mt-2">
-            <img id="photoPreview" src="@Model?.Photo" alt="Preview" style="max-height:120px; display:@(string.IsNullOrWhiteSpace(Model?.Photo) ? "none" : "block")" />
-        </div>
-    </div>
-
-    <div class="form-group col-md-4">
-        <label asp-for="Active" class="control-label"></label>
-        <div class="form-check">
-            <input asp-for="Active" class="form-check-input" />
-            <label asp-for="Active" class="form-check-label"></label>
-        </div>
-        <span asp-validation-for="Active" class="text-danger"></span>
     </div>
 </div>

@@ -1,0 +1,414 @@
+﻿@model FRAProject.Areas.SquadronOps.Models.CrewMember
+
+@{
+    ViewData["Title"] = "Crew Member Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string? photoSrc = null;
+    if (!string.IsNullOrWhiteSpace(Model.Photo))
+    {
+        try { photoSrc = Url.Content(Model.Photo!); } catch { photoSrc = Model.Photo; }
+    }
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Index" asp-controller="CrewMembers">Crew Members</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@Model.NickName Details</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user"></i> @Model.NickName — Crew Member Profile
+                        <span class="badge badge-info ml-2">@Model.CrewMemberType</span>
+                        <span class="badge badge-@(Model.Active ? "success" : "secondary") ml-1">
+                            @(Model.Active ? "Active" : "Inactive")
+                        </span>
+                    </h3>
+                    <div class="card-tools">
+                        <a asp-action="Index" class="btn btn-sm btn-default">Back to List</a>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-primary ml-1">Edit</a>
+                        }
+                        <a asp-action="Print" asp-route-id="@Model.Id" target="_blank" class="btn btn-sm btn-secondary ml-1">Print/Save as PDF</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Left Column - Photo and Basic Info -->
+                        <div class="col-md-4">
+                            <div class="text-center mb-4">
+                                @if (!string.IsNullOrEmpty(photoSrc))
+                                {
+                                    <img src="@photoSrc"
+                                         alt="Photo of @Model.NickName"
+                                         class="img-fluid rounded-circle border"
+                                         style="max-width: 250px; height: auto;">
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle border d-inline-flex align-items-center justify-content-center bg-light"
+                                         style="width: 250px; height: 250px;">
+                                        <i class="fas fa-user fa-5x text-muted"></i>
+                                    </div>
+                                }
+                                <h4 class="mt-3">@Model.NickName</h4>
+                                <p class="text-muted">@Model.Role</p>
+                            </div>
+
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Quick Info</h5>
+                                </div>
+                                <div class="card-body">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-5">Captain:</dt>
+                                        <dd class="col-sm-7">@Model.Captain</dd>
+
+                                        <dt class="col-sm-5">Status:</dt>
+                                        <dd class="col-sm-7">
+                                            <span class="badge badge-@(Model.Status == "Ready" ? "success" : "warning")">
+                                                @Model.Status
+                                            </span>
+                                        </dd>
+
+                                        <dt class="col-sm-5">Type:</dt>
+                                        <dd class="col-sm-7">@Model.CrewMemberType</dd>
+
+                                        <dt class="col-sm-5">Allowed to Sign:</dt>
+                                        <dd class="col-sm-7">@(Model.AllowedToSign ? "Yes" : "No")</dd>
+
+                                        <dt class="col-sm-5">Mobile:</dt>
+                                        <dd class="col-sm-7">@(Model.Mobile ?? "—")</dd>
+
+                                        <dt class="col-sm-5">Squadron:</dt>
+                                        <dd class="col-sm-7">@(Model.Squadron?.Name ?? "—")</dd>
+
+                                        <dt class="col-sm-5">Primary Qualification:</dt>
+                                        <dd class="col-sm-7">@(Model.PrimaryQualification?.Name ?? "—")</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column - SIMPLIFIED Tabs for Detailed Info -->
+                        <!-- Right Column - SIMPLIFIED Tabs for Detailed Info -->
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Details</h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- SIMPLE ACCORDION INSTEAD OF TABS -->
+                                    <div class="accordion" id="crewDetailsAccordion">
+                                        <!-- Personal Details -->
+                                        <div class="card">
+                                            <div class="card-header" id="headingPersonal">
+                                                <h5 class="mb-0">
+                                                    <button class="btn btn-link text-dark" type="button" data-toggle="collapse" data-target="#collapsePersonal" aria-expanded="true" aria-controls="collapsePersonal">
+                                                        <i class="fas fa-user mr-2"></i>Personal Details
+                                                    </button>
+                                                </h5>
+                                            </div>
+                                            <div id="collapsePersonal" class="collapse show" aria-labelledby="headingPersonal" data-parent="#crewDetailsAccordion">
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <h6>Person Information</h6>
+                                                            <dl class="row">
+                                                                <dt class="col-sm-4">Full Name:</dt>
+                                                                <dd class="col-sm-8">@(Model.Person?.FirstName + " " + Model.Person?.LastName)</dd>
+
+                                                                <dt class="col-sm-4">Matricule:</dt>
+                                                                <dd class="col-sm-8">@(Model.Person?.Matricule)</dd>
+
+                                                                <dt class="col-sm-4">Rank:</dt>
+                                                                <dd class="col-sm-8">@(Model.Person?.Rank)</dd>
+
+                                                                <dt class="col-sm-4">Country:</dt>
+                                                                <dd class="col-sm-8">@(Model.Person?.Country ?? "—")</dd>
+                                                            </dl>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <h6>Crew Information</h6>
+                                                            <dl class="row">
+                                                                <dt class="col-sm-4">Sequence No:</dt>
+                                                                <dd class="col-sm-8">@(Model.SequenceNo?.ToString() ?? "—")</dd>
+
+                                                                <dt class="col-sm-4">Role:</dt>
+                                                                <dd class="col-sm-8">@(Model.Role ?? "—")</dd>
+
+                                                                <dt class="col-sm-4">Created:</dt>
+                                                                <dd class="col-sm-8">@Model.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</dd>
+
+                                                                <dt class="col-sm-4">Last Updated:</dt>
+                                                                <dd class="col-sm-8">
+                                                                    @(Model.UpdatedAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "Never") UTC
+                                                                </dd>
+                                                            </dl>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Qualifications -->
+                                        <div class="card">
+                                            <div class="card-header" id="headingQualifications">
+                                                <h5 class="mb-0">
+                                                    <button class="btn btn-link collapsed text-dark" type="button" data-toggle="collapse" data-target="#collapseQualifications" aria-expanded="false" aria-controls="collapseQualifications">
+                                                        <i class="fas fa-award mr-2"></i>Qualifications
+                                                    </button>
+                                                </h5>
+                                            </div>
+                                            <div id="collapseQualifications" class="collapse" aria-labelledby="headingQualifications" data-parent="#crewDetailsAccordion">
+                                                <div class="card-body">
+                                                    <h6>Qualifications History</h6>
+                                                    @if (Model.CrewMemberQualifications != null && Model.CrewMemberQualifications.Any())
+                                                    {
+                                                        var quals = Model.CrewMemberQualifications.OrderByDescending(q => q.ValidFrom);
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm table-striped table-hover">
+                                                                <thead class="thead-light">
+                                                                    <tr>
+                                                                        <th>Qualification</th>
+                                                                        <th>Issued Date</th>
+                                                                        <th>Valid Until</th>
+                                                                        <th>Issued By</th>
+                                                                        <th>Remarks</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @foreach (var q in quals)
+                                                                    {
+                                                                        <tr class="@(q.ValidUntil.HasValue && q.ValidUntil.Value < DateTime.Now ? "table-danger" : "")">
+                                                                            <td>
+                                                                                <strong>@(q.Qualification?.Name ?? q.QualificationId.ToString())</strong>
+                                                                                @if (q.Id == Model.PrimaryQualificationId)
+                                                                                {
+                                                                                    <span class="badge badge-primary ml-1">Primary</span>
+                                                                                }
+                                                                            </td>
+                                                                            <td>@(q.ValidFrom?.ToString("yyyy-MM-dd") ?? "—")</td>
+                                                                            <td>
+                                                                                @if (q.ValidUntil.HasValue)
+                                                                                {
+                                                                                    <span class="@(q.ValidUntil.Value < DateTime.Now ? "text-danger" : "")">
+                                                                                        @q.ValidUntil.Value.ToString("yyyy-MM-dd")
+                                                                                    </span>
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    <span>—</span>
+                                                                                }
+                                                                            </td>
+                                                                            <td>@(q.IssuedBy ?? "—")</td>
+                                                                            <td>@(q.Remarks ?? "—")</td>
+                                                                        </tr>
+                                                                    }
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="alert alert-info">
+                                                            <i class="fas fa-info-circle"></i> No qualifications recorded for this crew member.
+                                                        </div>
+                                                    }
+
+                                                    @if (User.IsInRole("Admin"))
+                                                    {
+                                                        <div class="mt-3">
+                                                            <a asp-controller="CrewMemberQualifications"
+                                                               asp-action="Index"
+                                                               asp-route-crewMemberId="@Model.Id"
+                                                               class="btn btn-sm btn-outline-primary">
+                                                                <i class="fas fa-award"></i> Manage Qualifications
+                                                            </a>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Medical -->
+                                        <div class="card">
+                                            <div class="card-header" id="headingMedical">
+                                                <h5 class="mb-0">
+                                                    <button class="btn btn-link collapsed text-dark" type="button" data-toggle="collapse" data-target="#collapseMedical" aria-expanded="false" aria-controls="collapseMedical">
+                                                        <i class="fas fa-heartbeat mr-2"></i>Medical Information
+                                                    </button>
+                                                </h5>
+                                            </div>
+                                            <div id="collapseMedical" class="collapse" aria-labelledby="headingMedical" data-parent="#crewDetailsAccordion">
+                                                <div class="card-body">
+                                                    <h6>Medical Information</h6>
+                                                    @if (Model.MedicalChecks != null && Model.MedicalChecks.Any())
+                                                    {
+                                                        var latestMedical = Model.LatestMedicalCheck;
+                                                        <div class="alert alert-@(Model.DaysToMedicalExpiry <= 30 ? "warning" : "info")">
+                                                            <h5><i class="fas fa-heartbeat"></i> Medical Status</h5>
+                                                            @if (latestMedical != null)
+                                                            {
+                                                                <p>
+                                                                    <strong>Last Check:</strong> @latestMedical.CheckDate.ToString("yyyy-MM-dd")<br />
+                                                                    <strong>Next Due:</strong> @(latestMedical.NextDueDate?.ToString("yyyy-MM-dd") ?? "Not set")<br />
+                                                                    <strong>Days Remaining:</strong>
+                                                                    <span class="badge badge-@(Model.DaysToMedicalExpiry <= 30 ? "warning" : "success")">
+                                                                        @(Model.DaysToMedicalExpiry?.ToString() ?? "N/A")
+                                                                    </span>
+                                                                </p>
+                                                            }
+                                                            else
+                                                            {
+                                                                <p>No medical checks recorded.</p>
+                                                            }
+                                                        </div>
+
+                                                        @if (Model.PendingBilans != null && Model.PendingBilans.Any())
+                                                        {
+                                                            <div class="alert alert-warning">
+                                                                <h6><i class="fas fa-exclamation-triangle"></i> Pending Medical Bilans</h6>
+                                                                <ul>
+                                                                    @foreach (var bilan in Model.PendingBilans.Take(3))
+                                                                    {
+                                                                        <li>@bilan.BilanType - Due: @(bilan.ExpectedReturnDate?.ToString("yyyy-MM-dd") ?? "Unknown")</li>
+                                                                    }
+                                                                </ul>
+                                                                @if (Model.PendingBilans.Count > 3)
+                                                                {
+                                                                    <small>... and @(Model.PendingBilans.Count - 3) more</small>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="alert alert-info">
+                                                            <i class="fas fa-info-circle"></i> No medical information available.
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Additional -->
+                                        <div class="card">
+                                            <div class="card-header" id="headingAdditional">
+                                                <h5 class="mb-0">
+                                                    <button class="btn btn-link collapsed text-dark" type="button" data-toggle="collapse" data-target="#collapseAdditional" aria-expanded="false" aria-controls="collapseAdditional">
+                                                        <i class="fas fa-info-circle mr-2"></i>Additional Information
+                                                    </button>
+                                                </h5>
+                                            </div>
+                                            <div id="collapseAdditional" class="collapse" aria-labelledby="headingAdditional" data-parent="#crewDetailsAccordion">
+                                                <div class="card-body">
+                                                    <h6>Additional Information</h6>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <dl class="row">
+                                                                <dt class="col-sm-4">Speciality:</dt>
+                                                                <dd class="col-sm-8">@(Model.Person?.Speciality ?? "—")</dd>
+                                                            </dl>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Placeholder for future additional fields -->
+                                                    <div class="alert alert-light">
+                                                        <i class="fas fa-plus-circle"></i> Additional information fields can be added here as needed.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i> Crew Member ID: @Model.Id
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary mr-2">Edit</a>
+                                <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">Delete</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            console.log('Initializing accordion...');
+
+            // Initialize accordion manually
+            $('.accordion .collapse').collapse({
+                toggle: false
+            });
+
+            // Handle accordion button clicks
+            $('.accordion .btn-link').click(function(e) {
+                e.preventDefault();
+                var target = $(this).data('target');
+                console.log('Clicked:', target);
+
+                // Close all other accordion items
+                $(target).collapse('show');
+            });
+
+            // Debug: Check if Bootstrap collapse is loaded
+            console.log('Bootstrap collapse available:', typeof $.fn.collapse !== 'undefined');
+
+            // Debug: List all accordion items
+            $('.accordion .btn-link').each(function() {
+                console.log('Accordion button:', $(this).data('target'));
+            });
+        });
+
+        // Alternative: Use pure JavaScript if jQuery is problematic
+        document.addEventListener('DOMContentLoaded', function() {
+            var accordionButtons = document.querySelectorAll('.accordion .btn-link');
+            accordionButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    var targetId = this.getAttribute('data-target');
+                    var target = document.querySelector(targetId);
+
+                    // Toggle the collapse
+                    if (target) {
+                        // Close all other accordion items
+                        document.querySelectorAll('.accordion .collapse.show').forEach(function(openItem) {
+                            if (openItem !== target) {
+                                openItem.classList.remove('show');
+                            }
+                        });
+
+                        // Toggle current item
+                        target.classList.toggle('show');
+                    }
+                });
+            });
+        });
+    </script>
+}

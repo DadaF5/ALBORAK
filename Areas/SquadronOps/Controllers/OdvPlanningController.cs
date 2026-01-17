@@ -169,7 +169,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
            
 
 
-            return View("~/Views/OdvPlanning/Index.cshtml", vm);
+            return View(vm);
         }   
 
         // =============================

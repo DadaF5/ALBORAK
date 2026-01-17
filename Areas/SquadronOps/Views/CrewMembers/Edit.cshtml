@@ -3,70 +3,345 @@
 
 @{
     ViewData["Title"] = "Edit Crew Member";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Edit Crew Member</h2>
+<div class="container-fluid" style="margin-top:0px;padding-top:0px;">
+    <!-- Compact Header -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <h1 class="h3 mb-1">Edit Crew Member</h1>
+                    <p class="text-muted small mb-0">Update crew member information</p>
+                </div>
+                <div>
+                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left mr-1"></i>Back to List
+                    </a>
+                </div>
+            </div>
 
-<form asp-action="Edit" method="post" class="form-horizontal" id="crew-member-form" enctype="multipart/form-data">
-    <input type="hidden" asp-for="Id" />
-    @await Html.PartialAsync("_CrewMemberFormPartial", Model)
+            <!-- Current Info Bar -->
+            <div class="card card-sm border-light mb-2">
+                <div class="card-body py-2 px-3">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-1">
+                            <small class="text-muted d-block">Sequence No</small>
+                            <span class="font-weight-bold">@Model.SequenceNo</span>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-1">
+                            <small class="text-muted d-block">Nickname</small>
+                            <span class="font-weight-bold">@Model.NickName</span>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-1">
+                            <small class="text-muted d-block">Captain</small>
+                            <span class="font-weight-bold">@Model.Captain</span>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-1">
+                            <small class="text-muted d-block">Status</small>
+                            <span class="font-weight-bold badge badge-@(Model.Active ? "success" : "secondary")">
+                                @(Model.Active ? "Active" : "Inactive")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <div class="form-group">
-        <button type="submit" class="btn btn-primary">Save</button>
-        <a asp-action="Index" class="btn btn-secondary">Back to list</a>
+            @if (Model.PersonId > 0)
+            {
+                <div class="alert alert-warning small py-1 px-2 mb-0">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Each person can be assigned to at most one crew member.
+                </div>
+            }
+        </div>
     </div>
-</form>
+
+    <!-- Main Form Card -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card border">
+                <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-edit mr-1"></i>Crew Member Details
+                    </h6>
+                    <div class="small">
+                        <span class="text-muted">ID: @Model.Id</span>
+                    </div>
+                </div>
+
+                <form asp-action="Edit" method="post" class="form-horizontal" id="crew-member-form" enctype="multipart/form-data">
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="card-body p-3">
+                        @await Html.PartialAsync("_CrewMemberFormPartial", Model)
+                    </div>
+
+                    <!-- Form Footer -->
+                    <div class="card-footer bg-white py-2 px-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-times mr-1"></i>Cancel
+                                </a>
+                            </div>
+                            <div class="d-flex">
+                                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-info mr-2">
+                                    <i class="fas fa-eye mr-1"></i>View Details
+                                </a>
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-save mr-1"></i>Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timestamps Info -->
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="card border-light">
+                <div class="card-body py-1 px-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Fields marked with * are required
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-md-right">
+                            @if (Model.UpdatedAtUtc.HasValue)
+                            {
+                                <small class="text-muted">
+                                    Last Updated: @Model.UpdatedAtUtc.Value.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
+                                </small>
+                            }
+                            else
+                            {
+                                <small class="text-muted">
+                                    Created: @DateTime.Now.ToString("MMM dd, yyyy")
+                                </small>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .container-fluid {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .form-control-sm, .custom-file-sm .custom-file-label {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            height: calc(1.8125rem + 2px);
+        }
+
+            .custom-file-sm .custom-file-label::after {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.875rem;
+                height: calc(1.8125rem + 2px);
+                line-height: 1.5;
+            }
+
+        .col-form-label-sm {
+            padding-top: calc(0.25rem + 1px);
+            padding-bottom: calc(0.25rem + 1px);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .card-header {
+            padding: 0.5rem 1rem;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .card-footer {
+            padding: 0.75rem 1rem;
+        }
+
+        hr {
+            margin: 0.5rem 0;
+        }
+
+        .alert {
+            margin-bottom: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .badge {
+            font-size: 0.75em;
+            font-weight: 500;
+            padding: 0.25em 0.6em;
+        }
+
+        /* Ensure form groups are compact */
+        .form-group.row {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Make checkboxes align properly */
+        .custom-control {
+            min-height: 1.3125rem;
+            padding-left: 1.5rem;
+        }
+
+        .custom-control-label {
+            padding-top: 0.125rem;
+            font-size: 0.875rem;
+        }
+
+        .custom-control-input {
+            width: 1rem;
+            height: 1rem;
+            margin-top: 0.125rem;
+        }
+
+        /* Photo preview styling */
+        .img-thumbnail {
+            padding: 0.125rem;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+        }
+
+        /* Responsive adjustments */
+        @@media (max-width: 768px) {
+            .container-fluid {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+
+            .col-form-label-sm {
+                text-align: left !important;
+                padding-bottom: 0.125rem;
+            }
+
+            .form-group.row > .col-sm-8 {
+                padding-left: 15px;
+            }
+        }
+    </style>
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
-        // Photo preview logic reused from Create
-        (function () {
-            const photoUrlInput = document.querySelector('[name="Photo"]');
-            const photoFileInput = document.getElementById('photoFileInput');
-            const preview = document.getElementById('photoPreview');
 
-            function showPreviewUrl(url) {
-                if (!url) {
-                    preview.style.display = 'none';
-                    preview.src = '';
-                    return;
-                }
-                preview.src = url;
-                preview.style.display = 'block';
+    <!-- Add Font Awesome for icons -->
+    <link rel="stylesheet" href="~/plugins/fontawesome-free/css/all.min.css" />
+
+    <script>
+        // Photo preview functionality
+        function clearPhoto() {
+            document.getElementById('photoPreview').style.display = 'none';
+            document.getElementById('photoPreview').src = '';
+            document.getElementById('photoPlaceholder').style.display = 'block';
+            document.getElementById('photoUrlInput').value = '';
+            document.getElementById('photoFileInput').value = '';
+            document.getElementById('photoFileLabel').innerText = 'Choose file';
+        }
+
+        // Initialize photo preview on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const photoUrlInput = document.getElementById('photoUrlInput');
+            const photoFileInput = document.getElementById('photoFileInput');
+            const photoFileLabel = document.getElementById('photoFileLabel');
+            const photoPreview = document.getElementById('photoPreview');
+
+            // Update file input label
+            if (photoFileInput) {
+                photoFileInput.addEventListener('change', function(e) {
+                    var fileName = e.target.files[0] ? e.target.files[0].name : 'Choose file';
+                    photoFileLabel.innerText = fileName;
+
+                    // Preview the image
+                    if (e.target.files && e.target.files[0]) {
+                        var reader = new FileReader();
+                        reader.onload = function (e) {
+                            photoPreview.src = e.target.result;
+                            photoPreview.style.display = 'block';
+                            document.getElementById('photoPlaceholder').style.display = 'none';
+                        }
+                        reader.readAsDataURL(e.target.files[0]);
+                    }
+                });
             }
 
+            // Handle URL input changes with debouncing
             let urlTimer;
             if (photoUrlInput) {
-                photoUrlInput.addEventListener('input', function () {
+                photoUrlInput.addEventListener('input', function() {
                     clearTimeout(urlTimer);
                     urlTimer = setTimeout(() => {
-                        if (photoFileInput && photoFileInput.files.length > 0) {
-                            return;
+                        const url = photoUrlInput.value.trim();
+                        if (url) {
+                            // Clear file input if URL is entered
+                            if (photoFileInput) {
+                                photoFileInput.value = '';
+                                photoFileLabel.innerText = 'Choose file';
+                            }
+
+                            // Try to load the URL image
+                            photoPreview.src = url;
+                            photoPreview.onload = function() {
+                                photoPreview.style.display = 'block';
+                                document.getElementById('photoPlaceholder').style.display = 'none';
+                            };
+                            photoPreview.onerror = function() {
+                                // If URL fails, keep placeholder
+                                photoPreview.style.display = 'none';
+                                document.getElementById('photoPlaceholder').style.display = 'block';
+                            };
+                        } else {
+                            photoPreview.style.display = 'none';
+                            document.getElementById('photoPlaceholder').style.display = 'block';
                         }
-                        showPreviewUrl(photoUrlInput.value.trim());
-                    }, 300);
+                    }, 500);
                 });
             }
 
-            if (photoFileInput) {
-                photoFileInput.addEventListener('change', function (e) {
-                    const file = e.target.files && e.target.files[0];
-                    if (!file) {
-                        if (photoUrlInput) showPreviewUrl(photoUrlInput.value.trim());
-                        return;
+            // Form submission loading state
+            const form = document.getElementById('crew-member-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
                     }
-                    const reader = new FileReader();
-                    reader.onload = function (ev) {
-                        showPreviewUrl(ev.target.result);
-                    };
-                    reader.readAsDataURL(file);
                 });
             }
 
-            if (preview && preview.src) {
-                preview.style.display = preview.src ? 'block' : 'none';
-            }
-        })();
+            // Enhance validation feedback
+            const inputs = form.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.classList.contains('input-validation-error')) {
+                        this.classList.add('is-invalid');
+                    } else {
+                        this.classList.remove('is-invalid');
+                    }
+                });
+            });
+        });
     </script>
 }

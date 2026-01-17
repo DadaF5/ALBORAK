@@ -92,8 +92,10 @@ namespace FRAProject.Areas.SquadronOps.Models
         public DateTime? MedicalExpiry => LatestMedicalCheck?.NextDueDate;
 
         [NotMapped]
-        public int? DaysToMedicalExpiry => DaysToMedicalExpiry.HasValue ?
-            (MedicalExpiry.Value-DateTime.Today).Days : null;
+        public int? DaysToMedicalExpiry =>
+                    MedicalExpiry.HasValue
+                        ? Math.Max(0, (MedicalExpiry.Value.Date - DateTime.Today).Days)
+                        : null;
 
         [NotMapped]
         public List<MedicalBilan> PendingBilans => MedicalChecks

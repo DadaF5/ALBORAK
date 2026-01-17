@@ -1,59 +1,52 @@
 ﻿using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Data;
+using FRAProject.Infrastructure.Interfaces;
 using FRAProject.Models;
 using FRAProject.ViewModels.AcMainGroup;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using System;
+
 
 namespace FRAProject.Areas.AircraftMaintenance.Controllers
 {
     [Area("AircraftMaintenance")]
     public class AcMainGroupController : Controller
     {
-        private readonly FRAContext _context;
+        
+        private readonly IUnitOfWork _unitOfWork;
 
-        public AcMainGroupController(FRAContext context)
+        public AcMainGroupController(IUnitOfWork unitOfWork)
         {
-            _context = context;
-        }
+            _unitOfWork=unitOfWork;        }
 
         // Get: AcMainGroup
         public async Task<IActionResult> Index(int? baseId, int? categoryId)
         {
-            var query = _context.AcMainGroups
-                .Include(m => m.AcCategory)
-                .Include(m => m.Base)
-                .AsQueryable();
-
-            if (baseId.HasValue)
-                query = query.Where(m => m.BaseId == baseId);
+            var groups= await _unitOfWork.AcMainGroups.GetAllAsync();
+            
+            if ( baseId.HasValue)
+            {
+                groups = groups.Where(g => g.BaseId == baseId);
+            }  
 
             if (categoryId.HasValue)
-                query = query.Where(m => m.AcCategoryId == categoryId);
+            {
+                groups = groups.Where(g => g.AcCategoryId == categoryId);
+            }
 
             // Populate dropdowns
-            ViewBag.Bases = new SelectList(await _context.Bases.OrderBy(b => b.BaseName).ToListAsync(), "Id", "BaseName", baseId);
-            ViewBag.Categories = new SelectList(await _context.AcCategories.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", categoryId);
-
-            var mainGroups = await query.OrderBy(m => m.Name).ToListAsync();
-            return View(mainGroups);
+            ViewBag.Bases = new SelectList(await _unitOfWork.AcMainGroups.GetByBaseIdAsync(baseId ?? 0),
+            ViewBag.AcCategories = new SelectList(await _unitOfWork.AcMainGroups.GetByAcCategoryIdAsync(categoryId ?? 0), "Id", "Name"));
+                       
+            return View(groups);
         }
         // GET: AcMainGroup/Create
         public async Task<IActionResult> Create()
         {
-            var model = new AcMainGroupViewModel
-            {
-                Categories = await _context.AcCategories
-                .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name })
-                .ToListAsync(),
-
-                Bases = await _context.Bases
-                .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
-                .ToListAsync()
-            };
-
+            var model = new AcMainGroupViewModel();
+               
+            ViewBag.AcCategories = new SelectList(await _unitOfWork.AcMainGroups.GetAllCategoriesAsync(), "Id", "Name");
+            ViewBag.Bases = new SelectList(await _unitOfWork.AcMainGroups.GetAllBasesAsync(), "Id", "BaseName");
             return View(model);
         }
 
@@ -65,15 +58,12 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             if (!ModelState.IsValid)
             {
                 // Repopulate dropdowns on error
-                model.Categories = await _context.AcCategories
-                    .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name })
-                    .ToListAsync();
-
-                model.Bases = await _context.Bases
-                    .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
-                    .ToListAsync();
-
+                ViewBag.AcCategories = await _unitOfWork.AcMainGroups
+                    .GetByAcCategoryIdAsync(0);
+                ViewBag.Bases = await _unitOfWork.AcMainGroups
+                    .GetByBaseIdAsync(0);
                 return View(model);
+                
             }
 
             var entity = new AcMainGroup
@@ -85,21 +75,18 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 Active = model.IsActive
             };
 
-            _context.Add(entity);
-            await _context.SaveChangesAsync();
+            await _unitOfWork.AcMainGroups.AddAsync(entity);
+            await _unitOfWork.CompleteAsync();          
 
             return RedirectToAction(nameof(Index));
         }
 
 
         // GET: AcMainGroup/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id == null)
-                return NotFound();
-
-            var entity = await _context.AcMainGroups.FindAsync(id);
-
+            var entity = await _unitOfWork.AcMainGroups.GetByIdAsync(id);
+              
             if (entity == null)
                 return NotFound();
 
@@ -110,91 +97,45 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 Description = entity.Description,
                 AcCategoryId = entity.AcCategoryId,
                 BaseId = entity.BaseId,
-                IsActive = entity.Active
+                IsActive = entity.Active,
+                Categories= new SelectList(await _unitOfWork.AcMainGroups.GetByAcCategoryIdAsync(0)),
+                Bases= new SelectList(await _unitOfWork.AcMainGroups.GetByBaseIdAsync(0))
             };
-
-            vm.Categories = await _context.AcCategories
-                .OrderBy(c => c.Name)
-                .Select(c => new SelectListItem
-                {
-                    Value = c.Id.ToString(),
-                    Text = c.Name,
-                    Selected = (c.Id == vm.AcCategoryId)  // FIXED
-                })
-                .ToListAsync();
-
-            vm.Bases = await _context.Bases
-                .OrderBy(b => b.BaseName)
-                .Select(b => new SelectListItem
-                {
-                    Value = b.Id.ToString(),
-                    Text = b.BaseName,
-                    Selected = (b.Id == vm.BaseId) // FIXED
-                })
-                .ToListAsync();
 
             return View(vm);
         }
 
-
         // POST: AcMainGroup/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, AcMainGroupViewModel vm)
+        public async Task<IActionResult> Edit(int id, AcMainGroupViewModel model)
         {
-            if (id != vm.Id)
-                return NotFound();
-
-            if (!ModelState.IsValid)
+            if (id != model.Id || !ModelState.IsValid)
             {
-                // Rebuild dropdowns when validation fails
-                vm.Categories = await _context.AcCategories
-                    .OrderBy(c => c.Name)
-                    .Select(c => new SelectListItem
-                    {
-                        Value = c.Id.ToString(),
-                        Text = c.Name
-                    }).ToListAsync();
-
-                vm.Bases = await _context.Bases
-                    .OrderBy(b => b.BaseName)
-                    .Select(b => new SelectListItem
-                    {
-                        Value = b.Id.ToString(),
-                        Text = b.BaseName
-                    }).ToListAsync();
-
-                return View(vm);
+                model.Categories = new SelectList(await _unitOfWork.AcMainGroups.GetByAcCategoryIdAsync(0));
+                model.Bases = new SelectList(await _unitOfWork.AcMainGroups.GetByBaseIdAsync(0));
+                return View(model);
             }
 
             // Load entity to update
-            var entity = await _context.AcMainGroups.FirstOrDefaultAsync(x => x.Id == id);
+            var entity = await _unitOfWork.AcMainGroups.GetByIdAsync(id);
 
             if (entity == null)
                 return NotFound();
 
             // Update the entity
-            entity.Name = vm.Name;
-            entity.Description = vm.Description;
-            entity.AcCategoryId = vm.AcCategoryId;
-            entity.BaseId = vm.BaseId;
-            entity.Active = vm.IsActive;
+            entity.Name = model.Name;
+            entity.Description = model.Description;
+            entity.AcCategoryId = model.AcCategoryId;
+            entity.BaseId = model.BaseId;
+            entity.Active = model.IsActive;
 
-            try
-            {
-                _context.Update(entity);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.AcMainGroups.Any(e => e.Id == vm.Id))
-                    return NotFound();
-                throw;
-            }
+            _unitOfWork.AcMainGroups.Update(entity);
+            await _unitOfWork.CompleteAsync();
 
             return RedirectToAction(nameof(Index));
         }
 
-        private bool AcMainGroupExists(int id) => _context.AcMainGroups.Any(e => e.Id == id);
+        
     }
 }

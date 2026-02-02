@@ -27,16 +27,46 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
         }
 
-        // GET: Sorties/Create?odvId=123
+        // GET: Sorties/Create?odvId=123&acMainGroupId=5
         [HttpGet]
         public async Task<IActionResult> Create(int odvId)
         {
             var odv = await _context.Odvs
                 .AsNoTracking()
+                .Include(o => o.AcMainGroup)
                 .FirstOrDefaultAsync(o => o.Id == odvId);
 
             if (odv == null)
                 return NotFound();
+
+            var acMainGroupId = odv.AcMainGroupId;
+
+            if (acMainGroupId <= 0)
+            {
+                TempData["Warning"] = "No valid AcMainGroupId is associated with this Odv.";
+                ViewBag.AcTypes = new List<SelectListItem>();
+                return View(new SortieCreateVm { OdvId = odvId });
+            }
+
+            // populate aircraft types for the given AcMainGroupId
+            var acTypes = await _context.AcTypes
+                .Where(t => t.AcMainGroupId == acMainGroupId)
+                .OrderBy(t => t.Name)
+                .ToListAsync();
+
+            if (!acTypes.Any())
+            {
+                TempData["Warning"] = $"No aircraft types found for AcMainGroupId {acMainGroupId}.";
+                ViewBag.AcTypes = new List<SelectListItem>();
+            }
+            else
+            {
+                ViewBag.AcTypes = acTypes.Select(t => new SelectListItem
+                {
+                    Value = t.Id.ToString(),
+                    Text = t.Name
+                }).ToList();
+            }            
 
             var vm = new SortieCreateVm
             {
@@ -45,18 +75,21 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             };
 
             ViewBag.OdvInfo = $"{odv.MissionId} | {odv.OdvDate:yyyy-MM-dd}";
-            await PopulateAcTypesForCurrentUser();
             return View(vm);
         }
 
         // POST: Sorties/Create?odvId=123
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(SortieCreateVm model)
+        public async Task<IActionResult> Create(SortieCreateVm model, int? acMainGroupId)
         {
             if (!ModelState.IsValid)
             {
-                await PopulateAcTypesForCurrentUser();
+                if (acMainGroupId.HasValue)
+                {
+                    await PopulateAcTypesByMainGroup(acMainGroupId.Value);
+                }
+
                 return View(model);
             }
 
@@ -80,6 +113,9 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 new { odvDate = DateTime.UtcNow.ToString("yyyy-MM-dd") }
             );
         }
+
+
+
         // GET: Sorties/Edit/5
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
@@ -269,6 +305,31 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 }
             }
 
+            ViewBag.AcTypes = selectList;
+        }
+
+
+        private async Task PopulateAcTypesByMainGroup(int acMainGroupId)
+        {
+            // Fetch AcTypes corresponding to the provided acMainGroupId
+            var acTypes = await _context.AcTypes
+                .Where(t => t.AcMainGroupId == acMainGroupId)
+                .OrderBy(t => t.Name)
+                .ToListAsync();
+
+            // Create SelectList items from the fetched AcTypes
+            var selectList = acTypes.Select(t => new SelectListItem
+            {
+                Value = t.Id.ToString(),
+                Text = t.Name
+            }).ToList();
+
+            if (!selectList.Any())
+            {
+                TempData["Warning"] = "No aircraft types available for the selected Aircraft Maintenance Group.";
+            }
+
+            // Pass the select list to the view
             ViewBag.AcTypes = selectList;
         }
     }

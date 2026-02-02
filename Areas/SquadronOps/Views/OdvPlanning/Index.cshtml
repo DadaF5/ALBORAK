@@ -154,7 +154,7 @@
                 {
                     <tr>
                         <td>@odv.Mission?.Name</td>
-                        <td>@odv.TOFF</td>
+                        <td>@(odv.TOFF?.ToString(@"hh\:mm"))</td>
                         <td>@odv.CallSign?.Code</td>
                         <td>@odv.Area</td>
                         <td>@odv.OdvStatus</td>
@@ -195,7 +195,7 @@
                             @if (sortieCounter == 0)
                             {
                                 <td rowspan="@maxSortiesInOdv">@odv.Mission?.Name</td>
-                                <td rowspan="@maxSortiesInOdv">@odv.TOFF</td>
+                                <td rowspan="@maxSortiesInOdv">@(odv.TOFF?.ToString(@"hh\:mm"))</td>
                                 <td rowspan="@maxSortiesInOdv">@odv.CallSign?.Code</td>
                                 <td rowspan="@maxSortiesInOdv">@odv.Area</td>
                                 <td rowspan="@maxSortiesInOdv">@odv.OdvStatus</td>

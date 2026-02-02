@@ -46,7 +46,7 @@ namespace FRAProject.ViewModels
 
         // Optional planned TOFF: bind using <input type="time" /> or accept a string and parse on server
         [Display(Name = "Planned TOFF")]
-        [DisplayFormat (DataFormatString = "{0:HH:mm}", ApplyFormatInEditMode = true)]
+        [DisplayFormat(DataFormatString = @"{0:hh\:mm}", ApplyFormatInEditMode = true)]
         [Required(ErrorMessage ="TOFF time required")]
         public TimeSpan? TOFF { get; set; }
         //[DisplayFormat(DataFormatString = "{0:HH:mm}", ApplyFormatInEditMode = true)]

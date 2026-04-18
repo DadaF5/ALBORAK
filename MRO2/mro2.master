@@ -1,0 +1,350 @@
+﻿<%@ Master Language="VB" CodeFile="mro2.master.vb" Inherits="MRO2_Mro2Master" EnableViewState="true" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/x-icon" href="~/images/Air_Force.ico" />
+
+    <title>
+        <asp:ContentPlaceHolder ID="TitleContent" runat="server">MRO2</asp:ContentPlaceHolder>
+       
+    </title>
+
+    <%-- AdminLTE 3.2.0 - local --%>
+    <link rel="stylesheet" href="http://localhost:1254/2BAFRA/AdminLTE-3.2.0/plugins/fontawesome-free/css/all.min.css" />
+    <link rel="stylesheet" href="http://localhost:1254/2BAFRA/AdminLTE-3.2.0/dist/css/adminlte.min.css" />
+
+    <%-- MRO2 custom stylesheet (replaces inline <style> block) --%>
+    <link rel="stylesheet" href="mro2.css" />
+
+    <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
+    
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+<form id="frmMaster" runat="server">
+<asp:ToolkitScriptManager ID="ScriptManager1" runat="server" />
+<asp:HiddenField ID="hfBaseId" runat="server" />
+<asp:HiddenField ID="hfUserId" runat="server" />
+
+<div class="wrapper">
+
+    <%-- ══════════════════════ TOPBAR ════════════════════════════ --%>
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button">
+                    <i class="fas fa-bars topbar-icon"></i>
+                </a>
+            </li>
+        </ul>
+
+        <asp:ContentPlaceHolder ID="TopBarContent" runat="server" />
+
+        <ul class="navbar-nav ml-auto">
+
+            <%-- Base courante (tous) --%>
+            <li class="nav-item">
+                <span class="nav-link topbar-base-label">
+                    <i class="fas fa-map-marker-alt mr-1 topbar-icon"></i>
+                    <asp:Literal ID="litBaseName" runat="server" Text="" />
+                </span>
+            </li>
+
+            <%-- USER DROPDOWN --%>
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <i class="far fa-user-circle topbar-icon-lg"></i>
+                    &nbsp;<asp:LoginView ID="lv1" runat="server">
+                        <LoggedInTemplate>
+                            <asp:LoginName ID="ln1" runat="server" CssClass="topbar-username" />
+                        </LoggedInTemplate>
+                    </asp:LoginView>
+                    <i class="fas fa-angle-down ml-1 topbar-caret"></i>
+                </a>
+
+                <div class="dropdown-menu dropdown-menu-right shadow-sm">
+
+                    <a class="dropdown-item" href="~/ChangePassword.aspx">
+                        <i class="fas fa-key mr-2 text-muted"></i>Mot de passe
+                    </a>
+
+                    <% If HttpContext.Current.User.IsInRole("Administrators") Then %>
+                        <div class="dropdown-divider"></div>
+
+                        <%-- MRO2 Setup landing --%>
+                        <a class="dropdown-item" href="<%= ResolveUrl("~/MRO2/Setup/Default.aspx") %>">
+                            <i class="fas fa-cog mr-2 text-warning"></i>
+                            <strong>MRO2 Setup</strong>
+                        </a>
+
+                        <div class="dropdown-divider"></div>
+
+                        <h6 class="dropdown-header text-uppercase dropdown-header-mro">
+                            <i class="fas fa-exchange-alt mr-1"></i>Changer de base
+                        </h6>
+
+                        <asp:Repeater ID="rptBases" runat="server"
+                            OnItemCommand="rptBases_ItemCommand">
+                            <ItemTemplate>
+                                <asp:LinkButton
+                                    ID="lnkBase"
+                                    runat="server"
+                                    CommandName="SwitchBase"
+                                    CommandArgument='<%# Eval("BaseID") %>'
+                                    CssClass='<%# If(Session("BaseId") IsNot Nothing AndAlso 
+                 Eval("BaseID").ToString() = Session("BaseId").ToString(),
+                                                     "dropdown-item active",
+                                                     "dropdown-item") %>'>
+                                    <i class="fas fa-fighter-jet mr-2"
+                                        style='<%# If(Session("BaseId") IsNot Nothing AndAlso
+              Eval("BaseID").ToString() = Session("BaseId").ToString(),
+                                                      "color:#fff;",
+                                                      "color:var(--mro);") %>'></i>
+                                    <strong><%# Eval("BASE").ToString().Trim() %></strong>
+                                    <small class='<%# If(Session("BaseId") IsNot Nothing AndAlso
+                    Eval("BaseID").ToString() = Session("BaseId").ToString(),
+                                                        "ml-1 text-white-50",
+                                                        "ml-1 text-muted") %>'>
+                                        <%# Eval("NOM").ToString().Trim() %>
+                                    </small>
+                                </asp:LinkButton>
+                            </ItemTemplate>
+                        </asp:Repeater>
+                    <% End If %>
+
+                    <div class="dropdown-divider"></div>
+
+                    <a class="dropdown-item" href="~/Login.aspx">
+                        <i class="fas fa-sign-out-alt mr-2 text-danger"></i>D&eacute;connexion
+                    </a>
+
+                </div>
+            </li>
+        </ul>
+    </nav>
+    <%-- ══════════════════════ /TOPBAR ═══════════════════════════ --%>
+
+    <%-- ══════════════════════ SIDEBAR ═══════════════════════════ --%>
+    <aside class="main-sidebar elevation-4">
+
+        <div class="clearfix sidebar-brand">
+            <span>
+                <asp:Image ID="Image1" runat="server"
+                    CssClass="brand-image img-circle elevation-2"
+                    ImageUrl="~/images/Air_Force.png" Width="70px" />
+            </span>
+            <div class="sidebar-brand-title">
+                MRO2 / Maintenance
+            </div>
+            <div class="sidebar-brand-subtitle">
+                Install - Remove - Traceability
+            </div>
+        </div>
+
+        <div class="sidebar">
+
+            <%-- User panel --%>
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex align-items-center">
+                <div class="image">
+                    <div class="av-circle av-circle-sm">
+                        <asp:Literal ID="litUserInitials" runat="server" Text="?" />
+                    </div>
+                </div>
+                <div class="info ml-2">
+                    <asp:LoginView ID="lv2" runat="server">
+                        <LoggedInTemplate>
+                            <a href="#" class="d-block sidebar-user-name">
+                                <asp:LoginName ID="ln2" runat="server" />
+                            </a>
+                        </LoggedInTemplate>
+                    </asp:LoginView>
+                    <small class="sidebar-user-role">Maintenance</small>
+                </div>
+            </div>
+
+            <%-- Flash --%>
+            <asp:Panel ID="pnlFlash" runat="server" Visible="false"
+                CssClass="mro-flash alert mx-3 mb-2 py-2 px-3" />
+
+            <%-- Nav menu --%>
+            <nav class="mt-1">
+                <ul class="nav nav-pills nav-sidebar flex-column nav-child-indent"
+                    data-widget="treeview" role="menu" data-accordion="false">
+
+                    <%-- Maintenance section --%>
+                    <li class="nav-header nav-header-mro">MAINTENANCE</li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="<%= ResolveUrl("~/MRO2/Maintenance/AircraftConfiguration.aspx") %>">
+                               <i class="nav-icon fas fa-fighter-jet"></i>
+                            <p>Aircraft Configuration</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="<%= ResolveUrl("~/MRO2/Maintenance/RecordEvent.aspx") %>">
+                            <i class="nav-icon fas fa-tools"></i>
+                            <p>Install / Remove</p>
+                        </a>
+                    </li>
+
+                    <%-- Reports section --%>
+                    <li class="nav-header nav-header-mro">REPORTS</li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="<%= ResolveUrl("~/MRO2/Reports/AuditGaps.aspx") %>">
+                            <i class="nav-icon fas fa-clipboard-check"></i>
+                            <p>Audit Gaps</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="<%= ResolveUrl("~/MRO2/Reports/History.aspx") %>">
+                            <i class="nav-icon fas fa-history"></i>
+                            <p>History</p>
+                        </a>
+                    </li>
+
+                    <%-- Setup section (admins only) --%>
+                    <% If HttpContext.Current.User.IsInRole("Administrators") Then %>
+                        <li class="nav-header nav-header-mro">SETUP</li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<%= ResolveUrl("~/MRO2/Setup/Default.aspx") %>">
+                                 <i class="nav-icon fas fa-database"></i>
+                                <p>Lookup Tables</p>
+                            </a>
+                        </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<%= ResolveUrl("~/MRO2/Setup/Counters/CounterTypeList.aspx")%>">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Counters Type</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<%= ResolveUrl("~/MRO2/Setup/Counters/CounterDefList.aspx")%>">
+                            <i class="nav-icon fas fa-ruler-combined"></i>
+                            <p>Counters definition</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<%= ResolveUrl("~/MRO2/Setup/Counters/ComputationReferenceList.aspx")%>">
+                            <i class="nav-icon fas fa-calculator"></i>
+                            <p>C.Computation Reference</p>
+                        </a>
+                    </li>
+                     <li class="nav-item">
+                        <a class="nav-link" href="<%= ResolveUrl("~/MRO2/Setup/Counters/CounterReferenceList.aspx")%>">
+                            <i class="nav-icon fas fa-folder-open"></i>
+                            <p>C.Documents References</p>
+                        </a>
+                    </li>
+                    <% End If %>
+
+                </ul>
+            </nav>
+
+        </div>
+    </aside>
+    <%-- ══════════════════════ /SIDEBAR ══════════════════════════ --%>
+
+    <%-- ══════════════════════ CONTENT ═══════════════════════════ --%>
+    <div class="content-wrapper">
+
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6"></div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <asp:ContentPlaceHolder ID="BreadcrumbContent" runat="server" />
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content">
+            <div class="container-fluid">
+                <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+            </div>
+        </section>
+
+    </div>
+    <%-- ══════════════════════ /CONTENT ══════════════════════════ --%>
+
+    <footer class="main-footer py-2">
+        <strong>Forces Royales Air</strong> &mdash; MRO2 / Maintenance
+        <div class="float-right d-none d-sm-inline-block">
+            D&eacute;veloppement &copy;
+            <asp:LoginView ID="lv3" runat="server">
+                <LoggedInTemplate><asp:LoginName ID="ln3" runat="server" /></LoggedInTemplate>
+            </asp:LoginView>
+        </div>
+    </footer>
+
+</div>
+<%-- /wrapper --%>
+
+<%-- Session expired overlay (now uses CSS classes instead of inline styles) --%>
+<div id="divSessionExp" class="session-expired-overlay">
+    <div class="session-expired-box">
+        <h5><i class="fas fa-clock text-warning mr-2"></i>Session expir&eacute;e</h5>
+        <p class="text-muted mb-0 small">Redirection vers la connexion...</p>
+    </div>
+</div>
+
+</form>
+
+<%-- Scripts --%>
+<script src="http://localhost:1254/2BAFRA/AdminLTE-3.2.0/plugins/jquery/jquery.min.js"></script>
+<script src="http://localhost:1254/2BAFRA/AdminLTE-3.2.0/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="http://localhost:1254/2BAFRA/AdminLTE-3.2.0/plugins/toastr/toastr.min.css" />
+<script src="http://localhost:1254/2BAFRA/AdminLTE-3.2.0/plugins/toastr/toastr.min.js"></script>
+<script src="http://localhost:1254/2BAFRA/AdminLTE-3.2.0/dist/js/adminlte.min.js"></script>
+
+<asp:ContentPlaceHolder ID="FooterScripts" runat="server" />
+
+<script type="text/javascript">
+    setTimeout(function () {
+        $('#divSessionExp').css('display', 'flex');
+        setTimeout(function () {
+            window.location.href = '<%= ResolveUrl("~/Login.aspx") %>?ReturnUrl=' +
+                encodeURIComponent(window.location.pathname + window.location.search);
+        }, 5000);
+    }, 20 * 60 * 1000);
+
+    (function () {
+        function cleanupModalArtifacts() {
+            try {
+                var backdrops = document.querySelectorAll('.modal-backdrop');
+                for (var i = 0; i < backdrops.length; i++) backdrops[i].parentNode.removeChild(backdrops[i]);
+                document.body.classList.remove('modal-open');
+                document.body.style.paddingRight = '';
+            } catch (e) { }
+        }
+        if (window.jQuery) {
+            jQuery(document).on('hidden.bs.modal', '.modal', function () {
+                cleanupModalArtifacts();
+            });
+        }
+        try {
+            if (window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager) {
+                var prm = Sys.WebForms.PageRequestManager.getInstance();
+                if (prm && !prm.__globalModalCleanupWired) {
+                    prm.add_endRequest(function () {
+                        if (!document.querySelector('.modal.show')) cleanupModalArtifacts();
+                    });
+                    prm.__globalModalCleanupWired = true;
+                }
+            }
+        } catch (e) { }
+    })();
+</script>
+
+</body>
+</html>

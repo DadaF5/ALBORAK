@@ -1,0 +1,186 @@
+/* ═══════════════════════════════════════════════════════════
+   MRO2 Master – External Stylesheet
+   Place this file next to your master page (e.g. ~/MRO2/mro2.css)
+   and reference it with:
+     <link rel="stylesheet" href="<%= ResolveUrl("~/MRO2/mro2.css") %>" />
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── MRO blue palette ──────────────────────────────────────── */
+:root {
+    --mro:    #1d4ed8;
+    --mro-lt: #60a5fa;
+    --mro-dk: #1e3a8a;
+    --mro-bg: #111827;
+    --mro-text-muted: #94a3b8;
+    --mro-text-light: #cbd5e1;
+    --mro-text-body:  #374151;
+    --mro-text-sub:   #64748b;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────── */
+.main-sidebar,
+.main-sidebar::before {
+    background-color: var(--mro-bg) !important;
+}
+
+.sidebar a {
+    color: var(--mro-text-light) !important;
+}
+
+.nav-sidebar .nav-link:hover,
+.nav-sidebar .nav-link.active {
+    background-color: rgba(29, 78, 216, .20) !important;
+    color: #fff !important;
+}
+
+.nav-sidebar .nav-link.active {
+    border-left: 3px solid var(--mro-lt) !important;
+}
+
+.nav-sidebar .nav-treeview .nav-link:hover {
+    color: var(--mro-lt) !important;
+}
+
+/* ── Sidebar branding ──────────────────────────────────────── */
+.sidebar-brand {
+    text-align: center;
+    padding-top: 10px;
+}
+
+.sidebar-brand-title {
+    margin-top: 6px;
+    color: #fff;
+    font-weight: 700;
+    font-size: .9rem;
+}
+
+.sidebar-brand-subtitle {
+    color: var(--mro-text-muted);
+    font-size: .75rem;
+}
+
+/* ── Sidebar user panel ────────────────────────────────────── */
+.sidebar-user-name {
+    color: #fff;
+    font-size: .83rem;
+    font-weight: 600;
+}
+
+.sidebar-user-role {
+    color: var(--mro-text-muted);
+}
+
+/* ── Sidebar nav headers ───────────────────────────────────── */
+.nav-header-mro {
+    color: var(--mro-text-muted);
+}
+
+/* ── Topbar ────────────────────────────────────────────────── */
+.main-header.navbar {
+    border-bottom: 3px solid var(--mro) !important;
+    background: #fff !important;
+}
+
+/* ── Topbar icons & text ───────────────────────────────────── */
+.topbar-icon {
+    color: var(--mro);
+}
+
+.topbar-icon-lg {
+    color: var(--mro);
+    font-size: 1.2rem;
+}
+
+.topbar-base-label {
+    font-size: .82rem;
+    color: var(--mro-text-sub);
+}
+
+.topbar-username {
+    font-size: .85rem;
+    color: var(--mro-text-body);
+}
+
+.topbar-caret {
+    font-size: .75rem;
+}
+
+/* ── Dropdown context-switcher header ──────────────────────── */
+.dropdown-header-mro {
+    font-size: .7rem;
+}
+
+/* ── Flash messages ────────────────────────────────────────── */
+.mro-flash {
+    border-left: 4px solid var(--mro);
+    border-radius: 4px;
+    font-size: .875rem;
+    margin-bottom: 0;
+}
+
+/* ── Avatar circle ─────────────────────────────────────────── */
+.av-circle {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #1d4ed8;
+    font-size: .75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #93c5fd;
+    flex-shrink: 0;
+}
+
+.av-circle-sm {
+    width: 33px;
+    height: 33px;
+}
+
+/* ── Session-expired overlay ───────────────────────────────── */
+.session-expired-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.session-expired-box {
+    background: #fff;
+    padding: 28px 36px;
+    border-radius: 8px;
+    border-top: 4px solid var(--mro);
+    text-align: center;
+    max-width: 320px;
+}
+/* Left nav: stronger “insignia” look */
+.main-sidebar .nav-sidebar .nav-link .nav-icon {
+  width: 2.1rem;
+  text-align: center;
+  margin-right: .10rem;
+  color: #9ca3af; /* neutral gray */
+}
+
+/* Highlight icon when active/hover */
+.main-sidebar .nav-sidebar .nav-link:hover .nav-icon,
+.main-sidebar .nav-sidebar .nav-link.active .nav-icon {
+  color: #fbbf24; /* amber “military” highlight */
+}
+
+/* Optional: small circular badge behind icons */
+.main-sidebar .nav-sidebar .nav-link .nav-icon {
+  padding: .10rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.main-sidebar .nav-sidebar .nav-link:hover .nav-icon,
+.main-sidebar .nav-sidebar .nav-link.active .nav-icon {
+  background: rgba(251,191,36,.12);
+  border-color: rgba(251,191,36,.35);
+}

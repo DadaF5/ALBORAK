@@ -1,38 +1,42 @@
-﻿// Models/AcMainGroup.cs
-using FRAProject.Areas.HR.Models;
-using FRAProject.Models;
+﻿using FRAProject.Areas.HR.Models;
+using FRAProject.Areas.SquadronOps.Models; // for Odv
+using FRAProject.Models;                  // for Base
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-namespace FRAProject.Areas.AircraftMaintenance.Models;
-public class AcMainGroup
+
+namespace FRAProject.Areas.AircraftMaintenance.Models
 {
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { get; set; }
+    [Table("AcMainGroups", Schema = "dbo")]
+    public class AcMainGroup
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
 
-    [StringLength(50)]
-    [Required(ErrorMessage = "Please enter a group name.")]
-    public string Name { get; set; }
+        [Required]
+        [StringLength(50)]
+        public string Name { get; set; } = string.Empty;
 
-    [StringLength(50)]
-    public string? Description { get; set; } = string.Empty;  
+        [StringLength(50)]
+        public string? Description { get; set; }
 
-    public bool Active { get; set; } = true;
+        [Required]
+        public bool Active { get; set; } = true;
 
-    // Foreign Key to AcCategory
-    [Required(ErrorMessage = "Please select a category.")]
-    public int AcCategoryId { get; set; }
-    public virtual AcCategory AcCategory { get; set; }
+        // FK -> AcCategories(AcCategoryId) with ON DELETE CASCADE in baseline
+        [Required]
+        public int AcCategoryId { get; set; }
+        public AcCategory AcCategory { get; set; } = default!;
 
+        // FK -> Bases(Id) with ON DELETE CASCADE in baseline
+        [Required]
+        public int BaseId { get; set; }
+        public Base Base { get; set; } = default!;
 
-    [Required(ErrorMessage = "Please select a Base.")]
-    public int BaseId { get; set; }
-    public virtual Base Base { get; set; }
+        public ICollection<AcType> AcTypes { get; set; } = new HashSet<AcType>();
 
-    // Navigation to AcTypes
-    public ICollection<AcType> AcTypes { get; set; } = new HashSet<AcType>();
-    public ICollection<Odv> Odvs { get; set; } = new HashSet<Odv>();
-
-
-
+        // Baseline has dbo.Odvs with FK Odvs.AcMainGroupId -> AcMainGroups.Id
+        public ICollection<Odv> Odvs { get; set; } = new HashSet<Odv>();
+    }
 }

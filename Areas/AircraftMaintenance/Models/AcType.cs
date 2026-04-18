@@ -1,40 +1,45 @@
-﻿using FRAProject.Areas.SquadronOps.Models;
+﻿using FRAProject.Areas.SquadronOps.Models; // Sortie
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Areas.AircraftMaintenance.Models
 {
+    [Table("AcTypes", Schema = "dbo")]
     public class AcType
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Type Name is required")]
+        [Required]
         [StringLength(100)]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
+        // Baseline: NOT NULL
+        [Required]
         [StringLength(250)]
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Max Grossweight is required")]
+        [Required]
         public double MaxGrossweight { get; set; }
+
+        [Required]
         public int MaxPassengers { get; set; }
 
-        // 1 = single seat, 2 = dual seat
+        [Required]
         public int SeatCount { get; set; }
 
-        [Required(ErrorMessage = "Max Engines is required")]
-        public int MaxEngines { get; set; } = 1;
+        [Required]
+        public int MaxEngines { get; set; }
 
-        // --------------------------
-        // Foreign Key to AcMainGroup
-        // --------------------------
-        [Required(ErrorMessage = "Main Group is required")]
+        [Required]
         public int AcMainGroupId { get; set; }
-        public AcMainGroup AcMainGroup { get; set; }
+        public AcMainGroup AcMainGroup { get; set; } = default!;
 
-        // Optional navigation: Aircraft under this type
-        public ICollection<Aircraft> Aircrafts { get; set; } = new List<Aircraft>();
-        public ICollection<Sortie> Sorties { get; set; } = new List<Sortie>();
+        public ICollection<Aircraft> Aircrafts { get; set; } = new HashSet<Aircraft>();
+
+        // Baseline has dbo.Sorties with NOT NULL AcTypeId
+        public ICollection<Sortie> Sorties { get; set; } = new HashSet<Sortie>();
     }
 }
-

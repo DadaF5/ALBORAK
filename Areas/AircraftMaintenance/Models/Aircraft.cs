@@ -93,7 +93,9 @@ namespace FRAProject.Areas.AircraftMaintenance.Models
         public ICollection<Sortie> Sorties { get; set; } = new List<Sortie>();
         public ICollection<MaintenanceComponent>? Components { get; set; }
         public ICollection<FlightLog>? FlightLogs { get; set; }
-        
+
+        // Documents related to this aircraft (e.g. maintenance records, certifications)
+        public ICollection<AircraftDocument> Documents { get; set; } = new HashSet<AircraftDocument>();
     }
 
 }

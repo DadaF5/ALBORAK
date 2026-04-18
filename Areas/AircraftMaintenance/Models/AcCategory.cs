@@ -1,8 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Areas.AircraftMaintenance.Models
 {
+    [Table("AcCategories", Schema = "dbo")]
     public class AcCategory
     {
         [Key]
@@ -10,14 +12,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Models
         [Column("AcCategoryId")]
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Category Name is required")]
-        [StringLength(20)]       
-        public string Name { get; set; } // e.g., "Fighter", "Transport", "Training"
+        [Required]
+        [StringLength(20)]
+        public string Name { get; set; } = string.Empty;
 
+        [Required]
         [StringLength(100)]
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
-        // Navigation property
         public ICollection<AcMainGroup> AcMainGroups { get; set; } = new HashSet<AcMainGroup>();
     }
 }

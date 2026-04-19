@@ -19,7 +19,8 @@ namespace FRAProject.Areas.HR.Models
         // Navigation
         public ICollection<Department> Departments { get; set; } = new HashSet<Department>();
         public ICollection<AcMainGroup> AcMainGroups { get; set; } = new HashSet<AcMainGroup>();
-      
+        public ICollection<Aircraft> Aircraft { get; set; } = new HashSet<Aircraft>();
+
 
     }
 }

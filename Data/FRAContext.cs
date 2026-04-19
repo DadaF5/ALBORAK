@@ -77,7 +77,8 @@ namespace FRAProject.Data
         public DbSet<MaintenanceComponent> MaintenanceComponents { get; set; } = null!;     // Aircraft components
         public DbSet<MaintenanceThreshold> MaintenanceThresholds { get; set; } = null!;     // Maintenance intervals
         public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;     // Maintenance work orders
-
+        public DbSet<AircraftDocumentType> AircraftDocumentTypes { get; set; } = null!;
+        public DbSet<AircraftDocument> AircraftDocuments { get; set; } = null!; // if you have this entity too
         private void ConfigureFlightLog(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<FlightLog>(e =>

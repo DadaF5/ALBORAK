@@ -130,7 +130,11 @@ using (var scope = app.Services.CreateScope())
         await PhaseSeeder.SeedAsync(context);
         await MissionSeeder.SeedAsync(context);
         await MenuSeeder.SeedAsync(services);
+        // Aircraft document reference tables
+        await AircraftDocumentTypeSeeder.SeedAsync(context);
 
+        // Optional demo docs (only if you want development data)
+        await AircraftDocumentSeeder.SeedAsync(context);
         // TODO: Add domain-specific seeders here for development/testing
         // Domain order (respecting FK dependencies): HR → Aircraft → Squadron Ops → Medical
         // Example:

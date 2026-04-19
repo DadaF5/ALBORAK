@@ -15,8 +15,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Models
         [StringLength(50)]
         public string StatusName { get; set; } = string.Empty;
 
+        [StringLength(20)]
+        public string? StatusCode { get; set; }
+
         [StringLength(100)]
         public string? Description { get; set; }
+
+        public byte SortOrder { get; set; } = 99;
+        public bool IsActive { get; set; } = true;  
 
         public ICollection<Aircraft> Aircrafts { get; set; } = new HashSet<Aircraft>();
     }

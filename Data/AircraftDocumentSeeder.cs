@@ -1,4 +1,6 @@
+// Data/AircraftDocumentSeeder.cs
 using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Data
@@ -7,97 +9,62 @@ namespace FRAProject.Data
     {
         public static async Task SeedAsync(FRAContext context)
         {
-            // Keep this optional: if you don't want demo data, just don't call it.
-            if (await context.AircraftDocuments.AnyAsync())
+            // Require reference data first
+            var docTypes = await context.Set<AircraftDocumentType>()
+                .AsNoTracking()
+                .ToDictionaryAsync(t => t.Code, t => t.Id);
+
+            if (docTypes.Count == 0)
                 return;
 
-            var aircraft = await context.Aircrafts
+            // Need aircrafts to attach documents to
+            var aircraftIds = await context.Aircrafts
+                .AsNoTracking()
                 .OrderBy(a => a.Id)
-                .FirstOrDefaultAsync();
-
-            if (aircraft == null)
-                return;
-
-            var types = await context.AircraftDocumentTypes
-                .Where(t => t.IsActive)
+                .Select(a => a.Id)
+                .Take(4) // seed for first 4 aircrafts
                 .ToListAsync();
 
-            int? TypeId(string code) => types.FirstOrDefault(t => t.Code == code)?.Id;
+            if (aircraftIds.Count == 0)
+                return;
 
-            var now = DateTime.UtcNow;
+            // Avoid duplicating seed
+            var anyDocs = await context.Set<AircraftDocument>().AnyAsync();
+            if (anyDocs)
+                return;
+
+            DateTime utcNow = DateTime.UtcNow;
+
+            // helper local function
+            AircraftDocument Doc(int aircraftId, string typeCode, string referenceNo, string title, DateTime? validUntilUtc)
+                => new()
+                {
+                    AircraftId = aircraftId,
+                    DocumentTypeId = docTypes[typeCode],
+                    ReferenceNo = referenceNo,
+                    Title = title,
+                    IsCurrent = true,
+                    Status = "Current",
+                    IssuedAtUtc = utcNow.AddMonths(-3),
+                    ValidFromUtc = utcNow.AddMonths(-3),
+                    ValidUntilUtc = validUntilUtc,
+                    CreatedAtUtc = utcNow,
+                    CreatedBy = "Seeder"
+                };
 
             var docs = new List<AircraftDocument>();
 
-            // CdN
-            var cdnTypeId = TypeId("CDN");
-            if (cdnTypeId.HasValue)
+            // Example data similar to your HTML
+            // (You can later adjust to use Registration/TailNo if you want.)
+            foreach (var acId in aircraftIds)
             {
-                docs.Add(new AircraftDocument
-                {
-                    AircraftId = aircraft.Id,
-                    DocumentTypeId = cdnTypeId.Value,
-                    ReferenceNo = "DAM/CN/2026/0001",
-                    Revision = "00",
-                    Title = "CdN — Initial",
-                    IssuedAtUtc = now.AddMonths(-6),
-                    ValidFromUtc = now.AddMonths(-6),
-                    ValidUntilUtc = now.AddMonths(6),
-                    IsCurrent = true,
-                    Status = "Valid",
-                    Notes = "Seeded demo document (no file attached).",
-                    CreatedAtUtc = now,
-                    CreatedBy = "Seeder"
-                });
+                docs.Add(Doc(acId, "CDN", $"DAM/CN/2026/{acId:0000}", "Certificat de navigabilité", utcNow.AddMonths(12)));
+                docs.Add(Doc(acId, "CEN", $"DAM/CEN/2026/{acId:0000}", "Certificat d'examen de navigabilité", utcNow.AddMonths(6)));
+                docs.Add(Doc(acId, "PEA", $"PEA-FRA-{acId:0000}-Rev01", "Programme d'entretien", null));
+                docs.Add(Doc(acId, "LME", $"LMER-FRA-{acId:0000}", "LME/LTTE applicable", null));
             }
 
-            // CEN
-            var cenTypeId = TypeId("CEN");
-            if (cenTypeId.HasValue)
-            {
-                docs.Add(new AircraftDocument
-                {
-                    AircraftId = aircraft.Id,
-                    DocumentTypeId = cenTypeId.Value,
-                    ReferenceNo = "DAM/CEN/2026/0001",
-                    Revision = "00",
-                    Title = "CEN — Annual",
-                    IssuedAtUtc = now.AddMonths(-2),
-                    ValidFromUtc = now.AddMonths(-2),
-                    ValidUntilUtc = now.AddMonths(10),
-                    IsCurrent = true,
-                    Status = "Valid",
-                    Notes = "Seeded demo document (no file attached).",
-                    CreatedAtUtc = now,
-                    CreatedBy = "Seeder"
-                });
-            }
-
-            // PEA
-            var peaTypeId = TypeId("PEA");
-            if (peaTypeId.HasValue)
-            {
-                docs.Add(new AircraftDocument
-                {
-                    AircraftId = aircraft.Id,
-                    DocumentTypeId = peaTypeId.Value,
-                    ReferenceNo = "PEA-FRA-DEFAULT",
-                    Revision = "01",
-                    Title = "Programme d’entretien (PEA)",
-                    IssuedAtUtc = now.AddYears(-1),
-                    ValidFromUtc = now.AddYears(-1),
-                    ValidUntilUtc = null,
-                    IsCurrent = true,
-                    Status = "Current",
-                    Notes = "Seeded demo document (no file attached).",
-                    CreatedAtUtc = now,
-                    CreatedBy = "Seeder"
-                });
-            }
-
-            if (docs.Count == 0)
-                return;
-
-            await context.AircraftDocuments.AddRangeAsync(docs);
+            context.AddRange(docs);
             await context.SaveChangesAsync();
         }
     }

@@ -233,7 +233,9 @@ namespace FRAProject.Data
                 .HasForeignKey(a => a.AcTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            
+            modelBuilder.Entity<AircraftDocumentType>()
+                .HasIndex(x=>x.Code)
+                .IsUnique();
 
             // --- Enum-to-string converters for Odv enum-backed fields ---
             var zoneConverter = new EnumToStringConverter<Zone>();

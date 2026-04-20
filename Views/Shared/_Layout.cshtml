@@ -1,109 +1,53 @@
 ﻿@{
     Layout = null;
+    var currentArea = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    var pageTitle = ViewData["Title"]?.ToString() ?? "AL-BORAK";
 }
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"]</title>
+    <title>@pageTitle — AL-BORAK GMAO</title>
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="~/lib/css/bootstrap.min.css" />
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="~/plugins/fontawesome-free/css/all.min.css" />
-    <!-- AdminLTE CSS -->
-    <link rel="stylesheet" href="~/css/adminlte.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />    
-    <link rel="stylesheet" href ="~/css/bootstrap-icons.css" />
-    @* <link href="~/css/gmao_fra.css" rel="stylesheet" /> *@
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-        }
-    </style>
+    <!-- Google Fonts: Space Grotesk + JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- GMAO FRA theme -->
+    <link rel="stylesheet" href="~/css/gmao_fra.css" asp-append-version="true" />
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body class="hold-transition sidebar-mini layout-fixed">
-    <div class="wrapper">
-        <!-- Sidebar: render the full <aside> from the ViewComponent (do NOT wrap it in another <aside>) -->
-        @await Component.InvokeAsync("SidebarMenu")
-        @* alternative tag helper: <vc:sidebar-menu></vc:sidebar-menu> *@
+<body>
+    <!-- ===== SIDEBAR ===== -->
+    @await Component.InvokeAsync("SidebarMenu")
 
-        <!-- Content Wrapper (AdminLTE's convention) -->
-        <div class="content-wrapper">
-            <!-- Navbar -->
-            <nav class="navbar navbar-expand navbar-white navbar-light">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" data-widget="pushmenu" href="#" role="button">
-                            <i class="fas fa-bars"></i>
-                        </a>
-                    </li>
-                    <li class="nav-item d-none d-sm-inline-block">
-                        <a href="~/" class="nav-link">Home</a>
-                    </li>
-                    @* Add Admin-only link(s) in the navbar (visible only to users in the "Admin" role) *@
-                    @if (User?.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
-                    {
-                        <li class="nav-item d-none d-sm-inline-block">
-                            <a asp-controller="Users" asp-area = "" asp-action="Index" class="nav-link">
-                                <i class="fas fa-users-cog mr-1"></i> Manage Users
-                            </a>
-                        </li>
+    <!-- ===== MAIN PANEL ===== -->
+    <div class="main">
 
-                        <li class="nav-item d-none d-sm-inline-block">
-                            <a asp-controller="Account" asp-area = "" asp-action="Create" class="nav-link">
-                                <i class="fas fa-user-plus mr-1"></i> Create User
-                            </a>
-                        </li>
+        <!-- Topbar -->
+        <div class="topbar">
+            <span class="topbar-title">@pageTitle</span>
 
-                        <li class="nav-item d-none d-sm-inline-block">
-                            <a asp-controller="MenuItems" asp-area = "" asp-action="Index" class="nav-link">
-                                <i class="fas fa-th-list mr-1"></i> Manage Menu
-                            </a>
-                        </li>
-                        <li class="nav-item d-none d-sm-inline-block">
-                            <a asp-controller="MedicalDashboard" asp-area="Medical" asp-action="Index" class="nav-link">
-                                <i class="fas fa-th-list mr-1"></i> Medical Dashboard
-                            </a>
-                        </li>
-                        
-                    }
-                </ul>
-
-                <div class="ml-auto">
-                    @await Html.PartialAsync("_LoginPartial")
-                </div>
-            </nav>
-
-            <!-- Page header -->
-            <section class="content-header">
-                <div class="container-fluid">
-                     optional title / breadcrumbs 
-                </div>
-            </section>
-
-            <!-- Main content -->
-            <section class="content">
-                <div class="container-fluid">
-                    @RenderBody()
-                </div>
-            </section>
+            <div class="topbar-actions" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                @await Html.PartialAsync("_LoginPartial")
+            </div>
         </div>
 
-        <!-- Footer -->
-        <footer class="main-footer text-center">
-            <strong>© @DateTime.Now.Year AL-BORAK</strong> All rights reserved.
-        </footer>
-    </div>
+        <!-- Page content -->
+        <div class="content">
+            @RenderBody()
+        </div>
 
-    <!-- Scripts: jQuery -> Bootstrap -> AdminLTE -> site -->
+    </div><!-- /.main -->
+
+    <!-- Scripts: jQuery -> Bootstrap -->
     <script src="~/plugins/jquery/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/lib/dist/js/adminlte.min.js"></script>
-   
     <script src="~/js/crewmember-details-modal.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)

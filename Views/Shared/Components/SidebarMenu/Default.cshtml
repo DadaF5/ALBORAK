@@ -1,148 +1,97 @@
-﻿@model IEnumerable<FRAProject.Models.MenuItem>
-
-@{
-    // Current route values
+﻿@{
     var currentArea = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
-    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 
-    int idx = 0;
-    string CollapseId() => "menu_collapse_" + (idx++);
-
-    // bool IsActive(FRAProject.Models.MenuItem m) =>
-    //     string.Equals(m.Area ?? "", currentArea, StringComparison.OrdinalIgnoreCase)
-    //     && string.Equals(m.Controller ?? "", currentController, StringComparison.OrdinalIgnoreCase)
-    //     && string.Equals(m.Action ?? "", currentAction, StringComparison.OrdinalIgnoreCase);
+    bool IsSettingsActive() =>
+        string.Equals(currentArea, "Settings", StringComparison.OrdinalIgnoreCase);
 }
 
-<aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a asp-area=""
-       asp-controller="Home"
-       asp-action="Index"
-       class="brand-link text-center">
-        <img src="~/images/Air_Force_small.png" alt="logo" style="height:80px;" />
-    </a>
+<nav class="sidebar">
 
-    <div class="sidebar">
-        <nav class="mt-2">
-            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
-
-                @foreach (var parent in Model)
-                {
-                    var hasChildren = parent.Children?.Any() == true;
-                    var collapseId = CollapseId();
-
-                    bool IsActive(MenuItem m) =>
-                    string.Equals(m.Area ?? "", currentArea ?? "", StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(m.Controller, currentController, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(m.Action, currentAction, StringComparison.OrdinalIgnoreCase);
-
-                    bool parentActive = hasChildren
-                    ? parent.Children.Any(IsActive)
-                    : IsActive(parent);
-
-                    <li class="nav-item @(hasChildren ? "has-treeview" : "") @(parentActive ? "menu-open" : "")">
-
-                        @* ---------- PARENT WITH CHILDREN ---------- *@
-                        @if (hasChildren)
-                        {
-                            <a href="#"
-                               class="nav-link @(parentActive ? "active" : "")">
-                                <i class="@parent.IconClass nav-icon"></i>
-                                <p>
-                                    @parent.Title
-                                    <i class="right fas fa-angle-left"></i>
-                                </p>
-                            </a>
-
-                            <ul class="nav nav-treeview collapse @(parentActive ? "show" : "")" id="@collapseId">
-                                @foreach (var child in parent.Children)
-                                {
-                                    bool childActive = IsActive(child);
-
-                                    <li class="nav-item">
-                                        @if (!string.IsNullOrWhiteSpace(child.Controller)
-                                                                    && !string.IsNullOrWhiteSpace(child.Action))
-                                        {
-                                            <a asp-area="@(string.IsNullOrWhiteSpace(child.Area) ? null : child.Area)"
-                                               asp-controller="@child.Controller"
-                                               asp-action="@child.Action"
-                                               class="nav-link @(childActive ? "active" : "")">
-                                                <i class="@child.IconClass nav-icon"></i>
-                                                <p>@child.Title</p>
-                                            </a>
-                                        }
-                                        else if (!string.IsNullOrWhiteSpace(child.Url))
-                                        {
-                                            <a href="@Url.Content(child.Url)"
-                                               class="nav-link">
-                                                <i class="@child.IconClass nav-icon"></i>
-                                                <p>@child.Title</p>
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="nav-link">
-                                                <i class="@child.IconClass nav-icon"></i>
-                                                <p>@child.Title</p>
-                                            </span>
-                                        }
-                                    </li>
-                                }
-                            </ul>
-                        }
-
-                        @* ---------- PARENT WITHOUT CHILDREN ---------- *@
-                        else
-                        {
-                            if (!string.IsNullOrWhiteSpace(parent.Controller)
-                            && !string.IsNullOrWhiteSpace(parent.Action))
-                            {
-                                <a asp-area="@(string.IsNullOrWhiteSpace(parent.Area) ? null : parent.Area)"
-                                   asp-controller="@parent.Controller"
-                                   asp-action="@parent.Action"
-                                   class="nav-link @(parentActive ? "active" : "")">
-                                    <i class="@parent.IconClass nav-icon"></i>
-                                    <p>@parent.Title</p>
-                                </a>
-                            }
-                            else if (!string.IsNullOrWhiteSpace(parent.Url))
-                            {
-                                <a href="@Url.Content(parent.Url)"
-                                   class="nav-link">
-                                    <i class="@parent.IconClass nav-icon"></i>
-                                    <p>@parent.Title</p>
-                                </a>
-                            }
-                            else
-                            {
-                                <span class="nav-link @(parentActive ? "active" : "")">
-                                    <i class="@parent.IconClass nav-icon"></i>
-                                    <p>@parent.Title</p>
-                                </span>
-                            }
-                        }
-                    </li>
-                }
-
-
-            </ul>
-        </nav>
+    <!-- Logo -->
+    <div class="sidebar-logo">
+        <div class="logo-icon">✈</div>
+        <div class="logo-text">
+            <span class="name">AL-BORAK</span>
+            <span class="sub">GMAO / FRA</span>
+        </div>
     </div>
-</aside>
 
-@section Scripts {
-    <script>
-        // Ensure the active menu branch is expanded on load
-        (function () {
-            document.querySelectorAll('.nav-link.active').forEach(function (el) {
-                var parent = el.closest('.collapse');
-                if (parent) {
-                    parent.classList.add('show');
-                    var tree = parent.closest('.has-treeview');
-                    if (tree) tree.classList.add('menu-open');
+    <!-- NAVIGATION -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Navigation principale</div>
+
+        <a href="#" class="nav-item" style="text-decoration:none;">
+            <span class="nav-icon">📊</span>
+            <span>Tableau de bord</span>
+        </a>
+
+        <a href="#" class="nav-item" style="text-decoration:none;">
+            <span class="nav-icon">✈</span>
+            <span>Flotte</span>
+        </a>
+
+        <a href="#" class="nav-item" style="text-decoration:none;">
+            <span class="nav-icon">🔧</span>
+            <span>Maintenance</span>
+        </a>
+
+        <a href="#" class="nav-item" style="text-decoration:none;">
+            <span class="nav-icon">📋</span>
+            <span>Opérations</span>
+        </a>
+
+        <a href="#" class="nav-item" style="text-decoration:none;">
+            <span class="nav-icon">🏥</span>
+            <span>Médical</span>
+        </a>
+
+        <a href="#" class="nav-item" style="text-decoration:none;">
+            <span class="nav-icon">🛡</span>
+            <span>Navigabilité</span>
+        </a>
+
+        <a href="#" class="nav-item" style="text-decoration:none;">
+            <span class="nav-icon">⚡</span>
+            <span>SGS</span>
+        </a>
+
+        <a href="#" class="nav-item" style="text-decoration:none;">
+            <span class="nav-icon">🧪</span>
+            <span>PMEL</span>
+        </a>
+    </div>
+
+    <!-- SYSTÈME -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Système</div>
+
+        <a asp-area="Settings"
+           asp-controller="Home"
+           asp-action="Index"
+           class="nav-item @(IsSettingsActive() ? "active" : "")"
+           style="text-decoration:none;">
+            <span class="nav-icon">⚙</span>
+            <span>Paramètres système</span>
+        </a>
+    </div>
+
+    <!-- Footer user card -->
+    <div class="sidebar-footer">
+        <div class="user-card">
+            <div class="user-avatar">
+                @{
+                    var initials = User?.Identity?.Name?.Length > 0
+                        ? User.Identity.Name.Substring(0, 1).ToUpper()
+                        : "U";
                 }
-            });
-        })();
-    </script>
-}
+                @initials
+            </div>
+            <div class="user-info">
+                <div class="name">@(User?.Identity?.Name ?? "Utilisateur")</div>
+                <div class="role">@(User?.Identity?.IsAuthenticated == true ? "Connecté" : "Non connecté")</div>
+            </div>
+        </div>
+    </div>
+
+</nav>

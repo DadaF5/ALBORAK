@@ -126,7 +126,7 @@
         {
             <div class="user-card">
                 <div class="user-avatar">
-                    @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "?")
+                    @((User.Identity?.Name?.Length > 0 ? User.Identity.Name.Substring(0, 1).ToUpper() : null) ?? "?")
                 </div>
                 <div class="user-info">
                     <div class="name">@User.Identity?.Name</div>

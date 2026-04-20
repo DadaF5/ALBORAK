@@ -5,9 +5,9 @@ namespace FRAProject.ViewComponents
 {
     public class SidebarMenuViewComponent : ViewComponent
     {
-        public IViewComponentResult Invoke()
+        public Task<IViewComponentResult> InvokeAsync()
         {
-            return View();
+            return Task.FromResult<IViewComponentResult>(View());
         }
     }
 }

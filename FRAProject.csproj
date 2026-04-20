@@ -17,6 +17,7 @@
     <Folder Include="Areas\AircraftMaintenance\Views\AircraftDashboard\" />
     <Folder Include="Areas\Settings\Views\AircraftVersions\" />
     <Folder Include="Areas\Settings\Views\AircraftManufacturers\" />
+    <Folder Include="Areas\Settings\Views\Home\" />
     <Folder Include="Controllers\AircraftMaintenance\" />
     <Folder Include="Controllers\HR\" />
     <Folder Include="Controllers\Medical\" />

@@ -15,7 +15,9 @@ namespace FRAProject.Controllers
 
         public IActionResult Index()
         {
-            return RedirectToAction("AircraftDashboard", "AircraftDashboard");
+            //return RedirectToAction("AircraftDashboard", "AircraftDashboard");
+
+            return RedirectToAction("Index", "Home", new { area = "Settings" });
             //return View();
         }
 

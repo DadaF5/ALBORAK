@@ -1284,3 +1284,220 @@ a.icon-btn:hover {
     background: var(--bg3);
     color: var(--text) !important;
 }
+/* Avoid underlined links in UI buttons */
+a.set-tab,
+a.nav-item,
+a.icon-btn {
+    text-decoration: none !important;
+}
+
+    a.set-tab:hover,
+    a.nav-item:hover,
+    a.icon-btn:hover {
+        text-decoration: none !important;
+ }
+/* =========================
+   Sidebar collapse support
+   ========================= */
+
+.sidebar-toggle {
+    margin-left: auto;
+    width: 34px;
+    height: 34px;
+}
+
+body.sidebar-collapsed .sidebar {
+    width: 72px;
+    min-width: 72px;
+}
+
+body.sidebar-collapsed .logo-text,
+body.sidebar-collapsed .sidebar-section-label,
+body.sidebar-collapsed .nav-item p,
+body.sidebar-collapsed .nav-item .nav-text,
+body.sidebar-collapsed .nav-badge,
+body.sidebar-collapsed .user-info {
+    display: none !important;
+}
+
+body.sidebar-collapsed .nav-item {
+    justify-content: center;
+    padding: 10px;
+}
+
+body.sidebar-collapsed .nav-icon {
+    width: auto;
+}
+/* Ensure the toggle remains visible & clickable when collapsed */
+.sidebar-logo {
+    position: relative;
+}
+
+.sidebar-toggle {
+    z-index: 200;
+    flex-shrink: 0;
+}
+
+/* In collapsed mode, keep the toggle button visible */
+body.sidebar-collapsed .sidebar-toggle {
+    display: inline-flex !important;
+}
+
+/* If you hide all sidebar-logo text/icons, keep icon + toggle */
+body.sidebar-collapsed .sidebar-logo {
+    justify-content: center;
+    gap: 0;
+}
+
+    body.sidebar-collapsed .sidebar-logo .logo-icon {
+        display: flex !important;
+    }
+
+/* =========================
+   Collapsed sidebar: icons only + hover label tooltip
+   ========================= */
+
+/* Prevent wrapping by default */
+.nav-item {
+    white-space: nowrap;
+}
+
+/* Hide labels/badges when collapsed */
+body.sidebar-collapsed .nav-text,
+body.sidebar-collapsed .nav-badge {
+    display: none !important;
+}
+
+/* Center icons */
+body.sidebar-collapsed .nav-item {
+    justify-content: center;
+    padding: 10px;
+    position: relative; /* for tooltip positioning */
+}
+
+    /* Show label as tooltip on hover */
+    body.sidebar-collapsed .nav-item:hover .nav-text {
+        display: block !important;
+        position: absolute;
+        left: calc(100% + 10px);
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border2);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        z-index: 2000;
+        box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+
+        /* Tooltip arrow */
+        body.sidebar-collapsed .nav-item:hover .nav-text::before {
+            content: "";
+            position: absolute;
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent var(--surface) transparent transparent;
+        }
+
+/* =========================================================
+   SAFE OVERRIDES: Collapsed sidebar tooltips + nav text rules
+   Append this at the very end of the file.
+   ========================================================= */
+
+/* Ensure sidebar stays above main content (tooltip visible) */
+.sidebar {
+    position: relative;
+    z-index: 200;
+}
+
+/* Never underline sidebar links / pills */
+a.nav-item, a.set-tab, a.icon-btn {
+    text-decoration: none !important;
+}
+
+/* Use a consistent label wrapper */
+.nav-text {
+    display: inline;
+}
+
+/* Prevent squeezing/wrapping in nav items */
+.nav-item {
+    white-space: nowrap;
+}
+
+/* COLLAPSED: icons only */
+body.sidebar-collapsed .sidebar {
+    width: 72px;
+    min-width: 72px;
+}
+
+body.sidebar-collapsed .logo-text,
+body.sidebar-collapsed .sidebar-section-label,
+body.sidebar-collapsed .user-info,
+body.sidebar-collapsed .nav-badge {
+    display: none !important;
+}
+
+/* Hide visible label in collapsed mode */
+body.sidebar-collapsed .nav-text {
+    display: none !important;
+}
+
+/* Center icon */
+body.sidebar-collapsed .nav-item {
+    justify-content: center;
+    padding: 10px;
+    position: relative; /* anchor for tooltip */
+}
+
+    /* Tooltip appears on hover (uses nav-text content) */
+    body.sidebar-collapsed .nav-item:hover .nav-text {
+        display: block !important;
+        position: absolute;
+        left: calc(100% + 10px);
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border2);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        z-index: 5000;
+        box-shadow: 0 10px 30px rgba(0,0,0,.35);
+        pointer-events: none; /* tooltip never blocks clicks */
+    }
+
+        /* Small arrow */
+        body.sidebar-collapsed .nav-item:hover .nav-text::before {
+            content: "";
+            position: absolute;
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent var(--surface) transparent transparent;
+        }
+
+/* Ensure toggle button always visible & clickable */
+.sidebar-logo {
+    position: relative;
+}
+
+.sidebar-toggle {
+    z-index: 6000;
+}
+
+body.sidebar-collapsed .sidebar-toggle {
+    display: inline-flex !important;
+}

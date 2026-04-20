@@ -15,7 +15,15 @@ namespace FRAProject.ViewComponents
 
         public async Task<IViewComponentResult> InvokeAsync()
         {
-            var menu = await _menuService.GetMenuForUserAsync(HttpContext.User);
+            IEnumerable<FRAProject.Models.MenuItem> menu;
+            try
+            {
+                menu = await _menuService.GetMenuForUserAsync(HttpContext.User);
+            }
+            catch
+            {
+                menu = Enumerable.Empty<FRAProject.Models.MenuItem>();
+            }
             return View(menu);
         }
     }

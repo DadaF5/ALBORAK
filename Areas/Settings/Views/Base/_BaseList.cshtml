@@ -1,0 +1,67 @@
+@model List<FRAProject.DTOs.BaseDto>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">🏢 Bases Aériennes</h4>
+    <a asp-area="Settings" asp-controller="Base" asp-action="Create" class="btn btn-success">
+        <i class="fas fa-plus"></i> Nouvelle Base
+    </a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>Nom de Base</th>
+                <th>Localisation</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th style="width: 120px;">Actions</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Count == 0)
+            {
+                <tr>
+                    <td colspan="3" class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p class="mb-0">Aucune base trouvée. Cliquez sur "Nouvelle Base" pour ajouter.</p>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td><strong>@item.BaseName</strong></td>
+                        <td>@item.BaseNameLocal</td>
+                        <td>@item.Latitude</td>
+                        <td>@item.Longitude</td>
+                        <td>
+                            <a asp-area="Settings" asp-controller="Base" asp-action="Edit" asp-route-id="@item.Id" 
+                               class="btn btn-sm btn-warning" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button class="btn btn-sm btn-danger" 
+                                    onclick="deleteItem('Base', @item.Id, '@item.BaseName')" 
+                                    title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.Count > 0)
+{
+    <div class="text-muted small">
+        <i class="fas fa-info-circle"></i> Total: @Model.Count base(s)
+    </div>
+}
+
+@* Anti-forgery token for AJAX delete *@
+@Html.AntiForgeryToken()

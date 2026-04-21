@@ -1,0 +1,86 @@
+@model FRAProject.DTOs.BaseCreateDto
+
+@{
+    ViewData["Title"] = "Modifier Base";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">✏️ Modifier la Base</h3>
+                <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="btn btn-sm btn-light">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+            <form asp-area="Settings" asp-controller="Base" asp-action="Edit" method="post">
+                <div class="card-body">
+                    <input type="hidden" asp-for="Id" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="form-group">
+                        <label asp-for="BaseCode" class="control-label">Code Base <span class="text-danger">*</span></label>
+                        <input asp-for="BaseCode" class="form-control" maxlength="10" />
+                        <span asp-validation-for="BaseCode" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="BaseName" class="control-label">Nom Complet <span class="text-danger">*</span></label>
+                        <input asp-for="BaseName" class="form-control" maxlength="100" />
+                        <span asp-validation-for="BaseName" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Location" class="control-label">Localisation <span class="text-danger">*</span></label>
+                        <input asp-for="Location" class="form-control" maxlength="100" />
+                        <span asp-validation-for="Location" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Latitude" class="control-label">Latitude <span class="text-danger">*</span></label>
+                        <input asp-for="Latitude" class="form-control" placeholder="Ex: 33.8944672" maxlength="" />
+                        <span asp-validation-for="Latitude" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Longitude" class="control-label">Longitude <span class="text-danger">*</span></label>
+                        <input asp-for="Longitude" class="form-control" placeholder="Ex: -5.5492397" maxlength="" />
+                        <span asp-validation-for="Longitude" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input asp-for="IsActive" type="checkbox" class="custom-control-input" id="IsActive" />
+                            <label class="custom-control-label" for="IsActive">Base Active</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save"></i> Mettre à Jour
+                    </button>
+                    <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Aide</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Code Base:</strong> Identifiant court unique</p>
+                <p><strong>Nom Complet:</strong> Nom officiel complet de la base</p>
+                <p><strong>Localisation:</strong> Ville ou région</p>
+                <p class="mb-0"><strong>Statut:</strong> Base opérationnelle ou non</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

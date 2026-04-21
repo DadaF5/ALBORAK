@@ -10,11 +10,26 @@ namespace FRAProject.Areas.HR.Models
         [Key]
         public int Id { get; set; }
 
-        [Required, StringLength(100)]
-        public string BaseName { get; set; }
+        [Required]
+        [StringLength(10)]
+        public string BaseCode { get; set; } = string.Empty;
 
+        [Required]
         [StringLength(100)]
-        public string? BaseNameLocal { get; set; }
+        public string BaseName { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100)]
+        public string Location { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
+
+        // Geo Coordinates
+        [Column(TypeName = "decimal(10, 7)")]
+        public decimal? Latitude { get; set; }
+
+        [Column(TypeName = "decimal(10, 7)")]
+        public decimal? Longitude { get; set; }
 
         // Navigation
         public ICollection<Department> Departments { get; set; } = new HashSet<Department>();

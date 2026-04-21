@@ -5,9 +5,9 @@ namespace FRAProject.Areas.Settings.Controllers
     [Area("Settings")]
     public class HomeController : Controller
     {
+        // Main settings page
         public IActionResult Index()
         {
-            ViewData["Title"] = "Paramètres système";
             return View();
         }
     }

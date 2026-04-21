@@ -1,74 +1,118 @@
 @{
-    ViewData["Title"] = "Paramètres système";
+    ViewData["Title"] = "Paramètres";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
-@{
-    Layout = "~/Views/Shared/_Layout.cshtml";
-}
-<div class="section-header">
-    <div>
-        <div class="section-title">Paramètres système</div>
-        <div class="section-sub">Référentiels & listes de configuration — Administration GMAO FRA</div>
+
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">⚙️ Paramètres du Système</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Navigation Tabs -->
+                    <div class="btn-group mb-3" role="group">
+                        <button type="button" class="btn btn-outline-primary settings-tab active" data-controller="Base">
+                            🏢 Bases Aériennes
+                        </button>
+                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="AircraftManufacturers">
+                            🏭 Constructeurs
+                        </button>
+                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="AircraftVersions">
+                            ✈️ Versions d'Aéronefs
+                        </button>
+                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="AircraftTypes">
+                            🛩️ Types d'Aéronefs
+                        </button>
+                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="Positions">
+                            📍 Positions
+                        </button>
+                    </div>
+
+                    <hr>
+
+                    <!-- Dynamic Content Container -->
+                    <div id="settingsContent">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
+                            <p>Chargement...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="sidebar-section-label">Flotte & aéronefs</div>
-<div class="tag-list">
-    <a class="set-tab" href="#">🏠 Bases aériennes</a>
-    <a class="set-tab" href="#">✈ Types aéronefs</a>
-    <a class="set-tab" href="#">🗂 Familles</a>
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Auto-load first tab
+            loadList('Base');
 
-    <!-- LIVE -->
-    <a class="set-tab"
-       asp-area="Settings" asp-controller="AircraftVersions" asp-action="Index">🔖 Versions</a>
+            // Handle tab clicks
+            $('.settings-tab').on('click', function() {
+                const controller = $(this).data('controller');
 
-    <a class="set-tab" href="#">🛡 Statuts navigabilité</a>
-    <a class="set-tab" href="#">📥 Origines entrée</a>
-</div>
+                // Update active tab
+                $('.settings-tab').removeClass('active');
+                $(this).addClass('active');
 
-<div class="sidebar-section-label">Maintenance & entretien</div>
-<div class="tag-list">
-    <a class="set-tab" href="#">🔧 Types entretien</a>
-    <a class="set-tab" href="#">📶 Niveaux maintenance</a>
-    <a class="set-tab" href="#">⚠ Catégories défaut LME</a>
-    <a class="set-tab" href="#">📝 Types SB / Modif.</a>
-</div>
+                // Load list
+                loadList(controller);
+            });
+        });
 
-<div class="sidebar-section-label">Missions</div>
-<div class="tag-list">
-    <a class="set-tab" href="#">🎯 Catégories mission</a>
-    <a class="set-tab" href="#">🔒 Équipements critiques</a>
-</div>
+        // Load list for a controller
+        function loadList(controller) {
+            $('#settingsContent').html('<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x"></i></div>');
 
-<div class="sidebar-section-label">RH & licences</div>
-<div class="tag-list">
-    <a class="set-tab" href="#">🪪 Catégories LMAM</a>
-    <a class="set-tab" href="#">🎖 Grades militaires</a>
-</div>
+            // Direct call to controller's List action
+            const url = `/Settings/${controller}/List`;
 
-<div class="sidebar-section-label">Organismes & partenaires</div>
-<div class="tag-list">
-    <a class="set-tab" href="#">🏢 Organismes M</a>
-    <a class="set-tab" href="#">🏢 Organismes 145</a>
-    <a class="set-tab" href="#">🎓 Organismes 147</a>
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    $('#settingsContent').html(response);
+                },
+                error: function(xhr) {
+                    let errorMsg = '<div class="alert alert-danger">' +
+                                  '<i class="fas fa-exclamation-triangle"></i> Erreur de chargement';
 
-    <!-- LIVE -->
-    <a class="set-tab"
-       asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Index">🏭 Constructeurs</a>
+                    if (xhr.status === 404) {
+                        errorMsg += ' - Controller ou action introuvable';
+                    } else if (xhr.responseText) {
+                        errorMsg += ': ' + xhr.responseText;
+                    }
 
-    <a class="set-tab" href="#">⚙ Motorisations</a>
-    <a class="set-tab" href="#">🔩 Types moteur</a>
-</div>
+                    errorMsg += '</div>';
+                    $('#settingsContent').html(errorMsg);
+                }
+            });
+        }
 
-<div class="sidebar-section-label">SGS & logistique</div>
-<div class="tag-list">
-    <a class="set-tab" href="#">⚡ Types événement SGS</a>
-    <a class="set-tab" href="#">🔴 Niveaux de risque</a>
-    <a class="set-tab" href="#">🧪 Types fluides PMEL</a>
-    <a class="set-tab" href="#">🌍 Pays</a>
-</div>
+        // Delete item (called from partial views)
+        function deleteItem(controller, id, name) {
+            if (confirm(`Êtes-vous sûr de vouloir supprimer "${name}" ?`)) {
+                $.ajax({
+                    url: `/Settings/${controller}/Delete/${id}`,
+                    type: 'POST',
+                    data: {
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        toastr.success('Supprimé avec succès');
+                        loadList(controller);
+                    },
+                    error: function(xhr) {
+                        toastr.error('Erreur lors de la suppression');
+                    }
+                });
+            }
+        }
+    </script>
+}
 
-<hr class="divider" />
-
-<div class="empty-state">
-    Sélectionnez un référentiel pour commencer.
-</div>

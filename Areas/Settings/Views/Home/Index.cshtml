@@ -1,0 +1,74 @@
+@{
+    ViewData["Title"] = "Paramètres système";
+}
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="section-header">
+    <div>
+        <div class="section-title">Paramètres système</div>
+        <div class="section-sub">Référentiels & listes de configuration — Administration GMAO FRA</div>
+    </div>
+</div>
+
+<div class="sidebar-section-label">Flotte & aéronefs</div>
+<div class="tag-list">
+    <a class="set-tab" href="#">🏠 Bases aériennes</a>
+    <a class="set-tab" href="#">✈ Types aéronefs</a>
+    <a class="set-tab" href="#">🗂 Familles</a>
+
+    <!-- LIVE -->
+    <a class="set-tab"
+       asp-area="Settings" asp-controller="AircraftVersions" asp-action="Index">🔖 Versions</a>
+
+    <a class="set-tab" href="#">🛡 Statuts navigabilité</a>
+    <a class="set-tab" href="#">📥 Origines entrée</a>
+</div>
+
+<div class="sidebar-section-label">Maintenance & entretien</div>
+<div class="tag-list">
+    <a class="set-tab" href="#">🔧 Types entretien</a>
+    <a class="set-tab" href="#">📶 Niveaux maintenance</a>
+    <a class="set-tab" href="#">⚠ Catégories défaut LME</a>
+    <a class="set-tab" href="#">📝 Types SB / Modif.</a>
+</div>
+
+<div class="sidebar-section-label">Missions</div>
+<div class="tag-list">
+    <a class="set-tab" href="#">🎯 Catégories mission</a>
+    <a class="set-tab" href="#">🔒 Équipements critiques</a>
+</div>
+
+<div class="sidebar-section-label">RH & licences</div>
+<div class="tag-list">
+    <a class="set-tab" href="#">🪪 Catégories LMAM</a>
+    <a class="set-tab" href="#">🎖 Grades militaires</a>
+</div>
+
+<div class="sidebar-section-label">Organismes & partenaires</div>
+<div class="tag-list">
+    <a class="set-tab" href="#">🏢 Organismes M</a>
+    <a class="set-tab" href="#">🏢 Organismes 145</a>
+    <a class="set-tab" href="#">🎓 Organismes 147</a>
+
+    <!-- LIVE -->
+    <a class="set-tab"
+       asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Index">🏭 Constructeurs</a>
+
+    <a class="set-tab" href="#">⚙ Motorisations</a>
+    <a class="set-tab" href="#">🔩 Types moteur</a>
+</div>
+
+<div class="sidebar-section-label">SGS & logistique</div>
+<div class="tag-list">
+    <a class="set-tab" href="#">⚡ Types événement SGS</a>
+    <a class="set-tab" href="#">🔴 Niveaux de risque</a>
+    <a class="set-tab" href="#">🧪 Types fluides PMEL</a>
+    <a class="set-tab" href="#">🌍 Pays</a>
+</div>
+
+<hr class="divider" />
+
+<div class="empty-state">
+    Sélectionnez un référentiel pour commencer.
+</div>

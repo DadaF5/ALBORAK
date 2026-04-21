@@ -1,29 +1,29 @@
-﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Identity
 @using FRAProject.Models
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 
 @if (SignInManager.IsSignedIn(User))
 {
-    <form asp-area="Identity" asp-page="/Account/Logout" method="post" id="logoutForm" class="form-inline">
-        <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Hello @User.Identity?.Name!</a>
-            </li>
-            <li class="nav-item">
-                <button type="submit" class="nav-link btn btn-link text-dark">Logout</button>
-            </li>
-        </ul>
+    <form asp-area="Identity" asp-page="/Account/Logout" method="post" id="logoutForm" class="d-flex align-items-center gap-2">
+        <a asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage account"
+           class="icon-btn text-decoration-none" style="font-size:13px;color:var(--text2);">
+            <i class="fas fa-user-circle me-1"></i>
+            <span class="d-none d-lg-inline" style="font-size:12px;">@User.Identity?.Name</span>
+        </a>
+        <button type="submit" class="icon-btn border-0" title="Logout" style="background:none;cursor:pointer;">
+            <i class="fas fa-sign-out-alt"></i>
+        </button>
     </form>
 }
 else
 {
-    <ul class="navbar-nav">
-        <li class="nav-item">
-            <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">Register</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
-        </li>
-    </ul>
+    <div class="d-flex align-items-center gap-2">
+        <a asp-area="Identity" asp-page="/Account/Register"
+           style="font-size:12px;color:var(--text2);text-decoration:none;">Register</a>
+        <a asp-area="Identity" asp-page="/Account/Login"
+           class="icon-btn text-decoration-none" style="font-size:12px;padding:6px 12px;width:auto;">
+            <i class="fas fa-sign-in-alt me-1"></i>Login
+        </a>
+    </div>
 }

@@ -1,0 +1,46 @@
+@model FRAProject.Areas.Settings.Models.AircraftVersion
+@{
+    ViewData["Title"] = "Create Version aéronef";
+}
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h2>@ViewData["Title"]</h2>
+
+<form asp-area="Settings" asp-controller="AircraftVersions" asp-action="Create" method="post">
+    <div class="mb-3">
+        <label asp-for="Code" class="form-label"></label>
+        <input asp-for="Code" class="form-control" />
+        <span asp-validation-for="Code" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label"></label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <input asp-for="Description" class="form-control" />
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="SortOrder" class="form-label"></label>
+        <input asp-for="SortOrder" class="form-control" type="number" />
+        <span asp-validation-for="SortOrder" class="text-danger"></span>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label"></label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-area="Settings" asp-controller="AircraftVersions" asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

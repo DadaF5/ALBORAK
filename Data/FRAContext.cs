@@ -1,14 +1,16 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using FRAProject.Models;
-using FRAProject.Enums;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using FRAProject.Data.EntityConfigurations;
-using FRAProject.Areas.AircraftMaintenance.Models;
+﻿using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.Medical.Models;
+using FRAProject.Areas.Settings;
+using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Data.EntityConfigurations;
+using FRAProject.Enums;
+using FRAProject.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System;
 
 namespace FRAProject.Data
 {
@@ -79,6 +81,20 @@ namespace FRAProject.Data
         public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;     // Maintenance work orders
         public DbSet<AircraftDocumentType> AircraftDocumentTypes { get; set; } = null!;
         public DbSet<AircraftDocument> AircraftDocuments { get; set; } = null!; // if you have this entity too
+
+
+        // =====================================
+        // Settings & Lookups (dbo)
+        public DbSet<AircraftVersion> AircraftVersions { get; set; } = null!;     // Lookup for aircraft versions
+        public DbSet<AircraftManufacturer> AircraftManufacturers { get; set; } = null!;
+
+        
+        //public DbSet<MaintenanceType> MaintenanceTypes { get; set; } = null!;
+        //public DbSet<EngineType> EngineTypes { get; set; } = null!;
+        //public DbSet<SgsEventType> SgsEventTypes { get; set; } = null!;
+        //public DbSet<RiskLevel> RiskLevels { get; set; } = null!;
+        //public DbSet<FluidType> FluidTypes { get; set; } = null!;
+
         private void ConfigureFlightLog(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<FlightLog>(e =>
@@ -235,6 +251,13 @@ namespace FRAProject.Data
 
             modelBuilder.Entity<AircraftDocumentType>()
                 .HasIndex(x=>x.Code)
+                .IsUnique();
+
+            modelBuilder.Entity<AircraftManufacturer>()
+                .HasIndex(x => x.Code)
+                .IsUnique();
+            modelBuilder.Entity<AircraftVersion>()
+                .HasIndex(x => x.Code)
                 .IsUnique();
 
             // --- Enum-to-string converters for Odv enum-backed fields ---

@@ -7,18 +7,11 @@
 
     <!-- AdminLTE 3.2.0 CSS -->
     <link rel="stylesheet" href="~/css/adminlte.min.css" />
-    <link href="~/plugins/toastr/toastr.min.css" rel="stylesheet" />
-   
+    <link href="~/plugins/toastr/toastr.min.css" rel="stylesheet" />   
     
-    <link href="~/css/gmao_fra.css" rel="stylesheet" />
-   
-   
-    <script src="~/lib/bootstrap/bootstrap.bundle.min.js"></script>
-   
-    
-    <script src="~/js/bootstrap.bundle.min.js"></script>
-    <link href="~/plugins/fontawesome-free/css/all.min.css" rel="stylesheet" />
-    <link href="~/plugins/fontawesome-free/css/all.css" rel="stylesheet" />
+   @*  <link href="~/css/gmao_fra.css" rel="stylesheet" />   *@   
+  
+    <link href="~/plugins/fontawesome-free/css/all.min.css" rel="stylesheet" />    
 
     @RenderSection("Styles", required: false)
 </head>
@@ -36,7 +29,7 @@
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
                     <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="nav-link active">
-                        ⚙️ Paramètres
+                        ⚙️ Administration
                     </a>
                 </li>
             </ul>
@@ -55,8 +48,10 @@
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <!-- Brand Logo -->
             <a href="~/" class="brand-link">
-                <img src="~/img/logo.png" alt="2BAFRA Logo" class="brand-image img-circle elevation-3" style="opacity: .8" onerror="this.style.display='none'">
-                <span class="brand-text font-weight-light">2BAFRA</span>
+                <img src="~/Images/Air_Force_small.png" alt="FRA Logo" 
+                class="brand-image img-circle elevation-3" style="opacity: .9" onerror="this.style.display='none'">
+                <span class="brand-text font-weight-light">ALBORAK</span>
+                
             </a>
 
             <!-- Sidebar -->
@@ -66,7 +61,7 @@
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
                         
                         <!-- Settings Section -->
-                        <li class="nav-header">PARAMÈTRES SYSTÈME</li>
+                            <li class="nav-header">NAVIGATION</li>
                         
                         <li class="nav-item">
                             <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="nav-link active">
@@ -131,15 +126,15 @@
             <div class="content-header">
                 <div class="container-fluid">
                     <div class="row mb-2">
-                        <div class="col-sm-6">
+                       @*  <div class="col-sm-6">
                             <h1 class="m-0">@ViewData["Title"]</h1>
-                        </div>
-                        <div class="col-sm-6">
+                        </div> *@
+                        @* <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-right">
                                 <li class="breadcrumb-item"><a href="~/">Accueil</a></li>
                                 <li class="breadcrumb-item active">@ViewData["Title"]</li>
                             </ol>
-                        </div>
+                        </div> *@
                     </div>
                 </div>
             </div>
@@ -170,7 +165,7 @@
 
         <!-- Footer -->
         <footer class="main-footer">
-            <strong>Copyright &copy; 2024-@DateTime.Now.Year <a href="#">2BAFRA</a>.</strong>
+            <strong>Copyright &copy; 2024-@DateTime.Now.Year <a href="#">Alborak</a>.</strong>
             Tous droits réservés.
             <div class="float-right d-none d-sm-inline-block">
                 <b>Version</b> 1.0.0
@@ -178,19 +173,13 @@
         </footer>
     </div>
 
-    <!-- jQuery -->
-   
-   
+    <!-- jQuery -->     
     <script src="~/plugins/jquery/jquery.min.js"></script>
-    <!-- Bootstrap 4 -->
-    
+    <!-- Bootstrap 4 -->    
     <script src="~/plugins/bootstrap/js/bootstrap.min.js"></script>
     <!-- AdminLTE App -->
-
+       <a href="~/lib/dist/js/adminlte.min.js.map">~/lib/dist/js/adminlte.min.js.map</a>
     <script src="~/lib/dist/js/adminlte.min.js"></script>
-    <!-- Toastr -->
- 
-    <script src="~/plugins/toastr/toastr.min.js"></script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>

@@ -7,11 +7,12 @@ namespace FRAProject.Areas.Settings.Controllers
     public class HomeController : Controller
     {
         // Main settings page
+        [Authorize(Roles = "Admin")]
         public IActionResult Index()
         {
             return View();
         }
-
+       
         // This action is used for access denied redirection from cookie options
         // No admin can see the access denied message
         [AllowAnonymous]

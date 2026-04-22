@@ -95,11 +95,17 @@ builder.Services.AddControllersWithViews()
 // Configure Authentication Cookie
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.AccessDeniedPath = "/Settings/Home/AccessDenied";
+    
     options.LoginPath = "/Identity/Account/Login";  // Fixed for Razor Pages
     options.LogoutPath = "/Identity/Account/Logout";
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
+    // Handle AccessDenied redirect to Area
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.Redirect("/Settings/Home/AccessDenied");
+        return Task.CompletedTask;
+    };
 });
 
 var app = builder.Build();

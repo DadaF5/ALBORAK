@@ -2,12 +2,14 @@
 using FRAProject.Data;
 using FRAProject.DTOs;
 using FRAProject.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Areas.Settings.Controllers
 {
     [Area("Settings")]
+    [Authorize(Roles = "Admin")]
     public class BaseController : Controller
     {
         private readonly FRAContext _context;

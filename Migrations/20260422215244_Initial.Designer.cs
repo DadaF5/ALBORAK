@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    [Migration("20260421193614_AddGeoCoordinatesToBase")]
-    partial class AddGeoCoordinatesToBase
+    [Migration("20260422215244_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -49,41 +49,6 @@ namespace FRAProject.Migrations
                     b.ToTable("AcCategories", "dbo");
                 });
 
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AcMainGroup", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AcCategoryId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("Active")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("BaseId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AcCategoryId");
-
-                    b.HasIndex("BaseId");
-
-                    b.ToTable("AcMainGroups", "dbo");
-                });
-
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AcStatusType", b =>
                 {
                     b.Property<int>("Id")
@@ -114,66 +79,6 @@ namespace FRAProject.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("AcStatusTypes", "dbo");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AcType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AcMainGroupId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("AircraftManufacturerId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("AircraftVersionId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Code")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MaxEngines")
-                        .HasColumnType("int");
-
-                    b.Property<double>("MaxGrossweight")
-                        .HasColumnType("float");
-
-                    b.Property<int>("MaxPassengers")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("SeatCount")
-                        .HasColumnType("int");
-
-                    b.Property<byte>("SortOrder")
-                        .HasColumnType("tinyint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AcMainGroupId");
-
-                    b.HasIndex("AircraftManufacturerId");
-
-                    b.HasIndex("AircraftVersionId");
-
-                    b.ToTable("AcTypes", "dbo");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.Aircraft", b =>
@@ -740,6 +645,96 @@ namespace FRAProject.Migrations
                     b.ToTable("MedicalChecks");
                 });
 
+            modelBuilder.Entity("FRAProject.Areas.Settings.Models.AcMainGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AcCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("BaseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcCategoryId");
+
+                    b.HasIndex("BaseId");
+
+                    b.ToTable("AcMainGroups", "dbo");
+                });
+
+            modelBuilder.Entity("FRAProject.Areas.Settings.Models.AcType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AcMainGroupId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AircraftManufacturerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaxEngines")
+                        .HasColumnType("int");
+
+                    b.Property<double>("MaxGrossweight")
+                        .HasColumnType("float");
+
+                    b.Property<int>("MaxPassengers")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SeatCount")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("SortOrder")
+                        .HasColumnType("tinyint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcMainGroupId");
+
+                    b.HasIndex("AircraftManufacturerId");
+
+                    b.ToTable("AcTypes", "dbo");
+                });
+
             modelBuilder.Entity("FRAProject.Areas.Settings.Models.AircraftManufacturer", b =>
                 {
                     b.Property<int>("Id")
@@ -784,6 +779,9 @@ namespace FRAProject.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AcTypeId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -806,8 +804,18 @@ namespace FRAProject.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AcTypeId");
+
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("Code", "AcTypeId")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_AircraftVersions_Code_AcType");
+
+                    b.HasIndex("Name", "AcTypeId")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_AircraftVersions_Name_AcType");
 
                     b.ToTable("AircraftVersions", "dbo");
                 });
@@ -2019,48 +2027,6 @@ namespace FRAProject.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AcMainGroup", b =>
-                {
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.AcCategory", "AcCategory")
-                        .WithMany("AcMainGroups")
-                        .HasForeignKey("AcCategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Areas.HR.Models.Base", "Base")
-                        .WithMany("AcMainGroups")
-                        .HasForeignKey("BaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AcCategory");
-
-                    b.Navigation("Base");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AcType", b =>
-                {
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.AcMainGroup", "AcMainGroup")
-                        .WithMany("AcTypes")
-                        .HasForeignKey("AcMainGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Areas.Settings.Models.AircraftManufacturer", "AircraftManufacturer")
-                        .WithMany()
-                        .HasForeignKey("AircraftManufacturerId");
-
-                    b.HasOne("FRAProject.Areas.Settings.Models.AircraftVersion", "AircraftVersion")
-                        .WithMany()
-                        .HasForeignKey("AircraftVersionId");
-
-                    b.Navigation("AcMainGroup");
-
-                    b.Navigation("AircraftManufacturer");
-
-                    b.Navigation("AircraftVersion");
-                });
-
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.Aircraft", b =>
                 {
                     b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.AcStatusType", "AcStatusType")
@@ -2069,7 +2035,7 @@ namespace FRAProject.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.AcType", "AcType")
+                    b.HasOne("FRAProject.Areas.Settings.Models.AcType", "AcType")
                         .WithMany("Aircrafts")
                         .HasForeignKey("AcTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -2157,7 +2123,7 @@ namespace FRAProject.Migrations
 
             modelBuilder.Entity("FRAProject.Areas.HR.Models.Wing", b =>
                 {
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.AcMainGroup", "AcMainGroup")
+                    b.HasOne("FRAProject.Areas.Settings.Models.AcMainGroup", "AcMainGroup")
                         .WithMany()
                         .HasForeignKey("AcMainGroupId");
 
@@ -2198,6 +2164,54 @@ namespace FRAProject.Migrations
                         .IsRequired();
 
                     b.Navigation("CrewMember");
+                });
+
+            modelBuilder.Entity("FRAProject.Areas.Settings.Models.AcMainGroup", b =>
+                {
+                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.AcCategory", "AcCategory")
+                        .WithMany("AcMainGroups")
+                        .HasForeignKey("AcCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FRAProject.Areas.HR.Models.Base", "Base")
+                        .WithMany("AcMainGroups")
+                        .HasForeignKey("BaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AcCategory");
+
+                    b.Navigation("Base");
+                });
+
+            modelBuilder.Entity("FRAProject.Areas.Settings.Models.AcType", b =>
+                {
+                    b.HasOne("FRAProject.Areas.Settings.Models.AcMainGroup", "AcMainGroup")
+                        .WithMany("AcTypes")
+                        .HasForeignKey("AcMainGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FRAProject.Areas.Settings.Models.AircraftManufacturer", "AircraftManufacturer")
+                        .WithMany()
+                        .HasForeignKey("AircraftManufacturerId");
+
+                    b.Navigation("AcMainGroup");
+
+                    b.Navigation("AircraftManufacturer");
+                });
+
+            modelBuilder.Entity("FRAProject.Areas.Settings.Models.AircraftVersion", b =>
+                {
+                    b.HasOne("FRAProject.Areas.Settings.Models.AcType", "AcType")
+                        .WithMany("AircraftVersions")
+                        .HasForeignKey("AcTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_AircraftVersions_AcType");
+
+                    b.Navigation("AcType");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.SquadronOps.Models.CallSign", b =>
@@ -2299,7 +2313,7 @@ namespace FRAProject.Migrations
 
             modelBuilder.Entity("FRAProject.Areas.SquadronOps.Models.Sortie", b =>
                 {
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.AcType", "AcType")
+                    b.HasOne("FRAProject.Areas.Settings.Models.AcType", "AcType")
                         .WithMany("Sorties")
                         .HasForeignKey("AcTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -2401,7 +2415,7 @@ namespace FRAProject.Migrations
 
             modelBuilder.Entity("FRAProject.Models.Odv", b =>
                 {
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.AcMainGroup", "AcMainGroup")
+                    b.HasOne("FRAProject.Areas.Settings.Models.AcMainGroup", "AcMainGroup")
                         .WithMany("Odvs")
                         .HasForeignKey("AcMainGroupId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -2497,23 +2511,9 @@ namespace FRAProject.Migrations
                     b.Navigation("AcMainGroups");
                 });
 
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AcMainGroup", b =>
-                {
-                    b.Navigation("AcTypes");
-
-                    b.Navigation("Odvs");
-                });
-
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AcStatusType", b =>
                 {
                     b.Navigation("Aircrafts");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AcType", b =>
-                {
-                    b.Navigation("Aircrafts");
-
-                    b.Navigation("Sorties");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.Aircraft", b =>
@@ -2576,6 +2576,22 @@ namespace FRAProject.Migrations
             modelBuilder.Entity("FRAProject.Areas.Medical.Models.MedicalCheck", b =>
                 {
                     b.Navigation("Bilans");
+                });
+
+            modelBuilder.Entity("FRAProject.Areas.Settings.Models.AcMainGroup", b =>
+                {
+                    b.Navigation("AcTypes");
+
+                    b.Navigation("Odvs");
+                });
+
+            modelBuilder.Entity("FRAProject.Areas.Settings.Models.AcType", b =>
+                {
+                    b.Navigation("AircraftVersions");
+
+                    b.Navigation("Aircrafts");
+
+                    b.Navigation("Sorties");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.SquadronOps.Models.CrewMember", b =>

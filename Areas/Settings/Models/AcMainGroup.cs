@@ -1,11 +1,12 @@
-﻿using FRAProject.Areas.HR.Models;
+﻿using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.SquadronOps.Models; // for Odv
 using FRAProject.Models;                  // for Base
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FRAProject.Areas.AircraftMaintenance.Models
+namespace FRAProject.Areas.Settings.Models
 {
     [Table("AcMainGroups", Schema = "dbo")]
     public class AcMainGroup

@@ -1,5 +1,6 @@
 ﻿using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.HR.Models;
+using FRAProject.Areas.Settings.Models;
 using FRAProject.Infrastructure.Interfaces;
 
 namespace FRAProject.Areas.AircraftMaintenance.Repositories

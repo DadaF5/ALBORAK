@@ -10,9 +10,9 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using FRAProject.Data;
 using FRAProject.Models;
 using Microsoft.EntityFrameworkCore;
-using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.Settings.Models;
 
 namespace FRAProject.Controllers
 {

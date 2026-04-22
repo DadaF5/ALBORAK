@@ -2,6 +2,7 @@
 using FRAProject.Areas.SquadronOps.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using FRAProject.Areas.Settings.Models;
 using System.Reflection.Emit;
 
 

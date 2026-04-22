@@ -1,4 +1,5 @@
-﻿using FRAProject.Areas.SquadronOps.Models;
+﻿using FRAProject.Areas.Settings.Models;
+using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Models;
 using System;
 using System.ComponentModel.DataAnnotations;

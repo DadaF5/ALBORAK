@@ -1,4 +1,5 @@
 ﻿using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.Settings.Models;
 using FRAProject.Data;
 using FRAProject.Infrastructure.Interfaces;
 using FRAProject.Models;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 
-namespace FRAProject.Areas.AircraftMaintenance.Controllers
+namespace FRAProject.Areas.Settings.Controllers
 {
     [Area("AircraftMaintenance")]
     public class AcMainGroupController : Controller

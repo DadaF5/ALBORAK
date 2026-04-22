@@ -152,12 +152,12 @@ namespace FRAProject.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            
+
             // Use the dedicated configuration classes / partials for entity configuration.
             // Do not duplicate relationship configuration in multiple places.
 
             modelBuilder.ApplyConfiguration(new OdvConfiguration());
-            modelBuilder.ApplyConfiguration(new SortieConfiguration());           
+            modelBuilder.ApplyConfiguration(new SortieConfiguration());
             modelBuilder.ApplyConfiguration(new MissionConfiguration());
             modelBuilder.ApplyConfiguration(new PhaseConfiguration());
             modelBuilder.ApplyConfiguration(new SortieCrewConfiguration());
@@ -195,13 +195,13 @@ namespace FRAProject.Data
                     .WithMany()
                     .HasForeignKey(cm => cm.PrimaryQualificationId)
                     .OnDelete(DeleteBehavior.SetNull);
-               
+
 
             });
             modelBuilder.Entity<CrewMember>()
                 .HasMany(cm => cm.MedicalChecks)
                 .WithOne(mc => mc.CrewMember)
-                .HasForeignKey(mc => mc.CrewMemberId)                
+                .HasForeignKey(mc => mc.CrewMemberId)
                 .OnDelete(DeleteBehavior.Cascade);
 
 
@@ -227,14 +227,14 @@ namespace FRAProject.Data
 
                 b.HasIndex(cmq => new { cmq.CrewMemberId, cmq.QualificationId });
             });
-           
+
             modelBuilder.Entity<MedicalCheck>()
                 .HasMany(mc => mc.Bilans)
                 .WithOne(mb => mb.MedicalCheck)
                 .HasForeignKey(mb => mb.MedicalCheckId)
-                .OnDelete(DeleteBehavior.Cascade) ;
+                .OnDelete(DeleteBehavior.Cascade);
 
-               
+
 
             // Wing -> Squadron: prevent cascade delete so deleting a Wing won't delete Squadrons
             modelBuilder.Entity<Wing>()
@@ -250,7 +250,7 @@ namespace FRAProject.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<AircraftDocumentType>()
-                .HasIndex(x=>x.Code)
+                .HasIndex(x => x.Code)
                 .IsUnique();
 
             modelBuilder.Entity<AircraftManufacturer>()
@@ -259,7 +259,27 @@ namespace FRAProject.Data
             modelBuilder.Entity<AircraftVersion>()
                 .HasIndex(x => x.Code)
                 .IsUnique();
+            modelBuilder.Entity<AircraftVersion>(entity =>
+            {
+                // LookupBase already handles: Id, Code, Name, Description, IsActive, SortOrder
 
+                // FK relationship - MUST match collection name in AcType
+                entity.HasOne(av => av.AcType)
+                    .WithMany(a => a.AircraftVersions)  // ← Must match property name
+                    .HasForeignKey(av => av.AcTypeId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_AircraftVersions_AcType");
+
+                // Unique constraint on Code per AcType
+                entity.HasIndex(e => new { e.Code, e.AcTypeId })
+                    .IsUnique()
+                    .HasDatabaseName("UQ_AircraftVersions_Code_AcType");
+
+                // Unique constraint on Name per AcType
+                entity.HasIndex(e => new { e.Name, e.AcTypeId })
+                    .IsUnique()
+                    .HasDatabaseName("UQ_AircraftVersions_Name_AcType");
+            });
             // --- Enum-to-string converters for Odv enum-backed fields ---
             var zoneConverter = new EnumToStringConverter<Zone>();
             var missionTypeConverter = new EnumToStringConverter<MissionType>();

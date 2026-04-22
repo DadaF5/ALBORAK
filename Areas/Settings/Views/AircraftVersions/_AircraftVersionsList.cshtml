@@ -1,0 +1,126 @@
+@model List<FRAProject.DTOs.AircraftVersionDto>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">✈️ Versions d'Aéronefs</h4>
+    <a asp-area="Settings" asp-controller="AircraftVersions" asp-action="Create" class="btn btn-success">
+        <i class="fas fa-plus"></i> Nouvelle Version
+    </a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>Type d'Aéronef</th>
+                <th>Code</th>
+                <th>Nom Version / Block</th>
+                <th>Description</th>
+                <th style="width: 80px;">Ordre</th>
+                <th style="width: 90px;">Statut</th>
+                <th style="width: 120px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Count == 0)
+            {
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p class="mb-0">Aucune version trouvée. Cliquez sur "Nouvelle Version" pour ajouter.</p>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                string currentAcType = "";
+                @foreach (var item in Model)
+                {
+                    // Group by AcType with visual separation
+                    bool isNewGroup = currentAcType != item.AcTypeName;
+                    if (isNewGroup)
+                    {
+                        currentAcType = item.AcTypeName;
+                    }
+
+                    <tr class="@(isNewGroup ? "border-top-thick" : "")">
+                        <td>
+                            @if (isNewGroup)
+                            {
+                                <strong class="text-primary">@item.AcTypeName</strong>
+                            }
+                            else
+                            {
+                                <span class="text-muted ml-3">↳</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge badge-info">@item.Code</span>
+                        </td>
+                        <td><strong>@item.Name</strong></td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(item.Description))
+                            {
+                                <small class="text-muted">@item.Description</small>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-secondary">@item.SortOrder</span>
+                        </td>
+                        <td>
+                            @if (item.IsActive)
+                            {
+                                <span class="badge badge-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary">Inactive</span>
+                            }
+                        </td>
+                        <td>
+                            <a asp-area="Settings" asp-controller="AircraftVersions" asp-action="Edit" asp-route-id="@item.Id" 
+                               class="btn btn-sm btn-warning" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button class="btn btn-sm btn-danger" 
+                                    onclick="deleteItem('AircraftVersions', @item.Id, '@item.Name')" 
+                                    title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.Count > 0)
+{
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <small class="text-muted">
+                <i class="fas fa-info-circle"></i> Total: @Model.Count version(s)
+            </small>
+        </div>
+        <div class="col-md-6 text-right">
+            <small class="text-muted">
+                Types d'aéronefs: @Model.Select(v => v.AcTypeName).Distinct().Count() | 
+                Actives: @Model.Count(v => v.IsActive) | 
+                Inactives: @Model.Count(v => !v.IsActive)
+            </small>
+        </div>
+    </div>
+}
+
+@* Anti-forgery token for AJAX delete *@
+@Html.AntiForgeryToken()
+
+<style>
+    .border-top-thick {
+        border-top: 2px solid #30363d !important;
+    }
+</style>

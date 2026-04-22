@@ -1,4 +1,4 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
+﻿using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.SquadronOps.Models;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

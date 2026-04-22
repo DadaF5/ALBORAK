@@ -6,13 +6,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FRAProject.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "dbo");
+
             migrationBuilder.CreateTable(
                 name: "AcCategories",
+                schema: "dbo",
                 columns: table => new
                 {
                     AcCategoryId = table.Column<int>(type: "int", nullable: false)
@@ -27,16 +31,54 @@ namespace FRAProject.Migrations
 
             migrationBuilder.CreateTable(
                 name: "AcStatusTypes",
+                schema: "dbo",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     StatusName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
+                    StatusCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    SortOrder = table.Column<byte>(type: "tinyint", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AcStatusTypes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AircraftDocumentTypes",
+                schema: "dbo",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Code = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AircraftDocumentTypes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AircraftManufacturers",
+                schema: "dbo",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Code = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    SortOrder = table.Column<byte>(type: "tinyint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AircraftManufacturers", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -101,8 +143,12 @@ namespace FRAProject.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    BaseCode = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
                     BaseName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    BaseNameLocal = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
+                    Location = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    Latitude = table.Column<decimal>(type: "decimal(10,7)", nullable: true),
+                    Longitude = table.Column<decimal>(type: "decimal(10,7)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -120,6 +166,7 @@ namespace FRAProject.Migrations
                     Controller = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     Action = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     Url = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Area = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ParentId = table.Column<int>(type: "int", nullable: true),
                     SortOrder = table.Column<int>(type: "int", nullable: false),
                     DepartmentId = table.Column<int>(type: "int", nullable: true),
@@ -325,6 +372,7 @@ namespace FRAProject.Migrations
 
             migrationBuilder.CreateTable(
                 name: "AcMainGroups",
+                schema: "dbo",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -341,6 +389,7 @@ namespace FRAProject.Migrations
                     table.ForeignKey(
                         name: "FK_AcMainGroups_AcCategories_AcCategoryId",
                         column: x => x.AcCategoryId,
+                        principalSchema: "dbo",
                         principalTable: "AcCategories",
                         principalColumn: "AcCategoryId",
                         onDelete: ReferentialAction.Cascade);
@@ -397,17 +446,22 @@ namespace FRAProject.Migrations
 
             migrationBuilder.CreateTable(
                 name: "AcTypes",
+                schema: "dbo",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
+                    Code = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true),
                     MaxGrossweight = table.Column<double>(type: "float", nullable: false),
                     MaxPassengers = table.Column<int>(type: "int", nullable: false),
                     SeatCount = table.Column<int>(type: "int", nullable: false),
                     MaxEngines = table.Column<int>(type: "int", nullable: false),
-                    AcMainGroupId = table.Column<int>(type: "int", nullable: false)
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    SortOrder = table.Column<byte>(type: "tinyint", nullable: false),
+                    AcMainGroupId = table.Column<int>(type: "int", nullable: false),
+                    AircraftManufacturerId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -415,9 +469,16 @@ namespace FRAProject.Migrations
                     table.ForeignKey(
                         name: "FK_AcTypes_AcMainGroups_AcMainGroupId",
                         column: x => x.AcMainGroupId,
+                        principalSchema: "dbo",
                         principalTable: "AcMainGroups",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AcTypes_AircraftManufacturers_AircraftManufacturerId",
+                        column: x => x.AircraftManufacturerId,
+                        principalSchema: "dbo",
+                        principalTable: "AircraftManufacturers",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -459,6 +520,7 @@ namespace FRAProject.Migrations
                     table.ForeignKey(
                         name: "FK_Wings_AcMainGroups_AcMainGroupId",
                         column: x => x.AcMainGroupId,
+                        principalSchema: "dbo",
                         principalTable: "AcMainGroups",
                         principalColumn: "Id");
                     table.ForeignKey(
@@ -493,7 +555,8 @@ namespace FRAProject.Migrations
                     AcTypeId = table.Column<int>(type: "int", nullable: false),
                     AcStatusTypeId = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
+                    BaseId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -501,12 +564,45 @@ namespace FRAProject.Migrations
                     table.ForeignKey(
                         name: "FK_Aircrafts_AcStatusTypes_AcStatusTypeId",
                         column: x => x.AcStatusTypeId,
+                        principalSchema: "dbo",
                         principalTable: "AcStatusTypes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Aircrafts_AcTypes_AcTypeId",
                         column: x => x.AcTypeId,
+                        principalSchema: "dbo",
+                        principalTable: "AcTypes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Aircrafts_Bases_BaseId",
+                        column: x => x.BaseId,
+                        principalTable: "Bases",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AircraftVersions",
+                schema: "dbo",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AcTypeId = table.Column<int>(type: "int", nullable: false),
+                    Code = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    SortOrder = table.Column<byte>(type: "tinyint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AircraftVersions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AircraftVersions_AcType",
+                        column: x => x.AcTypeId,
+                        principalSchema: "dbo",
                         principalTable: "AcTypes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -573,6 +669,52 @@ namespace FRAProject.Migrations
                         principalTable: "Wings",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AircraftDocuments",
+                schema: "dbo",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AircraftId = table.Column<int>(type: "int", nullable: false),
+                    DocumentTypeId = table.Column<int>(type: "int", nullable: false),
+                    ReferenceNo = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Revision = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    IssuedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ValidFromUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ValidUntilUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsCurrent = table.Column<bool>(type: "bit", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true),
+                    StorageKey = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
+                    FileName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    ContentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    FileSizeBytes = table.Column<long>(type: "bigint", nullable: true),
+                    Notes = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    UpdatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AircraftDocuments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AircraftDocuments_AircraftDocumentTypes_DocumentTypeId",
+                        column: x => x.DocumentTypeId,
+                        principalSchema: "dbo",
+                        principalTable: "AircraftDocumentTypes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AircraftDocuments_Aircrafts_AircraftId",
+                        column: x => x.AircraftId,
+                        principalTable: "Aircrafts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -770,29 +912,26 @@ namespace FRAProject.Migrations
                     BaseId = table.Column<int>(type: "int", nullable: false),
                     CheckType = table.Column<int>(type: "int", nullable: false),
                     CheckDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Decision1 = table.Column<int>(type: "int", nullable: false),
-                    Decision = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Decision = table.Column<int>(type: "int", nullable: false),
+                    DecisionText = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     Derogation = table.Column<bool>(type: "bit", nullable: false),
+                    OBESITE = table.Column<bool>(type: "bit", nullable: false),
+                    C_Optique = table.Column<bool>(type: "bit", nullable: false),
+                    DurationYears = table.Column<int>(type: "int", nullable: false),
+                    DurationMonths = table.Column<int>(type: "int", nullable: false),
+                    DurationDays = table.Column<int>(type: "int", nullable: false),
                     NextDueDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     NextVuDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LateCheckReason = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    OBESITE = table.Column<bool>(type: "bit", nullable: true),
-                    C_Optique = table.Column<bool>(type: "bit", nullable: true),
+                    LateCheckReason = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedBy = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    UpdatedBy = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    CreatedBy = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MedicalChecks", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_MedicalChecks_Bases_BaseId",
-                        column: x => x.BaseId,
-                        principalTable: "Bases",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_MedicalChecks_CrewMembers_CrewMemberId",
                         column: x => x.CrewMemberId,
@@ -830,6 +969,7 @@ namespace FRAProject.Migrations
                     table.ForeignKey(
                         name: "FK_Odvs_AcMainGroups_AcMainGroupId",
                         column: x => x.AcMainGroupId,
+                        principalSchema: "dbo",
                         principalTable: "AcMainGroups",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -987,6 +1127,7 @@ namespace FRAProject.Migrations
                     table.ForeignKey(
                         name: "FK_Sorties_AcTypes_AcTypeId",
                         column: x => x.AcTypeId,
+                        principalSchema: "dbo",
                         principalTable: "AcTypes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -1076,18 +1217,53 @@ namespace FRAProject.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_AcMainGroups_AcCategoryId",
+                schema: "dbo",
                 table: "AcMainGroups",
                 column: "AcCategoryId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AcMainGroups_BaseId",
+                schema: "dbo",
                 table: "AcMainGroups",
                 column: "BaseId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AcTypes_AcMainGroupId",
+                schema: "dbo",
                 table: "AcTypes",
                 column: "AcMainGroupId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AcTypes_AircraftManufacturerId",
+                schema: "dbo",
+                table: "AcTypes",
+                column: "AircraftManufacturerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AircraftDocuments_AircraftId",
+                schema: "dbo",
+                table: "AircraftDocuments",
+                column: "AircraftId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AircraftDocuments_DocumentTypeId",
+                schema: "dbo",
+                table: "AircraftDocuments",
+                column: "DocumentTypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AircraftDocumentTypes_Code",
+                schema: "dbo",
+                table: "AircraftDocumentTypes",
+                column: "Code",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AircraftManufacturers_Code",
+                schema: "dbo",
+                table: "AircraftManufacturers",
+                column: "Code",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Aircrafts_AcStatusTypeId",
@@ -1098,6 +1274,38 @@ namespace FRAProject.Migrations
                 name: "IX_Aircrafts_AcTypeId",
                 table: "Aircrafts",
                 column: "AcTypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Aircrafts_BaseId",
+                table: "Aircrafts",
+                column: "BaseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AircraftVersions_AcTypeId",
+                schema: "dbo",
+                table: "AircraftVersions",
+                column: "AcTypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AircraftVersions_Code",
+                schema: "dbo",
+                table: "AircraftVersions",
+                column: "Code",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "UQ_AircraftVersions_Code_AcType",
+                schema: "dbo",
+                table: "AircraftVersions",
+                columns: new[] { "Code", "AcTypeId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "UQ_AircraftVersions_Name_AcType",
+                schema: "dbo",
+                table: "AircraftVersions",
+                columns: new[] { "Name", "AcTypeId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -1223,11 +1431,6 @@ namespace FRAProject.Migrations
                 name: "IX_MedicalBilans_MedicalCheckId",
                 table: "MedicalBilans",
                 column: "MedicalCheckId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MedicalChecks_BaseId",
-                table: "MedicalChecks",
-                column: "BaseId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MedicalChecks_CrewMemberId",
@@ -1360,6 +1563,14 @@ namespace FRAProject.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "AircraftDocuments",
+                schema: "dbo");
+
+            migrationBuilder.DropTable(
+                name: "AircraftVersions",
+                schema: "dbo");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
             migrationBuilder.DropTable(
@@ -1397,6 +1608,10 @@ namespace FRAProject.Migrations
 
             migrationBuilder.DropTable(
                 name: "UserQualifications");
+
+            migrationBuilder.DropTable(
+                name: "AircraftDocumentTypes",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
@@ -1438,10 +1653,12 @@ namespace FRAProject.Migrations
                 name: "Missions");
 
             migrationBuilder.DropTable(
-                name: "AcStatusTypes");
+                name: "AcStatusTypes",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
-                name: "AcTypes");
+                name: "AcTypes",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
                 name: "Ranks");
@@ -1456,19 +1673,25 @@ namespace FRAProject.Migrations
                 name: "Squadrons");
 
             migrationBuilder.DropTable(
+                name: "AircraftManufacturers",
+                schema: "dbo");
+
+            migrationBuilder.DropTable(
                 name: "RankTypes");
 
             migrationBuilder.DropTable(
                 name: "Wings");
 
             migrationBuilder.DropTable(
-                name: "AcMainGroups");
+                name: "AcMainGroups",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
                 name: "Departments");
 
             migrationBuilder.DropTable(
-                name: "AcCategories");
+                name: "AcCategories",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
                 name: "Bases");

@@ -10,6 +10,8 @@ using FRAProject.Services;
 using FRAProject.Services.Medical;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.CodeAnalysis.Options;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -82,13 +84,23 @@ builder.Services.AddScoped<IMenuService, MenuService>();
 // builder.Services.AddScoped<IHRService, HRService>();
 // builder.Services.AddScoped<IAircraftMaintenanceService, AircraftMaintenanceService>();
 
-// MVC + JSON options
+// MVC + JSON options (without global authorization)
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(opts =>
     {
         opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         opts.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
+
+// Configure Authentication Cookie
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.AccessDeniedPath = "/Settings/Home/AccessDenied";
+    options.LoginPath = "/Identity/Account/Login";  // Fixed for Razor Pages
+    options.LogoutPath = "/Identity/Account/Logout";
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    options.SlidingExpiration = true;
+});
 
 var app = builder.Build();
 

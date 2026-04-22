@@ -1,46 +1,144 @@
-@model FRAProject.Areas.Settings.Models.AircraftVersion
+@model FRAProject.DTOs.AircraftVersionCreateDto
+
 @{
-    ViewData["Title"] = "Create Version aéronef";
+    ViewData["Title"] = "Nouvelle Version";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
-@{
-    Layout = "~/Views/Shared/_Layout.cshtml";
-}
-<h2>@ViewData["Title"]</h2>
 
-<form asp-area="Settings" asp-controller="AircraftVersions" asp-action="Create" method="post">
-    <div class="mb-3">
-        <label asp-for="Code" class="form-label"></label>
-        <input asp-for="Code" class="form-control" />
-        <span asp-validation-for="Code" class="text-danger"></span>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">➕ Ajouter une Nouvelle Version d'Aéronef</h3>
+                <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="btn btn-sm btn-light">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+            <form asp-area="Settings" asp-controller="AircraftVersions" asp-action="Create" method="post">
+                <div class="card-body">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="form-group">
+                        <label asp-for="AcTypeId" class="control-label">Type d'Aéronef <span class="text-danger">*</span></label>
+                        <select asp-for="AcTypeId" class="form-control" asp-items="ViewBag.AcTypes">
+                            <option value="">-- Sélectionner un type d'aéronef --</option>
+                        </select>
+                        <span asp-validation-for="AcTypeId" class="text-danger"></span>
+                        <small class="form-text text-muted">Sélectionnez d'abord le type d'aéronef (ex: F-16C, Mirage F1)</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="Code" class="control-label">Code <span class="text-danger">*</span></label>
+                                <input asp-for="Code" class="form-control" placeholder="Ex: BLK52+, TII, CH" maxlength="30" style="text-transform: uppercase;" />
+                                <span asp-validation-for="Code" class="text-danger"></span>
+                                <small class="form-text text-muted">Code unique (sera converti en majuscules)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="SortOrder" class="control-label">Ordre de Tri</label>
+                                <input asp-for="SortOrder" type="number" min="0" max="255" class="form-control" />
+                                <span asp-validation-for="SortOrder" class="text-danger"></span>
+                                <small class="form-text text-muted">Ordre d'affichage (0-255, défaut: 99)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Name" class="control-label">Nom Version / Block <span class="text-danger">*</span></label>
+                        <input asp-for="Name" class="form-control" placeholder="Ex: Block 52+, Tiger II, CH (Chasse)" maxlength="150" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                        <small class="form-text text-muted">Nom de la version ou du block</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Description" class="control-label">Description</label>
+                        <textarea asp-for="Description" class="form-control" rows="3" maxlength="250" placeholder="Description optionnelle de la version..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                        <small class="form-text text-muted">Détails techniques, caractéristiques, etc. (optionnel)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input asp-for="IsActive" type="checkbox" class="custom-control-input" id="IsActive" checked />
+                            <label class="custom-control-label" for="IsActive">Version Active</label>
+                        </div>
+                        <small class="form-text text-muted">Décochez si cette version n'est plus en service</small>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                    <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="Name" class="form-label"></label>
-        <input asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-    </div>
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Aide</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Type d'Aéronef:</strong> Le modèle de base (ex: F-16C, Mirage F1)</p>
+                <p><strong>Code:</strong> Identifiant court unique (ex: BLK52+, TII)</p>
+                <p><strong>Nom:</strong> Nom complet de la version (ex: Block 52+, Tiger II)</p>
+                <p><strong>Description:</strong> Détails optionnels sur cette version</p>
+                <p><strong>Ordre de Tri:</strong> Contrôle l'ordre d'affichage (plus petit = affiché en premier)</p>
+                <p class="mb-0"><strong>Statut:</strong> Cochez si en service actif</p>
+            </div>
+        </div>
 
-    <div class="mb-3">
-        <label asp-for="Description" class="form-label"></label>
-        <input asp-for="Description" class="form-control" />
-        <span asp-validation-for="Description" class="text-danger"></span>
-    </div>
+        <div class="card bg-light mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Exemples</h6>
+            </div>
+            <div class="card-body small">
+                <p><strong>F-16C Block 52+:</strong><br>
+                Code: BLK52+<br>
+                Nom: Block 52+<br>
+                Ordre: 20</p>
+                
+                <p><strong>F-5E Tiger II:</strong><br>
+                Code: TII<br>
+                Nom: Tiger II<br>
+                Ordre: 10</p>
 
-    <div class="mb-3">
-        <label asp-for="SortOrder" class="form-label"></label>
-        <input asp-for="SortOrder" class="form-control" type="number" />
-        <span asp-validation-for="SortOrder" class="text-danger"></span>
-    </div>
+                <p class="mb-0"><strong>Mirage F1-CH:</strong><br>
+                Code: CH<br>
+                Nom: CH (Chasse)<br>
+                Ordre: 30</p>
+            </div>
+        </div>
 
-    <div class="form-check mb-3">
-        <input asp-for="IsActive" class="form-check-input" />
-        <label asp-for="IsActive" class="form-check-label"></label>
+        <div class="card bg-light mt-3">
+            <div class="card-header bg-info">
+                <h6 class="mb-0"><i class="fas fa-sort-numeric-down"></i> Ordre de Tri</h6>
+            </div>
+            <div class="card-body small">
+                <p class="mb-0">
+                    Les versions seront affichées par ordre croissant de SortOrder, puis par nom alphabétique. 
+                    Utilisez des multiples de 10 (10, 20, 30...) pour faciliter les insertions futures.
+                </p>
+            </div>
+        </div>
     </div>
-
-    <button type="submit" class="btn btn-primary">Save</button>
-    <a asp-area="Settings" asp-controller="AircraftVersions" asp-action="Index" class="btn btn-secondary">Cancel</a>
-</form>
+</div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Auto-uppercase the Code field as user types
+        document.getElementById('Code').addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    </script>
 }

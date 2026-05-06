@@ -7,7 +7,7 @@
 {
     <form asp-area="Identity" asp-page="/Account/Logout" method="post" id="logoutForm" class="d-flex align-items-center gap-2">
         <a asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage account"
-           class="icon-btn text-decoration-none" style="font-size:13px;color:var(--text2);">
+           class="icon-btn text-decoration-none" style="font-size:12px;color:var(--text2);">
             <i class="fas fa-user-circle me-1"></i>
             <span class="d-none d-lg-inline" style="font-size:12px;">@User.Identity?.Name</span>
         </a>
@@ -18,7 +18,7 @@
 }
 else
 {
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-10">
         <a asp-area="Identity" asp-page="/Account/Register"
            style="font-size:12px;color:var(--text2);text-decoration:none;">Register</a>
         <a asp-area="Identity" asp-page="/Account/Login"

@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - AL-BORAK</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+  @*   <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
+ *@
     <link rel="stylesheet" href="~/css/gmao_fra.css" asp-append-version="true" />
 </head>
 <body>
@@ -16,7 +16,9 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <div class="logo-icon">✈</div>
+            <div >
+                <img src="~/Images/Air_Force_small.png" width="70px" />
+            </div>
             <div class="logo-text">
                 <div class="name">FORCES ROYALES AIR</div>
                 <div class="sub">GMAO FRA</div>  
@@ -58,7 +60,7 @@
                     <span class="nav-badge badge-red">12</span>
                 </div>
 
-                @* <div class="sidebar-section-label">Maintenance</div>
+                <div class="sidebar-section-label">Maintenance</div>
                 <div class="nav-item" onclick="navigate('maintenance')">
                     <span class="nav-icon">🔩</span> Entretien (MoMAR 145)
                 </div>
@@ -67,7 +69,7 @@
                 </div>
                 <div class="nav-item" onclick="navigate('cn')">
                     <span class="nav-icon">📌</span> Consignes de Nav.
-                </div> *@
+                </div>
 
                 <div class="sidebar-section-label">RH & Formation</div>
                 <div class="nav-item" onclick="navigate('licences')">

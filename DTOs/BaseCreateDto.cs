@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.DTOs
 {
@@ -27,10 +28,13 @@ namespace FRAProject.DTOs
  
         [Range(-90, 90, ErrorMessage = "La latitude doit être entre -90 et 90")]
         [Display(Name = "Latitude")]
+        [Column(TypeName = "decimal(10, 7)")]
+        [DisplayFormat(DataFormatString = "{0:G}", ApplyFormatInEditMode = true)]
         public decimal? Latitude { get; set; }
  
         [Range(-180, 180, ErrorMessage = "La longitude doit être entre -180 et 180")]
         [Display(Name = "Longitude")]
+        [DisplayFormat(DataFormatString = "{0:G}", ApplyFormatInEditMode = true)]
         public decimal? Longitude { get; set; }
     }
 }

@@ -88,11 +88,6 @@ namespace FRAProject.Areas.Settings.Controllers
                 return Redirect(GetSafeReturnUrl(returnUrl));
             }
 
-            if (IsAjaxRequest())
-            {
-                return View(dto);
-            }
-
             return View(dto);
         }
 
@@ -188,11 +183,6 @@ namespace FRAProject.Areas.Settings.Controllers
                         throw;
                     }
                 }
-            }
-
-            if (IsAjaxRequest())
-            {
-                return View(dto);
             }
 
             return View(dto);

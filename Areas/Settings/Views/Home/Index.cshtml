@@ -76,8 +76,8 @@
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     success: function (html) {
                         modalBody.innerHTML = html;
-                        $.validator.unobtrusive.parse(modalBody);
                         baseModal.show();
+                        parseModalValidation();
                     },
                     error: function () {
                         showMessage('Impossible de charger le formulaire.', 'error');
@@ -107,14 +107,26 @@
                         }
 
                         modalBody.innerHTML = response;
-                        $.validator.unobtrusive.parse(modalBody);
+                        parseModalValidation();
                     },
                     error: function (xhr) {
                         modalBody.innerHTML = xhr.responseText || 'Erreur serveur';
-                        $.validator.unobtrusive.parse(modalBody);
+                        parseModalValidation();
                     }
                 });
             });
+
+            function parseModalValidation() {
+                if (!window.$ || !$.validator || !$.validator.unobtrusive) {
+                    return;
+                }
+
+                if (!modalBody.querySelector('form')) {
+                    return;
+                }
+
+                $.validator.unobtrusive.parse(modalBody);
+            }
         })();
 
         function deleteItem(controller, id, name) {

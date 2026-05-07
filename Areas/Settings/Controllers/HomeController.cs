@@ -34,7 +34,7 @@ namespace FRAProject.Areas.Settings.Controllers
                         BaseName = b.BaseName,
                         Longitude = b.Longitude,
                         Latitude = b.Latitude,
-                        BaseNameLocal = b.BaseCode + " - " + b.Location
+                        BaseNameLocal = $"{b.BaseCode} - {b.Location}"
                     })
                     .ToListAsync();
             }

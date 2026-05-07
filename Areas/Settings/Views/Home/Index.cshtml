@@ -134,7 +134,7 @@
                 return;
             }
 
-            const token = document.querySelector('#bases-list-container input[name="__RequestVerificationToken"]')?.value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
             $.ajax({
                 url: `/Settings/${controller}/Delete/${id}`,
                 type: 'POST',

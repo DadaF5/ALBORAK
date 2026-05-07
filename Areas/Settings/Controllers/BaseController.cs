@@ -215,7 +215,7 @@ namespace FRAProject.Areas.Settings.Controllers
                 return returnUrl;
             }
 
-            return Url.Action("Index", "Home", new { area = "Settings", tab = "bases" })!;
+            return Url.Action("Index", "Home", new { area = "Settings", tab = "bases" }) ?? "/Settings/Home/Index?tab=bases";
         }
 
         private bool IsAjaxRequest()

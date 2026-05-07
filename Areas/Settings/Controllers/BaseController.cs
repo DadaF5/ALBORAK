@@ -1,13 +1,15 @@
-﻿using FRAProject.Areas.HR.Models;
+using FRAProject.Areas.HR.Models;
 using FRAProject.Data;
 using FRAProject.DTOs;
 using FRAProject.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Areas.Settings.Controllers
 {
     [Area("Settings")]
+    [Authorize(Roles = "Admin")]
     public class BaseController : Controller
     {
         private readonly FRAContext _context;
@@ -36,8 +38,9 @@ namespace FRAProject.Areas.Settings.Controllers
         }
 
         // GET: Settings/Base/Create
-        public IActionResult Create()
+        public IActionResult Create(string? returnUrl = null)
         {
+            ViewData["ReturnUrl"] = GetSafeReturnUrl(returnUrl);
             var dto = new BaseCreateDto { IsActive = true };
             return View(dto);
         }
@@ -45,8 +48,10 @@ namespace FRAProject.Areas.Settings.Controllers
         // POST: Settings/Base/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(BaseCreateDto dto)
+        public async Task<IActionResult> Create(BaseCreateDto dto, string? returnUrl = null)
         {
+            ViewData["ReturnUrl"] = GetSafeReturnUrl(returnUrl);
+
             // Check for duplicate BaseCode
             if (await _context.Bases.AnyAsync(b => b.BaseCode == dto.BaseCode))
             {
@@ -75,13 +80,24 @@ namespace FRAProject.Areas.Settings.Controllers
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "Base créée avec succès";
-                return RedirectToAction("Index", "Home", new { area = "Settings" });
+                if (IsAjaxRequest())
+                {
+                    return Json(new { success = true, redirectUrl = GetSafeReturnUrl(returnUrl) });
+                }
+
+                return Redirect(GetSafeReturnUrl(returnUrl));
             }
+
+            if (IsAjaxRequest())
+            {
+                return View(dto);
+            }
+
             return View(dto);
         }
 
         // GET: Settings/Base/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(int? id, string? returnUrl = null)
         {
             if (id == null)
             {
@@ -105,18 +121,21 @@ namespace FRAProject.Areas.Settings.Controllers
                 Longitude = baseEntity.Longitude    // ← Added
             };
 
+            ViewData["ReturnUrl"] = GetSafeReturnUrl(returnUrl);
             return View(dto);
         }
 
         // POST: Settings/Base/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, BaseCreateDto dto)
+        public async Task<IActionResult> Edit(int id, BaseCreateDto dto, string? returnUrl = null)
         {
             if (id != dto.Id)
             {
                 return NotFound();
             }
+
+            ViewData["ReturnUrl"] = GetSafeReturnUrl(returnUrl);
 
             // Check for duplicate BaseCode (excluding current record)
             if (await _context.Bases.AnyAsync(b => b.BaseCode == dto.BaseCode && b.Id != id))
@@ -151,7 +170,12 @@ namespace FRAProject.Areas.Settings.Controllers
                     await _context.SaveChangesAsync();
 
                     TempData["SuccessMessage"] = "Base modifiée avec succès";
-                    return RedirectToAction("Index", "Home", new { area = "Settings" });
+                    if (IsAjaxRequest())
+                    {
+                        return Json(new { success = true, redirectUrl = GetSafeReturnUrl(returnUrl) });
+                    }
+
+                    return Redirect(GetSafeReturnUrl(returnUrl));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -165,6 +189,12 @@ namespace FRAProject.Areas.Settings.Controllers
                     }
                 }
             }
+
+            if (IsAjaxRequest())
+            {
+                return View(dto);
+            }
+
             return View(dto);
         }
 
@@ -186,6 +216,21 @@ namespace FRAProject.Areas.Settings.Controllers
         private bool BaseExists(int id)
         {
             return _context.Bases.Any(e => e.Id == id);
+        }
+
+        private string GetSafeReturnUrl(string? returnUrl)
+        {
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return returnUrl;
+            }
+
+            return Url.Action("Index", "Home", new { area = "Settings", tab = "bases" })!;
+        }
+
+        private bool IsAjaxRequest()
+        {
+            return string.Equals(Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

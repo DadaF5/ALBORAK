@@ -2,7 +2,9 @@
 
 @{
     ViewData["Title"] = "Nouvelle Base";
-    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+    var isAjaxRequest = string.Equals(Context.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase);
+    var returnUrl = ViewData["ReturnUrl"]?.ToString() ?? Url.Action("Index", "Home", new { area = "Settings", tab = "bases" });
+    Layout = isAjaxRequest ? null : "~/Views/Shared/_Layout.cshtml";
 }
 
 <div class="row">
@@ -10,11 +12,12 @@
         <div class="card">
             <div class="card-header bg-success d-flex justify-content-between align-items-center">
                 <h3 class="card-title mb-0">➕ Ajouter une Nouvelle Base</h3>
-                <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="btn btn-sm btn-light">
+                <a href="@returnUrl" class="btn btn-sm btn-light">
                     <i class="fas fa-arrow-left"></i> Retour
                 </a>
             </div>
-            <form asp-area="Settings" asp-controller="Base" asp-action="Create" method="post">
+            <form asp-area="Settings" asp-controller="Base" asp-action="Create" method="post" class="base-modal-form">
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
                 <div class="card-body">
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
@@ -59,7 +62,7 @@
                     <button type="submit" class="btn btn-success">
                         <i class="fas fa-save"></i> Enregistrer
                     </button>
-                    <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                    <a href="@returnUrl" class="btn btn-secondary">
                         <i class="fas fa-times"></i> Annuler
                     </a>
                 </div>

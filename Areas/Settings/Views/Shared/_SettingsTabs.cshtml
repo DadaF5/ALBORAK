@@ -1,0 +1,11 @@
+@{
+    var activeTab = (ViewData["ActiveTab"]?.ToString() ?? "bases").ToLowerInvariant();
+}
+
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a asp-area="Settings" asp-controller="Home" asp-action="Index" asp-route-tab="bases" class="set-tab @(activeTab == "bases" ? "active" : "")">Bases</a>
+    <a asp-area="Settings" asp-controller="Home" asp-action="Index" asp-route-tab="constructeurs" class="set-tab @(activeTab == "constructeurs" ? "active" : "")">Constructeurs</a>
+    <a asp-area="Settings" asp-controller="Home" asp-action="Index" asp-route-tab="types" class="set-tab @(activeTab == "types" ? "active" : "")">Types</a>
+    <a asp-area="Settings" asp-controller="Home" asp-action="Index" asp-route-tab="versions" class="set-tab @(activeTab == "versions" ? "active" : "")">Versions</a>
+    <a asp-area="Settings" asp-controller="Home" asp-action="Index" asp-route-tab="positions" class="set-tab @(activeTab == "positions" ? "active" : "")">Positions</a>
+</div>

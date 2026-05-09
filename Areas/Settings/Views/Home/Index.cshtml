@@ -1,118 +1,160 @@
+@model List<FRAProject.DTOs.BaseDto>
 @{
-    ViewData["Title"] = "Paramètres";
-    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+    ViewData["Title"] = "Paramètres système";
+    var activeTab = (ViewData["ActiveTab"]?.ToString() ?? "bases").ToLowerInvariant();
 }
 
+<div class="card card-mid">
+    <div class="card-head">
+        <div class="card-title">⚙ Paramètres</div>
+    </div>
+    <div class="card-body">
+        <partial name="~/Areas/Settings/Views/Shared/_SettingsTabs.cshtml" />
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">⚙️ Paramètres du Système</h3>
-                </div>
-                <div class="card-body">
-                    <!-- Navigation Tabs -->
-                    <div class="btn-group mb-3" role="group">
-                        <button type="button" class="btn btn-outline-primary settings-tab active" data-controller="Base">
-                            🏢 Bases Aériennes
-                        </button>
-                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="AircraftManufacturers">
-                            🏭 Constructeurs
-                        </button>
-                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="AircraftVersions">
-                            ✈️ Versions d'Aéronefs
-                        </button>
-                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="AircraftTypes">
-                            🛩️ Types d'Aéronefs
-                        </button>
-                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="Positions">
-                            📍 Positions
-                        </button>
-                    </div>
-
-                    <hr>
-
-                    <!-- Dynamic Content Container -->
-                    <div id="settingsContent">
-                        <div class="text-center text-muted py-5">
-                            <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
-                            <p>Chargement...</p>
-                        </div>
-                    </div>
-                </div>
+        @if (activeTab == "bases")
+        {
+            <div id="bases-list-container">
+                <partial name="~/Areas/Settings/Views/Base/_BaseList.cshtml" model="Model" />
             </div>
+        }
+        else
+        {
+            <div class="text-muted">
+                Module "@activeTab" en cours de construction.
+            </div>
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="baseCrudModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Paramètres - Bases</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body" id="baseCrudModalBody"></div>
         </div>
     </div>
 </div>
 
+@section Styles {
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+}
+
 @section Scripts {
+    <script src="~/plugins/jquery/jquery.min.js"></script>
+    <script src="~/js/bootstrap.bundle.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
     <script>
-        $(document).ready(function() {
-            // Auto-load first tab
-            loadList('Base');
+        (function () {
+            const currentReturnUrl = '@(Context.Request.Path + Context.Request.QueryString)';
+            const modalElement = document.getElementById('baseCrudModal');
+            const modalBody = document.getElementById('baseCrudModalBody');
+            const baseModal = modalElement ? new bootstrap.Modal(modalElement) : null;
 
-            // Handle tab clicks
-            $('.settings-tab').on('click', function() {
-                const controller = $(this).data('controller');
+            document.addEventListener('click', function (e) {
+                const link = e.target.closest('.js-open-base-modal');
+                if (!link || !baseModal) {
+                    return;
+                }
 
-                // Update active tab
-                $('.settings-tab').removeClass('active');
-                $(this).addClass('active');
-
-                // Load list
-                loadList(controller);
+                e.preventDefault();
+                const url = appendReturnUrl(link.getAttribute('href'));
+                loadModalContent(url);
             });
-        });
 
-        // Load list for a controller
-        function loadList(controller) {
-            $('#settingsContent').html('<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x"></i></div>');
+            function appendReturnUrl(url) {
+                const hasQuery = url.includes('?');
+                return `${url}${hasQuery ? '&' : '?'}returnUrl=${encodeURIComponent(currentReturnUrl)}`;
+            }
 
-            // Direct call to controller's List action
-            const url = `/Settings/${controller}/List`;
-
-            $.ajax({
-                url: url,
-                type: 'GET',
-                success: function(response) {
-                    $('#settingsContent').html(response);
-                },
-                error: function(xhr) {
-                    let errorMsg = '<div class="alert alert-danger">' +
-                                  '<i class="fas fa-exclamation-triangle"></i> Erreur de chargement';
-
-                    if (xhr.status === 404) {
-                        errorMsg += ' - Controller ou action introuvable';
-                    } else if (xhr.responseText) {
-                        errorMsg += ': ' + xhr.responseText;
+            function loadModalContent(url) {
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function (html) {
+                        modalBody.innerHTML = html;
+                        baseModal.show();
+                        parseModalValidation();
+                    },
+                    error: function () {
+                        showMessage('Impossible de charger le formulaire.', 'error');
                     }
+                });
+            }
 
-                    errorMsg += '</div>';
-                    $('#settingsContent').html(errorMsg);
+            document.addEventListener('submit', function (e) {
+                const form = e.target.closest('.base-modal-form');
+                if (!form) {
+                    return;
+                }
+
+                e.preventDefault();
+
+                $.ajax({
+                    url: form.action,
+                    type: 'POST',
+                    data: $(form).serialize(),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function (response, status, xhr) {
+                        const contentType = xhr.getResponseHeader('content-type') || '';
+                        if (contentType.includes('application/json') && response.success) {
+                            baseModal.hide();
+                            window.location.href = response.redirectUrl || currentReturnUrl;
+                            return;
+                        }
+
+                        modalBody.innerHTML = response;
+                        parseModalValidation();
+                    },
+                    error: function (xhr) {
+                        modalBody.innerHTML = xhr.responseText || 'Erreur serveur';
+                        parseModalValidation();
+                    }
+                });
+            });
+
+            function parseModalValidation() {
+                if (!window.$ || !$.validator || !$.validator.unobtrusive) {
+                    return;
+                }
+
+                if (!modalBody.querySelector('form')) {
+                    return;
+                }
+
+                $.validator.unobtrusive.parse(modalBody);
+            }
+        })();
+
+        function deleteItem(controller, id, name) {
+            if (!confirm(`Êtes-vous sûr de vouloir supprimer "${name}" ?`)) {
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            $.ajax({
+                url: `/Settings/${controller}/Delete/${id}`,
+                type: 'POST',
+                data: { __RequestVerificationToken: token },
+                success: function () {
+                    showMessage('Supprimé avec succès', 'success');
+                    window.location.reload();
+                },
+                error: function () {
+                    showMessage('Erreur lors de la suppression', 'error');
                 }
             });
         }
 
-        // Delete item (called from partial views)
-        function deleteItem(controller, id, name) {
-            if (confirm(`Êtes-vous sûr de vouloir supprimer "${name}" ?`)) {
-                $.ajax({
-                    url: `/Settings/${controller}/Delete/${id}`,
-                    type: 'POST',
-                    data: {
-                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    success: function(response) {
-                        toastr.success('Supprimé avec succès');
-                        loadList(controller);
-                    },
-                    error: function(xhr) {
-                        toastr.error('Erreur lors de la suppression');
-                    }
-                });
+        function showMessage(message, type) {
+            if (window.toastr) {
+                toastr[type](message);
+                return;
             }
+            alert(message);
         }
     </script>
 }
-

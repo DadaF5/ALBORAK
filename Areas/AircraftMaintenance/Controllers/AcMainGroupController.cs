@@ -55,6 +55,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(AcMainGroupViewModel model)
         {
+            // Duplicate check: same Name + Category (only if model binding is valid)
+            if (ModelState.IsValid && await _unitOfWork.AcMainGroups.ExistsAsync(g =>
+                g.Name == model.Name &&
+                g.AcCategoryId == model.AcCategoryId))
+            {
+                ModelState.AddModelError(nameof(model.Name), "A main group with the same name already exists in this category.");
+            }
+
             if (!ModelState.IsValid)
             {
                 // Repopulate dropdowns on error
@@ -110,7 +118,19 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, AcMainGroupViewModel model)
         {
-            if (id != model.Id || !ModelState.IsValid)
+            if (id != model.Id)
+                return NotFound();
+
+            // Duplicate check: same Name + Category, excluding current record (only if model binding is valid)
+            if (ModelState.IsValid && await _unitOfWork.AcMainGroups.ExistsAsync(g =>
+                g.Id != model.Id &&
+                g.Name == model.Name &&
+                g.AcCategoryId == model.AcCategoryId))
+            {
+                ModelState.AddModelError(nameof(model.Name), "Another main group with the same name already exists in this category.");
+            }
+
+            if (!ModelState.IsValid)
             {
                 model.Categories = new SelectList(await _unitOfWork.AcMainGroups.GetByAcCategoryIdAsync(0));
                 model.Bases = new SelectList(await _unitOfWork.AcMainGroups.GetByBaseIdAsync(0));

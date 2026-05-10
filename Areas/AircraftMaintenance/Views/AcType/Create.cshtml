@@ -1,41 +1,96 @@
 ﻿@model FRAProject.ViewModels.AcType.AcTypeViewModel
 @{
-    ViewData["Title"] = "Create AcType";
+    ViewData["Title"] = "Nouveau Type d'Aéronef";
 }
 
-<div class="container mt-3">
-    <div class="card">
-        <div class="card-header">
-            <h4>Create New AcType</h4>
-        </div>
-        <div class="card-body">
-            <form asp-action="Create" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div> 
-                <div class="mb-3">
-                    <label asp-for="AcMainGroupId" class="form-label"></label>
-                    <select asp-for="AcMainGroupId" class="form-select" asp-items="Model.AcMainGroups">
-                        <option value="">-- Select Main Group --</option>
-                    </select>
-                    <span asp-validation-for="AcMainGroupId" class="text-danger"></span>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Nouveau Type d'Aéronef</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="AcMainGroupId"></label>
+                        <select asp-for="AcMainGroupId" class="form-control" asp-items="Model.AcMainGroups">
+                            <option value="">-- Sélectionner le Groupe Principal --</option>
+                        </select>
+                        <span asp-validation-for="AcMainGroupId" class="text-danger"></span>
+                    </div>
                 </div>
-
-                <div class="mb-3">
-                    <label asp-for="Name" class="form-label"></label>
-                    <input asp-for="Name" class="form-control" />
-                    <span asp-validation-for="Name" class="text-danger"></span>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Name"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
                 </div>
+            </div>
 
-                <div class="mb-3">
-                    <label asp-for="Description" class="form-label"></label>
-                    <textarea asp-for="Description" class="form-control"></textarea>
-                    <span asp-validation-for="Description" class="text-danger"></span>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Code"></label>
+                        <input asp-for="Code" class="form-control" placeholder="Ex: F16, C130..." />
+                        <span asp-validation-for="Code" class="text-danger"></span>
+                    </div>
                 </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="MaxEngines"></label>
+                        <input asp-for="MaxEngines" class="form-control" type="number" min="1" />
+                        <span asp-validation-for="MaxEngines" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
 
-               
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="MaxPassengers"></label>
+                        <input asp-for="MaxPassengers" class="form-control" type="number" min="0" />
+                        <span asp-validation-for="MaxPassengers" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="MaxGrossweight"></label>
+                        <input asp-for="MaxGrossweight" class="form-control" type="number" min="0" step="0.1" />
+                        <span asp-validation-for="MaxGrossweight" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
 
-                <button type="submit" class="btn btn-primary">Save</button>
-                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-            </form>
-        </div>
+            <div class="form-group">
+                <label asp-for="Description"></label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <div class="custom-control custom-switch">
+                    <input asp-for="IsActive" class="custom-control-input" id="IsActiveSwitch"
+                           aria-label="Activer ou désactiver ce type d'aéronef" />
+                    <label class="custom-control-label" for="IsActiveSwitch">@Html.DisplayNameFor(m => m.IsActive)</label>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Enregistrer
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Annuler
+                </a>
+            </div>
+        </form>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

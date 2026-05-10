@@ -7,22 +7,34 @@ namespace FRAProject.ViewModels.AcType
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Type Name is required")]
+        [Required(ErrorMessage = "Le nom du type est obligatoire.")]
         [StringLength(100)]
-        [Display(Name = "Type Name")]
+        [Display(Name = "Nom du Type")]
         public string Name { get; set; }
 
         [StringLength(250)]
-        public string Description { get; set; }
+        [Display(Name = "Description")]
+        public string? Description { get; set; }
 
-        [Required(ErrorMessage = "Main Group is required")]
-        [Display(Name = "Main Group")]
+        [Required(ErrorMessage = "Le groupe principal est obligatoire.")]
+        [Display(Name = "Groupe Principal")]
         public int AcMainGroupId { get; set; }
 
-        public double MaxGrossweight { get; set; }
-        public int MaxPassengers { get; set; }
+        [StringLength(30)]
+        [Display(Name = "Code")]
+        public string? Code { get; set; }
+
+        [Display(Name = "Nb. Moteurs Max")]
         public int MaxEngines { get; set; } = 1;
 
+        [Display(Name = "Passagers Max")]
+        public int MaxPassengers { get; set; }
+
+        [Display(Name = "Masse Max (kg)")]
+        public double MaxGrossweight { get; set; }
+
+        [Display(Name = "Actif")]
+        public bool IsActive { get; set; } = true;
 
         // For dropdown list
         public IEnumerable<SelectListItem>? AcMainGroups { get; set; }

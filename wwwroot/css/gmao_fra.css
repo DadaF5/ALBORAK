@@ -37,6 +37,11 @@ body {
     color: var(--text);
     font-family: var(--font);
     min-height: 100vh;
+}
+
+/* Custom flex layout applies only to non-AdminLTE pages.
+   AdminLTE pages carry the class "hold-transition" on <body>. */
+body:not(.hold-transition) {
     display: flex;
     overflow: hidden;
 }
@@ -326,8 +331,10 @@ body {
     border: 1.5px solid var(--bg2);
 }
 
-/* CONTENT */
-.content {
+/* CONTENT — custom layout only (main.content inside .main div).
+   AdminLTE uses section.content inside .content-wrapper; scoping prevents
+   the padding/flex overrides from breaking the AdminLTE full-width layout. */
+body:not(.hold-transition) .content {
     flex: 1;
     overflow-y: auto;
     padding: 24px;

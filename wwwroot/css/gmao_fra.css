@@ -37,6 +37,9 @@ body {
     color: var(--text);
     font-family: var(--font);
     min-height: 100vh;
+}
+
+body.gmao-main-layout {
     display: flex;
     overflow: hidden;
 }

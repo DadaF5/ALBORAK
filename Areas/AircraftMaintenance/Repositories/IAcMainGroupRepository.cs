@@ -6,6 +6,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Repositories
 {
     public interface IAcMainGroupRepository : IGenericRepository<AcMainGroup>
     {
+        Task<IEnumerable<AcMainGroup>> GetAllWithDetailsAsync();
         Task<IEnumerable<AcMainGroup>> GetByBaseIdAsync(int baseId);
         Task<IEnumerable<AcMainGroup>> GetByAcCategoryIdAsync(int acCategoryId);
         Task<IEnumerable<AcCategory>> GetAllCategoriesAsync();

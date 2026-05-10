@@ -32,7 +32,7 @@
         </select>
     </div>
     <div class="col-md-3">
-        <a asp-action="Create" class="btn btn-primary">Create New Main Group</a>
+        <a asp-area="AircraftMaintenance" asp-action="Create" class="btn btn-primary">Create New Main Group</a>
     </div>
 </div>
 
@@ -67,8 +67,8 @@
                     }
                 </td>
                 <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
+                    <a asp-area="AircraftMaintenance" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
+                    <a asp-area="AircraftMaintenance" asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
                 </td>
             </tr>
         }
@@ -81,7 +81,7 @@
             $('#baseFilter, #categoryFilter').change(function () {
                 var baseId = $('#baseFilter').val();
                 var catId = $('#categoryFilter').val();
-                var url = '@Url.Action("Index", "AcMainGroup")';
+                var url = '@Url.Action("Index", "AcMainGroup", new { area = "AircraftMaintenance" })';
 
                 var query = [];
                 if (baseId) query.push("baseId=" + baseId);

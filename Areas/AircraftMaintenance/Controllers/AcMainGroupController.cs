@@ -22,7 +22,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // Get: AcMainGroup
         public async Task<IActionResult> Index(int? baseId, int? categoryId)
         {
-            var groups= await _unitOfWork.AcMainGroups.GetAllAsync();
+            var groups = await _unitOfWork.AcMainGroups.GetAllWithDetailsAsync();
             
             if ( baseId.HasValue)
             {
@@ -34,9 +34,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 groups = groups.Where(g => g.AcCategoryId == categoryId);
             }
 
-            // Populate dropdowns
-            ViewBag.Bases = new SelectList(await _unitOfWork.AcMainGroups.GetByBaseIdAsync(baseId ?? 0),
-            ViewBag.AcCategories = new SelectList(await _unitOfWork.AcMainGroups.GetByAcCategoryIdAsync(categoryId ?? 0), "Id", "Name"));
+            await PopulateFilterDropdownsAsync(baseId, categoryId);
                        
             return View(groups);
         }
@@ -57,11 +55,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         {
             if (!ModelState.IsValid)
             {
-                // Repopulate dropdowns on error
-                ViewBag.AcCategories = await _unitOfWork.AcMainGroups
-                    .GetByAcCategoryIdAsync(0);
-                ViewBag.Bases = await _unitOfWork.AcMainGroups
-                    .GetByBaseIdAsync(0);
+                await PopulateFilterDropdownsAsync(model.BaseId, model.AcCategoryId);
                 return View(model);
                 
             }
@@ -97,10 +91,9 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 Description = entity.Description,
                 AcCategoryId = entity.AcCategoryId,
                 BaseId = entity.BaseId,
-                IsActive = entity.Active,
-                Categories= new SelectList(await _unitOfWork.AcMainGroups.GetByAcCategoryIdAsync(0)),
-                Bases= new SelectList(await _unitOfWork.AcMainGroups.GetByBaseIdAsync(0))
+                IsActive = entity.Active
             };
+            await PopulateEditDropdownsAsync(vm);
 
             return View(vm);
         }
@@ -110,10 +103,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, AcMainGroupViewModel model)
         {
-            if (id != model.Id || !ModelState.IsValid)
+            if (id != model.Id)
             {
-                model.Categories = new SelectList(await _unitOfWork.AcMainGroups.GetByAcCategoryIdAsync(0));
-                model.Bases = new SelectList(await _unitOfWork.AcMainGroups.GetByBaseIdAsync(0));
+                return NotFound();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                await PopulateEditDropdownsAsync(model);
                 return View(model);
             }
 
@@ -134,6 +131,34 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             await _unitOfWork.CompleteAsync();
 
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task PopulateFilterDropdownsAsync(int? selectedBaseId = null, int? selectedCategoryId = null)
+        {
+            ViewBag.AcCategories = new SelectList(
+                await _unitOfWork.AcMainGroups.GetAllCategoriesAsync(),
+                "Id",
+                "Name",
+                selectedCategoryId);
+            ViewBag.Bases = new SelectList(
+                await _unitOfWork.AcMainGroups.GetAllBasesAsync(),
+                "Id",
+                "BaseName",
+                selectedBaseId);
+        }
+
+        private async Task PopulateEditDropdownsAsync(AcMainGroupViewModel model)
+        {
+            model.Categories = new SelectList(
+                await _unitOfWork.AcMainGroups.GetAllCategoriesAsync(),
+                "Id",
+                "Name",
+                model.AcCategoryId);
+            model.Bases = new SelectList(
+                await _unitOfWork.AcMainGroups.GetAllBasesAsync(),
+                "Id",
+                "BaseName",
+                model.BaseId);
         }
 
         

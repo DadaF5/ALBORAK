@@ -12,6 +12,15 @@ namespace FRAProject.Areas.AircraftMaintenance.Repositories
         {
         }
 
+        public async Task<IEnumerable<AcMainGroup>> GetAllWithDetailsAsync()
+        {
+            return await _context.Set<AcMainGroup>()
+                                 .Include(g => g.AcCategory)
+                                 .Include(g => g.Base)
+                                 .OrderBy(g => g.Name)
+                                 .ToListAsync();
+        }
+
         public async Task<IEnumerable<AcMainGroup>> GetByBaseIdAsync(int baseId)
         {
             return await _context.Set<AcMainGroup>()

@@ -50,15 +50,23 @@ namespace FRAProject.Areas.Settings.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(AircraftManufacturer entity)
         {
-            if (await _context.AircraftManufacturers.AnyAsync(x => x.Code == entity.Code))
+            var normalizedCode = entity.Code?.Trim().ToUpperInvariant() ?? string.Empty;
+
+            if (await _context.AircraftManufacturers.AnyAsync(x => x.Code.Trim().ToUpper() == normalizedCode))
             {
                 ModelState.AddModelError(nameof(entity.Code), "Code already exists.");
             }
 
             if (!ModelState.IsValid) return View(entity);
 
+            entity.Code = normalizedCode;
+            entity.Name = entity.Name?.Trim() ?? string.Empty;
+            entity.Description = string.IsNullOrWhiteSpace(entity.Description) ? null : entity.Description.Trim();
+
             _context.AircraftManufacturers.Add(entity);
             await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Manufacturer created successfully.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -80,12 +88,18 @@ namespace FRAProject.Areas.Settings.Controllers
         {
             if (id != entity.Id) return NotFound();
 
-            if (await _context.AircraftManufacturers.AnyAsync(x => x.Id != entity.Id && x.Code == entity.Code))
+            var normalizedCode = entity.Code?.Trim().ToUpperInvariant() ?? string.Empty;
+
+            if (await _context.AircraftManufacturers.AnyAsync(x => x.Id != entity.Id && x.Code.Trim().ToUpper() == normalizedCode))
             {
                 ModelState.AddModelError(nameof(entity.Code), "Code already exists.");
             }
 
             if (!ModelState.IsValid) return View(entity);
+
+            entity.Code = normalizedCode;
+            entity.Name = entity.Name?.Trim() ?? string.Empty;
+            entity.Description = string.IsNullOrWhiteSpace(entity.Description) ? null : entity.Description.Trim();
 
             try
             {
@@ -99,6 +113,7 @@ namespace FRAProject.Areas.Settings.Controllers
                 throw;
             }
 
+            TempData["SuccessMessage"] = "Manufacturer updated successfully.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -123,9 +138,12 @@ namespace FRAProject.Areas.Settings.Controllers
             var entity = await _context.AircraftManufacturers.FindAsync(id);
             if (entity != null)
             {
-                _context.AircraftManufacturers.Remove(entity);
+                entity.IsActive = false;
+                _context.AircraftManufacturers.Update(entity);
                 await _context.SaveChangesAsync();
             }
+
+            TempData["SuccessMessage"] = "Manufacturer deactivated successfully.";
             return RedirectToAction(nameof(Index));
         }
     }

@@ -1,12 +1,15 @@
 @model FRAProject.Areas.Settings.Models.AircraftManufacturer
 @{
-    ViewData["Title"] = "Delete Constructeur";
+    ViewData["Title"] = "Deactivate Manufacturer";
 }
 
 <h2>@ViewData["Title"]</h2>
 
 <div class="alert alert-warning">
-    Are you sure you want to delete this item?
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>Warning!</strong> Are you sure you want to deactivate <strong>@Model.Name</strong> (@Model.Code)?<br />
+    This will mark the manufacturer as inactive but will not remove it from the database.
+    It will no longer appear as an active option in other screens.
 </div>
 
 <dl class="row">
@@ -22,6 +25,8 @@
 
 <form asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Delete" method="post">
     <input type="hidden" asp-for="Id" />
-    <button type="submit" class="btn btn-danger">Delete</button>
+    <button type="submit" class="btn btn-danger">
+        <i class="fas fa-ban"></i> Deactivate
+    </button>
     <a asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Index" class="btn btn-secondary">Cancel</a>
 </form>

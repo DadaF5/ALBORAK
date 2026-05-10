@@ -4,6 +4,14 @@
     ViewData["Title"] = "Constructeurs";
 }
 
+<style>
+    .badge-status {
+        font-size: 0.9em;
+        padding: 5px 10px;
+        border-radius: 12px;
+    }
+</style>
+
 <h2>@ViewData["Title"]</h2>
 
 <p>
@@ -30,12 +38,25 @@
             <td>@item.Code</td>
             <td>@item.Name</td>
             <td>@item.Description</td>
-            <td>@item.IsActive</td>
+            <td>
+                @if (item.IsActive)
+                {
+                    <span class="badge badge-success badge-status">
+                        <i class="fas fa-check-circle"></i> Active
+                    </span>
+                }
+                else
+                {
+                    <span class="badge badge-danger badge-status">
+                        <i class="fas fa-ban"></i> Inactive
+                    </span>
+                }
+            </td>
             <td>@item.SortOrder</td>
             <td class="text-end">
                 <a asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Details" asp-route-id="@item.Id">Details</a> |
                 <a asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                <a asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Delete" asp-route-id="@item.Id" class="text-danger">Deactivate</a>
             </td>
         </tr>
 }

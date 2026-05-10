@@ -53,12 +53,15 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(AcTypeViewModel vm)
         {
-            // Duplicate check: same Name under same AcMainGroup
+            var normalizedName = vm.Name?.Trim() ?? string.Empty;
+
+            // Duplicate check: same Name (case-insensitive) under same AcMainGroup
             if (await _context.AcTypes.AnyAsync(t =>
-                    t.Name == vm.Name && t.AcMainGroupId == vm.AcMainGroupId))
+                    t.Name.ToLower() == normalizedName.ToLower() &&
+                    t.AcMainGroupId == vm.AcMainGroupId))
             {
                 ModelState.AddModelError(nameof(vm.Name),
-                    "This Type already exists under the selected Main Group.");
+                    "Ce type existe déjà dans le groupe principal sélectionné.");
             }
 
             if (!ModelState.IsValid)
@@ -69,14 +72,20 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
 
             var entity = new AcType
             {
-                Name = vm.Name,
-                Description = vm.Description,
-                AcMainGroupId = vm.AcMainGroupId
+                Name = vm.Name?.Trim() ?? string.Empty,
+                Description = vm.Description?.Trim() ?? string.Empty,
+                AcMainGroupId = vm.AcMainGroupId,
+                Code = string.IsNullOrWhiteSpace(vm.Code) ? null : vm.Code.Trim().ToUpper(),
+                MaxEngines = vm.MaxEngines,
+                MaxPassengers = vm.MaxPassengers,
+                MaxGrossweight = vm.MaxGrossweight,
+                IsActive = vm.IsActive
             };
 
             _context.AcTypes.Add(entity);
             await _context.SaveChangesAsync();
 
+            TempData["SuccessMessage"] = "Type d'aéronef créé avec succès.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -96,6 +105,11 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 Name = entity.Name,
                 Description = entity.Description,
                 AcMainGroupId = entity.AcMainGroupId,
+                Code = entity.Code,
+                MaxEngines = entity.MaxEngines,
+                MaxPassengers = entity.MaxPassengers,
+                MaxGrossweight = entity.MaxGrossweight,
+                IsActive = entity.IsActive,
                 AcMainGroups = await GetAcMainGroupsSelectList()
             };
 
@@ -111,14 +125,16 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         {
             if (id != vm.Id) return NotFound();
 
-            // Duplicate check excluding current entity
+            var normalizedName = vm.Name?.Trim() ?? string.Empty;
+
+            // Duplicate check excluding current entity (case-insensitive)
             if (await _context.AcTypes.AnyAsync(t =>
                     t.Id != vm.Id &&
-                    t.Name == vm.Name &&
+                    t.Name.ToLower() == normalizedName.ToLower() &&
                     t.AcMainGroupId == vm.AcMainGroupId))
             {
                 ModelState.AddModelError(nameof(vm.Name),
-                    "Another Type with the same Name exists under the selected Main Group.");
+                    "Un autre type avec le même nom existe dans le groupe principal sélectionné.");
             }
 
             if (!ModelState.IsValid)
@@ -130,9 +146,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             var entity = await _context.AcTypes.FindAsync(id);
             if (entity == null) return NotFound();
 
-            entity.Name = vm.Name;
-            entity.Description = vm.Description;
+            entity.Name = vm.Name?.Trim() ?? string.Empty;
+            entity.Description = vm.Description?.Trim() ?? string.Empty;
             entity.AcMainGroupId = vm.AcMainGroupId;
+            entity.Code = string.IsNullOrWhiteSpace(vm.Code) ? null : vm.Code.Trim().ToUpper();
+            entity.MaxEngines = vm.MaxEngines;
+            entity.MaxPassengers = vm.MaxPassengers;
+            entity.MaxGrossweight = vm.MaxGrossweight;
+            entity.IsActive = vm.IsActive;
 
             try
             {
@@ -145,6 +166,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 throw;
             }
 
+            TempData["SuccessMessage"] = "Type d'aéronef mis à jour avec succès.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -178,6 +200,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            TempData["SuccessMessage"] = "Type d'aéronef supprimé avec succès.";
             return RedirectToAction(nameof(Index));
         }
 

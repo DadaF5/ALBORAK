@@ -1,4 +1,4 @@
-﻿using FRAProject.Areas.HR.Models;
+﻿using FRAProject.Areas.Settings.Models;
 using System;
 using System.ComponentModel.DataAnnotations;
 

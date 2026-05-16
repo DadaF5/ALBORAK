@@ -1,3 +1,9 @@
+﻿/* =============================================================
+   GMAO FRA — Design System
+   Stack : ASP.NET Core MVC · Segoe UI (system) · No CDN
+   ============================================================= */
+
+/* ── VARIABLES ─────────────────────────────────────────────── */
 :root {
     --bg: #0a0c0f;
     --bg2: #111318;
@@ -22,79 +28,158 @@
     --text: #e2e8f0;
     --text2: #94a3b8;
     --text3: #64748b;
-    --font: 'Space Grotesk', sans-serif;
-    --mono: 'JetBrains Mono', monospace;
+    --font: 'Segoe UI', system-ui, sans-serif;
+    --mono: 'Consolas', 'Courier New', monospace;
+    --topbar-h: 52px;
+    --sidebar-w: 240px;
+    --sidebar-col: 60px;
 }
 
+/* ── RESET ──────────────────────────────────────────────────── */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+/* ── BODY — flex shell, locked to viewport ──────────────────── */
 body {
     background: var(--bg);
     color: var(--text);
     font-family: var(--font);
-    min-height: 100vh;
+    height: 100vh; /* full viewport height — NOT min-height */
     display: flex;
-    overflow: hidden;
+    overflow: hidden; /* prevent page scroll; each zone scrolls itself */
 }
 
-/* SIDEBAR */
+/* ── SCROLLBARS ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border2);
+    border-radius: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR
+   ═══════════════════════════════════════════════════════════════ */
 .sidebar {
-    width: 260px;
-    min-width: 260px;
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
     background: var(--bg2);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     height: 100vh;
-    overflow-y: auto;
+    overflow: hidden;
+    transition: width 0.2s ease, min-width 0.2s ease;
+    position: relative;
+    z-index: 200;
+    flex-shrink: 0;
 }
 
+    /* collapsed state — toggled via JS: sidebar.classList.toggle('collapsed') */
+    .sidebar.collapsed {
+        width: var(--sidebar-col);
+        min-width: var(--sidebar-col);
+    }
+
+/* ── Logo area ──────────────────────────────────────────────── */
 .sidebar-logo {
-    padding: 20px 20px 16px;
+    height: var(--topbar-h);
+    padding: 0 14px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    flex-shrink: 0;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .logo-icon {
-    width: 38px;
-    height: 38px;
-    background: linear-gradient(135deg, var(--accent), #7c3aed);
-    border-radius: 10px;
+    width: 30px;
+    height: 30px;
+    background: var(--accent);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 15px;
     flex-shrink: 0;
+    color: #fff;
 }
 
 .logo-text {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    transition: opacity 0.15s, width 0.2s;
 }
 
     .logo-text .name {
-        font-size: 15px;
+        font-size: 12px;
         font-weight: 600;
-        letter-spacing: -0.3px;
         color: var(--text);
+        white-space: nowrap;
     }
 
     .logo-text .sub {
-        font-size: 10px;
+        font-size: 9px;
         color: var(--text3);
         text-transform: uppercase;
         letter-spacing: 0.8px;
         font-weight: 500;
     }
 
+.sidebar.collapsed .logo-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+/* ── Sidebar toggle button ──────────────────────────────────── */
+.sidebar-toggle {
+    margin-left: auto;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    z-index: 6000;
+    transition: background 0.12s, color 0.12s;
+}
+
+    .sidebar-toggle:hover {
+        background: var(--bg3);
+        color: var(--text);
+    }
+
+.sidebar.collapsed .sidebar-logo {
+    justify-content: center;
+    padding: 0 10px;
+}
+
+/* ── Section labels ─────────────────────────────────────────── */
 .sidebar-section {
-    padding: 12px 12px 0;
+    padding: 8px 8px 0;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .sidebar-section-label {
@@ -104,37 +189,63 @@ body {
     color: var(--text3);
     font-weight: 600;
     padding: 0 8px;
+    margin-top: 12px;
     margin-bottom: 4px;
-    margin-top: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: opacity 0.15s;
 }
 
-.nav-item {
+.sidebar.collapsed .sidebar-section-label {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ── Nav items ──────────────────────────────────────────────── */
+.nav-item,
+a.nav-item,
+button.nav-item {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 10px;
-    border-radius: 8px;
+    padding: 8px 8px;
+    border-radius: 7px;
     cursor: pointer;
-    transition: all 0.15s;
-    font-size: 13px;
+    transition: background 0.12s, color 0.12s;
+    font-size: 12.5px;
     color: var(--text2);
     font-weight: 400;
     margin-bottom: 1px;
     position: relative;
+    white-space: nowrap;
+    text-decoration: none;
+    overflow: hidden;
+    /* button-specific resets */
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font);
 }
 
-    .nav-item:hover {
+    .nav-item:hover,
+    a.nav-item:hover,
+    button.nav-item:hover {
         background: var(--bg3);
         color: var(--text);
+        text-decoration: none;
     }
 
-    .nav-item.active {
+    .nav-item.active,
+    a.nav-item.active,
+    button.nav-item.active {
         background: var(--accent-glow);
         color: var(--text);
         font-weight: 500;
     }
 
-        .nav-item.active::before {
+        .nav-item.active::before,
+        a.nav-item.active::before {
             content: '';
             position: absolute;
             left: 0;
@@ -147,9 +258,16 @@ body {
 
 .nav-icon {
     font-size: 15px;
-    width: 18px;
+    width: 20px;
     text-align: center;
     flex-shrink: 0;
+}
+
+.nav-text {
+    display: inline;
+    transition: opacity 0.15s, width 0.2s;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .nav-badge {
@@ -158,42 +276,75 @@ body {
     font-weight: 600;
     padding: 1px 6px;
     border-radius: 10px;
+    flex-shrink: 0;
 }
 
-.badge-red {
-    background: var(--red-bg);
-    color: var(--red);
+/* ── Collapsed: icon-only + tooltip on hover ────────────────── */
+.sidebar.collapsed .nav-text,
+.sidebar.collapsed .nav-badge {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
 }
 
-.badge-amber {
-    background: var(--amber-bg);
-    color: var(--amber);
+.sidebar.collapsed .nav-item,
+.sidebar.collapsed a.nav-item,
+.sidebar.collapsed button.nav-item {
+    justify-content: center;
+    padding: 10px;
 }
 
-.badge-green {
-    background: var(--green-bg);
-    color: var(--green);
-}
+    /* tooltip */
+    .sidebar.collapsed .nav-item:hover .nav-text,
+    .sidebar.collapsed a.nav-item:hover .nav-text {
+        opacity: 1;
+        width: auto;
+        position: absolute;
+        left: calc(100% + 10px);
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 7px 10px;
+        border-radius: 7px;
+        background: var(--surface);
+        border: 1px solid var(--border2);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        z-index: 5000;
+        pointer-events: none;
+    }
 
-.badge-blue {
-    background: var(--accent-glow);
-    color: #60a5fa;
-}
+        .sidebar.collapsed .nav-item:hover .nav-text::before,
+        .sidebar.collapsed a.nav-item:hover .nav-text::before {
+            content: "";
+            position: absolute;
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent var(--surface) transparent transparent;
+        }
 
+/* ── Sidebar footer ─────────────────────────────────────────── */
 .sidebar-footer {
-    margin-top: auto;
-    padding: 12px;
+    padding: 10px 8px;
     border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    overflow: hidden;
 }
 
 .user-card {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px;
-    border-radius: 8px;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 7px;
     cursor: pointer;
     transition: background 0.15s;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
     .user-card:hover {
@@ -201,57 +352,77 @@ body {
     }
 
 .user-avatar {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), var(--purple));
+    background: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
+    color: #fff;
     flex-shrink: 0;
 }
 
-.user-info .name {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text);
+.user-info {
+    overflow: hidden;
+    transition: opacity 0.15s, width 0.2s;
 }
 
-.user-info .role {
-    font-size: 10px;
-    color: var(--text3);
+    .user-info .name {
+        font-size: 11.5px;
+        font-weight: 500;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-info .role {
+        font-size: 10px;
+        color: var(--text3);
+    }
+
+.sidebar.collapsed .user-info {
+    opacity: 0;
+    width: 0;
 }
 
-/* MAIN */
+/* ═══════════════════════════════════════════════════════════════
+   MAIN (everything to the right of sidebar)
+   ═══════════════════════════════════════════════════════════════ */
 .main {
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    min-height: 0; /* critical: allows flex children to shrink */
+    min-width: 0;
     overflow: hidden;
 }
 
+/* ── Topbar ─────────────────────────────────────────────────── */
 .topbar {
+    height: var(--topbar-h);
     background: var(--bg2);
     border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    height: 56px;
+    padding: 0 20px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     flex-shrink: 0;
+    z-index: 100;
 }
 
 .topbar-title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--text);
+    white-space: nowrap;
 }
 
 .topbar-breadcrumb {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text3);
     display: flex;
     align-items: center;
@@ -265,7 +436,7 @@ body {
     gap: 8px;
     background: var(--bg3);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 7px;
     padding: 6px 12px;
     width: 220px;
     transition: border-color 0.15s;
@@ -292,27 +463,34 @@ body {
 .topbar-actions {
     display: flex;
     gap: 8px;
+    align-items: center;
 }
 
-.icon-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    display: flex;
+/* ── Icon buttons ───────────────────────────────────────────── */
+.icon-btn,
+a.icon-btn {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    font-size: 15px;
-    transition: all 0.15s;
-    position: relative;
+    min-width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
     color: var(--text2);
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.12s, color 0.12s;
+    padding: 0 8px;
+    text-decoration: none;
+    font-family: var(--font);
 }
 
-    .icon-btn:hover {
+    .icon-btn:hover,
+    a.icon-btn:hover {
         background: var(--surface);
         color: var(--text);
+        text-decoration: none;
     }
 
 .notif-dot {
@@ -326,15 +504,18 @@ body {
     border: 1.5px solid var(--bg2);
 }
 
-/* CONTENT */
+/* ── Content area ───────────────────────────────────────────── */
 .content {
     flex: 1;
+    min-height: 0; /* critical: allows this to shrink & scroll */
     overflow-y: auto;
-    padding: 24px;
+    padding: 22px 24px;
     background: var(--bg);
 }
 
-/* TABS */
+/* ═══════════════════════════════════════════════════════════════
+   TABS
+   ═══════════════════════════════════════════════════════════════ */
 .tabs {
     display: flex;
     gap: 2px;
@@ -352,6 +533,11 @@ body {
     font-weight: 400;
     white-space: nowrap;
     margin-bottom: -1px;
+    font-family: var(--font);
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
 }
 
     .tab:hover {
@@ -364,7 +550,41 @@ body {
         font-weight: 500;
     }
 
-/* PAGE SECTIONS */
+/* ── Settings tabs (pill style) ─────────────────────────────── */
+.set-tab,
+a.set-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text3);
+    transition: all 0.15s;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+    .set-tab:hover,
+    a.set-tab:hover {
+        background: var(--bg3);
+        color: var(--text2);
+        border-color: var(--border2);
+        text-decoration: none;
+    }
+
+    .set-tab.active,
+    a.set-tab.active {
+        background: var(--accent-glow);
+        color: var(--text);
+        border-color: var(--accent);
+    }
+
+/* ── Page panels ────────────────────────────────────────────── */
 .page {
     display: none;
 }
@@ -373,7 +593,9 @@ body {
         display: block;
     }
 
-/* CARDS */
+/* ═══════════════════════════════════════════════════════════════
+   CARDS & LAYOUT GRIDS
+   ═══════════════════════════════════════════════════════════════ */
 .kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -480,7 +702,9 @@ body {
     padding: 16px 18px;
 }
 
-/* TABLE */
+/* ═══════════════════════════════════════════════════════════════
+   DATA TABLE
+   ═══════════════════════════════════════════════════════════════ */
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -515,7 +739,9 @@ body {
         cursor: pointer;
     }
 
-/* BADGES */
+/* ═══════════════════════════════════════════════════════════════
+   BADGES
+   ═══════════════════════════════════════════════════════════════ */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -562,7 +788,49 @@ body {
     color: var(--text3);
 }
 
-/* ALERT */
+.badge-red {
+    background: var(--red-bg);
+    color: var(--red);
+}
+
+.badge-amber {
+    background: var(--amber-bg);
+    color: var(--amber);
+}
+
+.badge-green {
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.badge-blue {
+    background: var(--accent-glow);
+    color: #60a5fa;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ALERTS (TempData + list items)
+   ═══════════════════════════════════════════════════════════════ */
+.alert-success-fra {
+    background: var(--green-bg);
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
+.alert-error-fra {
+    background: var(--red-bg);
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
 .alert-list {
     display: flex;
     flex-direction: column;
@@ -618,7 +886,111 @@ body {
     white-space: nowrap;
 }
 
-/* FLEET GRID */
+/* ═══════════════════════════════════════════════════════════════
+   ACTION BUTTONS
+   ═══════════════════════════════════════════════════════════════ */
+.btn {
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #fff;
+}
+
+    .btn-primary:hover {
+        background: var(--accent2);
+    }
+
+.btn-secondary {
+    background: var(--bg3);
+    color: var(--text2);
+    border: 1px solid var(--border);
+}
+
+    .btn-secondary:hover {
+        background: var(--surface);
+    }
+
+.act-btn {
+    padding: 3px 9px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text2);
+    font-family: var(--font);
+    transition: all 0.15s;
+}
+
+    .act-btn:hover {
+        background: var(--surface);
+        color: var(--text);
+    }
+
+    .act-btn.del:hover {
+        background: var(--red-bg);
+        color: var(--red);
+        border-color: rgba(239,68,68,0.3);
+    }
+
+/* ═══════════════════════════════════════════════════════════════
+   FORMS
+   ═══════════════════════════════════════════════════════════════ */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+    .form-group.span-2 {
+        grid-column: span 2;
+    }
+
+.form-label {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-input,
+.form-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 11px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+    .form-input:focus,
+    .form-select:focus {
+        border-color: var(--accent);
+    }
+
+/* ═══════════════════════════════════════════════════════════════
+   FLEET GRID
+   ═══════════════════════════════════════════════════════════════ */
 .fleet-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -670,7 +1042,9 @@ body {
     color: var(--text);
 }
 
-/* PROGRESS */
+/* ═══════════════════════════════════════════════════════════════
+   PROGRESS BARS
+   ═══════════════════════════════════════════════════════════════ */
 .progress-bar {
     height: 4px;
     background: var(--bg3);
@@ -685,7 +1059,9 @@ body {
     transition: width 0.4s ease;
 }
 
-/* CHART (CSS only) */
+/* ═══════════════════════════════════════════════════════════════
+   CSS BAR CHART
+   ═══════════════════════════════════════════════════════════════ */
 .bar-chart {
     display: flex;
     align-items: flex-end;
@@ -716,7 +1092,9 @@ body {
     font-family: var(--mono);
 }
 
-/* TIMELINE */
+/* ═══════════════════════════════════════════════════════════════
+   TIMELINE
+   ═══════════════════════════════════════════════════════════════ */
 .timeline {
     display: flex;
     flex-direction: column;
@@ -771,78 +1149,9 @@ body {
     margin-left: auto;
 }
 
-/* FORMS */
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-    .form-group.span-2 {
-        grid-column: span 2;
-    }
-
-.form-label {
-    font-size: 11px;
-    color: var(--text3);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.form-input, .form-select {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    padding: 8px 11px;
-    color: var(--text);
-    font-family: var(--font);
-    font-size: 12px;
-    outline: none;
-    transition: border-color 0.15s;
-}
-
-    .form-input:focus, .form-select:focus {
-        border-color: var(--accent);
-    }
-
-.btn {
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-family: var(--font);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition: all 0.15s;
-}
-
-.btn-primary {
-    background: var(--accent);
-    color: #fff;
-}
-
-    .btn-primary:hover {
-        background: var(--accent2);
-    }
-
-.btn-secondary {
-    background: var(--bg3);
-    color: var(--text2);
-    border: 1px solid var(--border);
-}
-
-    .btn-secondary:hover {
-        background: var(--surface);
-    }
-
-/* SECTION HEADER */
+/* ═══════════════════════════════════════════════════════════════
+   SECTION HEADER / MISC
+   ═══════════════════════════════════════════════════════════════ */
 .section-header {
     display: flex;
     align-items: center;
@@ -861,7 +1170,6 @@ body {
     color: var(--text3);
 }
 
-/* MISC */
 .divider {
     border: none;
     border-top: 1px solid var(--border);
@@ -881,83 +1189,9 @@ body {
     flex-wrap: wrap;
 }
 
-::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--border2);
-    border-radius: 3px;
-}
-
-@media (max-width: 1100px) {
-    .kpi-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .fleet-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-/* SETTINGS TABS */
-.set-tab {
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-family: var(--font);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    background: var(--bg2);
-    color: var(--text3);
-    transition: all 0.15s;
-    white-space: nowrap;
-}
-
-    .set-tab:hover {
-        background: var(--bg3);
-        color: var(--text2);
-        border-color: var(--border2);
-    }
-
-    .set-tab.active {
-        background: var(--accent-glow);
-        color: var(--text);
-        border-color: var(--accent);
-    }
-
-/* ACTION BUTTONS in tables */
-.act-btn {
-    padding: 3px 9px;
-    border-radius: 5px;
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    background: var(--bg3);
-    color: var(--text2);
-    font-family: var(--font);
-    transition: all 0.15s;
-}
-
-    .act-btn:hover {
-        background: var(--surface);
-        color: var(--text);
-    }
-
-    .act-btn.del:hover {
-        background: var(--red-bg);
-        color: var(--red);
-        border-color: rgba(239,68,68,0.3);
-    }
-
-/* DOC CHIPS */
+/* ═══════════════════════════════════════════════════════════════
+   DOC CHIPS
+   ═══════════════════════════════════════════════════════════════ */
 .doc-chip {
     display: inline-flex;
     align-items: center;
@@ -996,7 +1230,9 @@ body {
     border-color: rgba(16,185,129,0.25);
 }
 
-/* DOC UPLOAD ZONE */
+/* ═══════════════════════════════════════════════════════════════
+   DOC UPLOAD ZONE
+   ═══════════════════════════════════════════════════════════════ */
 .doc-upload-zone {
     margin-top: 10px;
     border: 1.5px dashed var(--border2);
@@ -1013,7 +1249,8 @@ body {
     min-height: 38px;
 }
 
-    .doc-upload-zone:hover, .doc-upload-zone.drag-over {
+    .doc-upload-zone:hover,
+    .doc-upload-zone.drag-over {
         border-color: var(--accent);
         background: var(--accent-glow);
         color: #60a5fa;
@@ -1026,7 +1263,23 @@ body {
         color: var(--green);
     }
 
-/* Set modal overlay flex */
+/* ═══════════════════════════════════════════════════════════════
+   DROPDOWN (dark theme override)
+   ═══════════════════════════════════════════════════════════════ */
+.dropdown-menu {
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background: var(--bg3);
+    color: var(--text) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MODAL OVERLAY
+   ═══════════════════════════════════════════════════════════════ */
 #set-modal-overlay {
     display: none;
 }
@@ -1035,7 +1288,9 @@ body {
         display: flex !important;
     }
 
-/* Nav Detail tabs */
+/* ═══════════════════════════════════════════════════════════════
+   NAV DETAIL (aircraft detail panel)
+   ═══════════════════════════════════════════════════════════════ */
 .nd-tab {
     padding: 11px 18px;
     font-size: 12px;
@@ -1046,6 +1301,11 @@ body {
     white-space: nowrap;
     font-weight: 400;
     margin-bottom: -1px;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: var(--font);
 }
 
     .nd-tab:hover {
@@ -1058,7 +1318,6 @@ body {
         font-weight: 500;
     }
 
-/* Nav Detail section blocks */
 .nd-block {
     background: var(--bg3);
     border: 1px solid var(--border);
@@ -1122,7 +1381,7 @@ body {
         font-weight: 400;
     }
 
-/* Potentiel gauge */
+/* ── Potentiel gauge ────────────────────────────────────────── */
 .pot-gauge {
     height: 6px;
     background: var(--bg);
@@ -1137,7 +1396,7 @@ body {
     transition: width 0.5s ease;
 }
 
-/* History timeline in detail */
+/* ── History timeline in detail ─────────────────────────────── */
 .nd-timeline-item {
     display: flex;
     gap: 12px;
@@ -1158,346 +1417,15 @@ body {
     margin-top: 4px;
 }
 
-/* =============================================
-   Layout integration fixes (ASP.NET MVC shell)
-   ============================================= */
-
-/* Nav items used as <a> links: reset link styles */
-a.nav-item {
-    color: var(--text2);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-size: 13px;
-    font-weight: 400;
-    margin-bottom: 1px;
-    position: relative;
-}
-
-a.nav-item:hover {
-    background: var(--bg3);
-    color: var(--text);
-    text-decoration: none;
-}
-
-a.nav-item.active {
-    background: var(--accent-glow);
-    color: var(--text);
-    font-weight: 500;
-}
-
-a.nav-item.active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 20%;
-    bottom: 20%;
-    width: 3px;
-    background: var(--accent);
-    border-radius: 0 3px 3px 0;
-}
-
-/* Button-based nav item (collapsible parent) */
-button.nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-size: 13px;
-    color: var(--text2);
-    font-weight: 400;
-    margin-bottom: 1px;
-    position: relative;
-    background: transparent;
-    border: none;
-    width: 100%;
-    text-align: left;
-}
-
-button.nav-item:hover {
-    background: var(--bg3);
-    color: var(--text);
-}
-
-button.nav-item.active {
-    background: var(--accent-glow);
-    color: var(--text);
-    font-weight: 500;
-}
-
-/* Main wrapper: flex column, full height */
-.main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-    min-width: 0;
-}
-
-/* Topbar: keep admin dropdown visible */
-.topbar {
-    z-index: 100;
-}
-
-/* Topbar icon-btn link variant */
-a.icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: auto;
-    min-width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    cursor: pointer;
-    font-size: 15px;
-    transition: all 0.15s;
-    color: var(--text2);
-    padding: 0 8px;
-    text-decoration: none;
-}
-
-a.icon-btn:hover {
-    background: var(--surface);
-    color: var(--text);
-    text-decoration: none;
-}
-
-/* Dropdown styling in dark theme */
-.dropdown-menu {
-    background: var(--surface);
-    border-color: var(--border);
-}
-
-.dropdown-item:hover,
-.dropdown-item:focus {
-    background: var(--bg3);
-    color: var(--text) !important;
-}
-/* Avoid underlined links in UI buttons */
-a.set-tab,
-a.nav-item,
-a.icon-btn {
-    text-decoration: none !important;
-}
-
-    a.set-tab:hover,
-    a.nav-item:hover,
-    a.icon-btn:hover {
-        text-decoration: none !important;
- }
-/* =========================
-   Sidebar collapse support
-   ========================= */
-
-.sidebar-toggle {
-    margin-left: auto;
-    width: 34px;
-    height: 34px;
-}
-
-body.sidebar-collapsed .sidebar {
-    width: 72px;
-    min-width: 72px;
-}
-
-body.sidebar-collapsed .logo-text,
-body.sidebar-collapsed .sidebar-section-label,
-body.sidebar-collapsed .nav-item p,
-body.sidebar-collapsed .nav-item .nav-text,
-body.sidebar-collapsed .nav-badge,
-body.sidebar-collapsed .user-info {
-    display: none !important;
-}
-
-body.sidebar-collapsed .nav-item {
-    justify-content: center;
-    padding: 10px;
-}
-
-body.sidebar-collapsed .nav-icon {
-    width: auto;
-}
-/* Ensure the toggle remains visible & clickable when collapsed */
-.sidebar-logo {
-    position: relative;
-}
-
-.sidebar-toggle {
-    z-index: 200;
-    flex-shrink: 0;
-}
-
-/* In collapsed mode, keep the toggle button visible */
-body.sidebar-collapsed .sidebar-toggle {
-    display: inline-flex !important;
-}
-
-/* If you hide all sidebar-logo text/icons, keep icon + toggle */
-body.sidebar-collapsed .sidebar-logo {
-    justify-content: center;
-    gap: 0;
-}
-
-    body.sidebar-collapsed .sidebar-logo .logo-icon {
-        display: flex !important;
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1100px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 
-/* =========================
-   Collapsed sidebar: icons only + hover label tooltip
-   ========================= */
-
-/* Prevent wrapping by default */
-.nav-item {
-    white-space: nowrap;
-}
-
-/* Hide labels/badges when collapsed */
-body.sidebar-collapsed .nav-text,
-body.sidebar-collapsed .nav-badge {
-    display: none !important;
-}
-
-/* Center icons */
-body.sidebar-collapsed .nav-item {
-    justify-content: center;
-    padding: 10px;
-    position: relative; /* for tooltip positioning */
-}
-
-    /* Show label as tooltip on hover */
-    body.sidebar-collapsed .nav-item:hover .nav-text {
-        display: block !important;
-        position: absolute;
-        left: calc(100% + 10px);
-        top: 50%;
-        transform: translateY(-50%);
-        padding: 8px 10px;
-        border-radius: 8px;
-        background: var(--surface);
-        border: 1px solid var(--border2);
-        color: var(--text);
-        font-size: 12px;
-        font-weight: 500;
-        white-space: nowrap;
-        z-index: 2000;
-        box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    .fleet-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
-
-        /* Tooltip arrow */
-        body.sidebar-collapsed .nav-item:hover .nav-text::before {
-            content: "";
-            position: absolute;
-            left: -6px;
-            top: 50%;
-            transform: translateY(-50%);
-            border-width: 6px;
-            border-style: solid;
-            border-color: transparent var(--surface) transparent transparent;
-        }
-
-/* =========================================================
-   SAFE OVERRIDES: Collapsed sidebar tooltips + nav text rules
-   Append this at the very end of the file.
-   ========================================================= */
-
-/* Ensure sidebar stays above main content (tooltip visible) */
-.sidebar {
-    position: relative;
-    z-index: 200;
-}
-
-/* Never underline sidebar links / pills */
-a.nav-item, a.set-tab, a.icon-btn {
-    text-decoration: none !important;
-}
-
-/* Use a consistent label wrapper */
-.nav-text {
-    display: inline;
-}
-
-/* Prevent squeezing/wrapping in nav items */
-.nav-item {
-    white-space: nowrap;
-}
-
-/* COLLAPSED: icons only */
-body.sidebar-collapsed .sidebar {
-    width: 72px;
-    min-width: 72px;
-}
-
-body.sidebar-collapsed .logo-text,
-body.sidebar-collapsed .sidebar-section-label,
-body.sidebar-collapsed .user-info,
-body.sidebar-collapsed .nav-badge {
-    display: none !important;
-}
-
-/* Hide visible label in collapsed mode */
-body.sidebar-collapsed .nav-text {
-    display: none !important;
-}
-
-/* Center icon */
-body.sidebar-collapsed .nav-item {
-    justify-content: center;
-    padding: 10px;
-    position: relative; /* anchor for tooltip */
-}
-
-    /* Tooltip appears on hover (uses nav-text content) */
-    body.sidebar-collapsed .nav-item:hover .nav-text {
-        display: block !important;
-        position: absolute;
-        left: calc(100% + 10px);
-        top: 50%;
-        transform: translateY(-50%);
-        padding: 8px 10px;
-        border-radius: 8px;
-        background: var(--surface);
-        border: 1px solid var(--border2);
-        color: var(--text);
-        font-size: 12px;
-        font-weight: 500;
-        white-space: nowrap;
-        z-index: 5000;
-        box-shadow: 0 10px 30px rgba(0,0,0,.35);
-        pointer-events: none; /* tooltip never blocks clicks */
-    }
-
-        /* Small arrow */
-        body.sidebar-collapsed .nav-item:hover .nav-text::before {
-            content: "";
-            position: absolute;
-            left: -6px;
-            top: 50%;
-            transform: translateY(-50%);
-            border-width: 6px;
-            border-style: solid;
-            border-color: transparent var(--surface) transparent transparent;
-        }
-
-/* Ensure toggle button always visible & clickable */
-.sidebar-logo {
-    position: relative;
-}
-
-.sidebar-toggle {
-    z-index: 6000;
-}
-
-body.sidebar-collapsed .sidebar-toggle {
-    display: inline-flex !important;
 }

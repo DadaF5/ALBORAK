@@ -2,184 +2,342 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - 2BAFRA Paramètres</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - GMAO FRA</title>
 
-    <!-- AdminLTE 3.2.0 CSS -->
+    <link rel="stylesheet" href="~/lib/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/plugins/fontawesome-free/css/all.min.css" />
     <link rel="stylesheet" href="~/css/adminlte.min.css" />
-    <link href="~/plugins/toastr/toastr.min.css" rel="stylesheet" />   
-    
-   @*  <link href="~/css/gmao_fra.css" rel="stylesheet" />   *@   
-  
-    <link href="~/plugins/fontawesome-free/css/all.min.css" rel="stylesheet" />    
+    <link rel="stylesheet" href="~/css/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* ── FIX 1: Topbar height 48px ───────────────────────────────── */
+        .main-header.navbar {
+            min-height: 48px !important;
+            height: 48px !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        .main-header .nav-link {
+            padding-top: 10px !important;
+            padding-bottom: 10px !important;
+        }
+
+        /* ── FIX 4: Brand — exactly 34px image, matches sidebar-mini ─── */
+        .brand-link {
+            height: 48px !important;
+            padding: 7px 10px !important;
+            display: flex !important;
+            align-items: center !important;
+            overflow: hidden;
+        }
+
+        .brand-image-wrap {
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .brand-image-wrap img {
+                width: 34px;
+                height: 34px;
+                object-fit: contain;
+            }
+
+        .brand-text-wrap {
+            margin-left: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+            .brand-text-wrap .t1 {
+                font-size: 12px;
+                font-weight: 600;
+                color: #fff;
+                display: block;
+                line-height: 1.3;
+            }
+
+            .brand-text-wrap .t2 {
+                font-size: 9px;
+                color: #adb5bd;
+                letter-spacing: .7px;
+                text-transform: uppercase;
+            }
+
+        /* ── FIX 2: Topbar right — no squeeze ───────────────────────── */
+        .navbar-nav.ml-auto {
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        /* ── FIX 3: User display — name not email ───────────────────── */
+        .topbar-user-btn {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #c2c7d0;
+            text-decoration: none;
+        }
+
+            .topbar-user-btn:hover {
+                color: #fff;
+            }
+
+        .topbar-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #007bff;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .topbar-name {
+            font-size: 12.5px;
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* ── Alerts ──────────────────────────────────────────────────── */
+        .alert-success-fra {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid #10b981;
+            color: #10b981;
+            padding: 10px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .alert-error-fra {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            padding: 10px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+    </style>
     @RenderSection("Styles", required: false)
 </head>
-<body class="hold-transition sidebar-mini layout-fixed dark-mode">
+
+<body class="hold-transition sidebar-mini layout-fixed sidebar-dark-primary">
     <div class="wrapper">
-        <!-- Navbar -->
-        <nav class="main-header navbar navbar-expand navbar-dark">
-            <!-- Left navbar links -->
+        <!-- ═══ TOPBAR ════════════════════════════════════════════════════ -->
+        @{
+            var rawName = User.Identity?.Name ?? "Utilisateur";
+            var shortName = rawName.Contains('@') ? rawName.Split('@')[0] : rawName;
+            var parts = shortName.Split(new[] { '.', '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
+            var initials = parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
+            : (shortName.Length >= 2 ? shortName.Substring(0, 2).ToUpper() : shortName.ToUpper());
+        }
+        <!-- ═══ TOPBAR ═══════════════════════════════════════════════════ -->
+        <nav class="main-header navbar navbar-expand navbar-dark bg-dark">
+            <!-- Left -->
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-                </li>
-                <li class="nav-item d-none d-sm-inline-block">
-                    <a href="~/" class="nav-link">🏠 Accueil</a>
-                </li>
-                <li class="nav-item d-none d-sm-inline-block">
-                    <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="nav-link active">
-                        ⚙️ Administration
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button">
+                        <i class="fas fa-bars"></i>
                     </a>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <span class="nav-link text-white" style="font-size:14px;font-weight:600;">
+                        @ViewData["Title"]
+                    </span>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <span class="nav-link text-secondary" style="font-size:12px;">
+                        FRA &rsaquo; Param&egrave;tres
+                    </span>
                 </li>
             </ul>
 
-            <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item">
-                    <a class="nav-link" data-widget="fullscreen" href="#" role="button">
-                        <i class="fas fa-expand-arrows-alt"></i>
+                    <a class="nav-link" data-widget="navbar-search" href="#" role="button">
+                        <i class="fas fa-search fa-sm"></i>
                     </a>
+                    <div class="navbar-search-block">
+                        <form class="form-inline">
+                            <div class="input-group input-group-sm">
+                                <input class="form-control form-control-navbar"
+                                       type="search"
+                                       placeholder="Rechercher&hellip;"
+                                       aria-label="Rechercher" />
+                                <div class="input-group-append">
+                                    <button class="btn btn-navbar" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    <button class="btn btn-navbar" type="button" data-widget="navbar-search">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </li>
+                <!-- ═══ User dropdown — shows shortName (before @@), not full email ═══════════════════════════════════════════════════ -->
+                <li class="nav-item dropdown">
+                    <a class="topbar-user-btn dropdown-toggle"
+                       href="#"
+                       id="userMenu"
+                       role="button"
+                       data-bs-toggle="dropdown"
+                       aria-expanded="false">
+                        <div class="topbar-avatar">@initials</div>
+                        <span class="topbar-name d-none d-md-inline">@shortName</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userMenu">
+                        <li>
+                            <span class="dropdown-item-text" style="font-size:11px;color:#6c757d;">
+                                @rawName
+                            </span>
+                        </li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>@await Html.PartialAsync("_LoginPartial")</li>
+                    </ul>
                 </li>
             </ul>
         </nav>
 
-        <!-- Main Sidebar Container -->
+        <!-- ═══ SIDEBAR ═══════════════════════════════════════════════════ -->
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
-            <!-- Brand Logo -->
-            <a href="~/" class="brand-link">
-                <img src="~/Images/Air_Force_small.png" alt="FRA Logo" 
-                class="brand-image img-circle elevation-3" style="opacity: .9" onerror="this.style.display='none'">
-                <span class="brand-text font-weight-light">Al Boraq</span>
-                
+
+            <!-- FIX 4: logo image 34x34 — stays fully visible when collapsed -->
+            <a href="/" class="brand-link bg-gradient-gray-dark" style="height:70px;">
+                <div class="brand-image-wrap mt-6" style="width:50px; height:100px;">
+                    <img src="~/Images/Air_Force_small.png" style="width:50px; height:80px;" alt="FRA" />
+                </div>
+                <div class="brand-text-wrap mt-2">
+                    <span class="t1">FORCES ROYALES AIR</span>
+                    <span class="t1 text-center" style="font-size:8pt; background-color:royalblue;">GMAO FRA & DAM</span>
+                </div>
             </a>
 
-            <!-- Sidebar -->
             <div class="sidebar">
-                <!-- Sidebar Menu -->
                 <nav class="mt-2">
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
-                        
-                        <!-- Settings Section -->
-                            <li class="nav-header">NAVIGATION</li>
-                        
+                    <ul class="nav nav-pills nav-sidebar flex-column nav-compact nav-child-indent"
+                        data-widget="treeview"
+                        role="menu"
+                        data-accordion="false">
+
+                        <li class="nav-header">VUE D'ENSEMBLE</li>
                         <li class="nav-item">
-                            <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="nav-link active">
+                            <a asp-area="" asp-controller="Home" asp-action="Index" class="nav-link">
+                                <i class="nav-icon fas fa-chart-bar"></i>
+                                <p>Tableau de bord</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-header">ADMINISTRATION</li>
+                        <li class="nav-item">
+                            <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="nav-link">
                                 <i class="nav-icon fas fa-cog"></i>
-                                <p>Tableau de Bord</p>
+                                <p>Param&egrave;tres syst&egrave;me</p>
                             </a>
                         </li>
 
-                        <li class="nav-header">DONNÉES DE BASE</li>
-                        
+                        <li class="nav-header">DONN&Eacute;ES DE BASE</li>
                         <li class="nav-item">
-                            <a href="#" onclick="loadList('Base'); return false;" class="nav-link">
-                                <i class="nav-icon fas fa-map-marked-alt"></i>
-                                <p>Bases Aériennes</p>
+                            <a asp-area="Settings" asp-controller="AcMainGroups" asp-action="Index" class="nav-link">
+                                <i class="nav-icon fas fa-layer-group"></i>
+                                <p>Groupes d'a&eacute;ronefs</p>
                             </a>
                         </li>
-
                         <li class="nav-item">
-                            <a href="#" onclick="loadList('AircraftManufacturers'); return false;" class="nav-link">
+                            <a asp-area="Settings" asp-controller="AcTypes" asp-action="Index" class="nav-link">
+                                <i class="nav-icon fas fa-fighter-jet"></i>
+                                <p>Types d'a&eacute;ronefs</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="Settings" asp-controller="AircraftVersions" asp-action="Index" class="nav-link">
+                                <i class="nav-icon fas fa-plane"></i>
+                                <p>Versions d'a&eacute;ronefs</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="Settings" asp-controller="Base" asp-action="Index" class="nav-link">
+                                <i class="nav-icon fas fa-map-marker-alt"></i>
+                                <p>Bases a&eacute;riennes</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="Settings" asp-controller="Constructeurs" asp-action="Index" class="nav-link">
                                 <i class="nav-icon fas fa-industry"></i>
                                 <p>Constructeurs</p>
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a href="#" onclick="loadList('AircraftTypes'); return false;" class="nav-link">
-                                <i class="nav-icon fas fa-plane"></i>
-                                <p>Types d'Aéronefs</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="#" onclick="loadList('AircraftVersions'); return false;" class="nav-link">
-                                <i class="nav-icon fas fa-fighter-jet"></i>
-                                <p>Versions d'Aéronefs</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="#" onclick="loadList('Positions'); return false;" class="nav-link">
-                                <i class="nav-icon fas fa-sitemap"></i>
-                                <p>Positions</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-header">NAVIGATION</li>
-                        
-                        <li class="nav-item">
-                            <a href="~/" class="nav-link">
-                                <i class="nav-icon fas fa-home"></i>
-                                <p>Retour à l'Accueil</p>
-                            </a>
-                        </li>
                     </ul>
                 </nav>
             </div>
         </aside>
 
-        <!-- Content Wrapper -->
+        <!-- ═══ CONTENT WRAPPER ═══════════════════════════════════════════ -->
         <div class="content-wrapper">
-            <!-- Content Header -->
-            <div class="content-header">
+            <section class="content pt-3">
                 <div class="container-fluid">
-                    <div class="row mb-2">
-                       @*  <div class="col-sm-6">
-                            <h1 class="m-0">@ViewData["Title"]</h1>
-                        </div> *@
-                        @* <div class="col-sm-6">
-                            <ol class="breadcrumb float-sm-right">
-                                <li class="breadcrumb-item"><a href="~/">Accueil</a></li>
-                                <li class="breadcrumb-item active">@ViewData["Title"]</li>
-                            </ol>
-                        </div> *@
-                    </div>
-                </div>
-            </div>
 
-            <!-- Main content -->
-            <section class="content">
-                <div class="container-fluid">
                     @if (TempData["SuccessMessage"] != null)
                     {
-                        <div class="alert alert-success alert-dismissible fade show">
-                            <button type="button" class="close" data-dismiss="alert">&times;</button>
-                            <i class="icon fas fa-check"></i> @TempData["SuccessMessage"]
-                        </div>
+                        <div class="alert-success-fra">&#10003; @TempData["SuccessMessage"]</div>
                     }
-                    
                     @if (TempData["ErrorMessage"] != null)
                     {
-                        <div class="alert alert-danger alert-dismissible fade show">
-                            <button type="button" class="close" data-dismiss="alert">&times;</button>
-                            <i class="icon fas fa-ban"></i> @TempData["ErrorMessage"]
-                        </div>
+                        <div class="alert-error-fra">&#10007; @TempData["ErrorMessage"]</div>
                     }
 
                     @RenderBody()
+
                 </div>
             </section>
         </div>
 
-        <!-- Footer -->
-        <footer class="main-footer">
-            <strong>Copyright &copy; 2024-@DateTime.Now.Year <a href="#">Alborak</a>.</strong>
-            Tous droits réservés.
-            <div class="float-right d-none d-sm-inline-block">
-                <b>Version</b> 1.0.0
-            </div>
+        <!-- ═══ FOOTER ════════════════════════════════════════════════════ -->
+        <footer class="main-footer bg-dark text-secondary border-top border-secondary"
+                style="font-size:11px;">
+            <strong>GMAO FRA</strong> &mdash; Forces Royales Air &copy; @DateTime.Now.Year
         </footer>
-    </div>
 
-    <!-- jQuery -->     
-    <script src="~/plugins/jquery/jquery.min.js"></script>
-    <!-- Bootstrap 4 -->    
-    <script src="~/plugins/bootstrap/js/bootstrap.min.js"></script>
-    <!-- AdminLTE App -->
-       <a href="~/lib/dist/js/adminlte.min.js.map">~/lib/dist/js/adminlte.min.js.map</a>
+    </div><!-- /.wrapper -->
+    <!-- Scripts — jQuery first, then Bootstrap, then AdminLTE -->
+    <script src="~/lib/js/jquery.min.js"></script>
+    <script src="~/lib/js/bootstrap.bundle.min.js"></script>
     <script src="~/lib/dist/js/adminlte.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        // Auto-highlight active sidebar link
+        document.querySelectorAll('.nav-sidebar .nav-link').forEach(function (link) {
+            if (link.href === window.location.href) {
+                link.classList.add('active');
+            }
+        });
+    </script>
+
     @RenderSection("Scripts", required: false)
 </body>
 </html>

@@ -1,18 +1,25 @@
-﻿@using FRAProject.Areas.AircraftMaintenance.Models
-@using FRAProject.Areas.Settings.Models
+﻿@using FRAProject.Areas.Settings.Models
 @model AcType
+
 @{
     ViewData["Title"] = "Delete AcType";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
 
 <div class="container mt-3">
-    <div class="card">
-        <div class="card-header">
-            <h4>Delete AcType</h4>
+    <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">Delete AcType</h4>
         </div>
         <div class="card-body">
-            <h5>Are you sure you want to delete this AcType?</h5>
+            <p class="text-danger fw-bold">
+                Are you sure you want to delete this AcType?
+            </p>
+
             <dl class="row">
+                <dt class="col-sm-3">Code</dt>
+                <dd class="col-sm-9">@Model.Code</dd>
+
                 <dt class="col-sm-3">Name</dt>
                 <dd class="col-sm-9">@Model.Name</dd>
 
@@ -21,10 +28,18 @@
 
                 <dt class="col-sm-3">Main Group</dt>
                 <dd class="col-sm-9">@Model.AcMainGroup?.Name</dd>
+
+                <dt class="col-sm-3">Manufacturer</dt>
+                <dd class="col-sm-9">@(Model.AircraftManufacturer?.Name ?? "-")</dd>
+
+                <dt class="col-sm-3">Active</dt>
+                <dd class="col-sm-9">@(Model.IsActive ? "Yes" : "No")</dd>
             </dl>
 
             <form asp-action="Delete" method="post">
+                @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="Id" />
+
                 <button type="submit" class="btn btn-danger">Delete</button>
                 <a asp-action="Index" class="btn btn-secondary">Cancel</a>
             </form>

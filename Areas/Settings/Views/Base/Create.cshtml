@@ -1,4 +1,5 @@
-@model FRAProject.DTOs.BaseCreateDto
+@using FRAProject.Areas.Settings.DTOs
+@model BaseCreateDto
 
 @{
     ViewData["Title"] = "Nouvelle Base";
@@ -59,7 +60,7 @@
                     <button type="submit" class="btn btn-success">
                         <i class="fas fa-save"></i> Enregistrer
                     </button>
-                    <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                    <a asp-area="Settings" asp-controller="Base" asp-action="Index" class="btn btn-secondary">
                         <i class="fas fa-times"></i> Annuler
                     </a>
                 </div>

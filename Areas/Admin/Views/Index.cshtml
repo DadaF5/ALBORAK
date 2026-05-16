@@ -1,0 +1,86 @@
+﻿@{
+    var tab = (ViewData["SettingsTab"]?.ToString() ?? "bases").ToLowerInvariant();
+}
+
+<div class="section-header">
+    <div>
+        <div class="section-title">Paramètres système</div>
+        <div class="section-sub">Référentiels & listes de configuration — Administration GMAO FRA</div>
+    </div>
+</div>
+
+<partial name="_SettingsTabs" />
+
+@if (tab == "bases")
+{
+    <div class="card">
+        <div class="card-header">
+            <span>🏠</span>
+            <span class="card-title">Bases aériennes (BAFRA)</span>
+
+            <button class="btn btn-primary" style="margin-left:auto"
+                    data-bs-toggle="modal" data-bs-target="#settingsCrudModal"
+                    data-settings-entity="bases"
+                    data-settings-mode="create">
+                + Ajouter
+            </button>
+        </div>
+
+        <div class="card-body">
+            @* Replace this with your real Bases list view (table) *@
+            <div class="empty-state">
+                (À connecter) Liste des bases ici + boutons Modifier/Supprimer
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            <span>⚙</span>
+            <span class="card-title">Module: @tab</span>
+        </div>
+        <div class="card-body">
+            <div class="empty-state">
+                Cette section est prête côté UI. Prochaine étape: brancher la liste + CRUD modal pour “@tab”.
+            </div>
+        </div>
+    </div>
+}
+
+@* Reusable modal placeholder (we wire fields & postback next) *@
+<div class="modal fade" id="settingsCrudModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="background:var(--bg2);border:1px solid var(--border2);">
+            <div class="modal-header" style="border-bottom:1px solid var(--border);">
+                <h5 class="modal-title" id="settingsCrudModalTitle" style="color:var(--text);">Ajouter</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body" id="settingsCrudModalBody" style="color:var(--text2);">
+                (Prochaine étape) Formulaire CRUD ici
+            </div>
+
+            <div class="modal-footer" style="border-top:1px solid var(--border);">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Very small hook: update modal title based on mode/entity.
+        const modal = document.getElementById('settingsCrudModal');
+        modal?.addEventListener('show.bs.modal', function (event) {
+            const btn = event.relatedTarget;
+            const entity = btn?.getAttribute('data-settings-entity') || '';
+            const mode = btn?.getAttribute('data-settings-mode') || 'create';
+
+            const title = (mode === 'edit') ? 'Modifier' : 'Ajouter';
+            document.getElementById('settingsCrudModalTitle').textContent = `${title} (${entity})`;
+        });
+    </script>
+}

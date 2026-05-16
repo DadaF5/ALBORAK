@@ -1,4 +1,4 @@
-﻿namespace FRAProject.DTOs
+﻿namespace FRAProject.Areas.Settings.DTOs
 {
     public class BaseDto
     {
@@ -7,6 +7,7 @@
         public string? BaseNameLocal { get; set; }       
         public decimal? Latitude { get; set; } 
         public decimal? Longitude { get; set; }
+        public bool IsActive { get; set; } 
 
     }
 }

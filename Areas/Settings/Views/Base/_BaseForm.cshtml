@@ -1,0 +1,66 @@
+@using FRAProject.Areas.Settings.DTOs
+@model BaseCreateDto
+@{
+    var isEdit = Model.Id > 0;
+    var action = isEdit ? "Edit" : "Create";
+    var title = isEdit ? "Modifier Base" : "Nouvelle Base";
+    var returnUrl = ViewData["ReturnUrl"]?.ToString();
+}
+
+<form asp-area="Settings" asp-controller="Base" asp-action="@action" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="returnUrl" value="@returnUrl" />
+    @if (isEdit)
+    {
+        <input type="hidden" asp-for="Id" />
+    }
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <div class="form-grid">
+        <div class="form-group">
+            <label asp-for="BaseCode" class="form-label"></label>
+            <input asp-for="BaseCode" class="form-input" />
+            <span asp-validation-for="BaseCode" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="BaseName" class="form-label"></label>
+            <input asp-for="BaseName" class="form-input" />
+            <span asp-validation-for="BaseName" class="text-danger"></span>
+        </div>
+
+        <div class="form-group span-2">
+            <label asp-for="Location" class="form-label"></label>
+            <input asp-for="Location" class="form-input" />
+            <span asp-validation-for="Location" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Latitude" class="form-label"></label>
+            <input asp-for="Latitude" class="form-input" />
+            <span asp-validation-for="Latitude" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Longitude" class="form-label"></label>
+            <input asp-for="Longitude" class="form-input" />
+            <span asp-validation-for="Longitude" class="text-danger"></span>
+        </div>
+
+        <div class="form-group span-2">
+            <label class="form-label">Statut</label>
+            <div style="display:flex;gap:10px;align-items:center">
+                <input asp-for="IsActive" type="checkbox" />
+                <span>Base active</span>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+    </div>
+</form>
+
+@await Html.PartialAsync("_ValidationScriptsPartial")

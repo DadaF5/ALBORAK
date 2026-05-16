@@ -15,7 +15,6 @@
 
   <ItemGroup>
     <Folder Include="Areas\AircraftMaintenance\Views\AircraftDashboard\" />
-    <Folder Include="Areas\Settings\DTOs\" />
     <Folder Include="Areas\Settings\Views\AircraftVersions\" />
     <Folder Include="Areas\Settings\Views\AircraftManufacturers\" />
     <Folder Include="Areas\Settings\Views\Home\" />

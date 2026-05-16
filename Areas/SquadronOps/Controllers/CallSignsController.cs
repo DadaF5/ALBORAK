@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Collections.Generic;
 using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.Settings.Models;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {

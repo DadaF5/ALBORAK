@@ -21,7 +21,7 @@ namespace FRAProject.DTOs
         [Display(Name = "Description")]
         public string Description { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Le groupe principal est obligatoire")]
+        [Range(1, int.MaxValue, ErrorMessage = "Le groupe principal est obligatoire")]
         [Display(Name = "Groupe Principal (Aircraft Family)")]
         public int AcMainGroupId { get; set; }
 

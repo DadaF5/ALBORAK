@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FRAProject.DTOs
+namespace FRAProject.Areas.Settings.DTOs
 {
     public class BaseCreateDto
     {

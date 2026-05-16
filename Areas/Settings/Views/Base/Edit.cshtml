@@ -1,4 +1,5 @@
-@model FRAProject.DTOs.BaseCreateDto
+@using FRAProject.Areas.Settings.DTOs
+@model BaseCreateDto
 
 @{
     ViewData["Title"] = "Modifier Base";
@@ -10,7 +11,7 @@
         <div class="card">
             <div class="card-header bg-warning d-flex justify-content-between align-items-center">
                 <h3 class="card-title mb-0">✏️ Modifier la Base</h3>
-                <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="btn btn-sm btn-light">
+                <a asp-area="Settings" asp-controller="Base" asp-action="Index" class="btn btn-sm btn-light">
                     <i class="fas fa-arrow-left"></i> Retour
                 </a>
             </div>
@@ -58,7 +59,7 @@
                     <button type="submit" class="btn btn-warning">
                         <i class="fas fa-save"></i> Mettre à Jour
                     </button>
-                    <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                    <a asp-area="Settings" asp-controller="Base" asp-action="Index" class="btn btn-secondary">
                         <i class="fas fa-times"></i> Annuler
                     </a>
                 </div>

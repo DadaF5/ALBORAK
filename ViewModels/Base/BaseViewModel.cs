@@ -1,4 +1,4 @@
-﻿using FRAProject.DTOs;
+﻿using FRAProject.Areas.Settings.DTOs;
 using System.ComponentModel.DataAnnotations;
 
 namespace FRAProject.ViewModels.Base

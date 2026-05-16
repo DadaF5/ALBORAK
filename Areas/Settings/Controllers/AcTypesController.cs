@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FRAProject.Areas.Settings.Controllers
 {
     [Area("Settings")]
-    [Authorize(Roles = "Administrators")]
+    [Authorize(Roles = "Admin")]
     public class AcTypesController : Controller
     {
         private readonly FRAContext _context;
@@ -19,8 +19,8 @@ namespace FRAProject.Areas.Settings.Controllers
             _context = context;
         }
 
-        // Return partial view with list (AJAX)
-        public async Task<IActionResult> List()
+        // GET: Settings/AcTypes
+        public async Task<IActionResult> Index()
         {
             var types = await _context.AcTypes
                 .Include(t => t.AcMainGroup)
@@ -31,9 +31,9 @@ namespace FRAProject.Areas.Settings.Controllers
                 .Select(t => new AcTypeDto
                 {
                     Id = t.Id,
-                    Code = t.Code ?? "",
-                    Name = t.Name,
-                    Description = t.Description,
+                    Code = t.Code ?? string.Empty,
+                    Name = t.Name ?? string.Empty,
+                    Description = t.Description ?? string.Empty,
                     IsActive = t.IsActive,
                     SortOrder = t.SortOrder,
                     MaxGrossweight = t.MaxGrossweight,
@@ -41,20 +41,26 @@ namespace FRAProject.Areas.Settings.Controllers
                     SeatCount = t.SeatCount,
                     MaxEngines = t.MaxEngines,
                     AcMainGroupId = t.AcMainGroupId,
-                    AcMainGroupName = t.AcMainGroup.Name,
+                    AcMainGroupName = t.AcMainGroup != null ? t.AcMainGroup.Name : string.Empty,
                     AircraftManufacturerId = t.AircraftManufacturerId,
                     ManufacturerName = t.AircraftManufacturer != null ? t.AircraftManufacturer.Name : null
                 })
                 .ToListAsync();
 
-            return PartialView("_AcTypesList", types);
+            return View(types);
         }
 
         // GET: Settings/AcTypes/Create
         public async Task<IActionResult> Create()
         {
             await PopulateDropdowns();
-            var dto = new AcTypeCreateDto { IsActive = true, SortOrder = 99 };
+
+            var dto = new AcTypeCreateDto
+            {
+                IsActive = true,
+                SortOrder = 99
+            };
+
             return View(dto);
         }
 
@@ -63,45 +69,48 @@ namespace FRAProject.Areas.Settings.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(AcTypeCreateDto dto)
         {
-            // Check for duplicate Code
-            if (!string.IsNullOrWhiteSpace(dto.Code) && 
-                await _context.AcTypes.AnyAsync(t => t.Code == dto.Code))
+            var normalizedCode = dto.Code.Trim().ToUpper();
+
+            var normalizedName = dto.Name.Trim() ;
+            var normalizedDescription = dto.Description.Trim() ;
+
+            if (await _context.AcTypes.AnyAsync(t => t.Code != null && t.Code.ToUpper() == normalizedCode))
             {
-                ModelState.AddModelError("Code", $"Le code '{dto.Code}' existe déjà.");
+                ModelState.AddModelError("Code", $"Le code '{normalizedCode}' existe déjà.");
             }
 
-            // Check for duplicate Name within same AcMainGroup
-            if (await _context.AcTypes.AnyAsync(t => t.Name == dto.Name && t.AcMainGroupId == dto.AcMainGroupId))
+            if (!string.IsNullOrWhiteSpace(normalizedName) &&
+                await _context.AcTypes.AnyAsync(t => t.Name == normalizedName && t.AcMainGroupId == dto.AcMainGroupId))
             {
-                ModelState.AddModelError("Name", $"Le type '{dto.Name}' existe déjà pour ce groupe principal.");
+                ModelState.AddModelError("Name", $"Le type '{normalizedName}' existe déjà pour ce groupe principal.");
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var acType = new AcType
-                {
-                    Code = string.IsNullOrWhiteSpace(dto.Code) ? null : dto.Code.Trim().ToUpper(),
-                    Name = dto.Name.Trim(),
-                    Description = dto.Description.Trim(),
-                    AcMainGroupId = dto.AcMainGroupId,
-                    AircraftManufacturerId = dto.AircraftManufacturerId,
-                    MaxGrossweight = dto.MaxGrossweight,
-                    MaxPassengers = dto.MaxPassengers,
-                    SeatCount = dto.SeatCount,
-                    MaxEngines = dto.MaxEngines,
-                    IsActive = dto.IsActive,
-                    SortOrder = dto.SortOrder
-                };
-
-                _context.AcTypes.Add(acType);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Type d'aéronef créé avec succès";
-                return RedirectToAction("Index", "Home", new { area = "Settings" });
+                await PopulateDropdowns(dto.AcMainGroupId, dto.AircraftManufacturerId);
+                return View(dto);
             }
 
-            await PopulateDropdowns(dto.AcMainGroupId, dto.AircraftManufacturerId);
-            return View(dto);
+            var acType = new AcType
+            {
+                Code = normalizedCode,
+                Name = normalizedName,
+                Description = normalizedDescription,
+                AcMainGroupId = dto.AcMainGroupId,
+                AircraftManufacturerId = dto.AircraftManufacturerId,
+                MaxGrossweight = dto.MaxGrossweight,
+                MaxPassengers = dto.MaxPassengers,
+                SeatCount = dto.SeatCount,
+                MaxEngines = dto.MaxEngines,
+                IsActive = dto.IsActive,
+                SortOrder = dto.SortOrder
+            };
+
+            _context.AcTypes.Add(acType);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Type d'aéronef créé avec succès";
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Settings/AcTypes/Edit/5
@@ -121,9 +130,9 @@ namespace FRAProject.Areas.Settings.Controllers
             var dto = new AcTypeCreateDto
             {
                 Id = acType.Id,
-                Code = acType.Code ?? "",
-                Name = acType.Name,
-                Description = acType.Description,
+                Code = acType.Code ?? string.Empty,
+                Name = acType.Name ?? string.Empty,
+                Description = acType.Description ?? string.Empty,
                 AcMainGroupId = acType.AcMainGroupId,
                 AircraftManufacturerId = acType.AircraftManufacturerId,
                 MaxGrossweight = acType.MaxGrossweight,
@@ -148,77 +157,102 @@ namespace FRAProject.Areas.Settings.Controllers
                 return NotFound();
             }
 
-            // Check for duplicate Code (excluding current record)
-            if (!string.IsNullOrWhiteSpace(dto.Code) &&
-                await _context.AcTypes.AnyAsync(t => t.Code == dto.Code && t.Id != id))
+            var normalizedCode = dto.Code.Trim().ToUpper();
+
+            var normalizedName = dto.Name.Trim();
+            var normalizedDescription = dto.Description.Trim() ;
+
+            // Vérification de l'unicité du code (en ignorant l'entité actuelle)
+            if (await _context.AcTypes.AnyAsync(t => t.Code != null && t.Code.ToUpper() == normalizedCode))
             {
-                ModelState.AddModelError("Code", $"Le code '{dto.Code}' est déjà utilisé.");
+                ModelState.AddModelError("Code", $"Le code '{normalizedCode}' existe déjà.");
             }
 
-            // Check for duplicate Name within same AcMainGroup (excluding current record)
-            if (await _context.AcTypes.AnyAsync(t => t.Name == dto.Name && t.AcMainGroupId == dto.AcMainGroupId && t.Id != id))
+            if (!string.IsNullOrWhiteSpace(normalizedName) &&
+                await _context.AcTypes.AnyAsync(t => t.Id != id && t.Name == normalizedName && t.AcMainGroupId == dto.AcMainGroupId))
             {
-                ModelState.AddModelError("Name", $"Le type '{dto.Name}' existe déjà pour ce groupe principal.");
+                ModelState.AddModelError("Name", $"Le type '{normalizedName}' existe déjà pour ce groupe principal.");
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                try
+                await PopulateDropdowns(dto.AcMainGroupId, dto.AircraftManufacturerId);
+                return View(dto);
+            }
+
+            try
+            {
+                var acType = await _context.AcTypes.FindAsync(id);
+                if (acType == null)
                 {
-                    var acType = await _context.AcTypes.FindAsync(id);
-                    if (acType == null)
-                    {
-                        return NotFound();
-                    }
-
-                    acType.Code = string.IsNullOrWhiteSpace(dto.Code) ? null : dto.Code.Trim().ToUpper();
-                    acType.Name = dto.Name.Trim();
-                    acType.Description = dto.Description.Trim();
-                    acType.AcMainGroupId = dto.AcMainGroupId;
-                    acType.AircraftManufacturerId = dto.AircraftManufacturerId;
-                    acType.MaxGrossweight = dto.MaxGrossweight;
-                    acType.MaxPassengers = dto.MaxPassengers;
-                    acType.SeatCount = dto.SeatCount;
-                    acType.MaxEngines = dto.MaxEngines;
-                    acType.IsActive = dto.IsActive;
-                    acType.SortOrder = dto.SortOrder;
-
-                    _context.Update(acType);
-                    await _context.SaveChangesAsync();
-
-                    TempData["SuccessMessage"] = "Type d'aéronef modifié avec succès";
-                    return RedirectToAction("Index", "Home", new { area = "Settings" });
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
+
+                acType.Code = normalizedCode;
+                acType.Name = normalizedName;
+                acType.Description = normalizedDescription;
+                acType.AcMainGroupId = dto.AcMainGroupId;
+                acType.AircraftManufacturerId = dto.AircraftManufacturerId;
+                acType.MaxGrossweight = dto.MaxGrossweight;
+                acType.MaxPassengers = dto.MaxPassengers;
+                acType.SeatCount = dto.SeatCount;
+                acType.MaxEngines = dto.MaxEngines;
+                acType.IsActive = dto.IsActive;
+                acType.SortOrder = dto.SortOrder;
+
+                _context.Update(acType);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Type d'aéronef modifié avec succès";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!AcTypeExists(id))
                 {
-                    if (!AcTypeExists(id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    return NotFound();
                 }
+
+                throw;
+            }
+        }
+
+        // GET: Settings/AcTypes/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
             }
 
-            await PopulateDropdowns(dto.AcMainGroupId, dto.AircraftManufacturerId);
-            return View(dto);
+            var acType = await _context.AcTypes
+                .Include(a => a.AcMainGroup)
+                .Include(a => a.AircraftManufacturer)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (acType == null)
+            {
+                return NotFound();
+            }
+
+            return View(acType);
         }
 
         // POST: Settings/AcTypes/Delete/5
-        [HttpPost]
+        [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var acType = await _context.AcTypes.FindAsync(id);
             if (acType != null)
             {
                 _context.AcTypes.Remove(acType);
                 await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Type d'aéronef supprimé avec succès";
             }
 
-            return Json(new { success = true });
+            return RedirectToAction(nameof(Index));
         }
 
         private bool AcTypeExists(int id)
@@ -226,10 +260,8 @@ namespace FRAProject.Areas.Settings.Controllers
             return _context.AcTypes.Any(e => e.Id == id);
         }
 
-        // Helper method to populate dropdowns
         private async Task PopulateDropdowns(int? selectedAcMainGroupId = null, int? selectedManufacturerId = null)
         {
-            // AcMainGroup dropdown
             ViewBag.AcMainGroups = new SelectList(
                 await _context.AcMainGroups
                     .Where(g => g.Active)
@@ -240,7 +272,6 @@ namespace FRAProject.Areas.Settings.Controllers
                 selectedAcMainGroupId
             );
 
-            // Manufacturer dropdown (optional)
             var manufacturers = await _context.AircraftManufacturers
                 .Where(m => m.IsActive)
                 .OrderBy(m => m.Name)
@@ -248,8 +279,13 @@ namespace FRAProject.Areas.Settings.Controllers
 
             var manufacturerList = new List<SelectListItem>
             {
-                new SelectListItem { Value = "", Text = "-- Sélectionner un constructeur (optionnel) --" }
+                new SelectListItem
+                {
+                    Value = "",
+                    Text = "-- Sélectionner un constructeur (optionnel) --"
+                }
             };
+
             manufacturerList.AddRange(manufacturers.Select(m => new SelectListItem
             {
                 Value = m.Id.ToString(),

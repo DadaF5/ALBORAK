@@ -1,5 +1,4 @@
 ﻿using FRAProject.Areas.AircraftMaintenance.Models;
-using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.SquadronOps.Models; // for Odv
 using FRAProject.Models;                  // for Base
 using System.Collections.Generic;

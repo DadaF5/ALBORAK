@@ -1,0 +1,24 @@
+﻿@{
+    var active = (ViewData["SettingsTab"]?.ToString() ?? "bases").ToLowerInvariant();
+    string TabClass(string tab) => tab == active ? "set-tab active" : "set-tab";
+}
+
+<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+    <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;width:100%;margin-bottom:2px;">
+        Flotte & Aéronefs
+    </div>
+
+    <a class="@TabClass("bases")"
+       asp-area="Settings" asp-controller="Home" asp-action="Index" asp-route-tab="bases">🏠 Bases aériennes</a>
+
+    <a class="@TabClass("types")"
+       asp-area="Settings" asp-controller="Home" asp-action="Index" asp-route-tab="types">✈ Types aéronefs</a>
+
+    <a class="@TabClass("versions")"
+       asp-area="Settings" asp-controller="Home" asp-action="Index" asp-route-tab="versions">🔖 Versions</a>
+
+    <a class="@TabClass("constructeurs")"
+       asp-area="Settings" asp-controller="Home" asp-action="Index" asp-route-tab="constructeurs">🏭 Constructeurs</a>
+
+    @* Add the rest progressively *@
+</div>

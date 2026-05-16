@@ -4,18 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - AL-BORAK</title>
-
-  @*   <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
- *@
+    
+    <link href="~/css/adminlte.min.css" rel="stylesheet" />
+    <link href="~/css/custom.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/gmao_fra.css" asp-append-version="true" />
 </head>
 <body>
 
     <!-- SIDEBAR -->
     <aside class="sidebar">
-        <div class="sidebar-logo">
+        <div class="sidebar-logo" style="height:100px;">
             <div >
                 <img src="~/Images/Air_Force_small.png" width="70px" />
             </div>
@@ -23,9 +21,7 @@
                 <div class="name">FORCES ROYALES AIR</div>
                 <div class="sub">GMAO FRA</div>  
             </div>
-            <button class="icon-btn sidebar-toggle" type="button" id="sidebarToggle" title="Réduire / étendre">
-                ☰
-            </button>
+           
         </div>
 
         <div class="sidebar-section">
@@ -122,7 +118,7 @@
             </a>
         </div>
 
-        <div class="sidebar-footer">
+       @*  <div class="sidebar-footer">
             <div class="user-card">
                 <div class="user-avatar">CM</div>
                 <div class="user-info">
@@ -130,15 +126,21 @@
                     <div class="role">Utilisateur</div>
                 </div>
             </div>
-        </div>
+        </div> *@
     </aside>
 
     <!-- MAIN -->
     <div class="main">
         <!-- TOPBAR -->
         <header class="topbar">
+
             <div>
-                <div class="topbar-title">@ViewData["Title"]</div>
+                
+                <div class="topbar-title">
+                    <button class="icon-btn sidebar-toggle" type="button" id="sidebarToggle" title="Réduire / étendre">
+                        ☰
+                    </button>
+                    @ViewData["Title"]</div>
                 <div class="topbar-breadcrumb">FRA <span>›</span> Administration</div>
             </div>
 
@@ -163,7 +165,10 @@
             @RenderBody()
         </main>
     </div>
+    
+    <script src="~/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/gmao-fra.js" asp-append-version="true"></script>   
     @RenderSection("Scripts", required: false)
+
 </body>
 </html>

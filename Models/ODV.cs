@@ -1,5 +1,4 @@
-﻿using FRAProject.Areas.HR.Models;
-using FRAProject.Areas.Settings.Models;
+﻿using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Enums;
 using System;

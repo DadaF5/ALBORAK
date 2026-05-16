@@ -1,6 +1,8 @@
-﻿@model FRAProject.ViewModels.AcType.AcTypeViewModel
+﻿@model FRAProject.DTOs.AcTypeCreateDto
+
 @{
     ViewData["Title"] = "Create AcType";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
 
 <div class="container mt-3">
@@ -10,13 +12,22 @@
         </div>
         <div class="card-body">
             <form asp-action="Create" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div> 
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
                 <div class="mb-3">
                     <label asp-for="AcMainGroupId" class="form-label"></label>
-                    <select asp-for="AcMainGroupId" class="form-select" asp-items="Model.AcMainGroups">
+                    <select asp-for="AcMainGroupId" class="form-select" asp-items="ViewBag.AcMainGroups">
                         <option value="">-- Select Main Group --</option>
                     </select>
                     <span asp-validation-for="AcMainGroupId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="AircraftManufacturerId" class="form-label"></label>
+                    <select asp-for="AircraftManufacturerId" class="form-select" asp-items="ViewBag.Manufacturers"></select>
+                    <span asp-validation-for="AircraftManufacturerId" class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">
@@ -26,12 +37,57 @@
                 </div>
 
                 <div class="mb-3">
+                    <label asp-for="Code" class="form-label"></label>
+                    <input asp-for="Code" class="form-control" />
+                    <span asp-validation-for="Code" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
                     <label asp-for="Description" class="form-label"></label>
                     <textarea asp-for="Description" class="form-control"></textarea>
                     <span asp-validation-for="Description" class="text-danger"></span>
                 </div>
 
-               
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label asp-for="SortOrder" class="form-label"></label>
+                        <input asp-for="SortOrder" class="form-control" />
+                        <span asp-validation-for="SortOrder" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label asp-for="MaxEngines" class="form-label"></label>
+                        <input asp-for="MaxEngines" class="form-control" />
+                        <span asp-validation-for="MaxEngines" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label asp-for="MaxPassengers" class="form-label"></label>
+                        <input asp-for="MaxPassengers" class="form-control" />
+                        <span asp-validation-for="MaxPassengers" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label asp-for="SeatCount" class="form-label"></label>
+                        <input asp-for="SeatCount" class="form-control" />
+                        <span asp-validation-for="SeatCount" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="MaxGrossweight" class="form-label"></label>
+                    <input asp-for="MaxGrossweight" class="form-control" />
+                    <span asp-validation-for="MaxGrossweight" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="IsActive" class="form-label"></label>
+                    <select asp-for="IsActive" class="form-select">
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                    <span asp-validation-for="IsActive" class="text-danger"></span>
+                </div>
 
                 <button type="submit" class="btn btn-primary">Save</button>
                 <a asp-action="Index" class="btn btn-secondary">Cancel</a>
@@ -39,3 +95,9 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

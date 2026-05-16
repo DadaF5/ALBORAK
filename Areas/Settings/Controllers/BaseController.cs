@@ -1,4 +1,5 @@
 ﻿using FRAProject.Areas.HR.Models;
+using FRAProject.Areas.Settings.DTOs;
 using FRAProject.Data;
 using FRAProject.DTOs;
 using FRAProject.Models;
@@ -20,21 +21,23 @@ namespace FRAProject.Areas.Settings.Controllers
         }
 
         // Return partial view with list (AJAX)
-        public async Task<IActionResult> List()
+        public async Task<IActionResult> Index()
         {
             var bases = await _context.Bases
                 .OrderBy(b => b.BaseName)
                 .Select(b => new BaseDto
                 {
                     Id = b.Id,
-                    BaseName = b.BaseName,
+                    BaseName  = b.BaseName,
                     Longitude = b.Longitude,
-                    Latitude = b.Latitude,
+                    Latitude  = b.Latitude,
+                    IsActive  = b.IsActive,
                     BaseNameLocal = b.BaseCode + " - " + b.Location
                 })
                 .ToListAsync();
 
-            return PartialView("_BaseList", bases);
+            //return PartialView("_BaseList", bases);
+            return View(bases);
         }
 
         // GET: Settings/Base/Create
@@ -153,7 +156,7 @@ namespace FRAProject.Areas.Settings.Controllers
                     await _context.SaveChangesAsync();
 
                     TempData["SuccessMessage"] = "Base modifiée avec succès";
-                    return RedirectToAction("Index", "Home", new { area = "Settings" });
+                    return RedirectToAction("Index", "Base", new { area = "Settings" });
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -170,6 +173,23 @@ namespace FRAProject.Areas.Settings.Controllers
             return View(dto);
         }
 
+        // GET: Settings/Base/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+            var baseEntity = await _context.Bases
+                .FirstOrDefaultAsync(m => m.Id == id);
+            if (baseEntity == null)
+            {
+                return NotFound();
+            }
+            return View(baseEntity);
+        }
+
+
         // POST: Settings/Base/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -178,8 +198,10 @@ namespace FRAProject.Areas.Settings.Controllers
             var baseEntity = await _context.Bases.FindAsync(id);
             if (baseEntity != null)
             {
-                _context.Bases.Remove(baseEntity);
+                //_context.Bases.Remove(baseEntity);
+                baseEntity.IsActive = false; // Soft delete
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Base ' {baseEntity.BaseName} ' d&eacute;sactiv&eacute;e avec succès.";
             }
 
             return Json(new { success = true });

@@ -1,9 +1,9 @@
 ﻿using FRAProject.Areas.AircraftMaintenance.Models;
-using FRAProject.Areas.Settings.Models;
+using FRAProject.Areas.HR.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FRAProject.Areas.HR.Models
+namespace FRAProject.Areas.Settings.Models
 {
     [Table("Bases")]
     public class Base

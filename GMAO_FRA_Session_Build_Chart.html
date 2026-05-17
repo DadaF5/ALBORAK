@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GMAO FRA — Session Build Chart</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg:        #0a0c10;
+    --surface:   #111318;
+    --border:    #1e2230;
+    --gold:      #c9a84c;
+    --gold-dim:  #7a6230;
+    --teal:      #2dd4bf;
+    --blue:      #3b82f6;
+    --green:     #22c55e;
+    --orange:    #f97316;
+    --purple:    #a78bfa;
+    --red:       #ef4444;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --dim:       #334155;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 32px 24px 80px;
+    min-height: 100vh;
+  }
+
+  /* ── Header ─────────────────────────────────────────────────── */
+  .hdr {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 36px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .hdr-title { font-size: 22px; font-weight: 800; letter-spacing: -.3px; }
+  .hdr-sub   { color: var(--muted); font-size: 12px; margin-top: 4px;
+               font-family: 'JetBrains Mono', monospace; }
+  .hdr-stats {
+    display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+  }
+  .stat {
+    text-align: center;
+    padding: 10px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    min-width: 72px;
+  }
+  .stat-n { font-size: 20px; font-weight: 800; color: var(--gold); line-height: 1; }
+  .stat-l { font-size: 10px; color: var(--muted); margin-top: 2px;
+             font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
+
+  /* ── Filter bar ──────────────────────────────────────────────── */
+  .filters {
+    display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all .15s;
+    letter-spacing: .4px;
+  }
+  .filter-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .filter-btn.active { background: var(--gold); color: #000;
+                       border-color: var(--gold); font-weight: 700; }
+
+  /* ── Phase blocks ────────────────────────────────────────────── */
+  .phase {
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: opacity .2s;
+  }
+  .phase.hidden { display: none; }
+
+  .phase-hdr {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-hdr:hover { background: rgba(255,255,255,.02); }
+
+  .phase-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .phase-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 24px;
+  }
+  .phase-title {
+    font-weight: 700;
+    font-size: 13px;
+    flex: 1;
+  }
+  .phase-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.05);
+    color: var(--muted);
+  }
+  .phase-toggle {
+    font-size: 10px; color: var(--muted);
+    transition: transform .2s;
+  }
+  .phase-toggle.open { transform: rotate(180deg); }
+
+  /* ── Step rows ───────────────────────────────────────────────── */
+  .steps { padding: 0 0 4px; }
+  .step {
+    display: grid;
+    grid-template-columns: 28px 220px 1fr;
+    gap: 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    transition: background .12s;
+  }
+  .step:last-child { border-bottom: none; }
+  .step:hover { background: rgba(255,255,255,.025); }
+
+  .step-idx {
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 12px 0 12px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--dim);
+  }
+  .step-name {
+    padding: 12px 16px 12px 12px;
+    font-weight: 600;
+    font-size: 12px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .step-type {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: .5px;
+    text-transform: uppercase;
+  }
+  .step-files {
+    padding: 10px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-content: flex-start;
+  }
+
+  /* ── File chips ──────────────────────────────────────────────── */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    border: 1px solid transparent;
+    cursor: default;
+    transition: filter .1s;
+  }
+  .chip:hover { filter: brightness(1.3); }
+  .chip-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+  /* chip color themes */
+  .c-model  { background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.3);
+              color: #93c5fd; }
+  .c-model .chip-dot  { background: #3b82f6; }
+
+  .c-vm     { background: rgba(167,139,250,.12); border-color: rgba(167,139,250,.3);
+              color: #c4b5fd; }
+  .c-vm .chip-dot     { background: #a78bfa; }
+
+  .c-ctrl   { background: rgba(249,115,22,.12); border-color: rgba(249,115,22,.3);
+              color: #fdba74; }
+  .c-ctrl .chip-dot   { background: #f97316; }
+
+  .c-svc    { background: rgba(45,212,191,.12); border-color: rgba(45,212,191,.3);
+              color: #99f6e4; }
+  .c-svc .chip-dot    { background: #2dd4bf; }
+
+  .c-repo   { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.3);
+              color: #86efac; }
+  .c-repo .chip-dot   { background: #22c55e; }
+
+  .c-data   { background: rgba(201,168,76,.12); border-color: rgba(201,168,76,.3);
+              color: #fcd34d; }
+  .c-data .chip-dot   { background: #c9a84c; }
+
+  .c-view   { background: rgba(236,72,153,.12); border-color: rgba(236,72,153,.3);
+              color: #f9a8d4; }
+  .c-view .chip-dot   { background: #ec4899; }
+
+  .c-cfg    { background: rgba(100,116,139,.15); border-color: rgba(100,116,139,.35);
+              color: #94a3b8; }
+  .c-cfg .chip-dot    { background: #64748b; }
+
+  /* ── Legend ──────────────────────────────────────────────────── */
+  .legend {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 24px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* ── Note ────────────────────────────────────────────────────── */
+  .note {
+    margin-top: 4px;
+    padding: 6px 10px;
+    background: rgba(239,68,68,.07);
+    border-left: 2px solid #ef4444;
+    border-radius: 0 4px 4px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #fca5a5;
+    width: 100%;
+  }
+  .note-ok {
+    background: rgba(34,197,94,.07);
+    border-left-color: #22c55e;
+    color: #86efac;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ────────────────────────────────────────────────── -->
+<div class="hdr">
+  <div>
+    <div class="hdr-title">GMAO FRA — Session Build Chart</div>
+    <div class="hdr-sub">ASP.NET Core MVC · EF Core · AdminLTE Dark · French UI</div>
+  </div>
+  <div class="hdr-stats">
+    <div class="stat"><div class="stat-n">12</div><div class="stat-l">Models</div></div>
+    <div class="stat"><div class="stat-n">8</div><div class="stat-l">ViewModels</div></div>
+    <div class="stat"><div class="stat-n">8</div><div class="stat-l">Controllers</div></div>
+    <div class="stat"><div class="stat-n">4</div><div class="stat-l">Services</div></div>
+    <div class="stat"><div class="stat-n">5</div><div class="stat-l">Repositories</div></div>
+    <div class="stat"><div class="stat-n">8</div><div class="stat-l">Configurations</div></div>
+    <div class="stat"><div class="stat-n">36</div><div class="stat-l">Views</div></div>
+  </div>
+</div>
+
+<!-- ── Legend ────────────────────────────────────────────────── -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Model</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>ViewModel / DTO</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>Controller</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2dd4bf"></div>Service</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>Repository</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#c9a84c"></div>DbContext / Config</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ec4899"></div>View (.cshtml)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#64748b"></div>Config / Layout</div>
+</div>
+
+<!-- ── Filters ───────────────────────────────────────────────── -->
+<div class="filters">
+  <button class="filter-btn active" onclick="filter('all',this)">Tout</button>
+  <button class="filter-btn" onclick="filter('infra',this)">Infrastructure</button>
+  <button class="filter-btn" onclick="filter('lookup',this)">Lookup Tables</button>
+  <button class="filter-btn" onclick="filter('dossier',this)">Dossier Wizard</button>
+  <button class="filter-btn" onclick="filter('layout',this)">Layout / Nav</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 1 — INFRASTRUCTURE
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="infra">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#22c55e"></div>
+    <div class="phase-num">01</div>
+    <div class="phase-title">Infrastructure — Repository + UoW + Validation</div>
+    <div class="phase-badge">5 fichiers</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">Generic Repository Interface<div class="step-type">Repository</div></div>
+      <div class="step-files">
+        <span class="chip c-repo"><span class="chip-dot"></span>IRepository.cs</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">Generic Repository Implementation<div class="step-type">Repository</div></div>
+      <div class="step-files">
+        <span class="chip c-repo"><span class="chip-dot"></span>Repository.cs</span>
+        <span class="chip c-repo"><span class="chip-dot"></span>PagedResult.cs</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">3</div>
+      <div class="step-name">Unit of Work<div class="step-type">Repository</div></div>
+      <div class="step-files">
+        <span class="chip c-repo"><span class="chip-dot"></span>IUnitOfWork.cs</span>
+        <span class="chip c-repo"><span class="chip-dot"></span>UnitOfWork.cs</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">4</div>
+      <div class="step-name">Validation Service<div class="step-type">Service</div></div>
+      <div class="step-files">
+        <span class="chip c-svc"><span class="chip-dot"></span>IValidationService.cs</span>
+        <span class="chip c-svc"><span class="chip-dot"></span>ValidationService.cs</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">5</div>
+      <div class="step-name">DbContext (base)<div class="step-type">Data</div></div>
+      <div class="step-files">
+        <span class="chip c-data"><span class="chip-dot"></span>FRAContext.cs</span>
+        <span class="chip c-cfg"><span class="chip-dot"></span>Program.cs registrations</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 2 — COUNTRY
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="lookup">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#3b82f6"></div>
+    <div class="phase-num">02</div>
+    <div class="phase-title">Lookup — Country</div>
+    <div class="phase-badge">9 fichiers · 37 seed rows</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">Model<div class="step-type">EF Core — no annotations</div></div>
+      <div class="step-files">
+        <span class="chip c-model"><span class="chip-dot"></span>Country.cs</span>
+        <div class="note note-ok">✓ EF attrs only · [NotMapped] DisplayLabel · nav props commented</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">ViewModels / DTOs<div class="step-type">Validation annotations on DTO only</div></div>
+      <div class="step-files">
+        <span class="chip c-vm"><span class="chip-dot"></span>CountryViewModels.cs</span>
+        <div class="note note-ok">✓ CountryFormDto · CountryListVm · CountryIndexVm (SortDirectionFor / SortIconFor)</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">3</div>
+      <div class="step-name">IUnitOfWork update<div class="step-type">Repository</div></div>
+      <div class="step-files">
+        <span class="chip c-repo"><span class="chip-dot"></span>IUnitOfWork.cs</span>
+        <span class="chip c-repo"><span class="chip-dot"></span>UnitOfWork.cs</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">4</div>
+      <div class="step-name">Controller<div class="step-type">CRUD · paging · sort · search</div></div>
+      <div class="step-files">
+        <span class="chip c-ctrl"><span class="chip-dot"></span>CountryController.cs</span>
+        <div class="note note-ok">✓ Index · Create GET/POST · Edit GET/POST · Delete · Activate · MapToDto/MapToEntity</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">5</div>
+      <div class="step-name">DbContext + Configuration<div class="step-type">Fluent API + Seed</div></div>
+      <div class="step-files">
+        <span class="chip c-data"><span class="chip-dot"></span>FRAContext.cs</span>
+        <span class="chip c-data"><span class="chip-dot"></span>CountryConfiguration.cs</span>
+        <div class="note note-ok">✓ char(2) IsoCode · UX_Country_IsoCode · UX_Country_Name · 37 seed rows (MA SortOrder=1)</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">6</div>
+      <div class="step-name">Views<div class="step-type">AdminLTE dark · French UI</div></div>
+      <div class="step-files">
+        <span class="chip c-view"><span class="chip-dot"></span>Country/Index.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>Country/Create.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>Country/Edit.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>Country/_Form.cshtml</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 3 — EMPLOYING AUTHORITY
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="lookup">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#3b82f6"></div>
+    <div class="phase-num">03</div>
+    <div class="phase-title">Lookup — EmployingAuthority</div>
+    <div class="phase-badge">9 fichiers · 5 seed rows</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">Model<div class="step-type">EF Core — no annotations</div></div>
+      <div class="step-files">
+        <span class="chip c-model"><span class="chip-dot"></span>EmployingAuthority.cs</span>
+        <div class="note note-ok">✓ Renamed from AutoriteEmploi — English code convention</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">ViewModels / DTOs<div class="step-type">Shared FormDto pattern</div></div>
+      <div class="step-files">
+        <span class="chip c-vm"><span class="chip-dot"></span>EmployingAuthorityViewModels.cs</span>
+        <div class="note note-ok">✓ Default SortColumn="SortOrder" — preserves FRA first in DDLs</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">3</div>
+      <div class="step-name">IUnitOfWork + Controller<div class="step-type">CRUD</div></div>
+      <div class="step-files">
+        <span class="chip c-repo"><span class="chip-dot"></span>IUnitOfWork.cs</span>
+        <span class="chip c-repo"><span class="chip-dot"></span>UnitOfWork.cs</span>
+        <span class="chip c-ctrl"><span class="chip-dot"></span>EmployingAuthorityController.cs</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">4</div>
+      <div class="step-name">DbContext + Configuration<div class="step-type">Fluent API + Seed</div></div>
+      <div class="step-files">
+        <span class="chip c-data"><span class="chip-dot"></span>FRAContext.cs</span>
+        <span class="chip c-data"><span class="chip-dot"></span>EmployingAuthorityConfiguration.cs</span>
+        <div class="note note-ok">✓ nvarchar(10) — variable length codes · 5 seed rows (FRA=1)</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">5</div>
+      <div class="step-name">Views<div class="step-type">AdminLTE dark</div></div>
+      <div class="step-files">
+        <span class="chip c-view"><span class="chip-dot"></span>EmployingAuthority/Index.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>EmployingAuthority/Create.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>EmployingAuthority/Edit.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>EmployingAuthority/_Form.cshtml</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 4 — AIRCRAFT CATEGORY
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="lookup">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#3b82f6"></div>
+    <div class="phase-num">04</div>
+    <div class="phase-title">Lookup — AcCategory</div>
+    <div class="phase-badge">9 fichiers · 3 seed rows</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">Model review + rebuild<div class="step-type">Corrected from uploaded file</div></div>
+      <div class="step-files">
+        <span class="chip c-model"><span class="chip-dot"></span>AcCategory.cs</span>
+        <span class="chip c-model"><span class="chip-dot"></span>AcStatusType.cs</span>
+        <div class="note">⚠ Original had annotations on model, no Code/SortOrder/IsActive, byte SortOrder — all corrected</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">Namespace moved<div class="step-type">Cross-cutting concern</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ AircraftMaintenance.Models → FRAProject.Models — used by both AircraftMaintenance and Form 5a</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">3</div>
+      <div class="step-name">ViewModels + IUoW + Controller<div class="step-type">CRUD + IconKey field</div></div>
+      <div class="step-files">
+        <span class="chip c-vm"><span class="chip-dot"></span>AcCategoryViewModels.cs</span>
+        <span class="chip c-repo"><span class="chip-dot"></span>IUnitOfWork.cs</span>
+        <span class="chip c-repo"><span class="chip-dot"></span>UnitOfWork.cs</span>
+        <span class="chip c-ctrl"><span class="chip-dot"></span>AcCategoryController.cs</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">4</div>
+      <div class="step-name">Configuration + Views<div class="step-type">Seed + 4 views</div></div>
+      <div class="step-files">
+        <span class="chip c-data"><span class="chip-dot"></span>AcCategoryConfiguration.cs</span>
+        <span class="chip c-view"><span class="chip-dot"></span>AcCategory/Index.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>AcCategory/Create.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>AcCategory/Edit.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>AcCategory/_Form.cshtml</span>
+        <div class="note note-ok">✓ 3 seed rows: AVION ✈ / HELI 🚁 / UAS ◈ — matches Form 5a radio cards</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 5 — CDN DOC TYPE
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="lookup">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#3b82f6"></div>
+    <div class="phase-num">05</div>
+    <div class="phase-title">Lookup — CdnDocType</div>
+    <div class="phase-badge">9 fichiers · 3 seed rows</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">Model + ViewModels<div class="step-type">Airworthiness doc types</div></div>
+      <div class="step-files">
+        <span class="chip c-model"><span class="chip-dot"></span>CdnDocType.cs</span>
+        <span class="chip c-vm"><span class="chip-dot"></span>CdnDocTypeViewModels.cs</span>
+        <div class="note note-ok">✓ Name kept as CdnDocType — domain terminology recognised universally</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">IUoW + Controller + Config + Views<div class="step-type">Full stack</div></div>
+      <div class="step-files">
+        <span class="chip c-repo"><span class="chip-dot"></span>IUnitOfWork.cs</span>
+        <span class="chip c-repo"><span class="chip-dot"></span>UnitOfWork.cs</span>
+        <span class="chip c-ctrl"><span class="chip-dot"></span>CdnDocTypeController.cs</span>
+        <span class="chip c-data"><span class="chip-dot"></span>CdnDocTypeConfiguration.cs</span>
+        <span class="chip c-view"><span class="chip-dot"></span>CdnDocType/Index.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>CdnDocType/Create.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>CdnDocType/Edit.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>CdnDocType/_Form.cshtml</span>
+        <div class="note note-ok">✓ CDN / ADV / AUT — Form 5a Step 3 dropdown</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 6 — MISSION ROLE
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="lookup">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#3b82f6"></div>
+    <div class="phase-num">06</div>
+    <div class="phase-title">Lookup — MissionRole</div>
+    <div class="phase-badge">9 fichiers · 11 seed rows · FK → AcCategory</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">Model<div class="step-type">Optional FK to AcCategory</div></div>
+      <div class="step-files">
+        <span class="chip c-model"><span class="chip-dot"></span>MissionRole.cs</span>
+        <div class="note note-ok">✓ AcCategoryId nullable — null = cross-category role (SAR, ISR, TRANSPORT)</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">ViewModels — first FK dropdown<div class="step-type">AcCategoryOptions in FormDto</div></div>
+      <div class="step-files">
+        <span class="chip c-vm"><span class="chip-dot"></span>MissionRoleViewModels.cs</span>
+        <div class="note note-ok">✓ AcCategoryName in ListVm — joined in memory · AcCategoryOptions in IndexVm for filter</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">3</div>
+      <div class="step-name">Controller + PopulateDropdowns()<div class="step-type">First use of dropdown helper pattern</div></div>
+      <div class="step-files">
+        <span class="chip c-ctrl"><span class="chip-dot"></span>MissionRoleController.cs</span>
+        <div class="note note-ok">✓ PopulateDropdowns() + BuildCategoryOptions() introduced here — pattern reused in Dossier</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">4</div>
+      <div class="step-name">Configuration — FK + Seed<div class="step-type">DeleteBehavior.SetNull</div></div>
+      <div class="step-files">
+        <span class="chip c-data"><span class="chip-dot"></span>MissionRoleConfiguration.cs</span>
+        <div class="note note-ok">✓ SetNull on delete — deactivating AcCategory does not delete roles</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">5</div>
+      <div class="step-name">Views<div class="step-type">Category badge in Index</div></div>
+      <div class="step-files">
+        <span class="chip c-view"><span class="chip-dot"></span>MissionRole/Index.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>MissionRole/Create.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>MissionRole/Edit.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>MissionRole/_Form.cshtml</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 7 — IMMATRICULATION DOC TYPE
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="lookup">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#3b82f6"></div>
+    <div class="phase-num">07</div>
+    <div class="phase-title">Lookup — ImmatriculationDocType</div>
+    <div class="phase-badge">9 fichiers · 6 seed rows · Art. 15</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">Model — regulatory rows<div class="step-type">NEVER hard delete</div></div>
+      <div class="step-files">
+        <span class="chip c-model"><span class="chip-dot"></span>ImmatriculationDocType.cs</span>
+        <div class="note">⚠ Rows are legally mandated (GUI-DPC-001 Art.15) — soft delete only, ever</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">Full stack<div class="step-type">SearchIsRequired filter</div></div>
+      <div class="step-files">
+        <span class="chip c-vm"><span class="chip-dot"></span>ImmatriculationDocTypeViewModels.cs</span>
+        <span class="chip c-repo"><span class="chip-dot"></span>IUnitOfWork.cs</span>
+        <span class="chip c-repo"><span class="chip-dot"></span>UnitOfWork.cs</span>
+        <span class="chip c-ctrl"><span class="chip-dot"></span>ImmatriculationDocTypeController.cs</span>
+        <span class="chip c-data"><span class="chip-dot"></span>ImmatriculationDocTypeConfiguration.cs</span>
+        <span class="chip c-view"><span class="chip-dot"></span>ImmatriculationDocType/Index.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>ImmatriculationDocType/Create.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>ImmatriculationDocType/Edit.cshtml</span>
+        <span class="chip c-view"><span class="chip-dot"></span>ImmatriculationDocType/_Form.cshtml</span>
+        <div class="note note-ok">✓ DOC01–DOC06 · IsRequired · AcceptedFormats · MaxFileSizeMb · Warning banners on Index+Edit</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 8 — IMMATRICULATION DOSSIER MODELS
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="dossier">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#c9a84c"></div>
+    <div class="phase-num">08</div>
+    <div class="phase-title">Dossier — Models (split architecture)</div>
+    <div class="phase-badge">5 models · shared PK 1:1 pattern</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">Architecture decision<div class="step-type">Split 1 model → 4</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ Single model → ImmatriculationDossier (master) + 3 step children + ImmatriculationDocument</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">Master — ImmatriculationDossier<div class="step-type">Status · CurrentStep · Attestation</div></div>
+      <div class="step-files">
+        <span class="chip c-model"><span class="chip-dot"></span>ImmatriculationDossier.cs</span>
+        <div class="note note-ok">✓ Zero FKs to domain tables · IsEditable computed · CurrentStep only here</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">3</div>
+      <div class="step-name">Step 1 — DossierAuthority<div class="step-type">AE + OGMN · 2 FKs</div></div>
+      <div class="step-files">
+        <span class="chip c-model"><span class="chip-dot"></span>DossierAuthority.cs</span>
+        <div class="note note-ok">✓ Shared PK: DossierId = PK + FK · EmployingAuthorityId · BaseAerienneId</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">4</div>
+      <div class="step-name">Step 2 — DossierAircraft<div class="step-type">Identification · 7 FKs</div></div>
+      <div class="step-files">
+        <span class="chip c-model"><span class="chip-dot"></span>DossierAircraft.cs</span>
+        <div class="note note-ok">✓ OriginCountryId only — ForeignCountryId moved to Step 3 → eliminates dual FK to Country</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">5</div>
+      <div class="step-name">Step 3 — DossierAirworthiness<div class="step-type">CdN + foreign reg · 2 FKs</div></div>
+      <div class="step-files">
+        <span class="chip c-model"><span class="chip-dot"></span>DossierAirworthiness.cs</span>
+        <div class="note note-ok">✓ ForeignCountryId here — single FK to Country · CdnDocTypeId</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-idx">6</div>
+      <div class="step-name">Step 4 — ImmatriculationDocument<div class="step-type">1:many uploads</div></div>
+      <div class="step-files">
+        <span class="chip c-model"><span class="chip-dot"></span>ImmatriculationDocument.cs</span>
+        <div class="note note-ok">✓ FileSizeDisplay · HasFile computed · path only (no binary in SQL)</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 9 — DOSSIER VIEWMODELS
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="dossier">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#a78bfa"></div>
+    <div class="phase-num">09</div>
+    <div class="phase-title">Dossier — ViewModels / DTOs</div>
+    <div class="phase-badge">1 fichier · 9 classes</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">5 Step DTOs<div class="step-type">One per wizard step</div></div>
+      <div class="step-files">
+        <span class="chip c-vm"><span class="chip-dot"></span>DossierViewModels.cs</span>
+        <div class="note note-ok">✓ DossierStep1Dto–5Dto · DossierId (not Id) · conditional fields in Step3</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">DocumentSlotVm<div class="step-type">Step 4 upload zones</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ AcceptAttribute computed · RequirementBadgeClass · IsUploaded flag</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">3</div>
+      <div class="step-name">DossierListVm + DossierIndexVm<div class="step-type">Index page</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ StatusBadgeClass switch · StepLabel switch · SortDirection default=desc (newest first)</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">4</div>
+      <div class="step-name">WizardProgressVm<div class="step-type">Progress bar driver</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ StepState(int step) → done/active/pending · CanNavigateTo() → back nav guard</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 10 — DOSSIER REPOSITORIES
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="dossier">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#22c55e"></div>
+    <div class="phase-num">10</div>
+    <div class="phase-title">Dossier — IUnitOfWork update</div>
+    <div class="phase-badge">5 new repositories</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">5 new repository properties<div class="step-type">Lazy init pattern</div></div>
+      <div class="step-files">
+        <span class="chip c-repo"><span class="chip-dot"></span>IUnitOfWork.cs</span>
+        <span class="chip c-repo"><span class="chip-dot"></span>UnitOfWork.cs</span>
+        <div class="note note-ok">✓ Dossiers · DossierAuthorities · DossierAircrafts · DossierAirworthiness · ImmatriculationDocuments</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 11 — DOSSIER CONFIGURATION
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="dossier">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#c9a84c"></div>
+    <div class="phase-num">11</div>
+    <div class="phase-title">Dossier — Fluent API Configuration</div>
+    <div class="phase-badge">1 fichier · 5 classes · shared PK pattern</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">DossierConfiguration (master)<div class="step-type">1:1 HasOne.WithOne pattern</div></div>
+      <div class="step-files">
+        <span class="chip c-data"><span class="chip-dot"></span>DossierConfiguration.cs</span>
+        <div class="note note-ok">✓ Filtered unique index on DossierNumber (IS NOT NULL) · Cascade on 1:1 children</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">DossierAuthorityConfiguration<div class="step-type">Restrict on FK lookups</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ FK_DossierAuthority_EmployingAuthority · FK_DossierAuthority_Base — both Restrict</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">3</div>
+      <div class="step-name">DossierAircraftConfiguration<div class="step-type">7 FKs · ImmatriculationSuffix unique</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ Filtered unique on ImmatriculationSuffix · 7 Restrict FKs · single FK to Country</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">4</div>
+      <div class="step-name">DossierAirworthinessConfiguration<div class="step-type">2 FKs · single FK to Country</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ ForeignCountryId here only — no dual FK anywhere in the schema</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">5</div>
+      <div class="step-name">ImmatriculationDocumentConfiguration<div class="step-type">Composite index</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ IX(DossierId, DocumentTypeId, IsActive) — Step 4 slot query performance</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 12 — SERVICES
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="dossier">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#2dd4bf"></div>
+    <div class="phase-num">12</div>
+    <div class="phase-title">Dossier — Services (fat controller refactor)</div>
+    <div class="phase-badge">2 fichiers · clean separation</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">IFileUploadService + FileUploadService<div class="step-type">Physical file I/O only</div></div>
+      <div class="step-files">
+        <span class="chip c-svc"><span class="chip-dot"></span>FileUploadService.cs</span>
+        <div class="note note-ok">✓ SaveFileAsync · MarkFileDeleted (rename to .deleted) · EnsureDossierFolder · BuildSafeFileName</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">IDossierService + DossierService<div class="step-type">All business logic</div></div>
+      <div class="step-files">
+        <span class="chip c-svc"><span class="chip-dot"></span>DossierService.cs</span>
+        <div class="note note-ok">✓ BuildStep1–5DtoAsync · RepopulateStepNAsync · SaveStepNAsync · SubmitAsync · GenerateDossierNumber</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 13 — DOSSIER CONTROLLER (thin)
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="dossier">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#f97316"></div>
+    <div class="phase-num">13</div>
+    <div class="phase-title">Dossier — Thin Controller</div>
+    <div class="phase-badge">1 fichier · 14 actions</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">DossierController<div class="step-type">Routes only — delegates to IDossierService</div></div>
+      <div class="step-files">
+        <span class="chip c-ctrl"><span class="chip-dot"></span>DossierController.cs</span>
+        <div class="note note-ok">✓ Index · Create · Step1–5 GET · SaveStep1–4 · Submit · Confirmation · UploadDocument · DeleteDocument</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">AJAX cascade endpoints<div class="step-type">JSON responses</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ GetAcTypes · GetVersions · GetMissionRoles — filter by categoryId / acTypeId</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">3</div>
+      <div class="step-name">Conditional validation Step 3<div class="step-type">Cannot use annotations</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ CdnDocTypeId required when HasAirworthinessDoc=true · ForeignCountryId required when WasForeignRegistered=true</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 14 — DOSSIER VIEWS
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="dossier">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#ec4899"></div>
+    <div class="phase-num">14</div>
+    <div class="phase-title">Dossier — Views (wizard)</div>
+    <div class="phase-badge">8 fichiers</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">_WizardProgress partial<div class="step-type">Shared — used on every step</div></div>
+      <div class="step-files">
+        <span class="chip c-view"><span class="chip-dot"></span>Dossier/_WizardProgress.cshtml</span>
+        <div class="note note-ok">✓ done ✓ / active ◎ / pending ○ · clickable back-nav when Status=Brouillon</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">Index<div class="step-type">List · search · status badge</div></div>
+      <div class="step-files">
+        <span class="chip c-view"><span class="chip-dot"></span>Dossier/Index.cshtml</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">3</div>
+      <div class="step-name">Step1 — Autorité d'emploi<div class="step-type">Static bar for new dossier</div></div>
+      <div class="step-files">
+        <span class="chip c-view"><span class="chip-dot"></span>Dossier/Step1.cshtml</span>
+        <div class="note note-ok">✓ Handles no-ViewBag.Progress case (new dossier not yet saved)</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">4</div>
+      <div class="step-name">Step2 — Identification<div class="step-type">AJAX cascade · live immat preview</div></div>
+      <div class="step-files">
+        <span class="chip c-view"><span class="chip-dot"></span>Dossier/Step2.cshtml</span>
+        <div class="note note-ok">✓ Category radio cards · cascade JS · CN-XXX live preview · repopulateSelect()</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">5</div>
+      <div class="step-name">Step3 — Navigabilité<div class="step-type">Conditional show/hide sections</div></div>
+      <div class="step-files">
+        <span class="chip c-view"><span class="chip-dot"></span>Dossier/Step3.cshtml</span>
+        <div class="note note-ok">✓ setDocAvailable() · toggleForeignFields() · panel border color feedback</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">6</div>
+      <div class="step-name">Step4 — Documents<div class="step-type">AJAX per-slot upload zones</div></div>
+      <div class="step-files">
+        <span class="chip c-view"><span class="chip-dot"></span>Dossier/Step4.cshtml</span>
+        <div class="note note-ok">✓ uploadDoc() · deleteDoc() · updateNextButton() · Next disabled until required slots filled</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">7</div>
+      <div class="step-name">Step5 — Validation<div class="step-type">Recap + attestation</div></div>
+      <div class="step-files">
+        <span class="chip c-view"><span class="chip-dot"></span>Dossier/Step5.cshtml</span>
+        <div class="note note-ok">✓ Read-only recap · Submit disabled when AllRequiredUploaded=false</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">8</div>
+      <div class="step-name">Confirmation<div class="step-type">Success page</div></div>
+      <div class="step-files">
+        <span class="chip c-view"><span class="chip-dot"></span>Dossier/Confirmation.cshtml</span>
+        <div class="note note-ok">✓ DossierNumber + CN-XXX badge centred</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHASE 15 — LAYOUT + NAV
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="layout">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#64748b"></div>
+    <div class="phase-num">15</div>
+    <div class="phase-title">Layout — _SettingsLayout + Nav links</div>
+    <div class="phase-badge">1 fichier · 4 sections · 15 links</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">_SettingsLayout.cshtml<div class="step-type">AdminLTE dark · sidebar-mini</div></div>
+      <div class="step-files">
+        <span class="chip c-cfg"><span class="chip-dot"></span>_SettingsLayout.cshtml</span>
+        <div class="note note-ok">✓ Topbar 48px · logo 34px · user shows shortname · 4 sidebar sections</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">Sidebar sections<div class="step-type">Grouped by concern</div></div>
+      <div class="step-files">
+        <div class="note note-ok">✓ VUE D'ENSEMBLE · ADMINISTRATION · IMMATRICULATION · DONNÉES DE BASE · RÉFÉRENTIELS</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PENDING ACTIONS
+     ══════════════════════════════════════════════════════════════ -->
+<div class="phase" data-phase="infra">
+  <div class="phase-hdr" onclick="toggle(this)">
+    <div class="phase-dot" style="background:#ef4444"></div>
+    <div class="phase-num">□</div>
+    <div class="phase-title">Actions restantes (TODO)</div>
+    <div class="phase-badge">Avant de tester</div>
+    <div class="phase-toggle open">▼</div>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-idx">1</div>
+      <div class="step-name">Program.cs — service registrations<div class="step-type">DI container</div></div>
+      <div class="step-files">
+        <div class="note">□ AddScoped&lt;IUnitOfWork, UnitOfWork&gt;()
+□ AddScoped&lt;IValidationService, ValidationService&gt;()
+□ AddScoped&lt;IFileUploadService, FileUploadService&gt;()
+□ AddScoped&lt;IDossierService, DossierService&gt;()</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">2</div>
+      <div class="step-name">EF Core Migration<div class="step-type">Package Manager Console</div></div>
+      <div class="step-files">
+        <div class="note">□ Add-Migration AddAllLookupAndDossierTables
+□ Update-Database</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">3</div>
+      <div class="step-name">Physical upload folder<div class="step-type">File system</div></div>
+      <div class="step-files">
+        <div class="note">□ Create: D:\2BAFRA\Uploads\Immatriculation\</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">4</div>
+      <div class="step-name">AcType in IUnitOfWork<div class="step-type">Unblocks GetAcTypes AJAX</div></div>
+      <div class="step-files">
+        <div class="note">□ Add IRepository&lt;AcType&gt; AcTypes to IUnitOfWork + UnitOfWork
+□ Wire GetAcTypes() in DossierController</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-idx">5</div>
+      <div class="step-name">AircraftManufacturersController<div class="step-type">Refactor to UoW pattern</div></div>
+      <div class="step-files">
+        <div class="note">□ Currently uses DbContext directly — needs UoW refactor</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggle(hdr) {
+  const steps  = hdr.nextElementSibling;
+  const arrow  = hdr.querySelector('.phase-toggle');
+  const isOpen = arrow.classList.contains('open');
+  steps.style.display = isOpen ? 'none' : '';
+  arrow.classList.toggle('open', !isOpen);
+}
+
+function filter(tag, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.querySelectorAll('.phase').forEach(p => {
+    if (tag === 'all') {
+      p.classList.remove('hidden');
+    } else {
+      const show = p.dataset.phase === tag;
+      p.classList.toggle('hidden', !show);
+    }
+  });
+}
+</script>
+</body>
+</html>

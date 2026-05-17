@@ -1,4 +1,5 @@
-using FRAProject.Areas.AircraftMaintenance.Repositories;
+using FRAProject.Areas.Settings.Interfaces;
+using FRAProject.Areas.Settings.Repositories;
 using FRAProject.Data;
 using FRAProject.Infrastructure;
 using FRAProject.Infrastructure.Authorization;

@@ -4,6 +4,7 @@ using FRAProject.Areas.Medical.Models;
 using FRAProject.Areas.Settings;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Data.Configurations;
 using FRAProject.Data.EntityConfigurations;
 using FRAProject.Enums;
 using FRAProject.Models;
@@ -14,7 +15,7 @@ using System;
 
 namespace FRAProject.Data
 {
-    public partial class FRAContext : IdentityDbContext<ApplicationUser> 
+    public partial class FRAContext : IdentityDbContext<ApplicationUser>
     {
         public FRAContext(DbContextOptions<FRAContext> options)
             : base(options)
@@ -23,163 +24,145 @@ namespace FRAProject.Data
 
         // =====================================
         // DOMAIN: HR (Human Resources)
-        // Manages employee records, organizational structure, and personnel hierarchy
         // =====================================
-        public DbSet<Person> Persons { get; set; } = null!;                      // Employee records
-        public DbSet<Rank> Ranks { get; set; } = null!;                          // Military/organizational ranks
-        public DbSet<RankType> RankTypes { get; set; } = null!;                  // Rank categories
-        public DbSet<Base> Bases { get; set; } = null!;                          // Military bases/locations
-        public DbSet<Department> Departments { get; set; } = null!;              // Organizational departments
-        public DbSet<SubDepartment> SubDepartments { get; set; } = null!;        // Sub-organizational units
-        public DbSet<Wing> Wings { get; set; } = null!;                          // Wing-level organization
-        public DbSet<Squadron> Squadrons { get; set; } = null!;                  // Squadron-level organization
+        public DbSet<Person> Persons { get; set; } = null!;
+        public DbSet<Rank> Ranks { get; set; } = null!;
+        public DbSet<RankType> RankTypes { get; set; } = null!;
+        public DbSet<Base> Bases { get; set; } = null!;
+        public DbSet<Department> Departments { get; set; } = null!;
+        public DbSet<SubDepartment> SubDepartments { get; set; } = null!;
+        public DbSet<Wing> Wings { get; set; } = null!;
+        public DbSet<Squadron> Squadrons { get; set; } = null!;
 
         // =====================================
         // DOMAIN: Squadron Operations
-        // Manages flight scheduling, missions, and operational planning
-        // Links: Personnel (CrewMembers) → Sorties → Aircraft
         // =====================================
-        public DbSet<Odv> Odvs { get; set; } = null!;                           // Operational Daily Flight schedule
-        public DbSet<Sortie> Sorties { get; set; } = null!;                     // Flight missions/sorties
-        public DbSet<SortieCrew> SortieCrews { get; set; } = null!;             // Crew assignments to sorties
-        public DbSet<Mission> Missions { get; set; } = null!;                   // Mission types (training, combat, etc.)
-        public DbSet<Phase> Phases { get; set; } = null!;                       // Mission phases
-        public DbSet<CallSign> CallSigns { get; set; } = null!;                 // Radio call signs
-        public DbSet<CrewMember> CrewMembers { get; set; } = null!;             // Flight crew personnel
-        public DbSet<Qualification> Qualifications { get; set; } = null!;       // Crew qualifications/certifications
-        public DbSet<CrewMemberQualification> CrewMemberQualifications { get; set; } = null!; // Links crew to qualifications
+        public DbSet<Odv> Odvs { get; set; } = null!;
+        public DbSet<Sortie> Sorties { get; set; } = null!;
+        public DbSet<SortieCrew> SortieCrews { get; set; } = null!;
+        public DbSet<Mission> Missions { get; set; } = null!;
+        public DbSet<Phase> Phases { get; set; } = null!;
+        public DbSet<CallSign> CallSigns { get; set; } = null!;
+        public DbSet<CrewMember> CrewMembers { get; set; } = null!;
+        public DbSet<Qualification> Qualifications { get; set; } = null!;
+        public DbSet<CrewMemberQualification> CrewMemberQualifications { get; set; } = null!;
 
         // =====================================
         // DOMAIN: Medical Care Center
-        // Manages crew member medical fitness, examinations, and health records
-        // Links: CrewMembers → MedicalChecks → Medical fitness decisions
         // =====================================
-        public DbSet<MedicalCheck> MedicalChecks { get; set; } = null!;         // Medical examination records
-        public DbSet<MedicalBilan> MedicalBilans { get; set; } = null!;         // Detailed medical assessment results
+        public DbSet<MedicalCheck> MedicalChecks { get; set; } = null!;
+        public DbSet<MedicalBilan> MedicalBilans { get; set; } = null!;
 
         // =====================================
         // DOMAIN: User Management (Cross-cutting)
-        // User-specific documents and qualifications for Identity users
         // =====================================
-        public DbSet<UserDocument> UserDocuments { get; set; } = null!;         // User uploaded documents
-        public DbSet<UserQualification> UserQualifications { get; set; } = null!; // User qualifications
-        public DbSet<MenuItem> MenuItems { get; set; } = null!;                 // Application menu structure
+        public DbSet<UserDocument> UserDocuments { get; set; } = null!;
+        public DbSet<UserQualification> UserQualifications { get; set; } = null!;
+        public DbSet<MenuItem> MenuItems { get; set; } = null!;
 
         // =====================================
         // DOMAIN: Aircraft Maintenance
-        // Manages aircraft inventory, maintenance tracking, and serviceability
-        // Links: Aircraft → MaintenanceWorkOrders → Components → Flight availability
         // =====================================
-        public DbSet<AcCategory> AcCategories { get; set; } = null!;            // Aircraft categories
-        public DbSet<AcMainGroup> AcMainGroups { get; set; } = null!;           // Aircraft main groups
-        public DbSet<AcType> AcTypes { get; set; } = null!;                     // Aircraft types/models
-        public DbSet<AcStatusType> AcStatusTypes { get; set; } = null!;         // Aircraft status types
-        public DbSet<Aircraft> Aircrafts { get; set; } = null!;                 // Aircraft inventory
-        public DbSet<FlightLog> FlightLogs { get; set; } = null!;               // Flight hour/cycle tracking
-        public DbSet<MaintenanceComponent> MaintenanceComponents { get; set; } = null!;     // Aircraft components
-        public DbSet<MaintenanceThreshold> MaintenanceThresholds { get; set; } = null!;     // Maintenance intervals
-        public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;     // Maintenance work orders
+        public DbSet<AcCategory> AcCategories { get; set; } = null!;
+        public DbSet<AcMainGroup> AcMainGroups { get; set; } = null!;
+        public DbSet<AcType> AcTypes { get; set; } = null!;
+        public DbSet<AcStatusType> AcStatusTypes { get; set; } = null!;
+        public DbSet<Aircraft> Aircrafts { get; set; } = null!;
+        public DbSet<FlightLog> FlightLogs { get; set; } = null!;
+        public DbSet<MaintenanceComponent> MaintenanceComponents { get; set; } = null!;
+        public DbSet<MaintenanceThreshold> MaintenanceThresholds { get; set; } = null!;
+        public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;
         public DbSet<AircraftDocumentType> AircraftDocumentTypes { get; set; } = null!;
-        public DbSet<AircraftDocument> AircraftDocuments { get; set; } = null!; // if you have this entity too
-
+        public DbSet<AircraftDocument> AircraftDocuments { get; set; } = null!;
 
         // =====================================
-        // Settings & Lookups (dbo)
-        public DbSet<AircraftVersion> AircraftVersions { get; set; } = null!;     // Lookup for aircraft versions
+        // Settings & Lookups
+        // =====================================
+        public DbSet<AircraftVersion> AircraftVersions { get; set; } = null!;
         public DbSet<AircraftManufacturer> AircraftManufacturers { get; set; } = null!;
 
-        
+        // ── Lookup tables — Form 5a / ImmatriculationDossier feature ─────
+        public DbSet<Country> Countries { get; set; } = null!;
+        //public DbSet<EmployingAuthority> EmployingAuthorities { get; set; } = null!;      
+        //public DbSet<CdnDocType> CdnDocTypes { get; set; } = null!;
+        //public DbSet<MissionRole> MissionRoles { get; set; } = null!;
+        //public DbSet<ImmatriculationDocType> ImmatriculationDocTypes { get; set; } = null!;
+
+        //// ── Immatriculation dossier ───────────────────────────────────────
+        //public DbSet<ImmatriculationDossier> Dossiers { get; set; } = null!;
+        //public DbSet<DossierAuthority> DossierAuthorities { get; set; } = null!;
+        //public DbSet<DossierAircraft> DossierAircrafts { get; set; } = null!;
+        //public DbSet<DossierAirworthiness> DossierAirworthiness { get; set; } = null!;
+        //public DbSet<ImmatriculationDocument> ImmatriculationDocuments { get; set; } = null!;
+
+        // Uncomment when ImmatriculationDossier is built:
+        // public DbSet<ImmatriculationDossier>  ImmatriculationDossiers  { get; set; } = null!;
+        // public DbSet<ImmatriculationDocument> ImmatriculationDocuments { get; set; } = null!;
+
         //public DbSet<MaintenanceType> MaintenanceTypes { get; set; } = null!;
         //public DbSet<EngineType> EngineTypes { get; set; } = null!;
         //public DbSet<SgsEventType> SgsEventTypes { get; set; } = null!;
         //public DbSet<RiskLevel> RiskLevels { get; set; } = null!;
         //public DbSet<FluidType> FluidTypes { get; set; } = null!;
 
-        private void ConfigureFlightLog(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<FlightLog>(e =>
-            {
-                e.HasKey(f => f.Id);
-
-                // Make sure EF uses the declared AircraftId property as the FK and the Aircraft.FlightLogs inverse nav
-                e.HasOne(f => f.Aircraft)
-                 .WithMany(a => a.FlightLogs)     // requires Aircraft.FlightLogs nav (you have it)
-                 .HasForeignKey(f => f.AircraftId)
-                 .OnDelete(DeleteBehavior.Restrict);
-
-                // Map Sortie relation explicitly to avoid ambiguity if Sortie has navs
-                e.HasOne(f => f.Sortie)
-                 .WithOne() // or .WithOne(s => s.FlightLog) if Sortie has a FlightLog nav
-                 .HasForeignKey<FlightLog>(f => f.SortieId)
-                 .OnDelete(DeleteBehavior.Cascade);
-
-                // Decimal precision (avoid warnings)
-                e.Property(f => f.HobbsStart).HasPrecision(8, 2);
-                e.Property(f => f.HobbsEnd).HasPrecision(8, 2);
-                e.Property(f => f.TachStart).HasPrecision(8, 2);
-                e.Property(f => f.TachEnd).HasPrecision(8, 2);
-                e.Property(f => f.FuelUsedKg).HasPrecision(10, 2);
-
-                // Optional: index on SortieId or AircraftId
-                e.HasIndex(f => f.SortieId).IsUnique(false);
-                e.HasIndex(f => f.AircraftId);
-            });
-        }
-
-        private void ConfigureMaintenance(ModelBuilder modelBuilder)
-        {
-            // Configure maintenance related entities (do not duplicate FlightLog mapping here)
-            modelBuilder.Entity<MaintenanceComponent>(e =>
-            {
-                e.HasKey(c => c.Id);
-                e.HasOne(c => c.Aircraft).WithMany(a => a.Components).HasForeignKey(c => c.AircraftId).OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<MaintenanceThreshold>(e =>
-            {
-                e.HasKey(t => t.Id);
-                e.HasOne(t => t.Component).WithMany(c => c.Thresholds).HasForeignKey(t => t.ComponentId).OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<MaintenanceWorkOrder>(e =>
-            {
-                e.HasKey(w => w.Id);
-                e.HasOne(w => w.Aircraft).WithMany().HasForeignKey(w => w.AircraftId).OnDelete(DeleteBehavior.Restrict);
-                e.HasOne(w => w.Component).WithMany().HasForeignKey(w => w.ComponentId).OnDelete(DeleteBehavior.Restrict);
-            });
-        }
-
+        // ════════════════════════════════════════════════════════════════
+        //  OnModelCreating
+        // ════════════════════════════════════════════════════════════════
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Use the dedicated configuration classes / partials for entity configuration.
-            // Do not duplicate relationship configuration in multiple places.
-
+            // ── IEntityTypeConfiguration classes ─────────────────────────
             modelBuilder.ApplyConfiguration(new OdvConfiguration());
             modelBuilder.ApplyConfiguration(new SortieConfiguration());
             modelBuilder.ApplyConfiguration(new MissionConfiguration());
             modelBuilder.ApplyConfiguration(new PhaseConfiguration());
             modelBuilder.ApplyConfiguration(new SortieCrewConfiguration());
-            // Decimal precision configuration
+
+            // ── NEW: Country — Fluent API + seed data ─────────────────────
+            modelBuilder.ApplyConfiguration(new CountryConfiguration());
+
+            //// ── NEW: EmployingAuthority — Fluent API + seed data ──────────
+            //modelBuilder.ApplyConfiguration(new EmployingAuthorityConfiguration());
+
+            //// ── NEW: AcCategory — Fluent API + seed data ──────────────────
+            //modelBuilder.ApplyConfiguration(new AcCategoryConfiguration());
+
+            //// ── NEW: CdnDocType — Fluent API + seed data ──────────────────
+            //modelBuilder.ApplyConfiguration(new CdnDocTypeConfiguration());
+
+            //// ── NEW: MissionRole — Fluent API + seed data ─────────────────
+            //modelBuilder.ApplyConfiguration(new MissionRoleConfiguration());
+
+            //// ── NEW: ImmatriculationDocType — Fluent API + seed data ──────
+            //// All 6 lookup tables now complete.
+            //modelBuilder.ApplyConfiguration(new ImmatriculationDocTypeConfiguration());
+
+            //// ── Immatriculation dossier — 4 configurations ────────────────
+            //// DossierConfiguration handles the shared PK (1:1) pattern
+            //// and all FK relationships across the 4 tables.
+            //modelBuilder.ApplyConfiguration(new DossierConfiguration());
+            //modelBuilder.ApplyConfiguration(new DossierAuthorityConfiguration());
+            //modelBuilder.ApplyConfiguration(new DossierAircraftConfiguration());
+            //modelBuilder.ApplyConfiguration(new DossierAirworthinessConfiguration());
+            //modelBuilder.ApplyConfiguration(new ImmatriculationDocumentConfiguration());
+
+            // ── Decimal precision ─────────────────────────────────────────
             ConfigureDecimalPrecision(modelBuilder);
 
-            // Maintenance & FlightLog configuration (single canonical methods)
+            // ── Maintenance & FlightLog ────────────────────────────────────
             ConfigureMaintenance(modelBuilder);
             ConfigureFlightLog(modelBuilder);
 
-            // CallSign configuration in partial class
+            // ── Partials ──────────────────────────────────────────────────
             ConfigureCallSign(modelBuilder);
-
-            // Menu configuration in partial class
             ConfigureMenus(modelBuilder);
 
-            // Enforce 1:1 relationship between Person and CrewMember by making PersonId unique
+            // ── CrewMember ────────────────────────────────────────────────
             modelBuilder.Entity<CrewMember>(b =>
             {
                 b.HasKey(cm => cm.Id);
-
-                b.HasIndex(cm => cm.PersonId).IsUnique();    // enforces 1:1
+                b.HasIndex(cm => cm.PersonId).IsUnique();
 
                 b.HasOne(cm => cm.Person)
                     .WithOne(p => p.CrewMember)
@@ -195,22 +178,22 @@ namespace FRAProject.Data
                     .WithMany()
                     .HasForeignKey(cm => cm.PrimaryQualificationId)
                     .OnDelete(DeleteBehavior.SetNull);
-
-
             });
+
             modelBuilder.Entity<CrewMember>()
                 .HasMany(cm => cm.MedicalChecks)
                 .WithOne(mc => mc.CrewMember)
                 .HasForeignKey(mc => mc.CrewMemberId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-
+            // ── Qualification ─────────────────────────────────────────────
             modelBuilder.Entity<Qualification>(b =>
             {
                 b.HasKey(q => q.Id);
                 b.Property(q => q.Name).HasMaxLength(100).IsRequired();
             });
 
+            // ── CrewMemberQualification ────────────────────────────────────
             modelBuilder.Entity<CrewMemberQualification>(b =>
             {
                 b.HasKey(cmq => cmq.Id);
@@ -228,73 +211,137 @@ namespace FRAProject.Data
                 b.HasIndex(cmq => new { cmq.CrewMemberId, cmq.QualificationId });
             });
 
+            // ── MedicalCheck ──────────────────────────────────────────────
             modelBuilder.Entity<MedicalCheck>()
                 .HasMany(mc => mc.Bilans)
                 .WithOne(mb => mb.MedicalCheck)
                 .HasForeignKey(mb => mb.MedicalCheckId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-
-
-            // Wing -> Squadron: prevent cascade delete so deleting a Wing won't delete Squadrons
+            // ── Wing → Squadron ────────────────────────────────────────────
             modelBuilder.Entity<Wing>()
                 .HasMany(w => w.Squadrons)
                 .WithOne(s => s.Wing)
                 .HasForeignKey(s => s.WingId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // ── Aircraft ───────────────────────────────────────────────────
             modelBuilder.Entity<Aircraft>()
                 .HasOne(a => a.AcType)
                 .WithMany(t => t.Aircrafts)
                 .HasForeignKey(a => a.AcTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // ── AircraftDocumentType ───────────────────────────────────────
             modelBuilder.Entity<AircraftDocumentType>()
                 .HasIndex(x => x.Code)
                 .IsUnique();
 
+            // ── AircraftManufacturer ───────────────────────────────────────
             modelBuilder.Entity<AircraftManufacturer>()
                 .HasIndex(x => x.Code)
                 .IsUnique();
+
+            // ── AircraftVersion ────────────────────────────────────────────
             modelBuilder.Entity<AircraftVersion>()
                 .HasIndex(x => x.Code)
                 .IsUnique();
+
             modelBuilder.Entity<AircraftVersion>(entity =>
             {
-                // LookupBase already handles: Id, Code, Name, Description, IsActive, SortOrder
-
-                // FK relationship - MUST match collection name in AcType
                 entity.HasOne(av => av.AcType)
-                    .WithMany(a => a.AircraftVersions)  // ← Must match property name
+                    .WithMany(a => a.AircraftVersions)
                     .HasForeignKey(av => av.AcTypeId)
                     .OnDelete(DeleteBehavior.Restrict)
                     .HasConstraintName("FK_AircraftVersions_AcType");
 
-                // Unique constraint on Code per AcType
                 entity.HasIndex(e => new { e.Code, e.AcTypeId })
                     .IsUnique()
                     .HasDatabaseName("UQ_AircraftVersions_Code_AcType");
 
-                // Unique constraint on Name per AcType
                 entity.HasIndex(e => new { e.Name, e.AcTypeId })
                     .IsUnique()
                     .HasDatabaseName("UQ_AircraftVersions_Name_AcType");
             });
-            // --- Enum-to-string converters for Odv enum-backed fields ---
+
+            // ── Enum → string converters ───────────────────────────────────
             var zoneConverter = new EnumToStringConverter<Zone>();
             var missionTypeConverter = new EnumToStringConverter<MissionType>();
             var odvStatusConverter = new EnumToStringConverter<OdvStatus>();
         }
 
+        // ════════════════════════════════════════════════════════════════
+        //  PRIVATE CONFIGURE METHODS
+        // ════════════════════════════════════════════════════════════════
+
+        private void ConfigureFlightLog(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<FlightLog>(e =>
+            {
+                e.HasKey(f => f.Id);
+
+                e.HasOne(f => f.Aircraft)
+                 .WithMany(a => a.FlightLogs)
+                 .HasForeignKey(f => f.AircraftId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasOne(f => f.Sortie)
+                 .WithOne()
+                 .HasForeignKey<FlightLog>(f => f.SortieId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.Property(f => f.HobbsStart).HasPrecision(8, 2);
+                e.Property(f => f.HobbsEnd).HasPrecision(8, 2);
+                e.Property(f => f.TachStart).HasPrecision(8, 2);
+                e.Property(f => f.TachEnd).HasPrecision(8, 2);
+                e.Property(f => f.FuelUsedKg).HasPrecision(10, 2);
+
+                e.HasIndex(f => f.SortieId).IsUnique(false);
+                e.HasIndex(f => f.AircraftId);
+            });
+        }
+
+        private void ConfigureMaintenance(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<MaintenanceComponent>(e =>
+            {
+                e.HasKey(c => c.Id);
+                e.HasOne(c => c.Aircraft)
+                 .WithMany(a => a.Components)
+                 .HasForeignKey(c => c.AircraftId)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<MaintenanceThreshold>(e =>
+            {
+                e.HasKey(t => t.Id);
+                e.HasOne(t => t.Component)
+                 .WithMany(c => c.Thresholds)
+                 .HasForeignKey(t => t.ComponentId)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<MaintenanceWorkOrder>(e =>
+            {
+                e.HasKey(w => w.Id);
+                e.HasOne(w => w.Aircraft)
+                 .WithMany()
+                 .HasForeignKey(w => w.AircraftId)
+                 .OnDelete(DeleteBehavior.Restrict);
+                e.HasOne(w => w.Component)
+                 .WithMany()
+                 .HasForeignKey(w => w.ComponentId)
+                 .OnDelete(DeleteBehavior.Restrict);
+            });
+        }
+
         private void ConfigureDecimalPrecision(ModelBuilder modelBuilder)
         {
-            // Sortie fuel
             modelBuilder.Entity<Sortie>(e =>
             {
                 e.Property(s => s.FuelQuantity).HasPrecision(10, 2);
             });
 
-            // FlightLog hobbs/tach/fuel
             modelBuilder.Entity<FlightLog>(e =>
             {
                 e.Property(f => f.HobbsStart).HasPrecision(8, 2);
@@ -304,16 +351,10 @@ namespace FRAProject.Data
                 e.Property(f => f.FuelUsedKg).HasPrecision(10, 2);
             });
 
-            // Maintenance component numeric values if present
             modelBuilder.Entity<MaintenanceComponent>(e =>
             {
-                // if you have any decimal fields here, configure them too:
-                // e.Property(c => c.SomeDecimalField).HasPrecision(9, 2);
+                // Add decimal fields here as needed
             });
-
-            // Add other decimal properties here as needed
         }
-
-        
     }
 }

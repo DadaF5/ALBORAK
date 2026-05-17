@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using FRAProject.Areas.AircraftMaintenance.Models;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FRAProject.Areas.AircraftMaintenance.Models
+namespace FRAProject.Areas.Settings.Models
 {
     [Table("AcStatusTypes", Schema = "dbo")]
     public class AcStatusType

@@ -1,23 +1,111 @@
-﻿
-using FRAProject.Areas.AircraftMaintenance.Repositories;
+﻿using FRAProject.Areas.Settings.Interfaces;
+using FRAProject.Areas.Settings.Models;
+using FRAProject.Areas.Settings.Repositories;
 using FRAProject.Data;
 using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Infrastructure.Repositories;
+using FRAProject.Models;
 
 namespace FRAProject.Infrastructure
 {
     public class UnitOfWork : IUnitOfWork
     {
-        private readonly FRAContext _context;   
+        private readonly FRAContext _context;
+
         public UnitOfWork(FRAContext context)
         {
             _context = context;
+
+            // AcMainGroups uses a specialist repository (custom methods)
+            // so it is initialized directly — not lazy like the others.
             AcMainGroups = new AcMainGroupRepository(_context);
         }
-        public IAcMainGroupRepository AcMainGroups { get; private set; }
-        public async Task<int> CompleteAsync()
-        {
-            return await _context.SaveChangesAsync();
-        }
 
+        // ── Specialist repository ─────────────────────────────────────────
+        public IAcMainGroupRepository AcMainGroups { get; private set; }
+
+        // ── Backing fields — null until first access ──────────────────────
+
+        // Lookup tables
+        private IGenericRepository<Country>? _countries;
+        private IGenericRepository<AcCategory>? _acCategories;
+        private IGenericRepository<AcType>? _acTypes;
+        private IGenericRepository<AircraftVersion>? _aircraftVersions;
+        //private IGenericRepository<EmployingAuthority>? _employingAuthorities;
+
+        //private IGenericRepository<CdnDocType>? _cdnDocTypes;
+        //private IGenericRepository<MissionRole>? _missionRoles;
+        //private IGenericRepository<ImmatriculationDocType>? _immatriculationDocTypes;
+
+        // Settings
+        //private IGenericRepository<AircraftVersion>? _aircraftVersions;
+        private IGenericRepository<AircraftManufacturer>? _aircraftManufacturers;
+        private IGenericRepository<Base>? _bases;
+
+        //// Immatriculation dossier
+        //private IGenericRepository<ImmatriculationDossier>? _dossiers;
+        //private IGenericRepository<DossierAuthority>? _dossierAuthorities;
+        //private IGenericRepository<DossierAircraft>? _dossierAircrafts;
+        //private IGenericRepository<DossierAirworthiness>? _dossierAirworthiness;
+        //private IGenericRepository<ImmatriculationDocument>? _immatriculationDocuments;
+
+        // ── Repository accessors (lazy init) ──────────────────────────────
+
+        // Lookup tables
+        public IGenericRepository<Country> Countries =>
+            _countries ??= new GenericRepository<Country>(_context);
+        public IGenericRepository<AcCategory> AcCategories =>
+            _acCategories ??= new GenericRepository<AcCategory>(_context);
+        public IGenericRepository<AcType> AcTypes =>
+            _acTypes ??= new GenericRepository<AcType>(_context);
+
+        //public IGenericRepository<EmployingAuthority> EmployingAuthorities =>
+        //    _employingAuthorities ??= new GenericRepository<EmployingAuthority>(_context);
+
+        //public IGenericRepository<AcCategory> AcCategories =>
+        //    _acCategories ??= new GenericRepository<AcCategory>(_context);
+
+        //public IGenericRepository<CdnDocType> CdnDocTypes =>
+        //    _cdnDocTypes ??= new GenericRepository<CdnDocType>(_context);
+
+        //public IGenericRepository<MissionRole> MissionRoles =>
+        //    _missionRoles ??= new GenericRepository<MissionRole>(_context);
+
+        //public IGenericRepository<ImmatriculationDocType> ImmatriculationDocTypes =>
+        //    _immatriculationDocTypes ??= new GenericRepository<ImmatriculationDocType>(_context);
+
+        // Settings
+        public IGenericRepository<AircraftVersion> AircraftVersions =>
+            _aircraftVersions ??= new GenericRepository<AircraftVersion>(_context);
+
+        public IGenericRepository<AircraftManufacturer> AircraftManufacturers =>
+            _aircraftManufacturers ??= new GenericRepository<AircraftManufacturer>(_context);
+
+        public IGenericRepository<Base> Bases =>
+            _bases ??= new GenericRepository<Base>(_context);
+
+        //// Immatriculation dossier
+        //public IGenericRepository<ImmatriculationDossier> Dossiers =>
+        //    _dossiers ??= new GenericRepository<ImmatriculationDossier>(_context);
+
+        //public IGenericRepository<DossierAuthority> DossierAuthorities =>
+        //    _dossierAuthorities ??= new GenericRepository<DossierAuthority>(_context);
+
+        //public IGenericRepository<DossierAircraft> DossierAircrafts =>
+        //    _dossierAircrafts ??= new GenericRepository<DossierAircraft>(_context);
+
+        //public IGenericRepository<DossierAirworthiness> DossierAirworthiness =>
+        //    _dossierAirworthiness ??= new GenericRepository<DossierAirworthiness>(_context);
+
+        //public IGenericRepository<ImmatriculationDocument> ImmatriculationDocuments =>
+        //    _immatriculationDocuments ??= new GenericRepository<ImmatriculationDocument>(_context);
+
+        // ── Commit ────────────────────────────────────────────────────────
+        // Single method — CompleteAsync() — matches IUnitOfWork contract.
+        public async Task<int> CompleteAsync() =>
+            await _context.SaveChangesAsync();
+
+        // ── Dispose ───────────────────────────────────────────────────────
+        public void Dispose() => _context.Dispose();
     }
 }

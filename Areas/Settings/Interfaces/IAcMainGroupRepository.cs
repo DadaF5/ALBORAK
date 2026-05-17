@@ -1,8 +1,7 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
-using FRAProject.Areas.Settings.Models;
+﻿using FRAProject.Areas.Settings.Models;
 using FRAProject.Infrastructure.Interfaces;
 
-namespace FRAProject.Areas.AircraftMaintenance.Repositories
+namespace FRAProject.Areas.Settings.Interfaces
 {
     public interface IAcMainGroupRepository : IGenericRepository<AcMainGroup>
     {
@@ -10,6 +9,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Repositories
         Task<IEnumerable<AcMainGroup>> GetByAcCategoryIdAsync(int acCategoryId);
         Task<IEnumerable<AcCategory>> GetAllCategoriesAsync();
         Task<IEnumerable<Base>> GetAllBasesAsync();
+
 
 
     }

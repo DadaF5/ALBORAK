@@ -1,9 +1,8 @@
-﻿using FRAProject.Areas.Settings.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FRAProject.Areas.AircraftMaintenance.Models
+namespace FRAProject.Areas.Settings.Models
 {
     [Table("AcCategories", Schema = "dbo")]
     public class AcCategory

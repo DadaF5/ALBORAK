@@ -1,5 +1,6 @@
 ﻿using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.Settings.DTOs;
+using FRAProject.Areas.Settings.Models;
 using FRAProject.Data;
 using FRAProject.DTOs;
 using FRAProject.Models;

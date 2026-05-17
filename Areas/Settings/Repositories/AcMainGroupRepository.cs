@@ -1,10 +1,10 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
+﻿using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Data;
 using FRAProject.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
-namespace FRAProject.Areas.AircraftMaintenance.Repositories
+namespace FRAProject.Areas.Settings.Repositories
 {
     public class AcMainGroupRepository : GenericRepository<AcMainGroup>, IAcMainGroupRepository
     {

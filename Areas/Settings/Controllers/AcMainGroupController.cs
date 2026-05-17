@@ -4,13 +4,15 @@ using FRAProject.Data;
 using FRAProject.Infrastructure.Interfaces;
 using FRAProject.Models;
 using FRAProject.ViewModels.AcMainGroup;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 
 namespace FRAProject.Areas.Settings.Controllers
 {
-    [Area("AircraftMaintenance")]
+    [Area("Settings")]
+    [Authorize(Roles = "Admin")]
     public class AcMainGroupController : Controller
     {
         
@@ -36,9 +38,20 @@ namespace FRAProject.Areas.Settings.Controllers
             }
 
             // Populate dropdowns
-            ViewBag.Bases = new SelectList(await _unitOfWork.AcMainGroups.GetByBaseIdAsync(baseId ?? 0),
-            ViewBag.AcCategories = new SelectList(await _unitOfWork.AcMainGroups.GetByAcCategoryIdAsync(categoryId ?? 0), "Id", "Name"));
-                       
+            ViewBag.Bases = new SelectList(
+                    await _unitOfWork.AcMainGroups.GetAllBasesAsync(),
+                    "Id",
+                    "BaseName",
+                    baseId
+    );
+            ViewBag.AcCategories = new SelectList(
+                await _unitOfWork.AcMainGroups.GetAllCategoriesAsync(),
+                "Id",
+                "Name",
+                categoryId
+                );
+
+
             return View(groups);
         }
         // GET: AcMainGroup/Create
@@ -47,7 +60,7 @@ namespace FRAProject.Areas.Settings.Controllers
             var model = new AcMainGroupViewModel();
                
             ViewBag.AcCategories = new SelectList(await _unitOfWork.AcMainGroups.GetAllCategoriesAsync(), "Id", "Name");
-            ViewBag.Bases = new SelectList(await _unitOfWork.AcMainGroups.GetAllBasesAsync(), "Id", "BaseName");
+            ViewBag.Bases = new SelectList(await _unitOfWork.Bases.GetAllAsync(), "Id", "BaseName");
             return View(model);
         }
 
@@ -59,10 +72,19 @@ namespace FRAProject.Areas.Settings.Controllers
             if (!ModelState.IsValid)
             {
                 // Repopulate dropdowns on error
-                ViewBag.AcCategories = await _unitOfWork.AcMainGroups
-                    .GetByAcCategoryIdAsync(0);
-                ViewBag.Bases = await _unitOfWork.AcMainGroups
-                    .GetByBaseIdAsync(0);
+                ViewBag.AcCategories = new SelectList(
+                     await _unitOfWork.AcMainGroups.GetAllCategoriesAsync(),
+                     "Id",
+                     "Name",
+                     model.AcCategoryId
+                 );
+
+                ViewBag.Bases = new SelectList(
+                    await _unitOfWork.AcMainGroups.GetAllBasesAsync(),
+                    "Id",
+                    "BaseName",
+                    model.BaseId
+                 );
                 return View(model);
                 
             }
@@ -99,8 +121,18 @@ namespace FRAProject.Areas.Settings.Controllers
                 AcCategoryId = entity.AcCategoryId,
                 BaseId = entity.BaseId,
                 IsActive = entity.Active,
-                Categories= new SelectList(await _unitOfWork.AcMainGroups.GetByAcCategoryIdAsync(0)),
-                Bases= new SelectList(await _unitOfWork.AcMainGroups.GetByBaseIdAsync(0))
+                Categories = new SelectList(
+                        await _unitOfWork.AcMainGroups.GetAllCategoriesAsync(),
+                        "Id",
+                        "Name",
+                        entity.AcCategoryId
+                    ),
+                            Bases = new SelectList(
+                        await _unitOfWork.AcMainGroups.GetAllBasesAsync(),
+                        "Id",
+                        "BaseName",
+                        entity.BaseId
+                    )
             };
 
             return View(vm);
@@ -113,8 +145,20 @@ namespace FRAProject.Areas.Settings.Controllers
         {
             if (id != model.Id || !ModelState.IsValid)
             {
-                model.Categories = new SelectList(await _unitOfWork.AcMainGroups.GetByAcCategoryIdAsync(0));
-                model.Bases = new SelectList(await _unitOfWork.AcMainGroups.GetByBaseIdAsync(0));
+                model.Categories = new SelectList(
+                    await _unitOfWork.AcMainGroups.GetAllCategoriesAsync(),
+                    "Id",
+                    "Name",
+                    model.AcCategoryId
+                  );
+
+                model.Bases = new SelectList(
+                    await _unitOfWork.AcCategories.GetAllAsync(),
+                    "Id",
+                    "BaseName",
+                    model.BaseId  
+                 );
+
                 return View(model);
             }
 

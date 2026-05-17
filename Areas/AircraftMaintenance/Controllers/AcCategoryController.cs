@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FRAProject.Data;
-using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.Settings.Models;
 
 namespace FRAProject.Areas.AircraftMaintenance.Controllers
 {

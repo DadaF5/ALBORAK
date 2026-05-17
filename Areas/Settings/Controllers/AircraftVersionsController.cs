@@ -1,219 +1,236 @@
 using FRAProject.Areas.Settings.Models;
-using FRAProject.Data;
-using FRAProject.DTOs;
+using FRAProject.Areas.Settings.ViewModels;
+using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Areas.Settings.Controllers
 {
     [Area("Settings")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Administrators")]
     public class AircraftVersionsController : Controller
     {
-        private readonly FRAContext _context;
+        private readonly IUnitOfWork        _uow;
+        private readonly IValidationService _validator;
 
-        public AircraftVersionsController(FRAContext context)
+        public AircraftVersionsController(IUnitOfWork uow, IValidationService validator)
         {
-            _context = context;
+            _uow       = uow;
+            _validator = validator;
         }
 
-        // Return partial view with list (AJAX)
-        public async Task<IActionResult> List()
+        // ── INDEX ────────────────────────────────────────────────────────
+        public async Task<IActionResult> Index(
+            string? searchCode    = null,
+            string? searchName    = null,
+            bool?   searchActive  = null,
+            string  sortColumn    = "Name",
+            string  sortDirection = "asc",
+            int     pageNumber    = 1,
+            int     pageSize      = 10)
         {
-            var versions = await _context.AircraftVersions
-                .Include(v => v.AcType)
-                .OrderBy(v => v.AcType.Name)
-                .ThenBy(v => v.SortOrder)
-                .ThenBy(v => v.Name)
-                .Select(v => new AircraftVersionDto
+            var result = await _uow.AircraftVersions.GetPagedAsync(
+                filter: x =>
+                    (string.IsNullOrWhiteSpace(searchCode) || x.Code.Contains(searchCode)) &&
+                    (string.IsNullOrWhiteSpace(searchName) || x.Name.Contains(searchName)) &&
+                    (searchActive == null || x.IsActive == searchActive),
+
+                orderBy: sortColumn switch
                 {
-                    Id = v.Id,
-                    Code = v.Code,
-                    Name = v.Name,
-                    Description = v.Description,
-                    IsActive = v.IsActive,
-                    SortOrder = v.SortOrder,
-                    AcTypeId = v.AcTypeId,
-                    AcTypeName = v.AcType.Name
-                })
-                .ToListAsync();
+                    "Code"      => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.Code)
+                                    : q => q.OrderBy(x => x.Code),
+                    "SortOrder" => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.SortOrder)
+                                    : q => q.OrderBy(x => x.SortOrder),
+                    "IsActive"  => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.IsActive)
+                                    : q => q.OrderBy(x => x.IsActive),
+                    _           => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.Name)
+                                    : q => q.OrderBy(x => x.Name)
+                },
+                pageNumber: pageNumber,
+                pageSize:   pageSize
+            );
 
-            return PartialView("_AircraftVersionsList", versions);
-        }
-
-        // GET: Settings/AircraftVersions/Create
-        public async Task<IActionResult> Create()
-        {
-            await PopulateAcTypeDropdown();
-            var dto = new AircraftVersionCreateDto { IsActive = true, SortOrder = 99 };
-            return View(dto);
-        }
-
-        // POST: Settings/AircraftVersions/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(AircraftVersionCreateDto dto)
-        {
-            // Check for duplicate Code within same AcType
-            if (await _context.AircraftVersions.AnyAsync(v => v.Code == dto.Code && v.AcTypeId == dto.AcTypeId))
+            var vm = new AircraftVersionIndexVm
             {
-                ModelState.AddModelError("Code", $"Le code '{dto.Code}' existe déjà pour ce type d'aéronef.");
-            }
-
-            // Check for duplicate Name within same AcType
-            if (await _context.AircraftVersions.AnyAsync(v => v.Name == dto.Name && v.AcTypeId == dto.AcTypeId))
-            {
-                ModelState.AddModelError("Name", $"Le nom '{dto.Name}' existe déjà pour ce type d'aéronef.");
-            }
-
-            if (ModelState.IsValid)
-            {
-                var version = new AircraftVersion
+                Items = result.Items.Select(x => new AircraftVersionListVm
                 {
-                    Code = dto.Code.Trim().ToUpper(),
-                    Name = dto.Name.Trim(),
-                    Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
-                    AcTypeId = dto.AcTypeId,
-                    IsActive = dto.IsActive,
-                    SortOrder = dto.SortOrder
-                };
-
-                _context.AircraftVersions.Add(version);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Version d'aéronef créée avec succès";
-                return RedirectToAction("Index", "Home", new { area = "Settings" });
-            }
-
-            await PopulateAcTypeDropdown(dto.AcTypeId);
-            return View(dto);
-        }
-
-        // GET: Settings/AircraftVersions/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var version = await _context.AircraftVersions.FindAsync(id);
-            if (version == null)
-            {
-                return NotFound();
-            }
-
-            var dto = new AircraftVersionCreateDto
-            {
-                Id = version.Id,
-                Code = version.Code,
-                Name = version.Name,
-                Description = version.Description,
-                AcTypeId = version.AcTypeId,
-                IsActive = version.IsActive,
-                SortOrder = version.SortOrder
+                    Id        = x.Id,
+                    Code      = x.Code,
+                    Name      = x.Name,
+                    SortOrder = x.SortOrder,
+                    IsActive  = x.IsActive
+                }).ToList(),
+                TotalCount    = result.TotalCount,
+                TotalPages    = result.TotalPages,
+                SearchCode    = searchCode,
+                SearchName    = searchName,
+                SearchActive  = searchActive,
+                SortColumn    = sortColumn,
+                SortDirection = sortDirection,
+                PageNumber    = pageNumber,
+                PageSize      = pageSize
             };
 
-            await PopulateAcTypeDropdown(dto.AcTypeId);
-            return View(dto);
+            return View(vm);
         }
 
-        // POST: Settings/AircraftVersions/Edit/5
+        // ── CREATE GET ───────────────────────────────────────────────────
+        public IActionResult Create() =>
+            View(new AircraftVersionFormDto { IsActive = true });
+
+        // ── CREATE POST ──────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, AircraftVersionCreateDto dto)
+        public async Task<IActionResult> Create(AircraftVersionFormDto dto)
         {
-            if (id != dto.Id)
+            if (ModelState.IsValid)
             {
-                return NotFound();
+                var code = dto.Code.Trim().ToUpper();
+                var name = dto.Name.Trim();
+
+                // ── Reusable duplicate check ─────────────────────────────
+                // Works exactly like your WebForms helper:
+                //   - pass the fields you want checked
+                //   - each gets its own ModelState error
+                //   - excludeId = null means Create (check all rows)
+                await _validator.CheckUniqueAsync<AircraftVersion>(
+                    ModelState,
+                    excludeId: null,
+                    new UniqueField<AircraftVersion>(
+                        x => x.Code == code,
+                        nameof(dto.Code),
+                        $"Le code «{code}» est déjà utilisé."),
+                    new UniqueField<AircraftVersion>(
+                        x => x.Name == name,
+                        nameof(dto.Name),
+                        $"Le nom «{name}» est déjà utilisé.")
+                );
             }
 
-            // Check for duplicate Code within same AcType (excluding current record)
-            if (await _context.AircraftVersions.AnyAsync(v => v.Code == dto.Code && v.AcTypeId == dto.AcTypeId && v.Id != id))
-            {
-                ModelState.AddModelError("Code", $"Le code '{dto.Code}' est déjà utilisé pour ce type d'aéronef.");
-            }
+            if (!ModelState.IsValid) return View(dto);
 
-            // Check for duplicate Name within same AcType (excluding current record)
-            if (await _context.AircraftVersions.AnyAsync(v => v.Name == dto.Name && v.AcTypeId == dto.AcTypeId && v.Id != id))
+            var entity = new AircraftVersion
             {
-                ModelState.AddModelError("Name", $"Le nom '{dto.Name}' est déjà utilisé pour ce type d'aéronef.");
-            }
+                Code      = dto.Code.Trim().ToUpper(),
+                Name      = dto.Name.Trim(),
+                SortOrder = (byte)dto.SortOrder,
+                IsActive  = dto.IsActive
+            };
+
+            _uow.AircraftVersions.Add(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Version «{entity.Name}» créée avec succès.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── EDIT GET ─────────────────────────────────────────────────────
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var entity = await _uow.AircraftVersions.GetByIdAsync(id.Value);
+            if (entity == null) return NotFound();
+
+            return View(new AircraftVersionFormDto
+            {
+                Id        = entity.Id,
+                Code      = entity.Code,
+                Name      = entity.Name,
+                SortOrder = entity.SortOrder,
+                IsActive  = entity.IsActive
+            });
+        }
+
+        // ── EDIT POST ────────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, AircraftVersionFormDto dto)
+        {
+            if (id != dto.Id) return BadRequest();
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    var version = await _context.AircraftVersions.FindAsync(id);
-                    if (version == null)
-                    {
-                        return NotFound();
-                    }
+                var code = dto.Code.Trim().ToUpper();
+                var name = dto.Name.Trim();
 
-                    version.Code = dto.Code.Trim().ToUpper();
-                    version.Name = dto.Name.Trim();
-                    version.Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
-                    version.AcTypeId = dto.AcTypeId;
-                    version.IsActive = dto.IsActive;
-                    version.SortOrder = dto.SortOrder;
-
-                    _context.Update(version);
-                    await _context.SaveChangesAsync();
-
-                    TempData["SuccessMessage"] = "Version d'aéronef modifiée avec succès";
-                    return RedirectToAction("Index", "Home", new { area = "Settings" });
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!VersionExists(id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                // ── Reusable duplicate check ─────────────────────────────
+                // Identical call to Create — only excludeId differs.
+                // The service automatically appends "AND Id != excludeId"
+                // to each predicate in SQL — no extra code needed here.
+                await _validator.CheckUniqueAsync<AircraftVersion>(
+                    ModelState,
+                    excludeId: id,
+                    new UniqueField<AircraftVersion>(
+                        x => x.Code == code,
+                        nameof(dto.Code),
+                        $"Le code «{code}» est déjà utilisé."),
+                    new UniqueField<AircraftVersion>(
+                        x => x.Name == name,
+                        nameof(dto.Name),
+                        $"Le nom «{name}» est déjà utilisé.")
+                );
             }
 
-            await PopulateAcTypeDropdown(dto.AcTypeId);
-            return View(dto);
+            if (!ModelState.IsValid) return View(dto);
+
+            var entity = await _uow.AircraftVersions.GetByIdAsync(id);
+            if (entity == null) return NotFound();
+
+            entity.Code      = dto.Code.Trim().ToUpper();
+            entity.Name      = dto.Name.Trim();
+            entity.SortOrder = (byte)dto.SortOrder;
+            entity.IsActive  = dto.IsActive;
+
+            _uow.AircraftVersions.Update(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Version «{entity.Name}» modifiée avec succès.";
+            return RedirectToAction(nameof(Index));
         }
 
-        // POST: Settings/AircraftVersions/Delete/5
+        // ── DELETE (soft) ────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var version = await _context.AircraftVersions.FindAsync(id);
-            if (version != null)
-            {
-                _context.AircraftVersions.Remove(version);
-                await _context.SaveChangesAsync();
-            }
+            var entity = await _uow.AircraftVersions.GetByIdAsync(id);
 
-            return Json(new { success = true });
+            if (entity == null)
+                return Json(new { success = false, message = "Version introuvable." });
+
+            if (!entity.IsActive)
+                return Json(new { success = true, message = "Déjà désactivée." });
+
+            entity.IsActive = false;
+            _uow.AircraftVersions.Update(entity);
+            await _uow.CompleteAsync();
+
+            return Json(new { success = true,
+                message = $"Version «{entity.Name}» désactivée." });
         }
 
-        private bool VersionExists(int id)
+        // ── ACTIVATE ────────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Activate(int id)
         {
-            return _context.AircraftVersions.Any(e => e.Id == id);
-        }
+            var entity = await _uow.AircraftVersions.GetByIdAsync(id);
 
-        // Helper method to populate AcType dropdown
-        private async Task PopulateAcTypeDropdown(int? selectedAcTypeId = null)
-        {
-            ViewBag.AcTypes = new SelectList(
-                await _context.AcTypes
-                    .Where(t => t.IsActive)
-                    .OrderBy(t => t.Name)
-                    .ToListAsync(),
-                "AcTypeId",
-                "AcTypeName",
-                selectedAcTypeId
-            );
+            if (entity == null)
+                return Json(new { success = false, message = "Version introuvable." });
+
+            entity.IsActive = true;
+            _uow.AircraftVersions.Update(entity);
+            await _uow.CompleteAsync();
+
+            return Json(new { success = true,
+                message = $"Version «{entity.Name}» réactivée." });
         }
     }
 }

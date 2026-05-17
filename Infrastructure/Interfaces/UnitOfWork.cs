@@ -62,8 +62,7 @@ namespace FRAProject.Infrastructure
         public IGenericRepository<EmployingAuthority> EmployingAuthorities =>
             _employingAuthorities ??= new GenericRepository<EmployingAuthority>(_context);
 
-        //public IGenericRepository<AcCategory> AcCategories =>
-        //    _acCategories ??= new GenericRepository<AcCategory>(_context);
+        
 
         //public IGenericRepository<CdnDocType> CdnDocTypes =>
         //    _cdnDocTypes ??= new GenericRepository<CdnDocType>(_context);

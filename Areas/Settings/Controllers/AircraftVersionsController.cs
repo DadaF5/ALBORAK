@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FRAProject.Areas.Settings.Controllers
 {
     [Area("Settings")]
-    [Authorize(Roles = "Administrators")]
+    [Authorize(Roles = "Admin")]
     public class AircraftVersionsController : Controller
     {
         private readonly IUnitOfWork        _uow;

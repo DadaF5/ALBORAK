@@ -2,6 +2,7 @@
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Data;
 using FRAProject.Infrastructure.Repositories;
+using FRAProject.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Areas.Settings.Repositories

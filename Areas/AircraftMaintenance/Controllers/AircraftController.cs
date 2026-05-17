@@ -60,8 +60,8 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 .ToListAsync();
 
             vm.StatusTypes = await _context.AcStatusTypes
-                .OrderBy(s => s.StatusName)
-                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.StatusName })
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
                 .ToListAsync();
 
             return View(vm);
@@ -92,13 +92,13 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 .ToListAsync(),
 
                 AcStatusTypes = await _context.AcStatusTypes
-                .OrderBy(s => s.StatusName)
-                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.StatusName })
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
                 .ToListAsync(),
 
                 // Set default Serviceable status
                 DefaultServiceableStatusId = await _context.AcStatusTypes
-                .Where(s => s.StatusName == "Serviceable")
+                .Where(s => s.Name == "Serviceable")
                 .Select(s => s.Id)
                 .FirstOrDefaultAsync()
             };
@@ -321,11 +321,11 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         private async Task<IEnumerable<SelectListItem>> GetStatusTypesSelectList()
         {
             return await _context.AcStatusTypes
-                .OrderBy(s => s.StatusName)
+                .OrderBy(s => s.Name)
                 .Select(s => new SelectListItem
                 {
                     Value = s.Id.ToString(),
-                    Text = s.StatusName
+                    Text = s.Name
                 }).ToListAsync();
         }
     }

@@ -1,13 +1,16 @@
-@model FRAProject.Areas.Settings.ViewModels.CountryFormDto
+@* ════════════════════════════════════════════════════════════════
+   Save as: Areas/Settings/Views/AcCategory/Create.cshtml
+   ════════════════════════════════════════════════════════════════ *@
+@model FRAProject.Areas.Settings.ViewModels.AcCategoryFormDto
 @{
-    ViewData["Title"] = "Nouveau pays";
+    ViewData["Title"] = "Nouvelle catégorie d'aéronef";
     Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
 <div class="container mt-3">
     <div class="card">
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h4 class="mb-0">Nouveau pays</h4>
+        <h4 class="mb-0">Nouvelle catégorie d'aéronef</h4>
         <small class="text-muted">
             <a asp-action="Index" class="text-muted text-decoration-none">
                 <i class="fas fa-arrow-left me-1"></i>Retour à la liste
@@ -17,21 +20,16 @@
 </div>
 
 <div class="card border-secondary">
-    <div class="card-header bg-gradient-dark border-secondary">
-        <h6 class="mb-0 text-muted text-white">
-            <i class="fas fa-globe me-2 pr-2"></i>Informations nouveau pays
+            <div class="card-header bg-gradient-dark border-secondary">
+                <h6 class="mb-0 text-muted text-white">
+            <i class="fas fa-plane me-2 pr-2"></i>Informations de la catégorie
         </h6>
     </div>
     <div class="card-body">
-
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
-
-            @* Shared form fields *@
             @await Html.PartialAsync("_Form", Model)
-
             <hr class="border-secondary mt-4" />
-
             <div class="d-flex justify-content-end gap-2">
                 <a asp-action="Index" class="btn btn-outline-secondary">
                     <i class="fas fa-times me-1"></i>Annuler
@@ -41,7 +39,6 @@
                 </button>
             </div>
         </form>
-
     </div>
 </div>
 </div>

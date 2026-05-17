@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 
-namespace FRAProject.Areas.AircraftMaintenance.Controllers
+namespace FRAProject.Areas.Settings.Controllers
 {
     [Area("AircraftMaintenance")]
     public class AcStatusTypeController : Controller
@@ -40,11 +40,11 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             return View();
         }
 
-        // POST: AcStatusTypes/Create
+        // POST: AcStatusTypes/Create AcStatusType
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
-            [Bind("StatusName,Description")] AcStatusType acStatusType)
+            [Bind("StatusName,Description")] AcStatusType  acStatusType)
         {
             if (ModelState.IsValid)
             {

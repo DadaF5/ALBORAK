@@ -125,8 +125,8 @@ namespace FRAProject.Data
             // ── NEW: EmployingAuthority — Fluent API + seed data ──────────
             modelBuilder.ApplyConfiguration(new EmployingAuthorityConfiguration());
 
-            //// ── NEW: AcCategory — Fluent API + seed data ──────────────────
-            //modelBuilder.ApplyConfiguration(new AcCategoryConfiguration());
+            // ── NEW: AcCategory — Fluent API + seed data ──────────────────
+            modelBuilder.ApplyConfiguration(new AcCategoryConfiguration());
 
             //// ── NEW: CdnDocType — Fluent API + seed data ──────────────────
             //modelBuilder.ApplyConfiguration(new CdnDocTypeConfiguration());

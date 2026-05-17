@@ -1,5 +1,6 @@
 ﻿using FRAProject.Areas.Settings.Models;
 using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Models;
 
 namespace FRAProject.Areas.Settings.Interfaces
 {

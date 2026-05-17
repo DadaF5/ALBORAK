@@ -1,0 +1,82 @@
+@model FRAProject.Areas.Settings.ViewModels.AcCategoryFormDto
+
+<div class="row g-3">
+
+    @* ── Code ─────────────────────────────────────────────────────── *@
+    <div class="col-md-2">
+        <label asp-for="Code" class="form-label text-muted small">
+            Code <span class="text-danger">*</span>
+        </label>
+        <input asp-for="Code"
+               class="form-control bg-dark text-white border-secondary text-uppercase"
+               placeholder="ex: AVION"
+               maxlength="10"
+               style="letter-spacing:2px;font-family:monospace;"
+               oninput="this.value=this.value.toUpperCase()" />
+        <span asp-validation-for="Code" class="text-danger small"></span>
+        <small class="text-muted">Code unique — max 10 caractères</small>
+    </div>
+
+    @* ── Name ─────────────────────────────────────────────────────── *@
+    <div class="col-md-4">
+        <label asp-for="Name" class="form-label text-muted small">
+            Nom <span class="text-danger">*</span>
+        </label>
+        <input asp-for="Name"
+               class="form-control bg-dark text-white border-secondary"
+               placeholder="ex: Avion, Hélicoptère…" />
+        <span asp-validation-for="Name" class="text-danger small"></span>
+    </div>
+
+    @* ── Icon Key ─────────────────────────────────────────────────── *@
+    <div class="col-md-2">
+        <label asp-for="IconKey" class="form-label text-muted small">
+            Icône
+        </label>
+        <input asp-for="IconKey"
+               class="form-control bg-dark text-white border-secondary text-center"
+               placeholder="ex: ✈"
+               maxlength="10"
+               style="font-size:20px;" />
+        <span asp-validation-for="IconKey" class="text-danger small"></span>
+        <small class="text-muted">Emoji affiché dans Form 5a</small>
+    </div>
+
+    @* ── Sort Order ───────────────────────────────────────────────── *@
+    <div class="col-md-2">
+        <label asp-for="SortOrder" class="form-label text-muted small">
+            Ordre d'affichage
+        </label>
+        <input asp-for="SortOrder"
+               type="number"
+               class="form-control bg-dark text-white border-secondary"
+               min="0" max="9999" />
+        <span asp-validation-for="SortOrder" class="text-danger small"></span>
+    </div>
+
+    @* ── IsActive ─────────────────────────────────────────────────── *@
+    <div class="col-md-2 d-flex align-items-end pb-2">
+        <div class="form-check form-switch">
+            <input asp-for="IsActive"
+                   class="form-check-input"
+                   type="checkbox"
+                   role="switch" />
+            <label asp-for="IsActive" class="form-check-label text-muted pl-4">
+                Actif
+            </label>
+        </div>
+    </div>
+
+    @* ── Description ──────────────────────────────────────────────── *@
+    <div class="col-12">
+        <label asp-for="Description" class="form-label text-muted small">
+            Description
+        </label>
+        <input asp-for="Description"
+               class="form-control bg-dark text-white border-secondary"
+               placeholder="ex: Aéronef à voilure fixe…"
+               maxlength="200" />
+        <span asp-validation-for="Description" class="text-danger small"></span>
+    </div>
+
+</div>

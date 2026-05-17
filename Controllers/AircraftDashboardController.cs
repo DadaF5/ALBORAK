@@ -62,7 +62,7 @@ namespace FRAProject.Controllers
                                                         AcTypeId = typeEntity.Id,
                                                         TypeName = typeEntity.Name,
                                                         StatusCounts = typeGroup
-                                                            .GroupBy(a => a.AcStatusType.StatusName) // Status
+                                                            .GroupBy(a => a.AcStatusType.Name) // Status
                                                             .ToDictionary(g => g.Key, g => g.Count())
                                                     };
                                                 }).ToList()

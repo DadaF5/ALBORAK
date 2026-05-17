@@ -1,30 +1,71 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
-using System.Collections.Generic;
+using FRAProject.Areas.AircraftMaintenance.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Areas.Settings.Models
 {
-    [Table("AcStatusTypes", Schema = "dbo")]
+    /// <summary>
+    /// Aircraft status type lookup table.
+    /// Defines the possible operational states of an aircraft.
+    ///
+    /// Used as FK in:
+    ///   Aircraft.AcStatusTypeId
+    ///
+    /// Seed data examples:
+    ///   OPR — Opérationnel
+    ///   MNT — En maintenance
+    ///   AOG — Aircraft on Ground
+    ///   STK — En stockage
+    ///   RAD — Radié
+    /// </summary>
+    [Table("AcStatusType")]     // singular — platform convention
     public class AcStatusType
     {
+        // ── Primary Key ──────────────────────────────────────────────────
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        [Required]
-        [StringLength(50)]
-        public string StatusName { get; set; } = string.Empty;
+        // ── Short code ───────────────────────────────────────────────────
+        /// <summary>
+        /// Short uppercase code — e.g. OPR, MNT, AOG.
+        /// Unique. Used in reports and status badges.
+        /// Unique index configured in OnModelCreating.
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
 
-        [StringLength(20)]
-        public string? StatusCode { get; set; }
+        // ── Full name ────────────────────────────────────────────────────
+        /// <summary>
+        /// Full status label — e.g. "Opérationnel", "En maintenance".
+        /// Unique index configured in OnModelCreating.
+        /// </summary>
+        public string Name { get; set; } = string.Empty;
 
-        [StringLength(100)]
+        // ── Optional description ─────────────────────────────────────────
+        /// <summary>
+        /// Additional detail about when this status applies.
+        /// Optional — not required for seed data.
+        /// </summary>
         public string? Description { get; set; }
 
-        public byte SortOrder { get; set; } = 99;
-        public bool IsActive { get; set; } = true;  
+        // ── Display ordering ─────────────────────────────────────────────
+        /// <summary>
+        /// Controls position in dropdown lists.
+        /// int — consistent with all other platform lookup tables.
+        /// </summary>
+        public int SortOrder { get; set; } = 0;
 
-        public ICollection<Aircraft> Aircrafts { get; set; } = new HashSet<Aircraft>();
+        // ── Soft delete ──────────────────────────────────────────────────
+        public bool IsActive { get; set; } = true;
+
+        // ── Computed — not mapped to DB ──────────────────────────────────
+        /// <summary>
+        /// Used in dropdown lists: "OPR — Opérationnel"
+        /// </summary>
+        [NotMapped]
+        public string DisplayLabel => $"{Code} — {Name}";
+
+        // ── Navigation properties ────────────────────────────────────────
+        public ICollection<Aircraft> Aircrafts { get; set; } = [];
     }
 }

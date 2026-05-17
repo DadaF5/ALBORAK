@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20260517203700_EmployingAuthority_1")]
+    partial class EmployingAuthority_1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1935,77 +1938,21 @@ namespace FRAProject.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("SortOrder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Code")
-                        .IsUnique()
-                        .HasDatabaseName("UX_EmployingAuthority_Code");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("UX_EmployingAuthority_Name");
-
-                    b.ToTable("EmployingAuthority", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Code = "FRA",
-                            IsActive = true,
-                            Name = "Forces Royales Air",
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Code = "MR",
-                            IsActive = true,
-                            Name = "Marine Royale",
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Code = "GR",
-                            IsActive = true,
-                            Name = "Gendarmerie Royale",
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Code = "FT",
-                            IsActive = true,
-                            Name = "Forces Terrestres",
-                            SortOrder = 4
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Code = "AUT",
-                            IsActive = true,
-                            Name = "Autre",
-                            SortOrder = 99
-                        });
+                    b.ToTable("EmployingAuthority");
                 });
 
             modelBuilder.Entity("FRAProject.Models.MaintenanceComponent", b =>

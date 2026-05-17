@@ -83,7 +83,7 @@ namespace FRAProject.Data
 
         // ── Lookup tables — Form 5a / ImmatriculationDossier feature ─────
         public DbSet<Country> Countries { get; set; } = null!;
-        //public DbSet<EmployingAuthority> EmployingAuthorities { get; set; } = null!;      
+        public DbSet<EmployingAuthority> EmployingAuthorities { get; set; } = null!;
         //public DbSet<CdnDocType> CdnDocTypes { get; set; } = null!;
         //public DbSet<MissionRole> MissionRoles { get; set; } = null!;
         //public DbSet<ImmatriculationDocType> ImmatriculationDocTypes { get; set; } = null!;
@@ -122,8 +122,8 @@ namespace FRAProject.Data
             // ── NEW: Country — Fluent API + seed data ─────────────────────
             modelBuilder.ApplyConfiguration(new CountryConfiguration());
 
-            //// ── NEW: EmployingAuthority — Fluent API + seed data ──────────
-            //modelBuilder.ApplyConfiguration(new EmployingAuthorityConfiguration());
+            // ── NEW: EmployingAuthority — Fluent API + seed data ──────────
+            modelBuilder.ApplyConfiguration(new EmployingAuthorityConfiguration());
 
             //// ── NEW: AcCategory — Fluent API + seed data ──────────────────
             //modelBuilder.ApplyConfiguration(new AcCategoryConfiguration());

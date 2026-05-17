@@ -1,0 +1,105 @@
+@model FRAProject.Areas.Settings.ViewModels.EmployingAuthorityFormDto
+@{
+    ViewData["Title"] = $"Modifier — {Model.Code} · {Model.Name}";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+<div class="container mt-3">
+    <div class="card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="mb-0">
+                    Modifier l'autorité d'emploi
+                    <code class="text-warning ms-2" style="font-size:18px;">@Model.Code</code>
+                </h4>
+                <small class="text-muted">
+                    <a asp-action="Index" class="text-muted text-decoration-none">
+                        <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+                    </a>
+                </small>
+            </div>
+            @if (!Model.IsActive)
+            {
+                <span class="badge bg-secondary fs-6">Inactif</span>
+            }
+        </div>
+
+        <div class="card border-secondary">
+            <div class="card-header bg-dark border-secondary">
+                <h6 class="mb-0 text-muted">
+                    <i class="fas fa-shield-alt me-2"></i>Informations de l'autorité d'emploi
+                </h6>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+                    @await Html.PartialAsync("_Form", Model)
+                    <hr class="border-secondary mt-4" />
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            @if (Model.IsActive)
+                            {
+                                <button type="button"
+                                        class="btn btn-outline-danger btn-sm"
+                                        onclick="quickToggle(@Model.Id, false, '@Html.Raw(Model.Name.Replace("'", "\\'"))')">
+                                    <i class="fas fa-ban me-1"></i>Désactiver
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="btn btn-outline-success btn-sm"
+                                        onclick="quickToggle(@Model.Id, true, '@Html.Raw(Model.Name.Replace("'", "\\'"))')">
+                                    <i class="fas fa-check me-1"></i>Réactiver
+                                </button>
+                            }
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Enregistrer
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        const token = document.querySelector(
+            'input[name="__RequestVerificationToken"]')?.value;
+
+        function quickToggle(id, activate, name) {
+            const action = activate ? 'Activate' : 'Delete';
+            const msg    = activate
+                ? `Réactiver l'autorité « ${name} » ?`
+                : `Désactiver l'autorité « ${name} » ?`;
+
+            if (!confirm(msg)) return;
+
+            fetch(`/Settings/EmployingAuthority/${action}/${id}`, {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/Settings/EmployingAuthority';
+                } else {
+                    alert(data.message ?? 'Une erreur est survenue.');
+                }
+            })
+            .catch(() => alert('Erreur réseau.'));
+        }
+    </script>
+}

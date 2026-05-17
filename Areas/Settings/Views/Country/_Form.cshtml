@@ -1,0 +1,84 @@
+@model FRAProject.Areas.Settings.ViewModels.CountryFormDto
+
+@* ── Shared form fields — used by both Create.cshtml and Edit.cshtml ── *@
+@* Edit includes a hidden Id field; Create leaves Id = 0.               *@
+
+<div class="row g-3">
+
+    @* ── ISO Code ─────────────────────────────────────────────────── *@
+    <div class="col-md-3">
+        <div class="form-group">
+            <label asp-for="IsoCode" class="form-label text-muted small">
+                Code ISO <span class="text-danger">*</span>
+            </label>
+            <input asp-for="IsoCode"
+                   class="form-control bg-dark text-white border-secondary text-uppercase"
+                   placeholder="ex: MA"
+                   maxlength="2"
+                   style="letter-spacing:4px;font-family:monospace;font-size:16px;"
+                   oninput="this.value=this.value.toUpperCase()" />
+            <span asp-validation-for="IsoCode" class="text-danger small"></span>
+            <small class="text-muted">ISO 3166-1 alpha-2 — 2 lettres exactement</small>
+        </div>
+    </div>
+
+    @* ── Name ─────────────────────────────────────────────────────── *@
+    <div class="col-md-5">
+        <div class="form-group">
+            <label asp-for="Name" class="form-label text-muted small">
+                Nom du pays <span class="text-danger">*</span>
+            </label>
+            <input asp-for="Name"
+                   class="form-control bg-dark text-white border-secondary"
+                   placeholder="ex: Maroc, France…" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+    </div>
+
+    @* ── Continent ────────────────────────────────────────────────── *@
+    <div class="col-md-4">
+        <div class="form-group">
+            <label asp-for="Continent" class="form-label text-muted small">Continent</label>
+            <select asp-for="Continent"
+                    class="form-select bg-dark text-white border-secondary">
+                <option value="">— Sélectionner —</option>
+                <option value="Afrique"          @@(Model.Continent == "Afrique"          ? "selected" : "")>Afrique</option>
+                <option value="Amerique du Nord" @@(Model.Continent == "Amerique du Nord" ? "selected" : "")>Amérique du Nord</option>
+                <option value="Amerique du Sud" @@(Model.Continent= ="Amerique du Sud" ? "selected" : "" )>Amérique du Sud</option>
+                <option value="Asie" @@(Model.Continent= ="Asie" ? "selected" : "" )>Asie</option>
+                <option value="Europe" @@(Model.Continent= ="Europe" ? "selected" : "" )>Europe</option>
+                <option value="Europe / Asie" @@(Model.Continent= ="Europe / Asie" ? "selected" : "" )>Europe / Asie</option>
+                <option value="Moyen-Orient" @@(Model.Continent= ="Moyen-Orient" ? "selected" : "" )>Moyen-Orient</option>
+                <option value="Oceanie" @@(Model.Continent= ="Oceanie" ? "selected" : "" )>Océanie</option>
+            </select>
+            <span asp-validation-for="Continent" class="text-danger small"></span>
+        </div>
+    </div>
+
+    @* ── Sort Order ───────────────────────────────────────────────── *@
+    <div class="col-md-3">
+        <div class="form-group">
+            <label asp-for="SortOrder" class="form-label text-muted small">Ordre d'affichage</label>
+            <input asp-for="SortOrder"
+                   type="number"
+                   class="form-control bg-dark text-white border-secondary"
+                   min="0" max="9999" />
+            <span asp-validation-for="SortOrder" class="text-danger small"></span>
+            <small class="text-muted">1 = premier dans les listes déroulantes</small>
+        </div>
+    </div>
+
+    @* ── IsActive ─────────────────────────────────────────────────── *@
+    <div class="col-md-3 d-flex align-items-end pb-1">
+        <div class="form-check form-switch">
+            <input asp-for="IsActive"
+                   class="form-check-input"
+                   type="checkbox"
+                   role="switch" />
+            <label asp-for="IsActive" class="form-check-label text-muted" style="padding-left:20px;">
+                  Pays actif
+            </label>
+        </div>
+    </div>
+
+</div>

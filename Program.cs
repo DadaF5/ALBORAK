@@ -11,8 +11,6 @@ using FRAProject.Services;
 using FRAProject.Services.Medical;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Authorization;
-using Microsoft.CodeAnalysis.Options;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -49,6 +47,7 @@ builder.Services.AddSingleton<IAuthorizationHandler, SquadronOrBaseMaintenanceHa
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IAcMainGroupRepository, AcMainGroupRepository>();
+builder.Services.AddScoped<IValidationService, ValidationService>();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("SameSquadron", p => p.Requirements.Add(new SameSquadronRequirement()));

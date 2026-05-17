@@ -20,6 +20,8 @@
     <Folder Include="Areas\Settings\Views\AircraftVersions\" />
     <Folder Include="Areas\Settings\Views\AircraftManufacturers\" />
     <Folder Include="Areas\Settings\Views\Home\" />
+    <Folder Include="Areas\Settings\Views\Country\" />
+    <Folder Include="Areas\Settings\Views\EmployingAuthority\" />
     <Folder Include="Controllers\AircraftMaintenance\" />
     <Folder Include="Controllers\HR\" />
     <Folder Include="Controllers\Medical\" />

@@ -21,7 +21,7 @@ namespace FRAProject.Infrastructure.Interfaces
 
         // ── Lookup tables ─────────────────────────────────────────────────
         IGenericRepository<Country> Countries { get; }
-        //IGenericRepository<EmployingAuthority> EmployingAuthorities { get; }
+        IGenericRepository<EmployingAuthority> EmployingAuthorities { get; }
         IGenericRepository<AcCategory> AcCategories { get; }
         //IGenericRepository<CdnDocType> CdnDocTypes { get; }
         //IGenericRepository<MissionRole> MissionRoles { get; }

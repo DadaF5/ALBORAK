@@ -5,7 +5,7 @@
       Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 
 }
-
+<div class="container mt-3">
 <h2>@ViewData["Title"]</h2>
 
 <p>
@@ -32,7 +32,16 @@
             <td>@item.Code</td>
             <td>@item.Name</td>
             <td>@item.Description</td>
-            <td>@item.IsActive</td>
+                    <td>
+                        @if (item.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
             <td>@item.SortOrder</td>
             <td class="text-end">
                 <a asp-area="Settings" asp-controller="AircraftManufacturers" class="btn btn-info" asp-action="Details" asp-route-id="@item.Id">Details</a> |
@@ -43,3 +52,4 @@
 }
     </tbody>
 </table>
+</div>

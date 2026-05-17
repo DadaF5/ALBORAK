@@ -4,6 +4,7 @@
     Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
 
+<div class="container mt-3">
 <h2>@ViewData["Title"]</h2>
 
 <dl class="row">
@@ -25,3 +26,5 @@
 
 <a asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
 <a asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Index" class="btn btn-secondary">Back</a>
+
+</div>

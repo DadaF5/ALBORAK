@@ -1,103 +1,40 @@
-﻿@model FRAProject.DTOs.AcTypeCreateDto
-
+@* ════════════════════════════════════════════════════════════════
+   Save as: Areas/Settings/Views/AcTypes/Create.cshtml
+   ════════════════════════════════════════════════════════════════ *@
+@model FRAProject.Areas.Settings.ViewModels.AcTypeFormDto
 @{
-    ViewData["Title"] = "Create AcType";
+    ViewData["Title"] = "Nouveau type d'aéronef";
     Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
 
 <div class="container mt-3">
-    <div class="card">
-        <div class="card-header">
-            <h4>Create New AcType</h4>
-        </div>
-        <div class="card-body">
-            <form asp-action="Create" method="post">
-                @Html.AntiForgeryToken()
-
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                <div class="mb-3">
-                    <label asp-for="AcMainGroupId" class="form-label"></label>
-                    <select asp-for="AcMainGroupId" class="form-select" asp-items="ViewBag.AcMainGroups">
-                        <option value="">-- Select Main Group --</option>
-                    </select>
-                    <span asp-validation-for="AcMainGroupId" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="AircraftManufacturerId" class="form-label"></label>
-                    <select asp-for="AircraftManufacturerId" class="form-select" asp-items="ViewBag.Manufacturers"></select>
-                    <span asp-validation-for="AircraftManufacturerId" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Name" class="form-label"></label>
-                    <input asp-for="Name" class="form-control" />
-                    <span asp-validation-for="Name" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Code" class="form-label"></label>
-                    <input asp-for="Code" class="form-control" />
-                    <span asp-validation-for="Code" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Description" class="form-label"></label>
-                    <textarea asp-for="Description" class="form-control"></textarea>
-                    <span asp-validation-for="Description" class="text-danger"></span>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <label asp-for="SortOrder" class="form-label"></label>
-                        <input asp-for="SortOrder" class="form-control" />
-                        <span asp-validation-for="SortOrder" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label asp-for="MaxEngines" class="form-label"></label>
-                        <input asp-for="MaxEngines" class="form-control" />
-                        <span asp-validation-for="MaxEngines" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label asp-for="MaxPassengers" class="form-label"></label>
-                        <input asp-for="MaxPassengers" class="form-control" />
-                        <span asp-validation-for="MaxPassengers" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label asp-for="SeatCount" class="form-label"></label>
-                        <input asp-for="SeatCount" class="form-control" />
-                        <span asp-validation-for="SeatCount" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="MaxGrossweight" class="form-label"></label>
-                    <input asp-for="MaxGrossweight" class="form-control" />
-                    <span asp-validation-for="MaxGrossweight" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="IsActive" class="form-label"></label>
-                    <select asp-for="IsActive" class="form-select">
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                    </select>
-                    <span asp-validation-for="IsActive" class="text-danger"></span>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Save</button>
-                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-            </form>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-0">Nouveau type d'aéronef</h4>
+            <small class="text-muted">
+                <a asp-action="Index" class="text-muted text-decoration-none">
+                    <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+                </a>
+            </small>
         </div>
     </div>
+
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        @await Html.PartialAsync("_Form", Model)
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-1"></i>Annuler
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i>Enregistrer
+            </button>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }

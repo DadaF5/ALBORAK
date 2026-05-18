@@ -1,0 +1,256 @@
+@using FRAProject.Areas.Settings.ViewModels
+@model FRAProject.Areas.Settings.ViewModels.DossierIndexVm
+@{
+    ViewData["Title"] = "Dossiers d'immatriculation";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">Dossiers d'immatriculation</h4>
+        <small class="text-muted">Registre DAM — Form 5a, GUI-DPC-001</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Nouveau dossier
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@* ── Search ───────────────────────────────────────────────────── *@
+<div class="card border-secondary mb-3">
+    <div class="card-body py-2">
+        <form method="get" asp-action="Index">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">N° Dossier</label>
+                    <input name="searchNumber" value="@Model.SearchNumber"
+                           class="form-control form-control-sm bg-dark text-white border-secondary"
+                           placeholder="DAM-IMMAT-2026-…" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">Statut</label>
+                    <select name="searchStatus"
+                            class="form-select form-select-sm bg-dark text-white border-secondary">
+                        <option value="">Tous</option>
+                        @foreach (var s in DossierIndexVm.AllStatuses)
+                        {
+                            if (Model.SearchStatus == s)
+                            {
+                                <option value="@s" selected>@s</option>
+                            }
+                            else
+                            {
+                                <option value="@s">@s</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <input type="hidden" name="sortColumn"    value="@Model.SortColumn" />
+                    <input type="hidden" name="sortDirection" value="@Model.SortDirection" />
+                    <input type="hidden" name="pageSize"      value="@Model.PageSize" />
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-search me-1"></i>Rechercher
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary btn-sm"
+                       title="Réinitialiser">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ── Results info ─────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <small class="text-muted">
+        @if (Model.TotalCount == 0)
+        {
+            <span>Aucun dossier trouvé.</span>
+        }
+        else
+        {
+            <span>Affichage @Model.FirstItem–@Model.LastItem sur @Model.TotalCount dossier(s)</span>
+        }
+    </small>
+</div>
+
+@* ── Table ────────────────────────────────────────────────────── *@
+<div class="card border-secondary">
+    <div class="card-body p-0">
+        <table class="table table-dark table-hover table-sm mb-0">
+            <thead>
+                <tr>
+                    @{
+                        string SortLink(string col) => Url.Action("Index", new
+                        {
+                            searchNumber  = Model.SearchNumber,
+                            searchStatus  = Model.SearchStatus,
+                            sortColumn    = col,
+                            sortDirection = Model.SortDirectionFor(col),
+                            pageNumber    = 1,
+                            pageSize      = Model.PageSize
+                        })!;
+                    }
+                    <th style="width:180px">
+                        <a href="@SortLink("DossierNumber")"
+                           class="text-white text-decoration-none">
+                            N° Dossier
+                            <i class="fas @Model.SortIconFor("DossierNumber") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:120px">Immatriculation</th>
+                    <th>Autorité d'emploi</th>
+                    <th style="width:100px">N° OGMN</th>
+                    <th style="width:80px" class="text-center">Étape</th>
+                    <th style="width:110px" class="text-center">
+                        <a href="@SortLink("Status")"
+                           class="text-white text-decoration-none">
+                            Statut
+                            <i class="fas @Model.SortIconFor("Status") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:110px">
+                        <a href="@SortLink("CreatedAt")"
+                           class="text-white text-decoration-none">
+                            Créé le
+                            <i class="fas @Model.SortIconFor("CreatedAt") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:110px" class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Items.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="fas fa-folder-open me-2"></i>
+                            Aucun dossier trouvé.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>
+                                <code class="text-warning" style="font-size:11px;">
+                                    @(item.DossierNumber ?? "—")
+                                </code>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.FullImmatriculation))
+                                {
+                                    <span class="badge bg-warning text-dark fw-bold"
+                                          style="font-family:monospace;font-size:12px;">
+                                        @item.FullImmatriculation
+                                    </span>
+                                }
+                                else
+                                {
+                                    <small class="text-muted fst-italic">Non attribuée</small>
+                                }
+                            </td>
+                            <td>
+                                <small>@(item.AuthorityName ?? "—")</small>
+                            </td>
+                            <td>
+                                <small class="text-muted font-monospace">
+                                    @(item.OgmnNumber ?? "—")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <small class="text-muted">
+                                    @item.StepLabel
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @item.StatusBadgeClass">
+                                    @item.Status
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    @item.CreatedAt.ToString("dd/MM/yyyy")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                @if (item.IsEditable)
+                                {
+                                    <a asp-action="Step1"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-outline-warning btn-sm"
+                                       title="Continuer">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a asp-action="Step5"
+                                       asp-route-id="@item.Id"
+                                       class="btn btn-outline-secondary btn-sm"
+                                       title="Consulter">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@* ── Pager ────────────────────────────────────────────────────── *@
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination pagination-sm justify-content-center mb-0">
+            <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                <a class="page-link bg-dark border-secondary text-white"
+                   asp-action="Index"
+                   asp-route-searchNumber="@Model.SearchNumber"
+                   asp-route-searchStatus="@Model.SearchStatus"
+                   asp-route-sortColumn="@Model.SortColumn"
+                   asp-route-sortDirection="@Model.SortDirection"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-pageNumber="@(Model.PageNumber - 1)">&laquo;</a>
+            </li>
+            @for (int p = Math.Max(1, Model.PageNumber - 2);
+                      p <= Math.Min(Model.TotalPages, Model.PageNumber + 2); p++)
+            {
+                <li class="page-item @(p == Model.PageNumber ? "active" : "")">
+                    <a class="page-link bg-dark border-secondary text-white"
+                       asp-action="Index"
+                       asp-route-searchNumber="@Model.SearchNumber"
+                       asp-route-searchStatus="@Model.SearchStatus"
+                       asp-route-sortColumn="@Model.SortColumn"
+                       asp-route-sortDirection="@Model.SortDirection"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-pageNumber="@p">@p</a>
+                </li>
+            }
+            <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                <a class="page-link bg-dark border-secondary text-white"
+                   asp-action="Index"
+                   asp-route-searchNumber="@Model.SearchNumber"
+                   asp-route-searchStatus="@Model.SearchStatus"
+                   asp-route-sortColumn="@Model.SortColumn"
+                   asp-route-sortDirection="@Model.SortDirection"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-pageNumber="@(Model.PageNumber + 1)">&raquo;</a>
+            </li>
+        </ul>
+    </nav>
+}

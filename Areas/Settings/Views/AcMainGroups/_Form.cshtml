@@ -1,0 +1,109 @@
+@model FRAProject.Areas.Settings.ViewModels.AcMainGroupFormDto
+
+@* ── Shared form fields — used by both Create.cshtml and Edit.cshtml ── *@
+
+<div class="row g-3">
+
+    @* ── AcCategory DDL ───────────────────────────────────────────── *@
+    <div class="col-md-4">
+        <div class="form-group">
+            <label asp-for="AcCategoryId" class="form-label text-muted small">
+                Catégorie d'aéronef <span class="text-danger">*</span>
+            </label>
+            <select asp-for="AcCategoryId"
+                    asp-items="Model.AcCategoryOptions"
+                    class="form-select bg-dark text-white border-secondary">
+            </select>
+            <span asp-validation-for="AcCategoryId" class="text-danger small"></span>
+        </div>
+    </div>
+
+    @* ── Base DDL ─────────────────────────────────────────────────── *@
+    <div class="col-md-4">
+        <div class="form-group">
+            <label asp-for="BaseId" class="form-label text-muted small">
+                Base aérienne <span class="text-danger">*</span>
+            </label>
+            <select asp-for="BaseId"
+                    asp-items="Model.BaseOptions"
+                    class="form-select bg-dark text-white border-secondary">
+            </select>
+            <span asp-validation-for="BaseId" class="text-danger small"></span>
+        </div>
+    </div>
+
+    @* ── Code ─────────────────────────────────────────────────────── *@
+    <div class="col-md-4">
+        <div class="form-group">
+            <label asp-for="Code" class="form-label text-muted small">
+                Code <span class="text-danger">*</span>
+            </label>
+            <input asp-for="Code"
+                   class="form-control bg-dark text-white border-secondary text-uppercase"
+                   placeholder="ex: CHASSE-2B"
+                   maxlength="30"
+                   style="letter-spacing:1px;font-family:monospace;"
+                   oninput="this.value=this.value.toUpperCase()" />
+            <span asp-validation-for="Code" class="text-danger small"></span>
+        </div>
+    </div>
+
+    @* ── Name ─────────────────────────────────────────────────────── *@
+    <div class="col-md-6">
+        <div class="form-group">
+            <label asp-for="Name" class="form-label text-muted small">
+                Nom du groupe <span class="text-danger">*</span>
+            </label>
+            <input asp-for="Name"
+                   class="form-control bg-dark text-white border-secondary"
+                   placeholder="ex: Chasse 2ème BAFRA…"
+                   maxlength="50" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+    </div>
+
+    @* ── Description ──────────────────────────────────────────────── *@
+    <div class="col-md-6">
+        <div class="form-group">
+            <label asp-for="Description" class="form-label text-muted small">
+                Description
+            </label>
+            <input asp-for="Description"
+                   class="form-control bg-dark text-white border-secondary"
+                   placeholder="Remarques…"
+                   maxlength="50" />
+            <span asp-validation-for="Description" class="text-danger small"></span>
+        </div>
+    </div>
+
+    @* ── Sort Order ───────────────────────────────────────────────── *@
+    <div class="col-md-2">
+        <div class="form-group">
+            <label asp-for="SortOrder" class="form-label text-muted small">
+                Ordre d'affichage
+            </label>
+            <input asp-for="SortOrder"
+                   type="number"
+                   class="form-control bg-dark text-white border-secondary"
+                   min="0" max="255" />
+            <span asp-validation-for="SortOrder" class="text-danger small"></span>
+            <small class="text-muted">0–255</small>
+        </div>
+    </div>
+
+    @* ── IsActive ─────────────────────────────────────────────────── *@
+    <div class="col-md-4 d-flex align-items-end pb-1">
+        <div class="form-check form-switch">
+            <input asp-for="IsActive"
+                   class="form-check-input"
+                   type="checkbox"
+                   role="switch" />
+            <label asp-for="IsActive"
+                   class="form-check-label text-muted"
+                   style="padding-left:20px;">
+                Groupe actif
+            </label>
+        </div>
+    </div>
+
+</div>

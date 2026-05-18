@@ -48,6 +48,8 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IAcMainGroupRepository, AcMainGroupRepository>();
 builder.Services.AddScoped<IValidationService, ValidationService>();
+builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+builder.Services.AddScoped<IDossierService, DossierService>();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("SameSquadron", p => p.Requirements.Add(new SameSquadronRequirement()));

@@ -1,0 +1,183 @@
+@model FRAProject.Areas.Settings.ViewModels.AcTypeFormDto
+
+@* ── Shared form fields — used by both Create and Edit ─────────── *@
+
+@* ════════════════════════════════════════════════════════════════
+   SECTION 1 — Identification
+   ════════════════════════════════════════════════════════════════ *@
+<div class="card border-secondary mb-3">
+    <div class="card-header bg-dark border-secondary py-2">
+        <h6 class="mb-0 text-muted small text-white">
+            <i class="fas fa-id-card me-2 pr-2"></i>Identification
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            @* ── AcMainGroup DDL ──────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="AcMainGroupId" class="form-label text-muted small">
+                    Groupe principal <span class="text-danger">*</span>
+                </label>
+                <select asp-for="AcMainGroupId"
+                        asp-items="Model.AcMainGroupOptions"
+                        class="form-select bg-dark text-white border-secondary">
+                </select>
+                <span asp-validation-for="AcMainGroupId" class="text-danger small"></span>
+            </div>
+
+            @* ── Manufacturer DDL ─────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="AircraftManufacturerId" class="form-label text-muted small">
+                    Constructeur
+                </label>
+                <select asp-for="AircraftManufacturerId"
+                        asp-items="Model.ManufacturerOptions"
+                        class="form-select bg-dark text-white border-secondary">
+                </select>
+                <span asp-validation-for="AircraftManufacturerId"
+                      class="text-danger small"></span>
+            </div>
+
+            @* ── Code ─────────────────────────────────────────────── *@
+            <div class="col-md-2">
+                <label asp-for="Code" class="form-label text-muted small">
+                    Code <span class="text-danger">*</span>
+                </label>
+                <input asp-for="Code"
+                       class="form-control bg-dark text-white border-secondary text-uppercase"
+                       placeholder="ex: F16C"
+                       maxlength="30"
+                       style="letter-spacing:2px;font-family:monospace;"
+                       oninput="this.value=this.value.toUpperCase()" />
+                <span asp-validation-for="Code" class="text-danger small"></span>
+            </div>
+
+            @* ── SortOrder ────────────────────────────────────────── *@
+            <div class="col-md-1">
+                <label asp-for="SortOrder" class="form-label text-muted small">
+                    Ordre
+                </label>
+                <input asp-for="SortOrder"
+                       type="number"
+                       class="form-control bg-dark text-white border-secondary"
+                       min="0" max="255" />
+                <span asp-validation-for="SortOrder" class="text-danger small"></span>
+            </div>
+
+            @* ── IsActive ─────────────────────────────────────────── *@
+            <div class="col-md-1 d-flex align-items-end pb-1">
+                <div class="form-check form-switch">
+                    <input asp-for="IsActive"
+                           class="form-check-input"
+                           type="checkbox" role="switch" />
+                    <label asp-for="IsActive"
+                           class="form-check-label text-muted"
+                           style="padding-left:20px;">Actif</label>
+                </div>
+            </div>
+
+            @* ── Name ─────────────────────────────────────────────── *@
+            <div class="col-md-6">
+                <label asp-for="Name" class="form-label text-muted small">
+                    Nom du type <span class="text-danger">*</span>
+                </label>
+                <input asp-for="Name"
+                       class="form-control bg-dark text-white border-secondary"
+                       placeholder="ex: F-16C Fighting Falcon"
+                       maxlength="100" />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+
+            @* ── Description ──────────────────────────────────────── *@
+            <div class="col-md-6">
+                <label asp-for="Description" class="form-label text-muted small">
+                    Description
+                </label>
+                <input asp-for="Description"
+                       class="form-control bg-dark text-white border-secondary"
+                       placeholder="Variante, usage, remarques…"
+                       maxlength="250" />
+                <span asp-validation-for="Description" class="text-danger small"></span>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@* ════════════════════════════════════════════════════════════════
+   SECTION 2 — Spécifications techniques
+   Used by SquadronOps (sortie planning) and MRO2 (maintenance).
+   ════════════════════════════════════════════════════════════════ *@
+<div class="card border-secondary">
+    <div class="card-header bg-dark border-secondary py-2">
+        <h6 class="mb-0 text-muted small text-white">
+            <i class="fas fa-cogs me-2 pr-2"></i>
+            Spécifications techniques
+            <small class="text-muted ms-2 text-white" style="font-size:10px;">
+                utilisées par SquadronOps et MRO2
+            </small>
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            @* ── MaxGrossWeight ───────────────────────────────────── *@
+            <div class="col-md-3">
+                <label asp-for="MaxGrossWeight" class="form-label text-muted small">
+                    Masse maximale (kg) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <input asp-for="MaxGrossWeight"
+                           type="number"
+                           class="form-control bg-dark text-white border-secondary"
+                           min="0" max="999999" step="1"
+                           placeholder="0" />
+                    <span class="input-group-text bg-dark border-secondary text-muted">
+                        kg
+                    </span>
+                </div>
+                <span asp-validation-for="MaxGrossWeight" class="text-danger small"></span>
+            </div>
+
+            @* ── MaxEngines ───────────────────────────────────────── *@
+            <div class="col-md-3">
+                <label asp-for="MaxEngines" class="form-label text-muted small">
+                    Nombre de moteurs <span class="text-danger">*</span>
+                </label>
+                <input asp-for="MaxEngines"
+                       type="number"
+                       class="form-control bg-dark text-white border-secondary"
+                       min="1" max="8" />
+                <span asp-validation-for="MaxEngines" class="text-danger small"></span>
+            </div>
+
+            @* ── SeatCount ────────────────────────────────────────── *@
+            <div class="col-md-3">
+                <label asp-for="SeatCount" class="form-label text-muted small">
+                    Nombre de sièges <span class="text-danger">*</span>
+                </label>
+                <input asp-for="SeatCount"
+                       type="number"
+                       class="form-control bg-dark text-white border-secondary"
+                       min="1" max="999" />
+                <span asp-validation-for="SeatCount" class="text-danger small"></span>
+                <small class="text-muted">Équipage + passagers</small>
+            </div>
+
+            @* ── MaxPassengers ────────────────────────────────────── *@
+            <div class="col-md-3">
+                <label asp-for="MaxPassengers" class="form-label text-muted small">
+                    Capacité passagers <span class="text-danger">*</span>
+                </label>
+                <input asp-for="MaxPassengers"
+                       type="number"
+                       class="form-control bg-dark text-white border-secondary"
+                       min="0" max="999" />
+                <span asp-validation-for="MaxPassengers" class="text-danger small"></span>
+                <small class="text-muted">Hors équipage</small>
+            </div>
+
+        </div>
+    </div>
+</div>

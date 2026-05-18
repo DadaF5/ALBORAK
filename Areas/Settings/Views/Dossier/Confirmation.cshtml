@@ -1,0 +1,58 @@
+@{
+    ViewData["Title"] = "Dossier soumis";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="d-flex justify-content-center mt-5">
+    <div class="card border-success" style="max-width:560px;width:100%;">
+        <div class="card-body text-center p-5">
+
+            @* Success icon *@
+            <div class="mb-4">
+                <div style="width:64px;height:64px;border-radius:50%;
+                            border:2px solid #198754;
+                            display:flex;align-items:center;justify-content:center;
+                            margin:0 auto;background:rgba(25,135,84,0.1);">
+                    <i class="fas fa-check text-success" style="font-size:24px;"></i>
+                </div>
+            </div>
+
+            <h4 class="mb-1">Dossier transmis à la DAM</h4>
+
+            @if (ViewBag.DossierNumber != null)
+            {
+                <div class="my-3">
+                    <div class="text-muted small mb-1">N° de référence</div>
+                    <code class="text-warning"
+                          style="font-size:16px;letter-spacing:1px;">
+                        @ViewBag.DossierNumber
+                    </code>
+                </div>
+            }
+
+            @if (ViewBag.FullImmatriculation != null)
+            {
+                <div class="mb-3">
+                    <span class="badge bg-warning text-dark"
+                          style="font-family:monospace;font-size:18px;
+                                 font-weight:700;letter-spacing:4px;
+                                 padding:8px 16px;">
+                        @ViewBag.FullImmatriculation
+                    </span>
+                </div>
+            }
+
+            <p class="text-muted mb-4" style="font-size:13px;line-height:1.6;">
+                Votre demande d'immatriculation (Form 5a) a été transmise
+                à la Division Production et Certification de la DAM.
+                Un accusé de réception vous sera adressé.
+            </p>
+
+            <a asp-action="Index" class="btn btn-primary">
+                <i class="fas fa-list me-1"></i>
+                Retour aux dossiers
+            </a>
+
+        </div>
+    </div>
+</div>

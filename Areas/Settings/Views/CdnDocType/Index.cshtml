@@ -1,15 +1,14 @@
-@model FRAProject.Areas.Settings.ViewModels.AcTypeIndexVm
+@model FRAProject.Areas.Settings.ViewModels.CdnDocTypeIndexVm
 @{
-    ViewData["Title"] = "Types d'aéronefs";
+    ViewData["Title"] = "Types de documents de navigabilité";
     Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
 
-
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h4 class="mb-0">Types d'aéronefs</h4>
+        <h4 class="mb-0">Types de documents de navigabilité</h4>
         <small class="text-muted">
-            AcCategory → AcMainGroup → <strong>AcType</strong> → AircraftVersion
+            CdN / AdV / Autre — réf. Form 5a Step 3, Art. 9–10
         </small>
     </div>
     <a asp-action="Create" class="btn btn-primary btn-sm">
@@ -19,65 +18,44 @@
 
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <div class="alert alert-success alert-dismissible fade show">
         <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
 @if (TempData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <div class="alert alert-danger alert-dismissible fade show">
         <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
 
-@* ── Search ───────────────────────────────────────────────────── *@
 <div class="card card-dark border-secondary mb-3">
     <div class="card-body py-2">
         <form method="get" asp-action="Index">
             <div class="row g-2 align-items-end">
-
                 <div class="col-md-2">
-                    <label class="form-label small text-muted mb-1">Groupe</label>
-                    <select name="searchAcMainGroupId"
-                            asp-items="Model.AcMainGroupOptions"
-                            class="form-select form-select-sm bg-dark text-white border-secondary">
-                    </select>
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label small text-muted mb-1">Constructeur</label>
-                    <select name="searchManufacturerId"
-                            asp-items="Model.ManufacturerOptions"
-                            class="form-select form-select-sm bg-dark text-white border-secondary">
-                    </select>
-                </div>
-
-                <div class="col-md-1">
                     <label class="form-label small text-muted mb-1">Code</label>
                     <input name="searchCode" value="@Model.SearchCode"
                            class="form-control form-control-sm bg-dark text-white border-secondary"
-                           placeholder="F16C…" />
+                           placeholder="ex: CDN…" />
                 </div>
-
-                <div class="col-md-2">
+                <div class="col-md-5">
                     <label class="form-label small text-muted mb-1">Nom</label>
                     <input name="searchName" value="@Model.SearchName"
                            class="form-control form-control-sm bg-dark text-white border-secondary"
-                           placeholder="Rechercher…" />
+                           placeholder="Rechercher par nom…" />
                 </div>
-
                 <div class="col-md-2">
                     <label class="form-label small text-muted mb-1">Statut</label>
                     <select name="searchActive"
                             class="form-select form-select-sm bg-dark text-white border-secondary">
                         <option value="">Tous</option>
-                        <option value="true"  @@(Model.SearchActive == true  ? "selected" : "")>Actifs</option>
+                        <option value="true" @@(Model.SearchActive= =true ? "selected" : "" )>Actifs</option>
                         <option value="false" @@(Model.SearchActive == false ? "selected" : "")>Inactifs</option>
                     </select>
                 </div>
-
                 <div class="col-md-3 d-flex gap-2">
                     <input type="hidden" name="sortColumn"    value="@Model.SortColumn" />
                     <input type="hidden" name="sortDirection" value="@Model.SortDirection" />
@@ -85,19 +63,16 @@
                     <button type="submit" class="btn btn-primary btn-sm w-100">
                         <i class="fas fa-search me-1"></i>Rechercher
                     </button>
-                    <a asp-action="Index"
-                       class="btn btn-outline-secondary btn-sm"
+                    <a asp-action="Index" class="btn btn-outline-secondary btn-sm"
                        title="Réinitialiser">
                         <i class="fas fa-times"></i>
                     </a>
                 </div>
-
             </div>
         </form>
     </div>
 </div>
 
-@* ── Results info + page size ─────────────────────────────────── *@
 <div class="d-flex justify-content-between align-items-center mb-2">
     <small class="text-muted">
         @if (Model.TotalCount == 0)
@@ -106,10 +81,7 @@
         }
         else
         {
-            <span>
-                Affichage @Model.FirstItem–@Model.LastItem
-                sur @Model.TotalCount résultat(s)
-            </span>
+            <span>Affichage @Model.FirstItem–@Model.LastItem sur @Model.TotalCount résultat(s)</span>
         }
     </small>
     <div class="d-flex align-items-center gap-1">
@@ -117,8 +89,6 @@
         @foreach (var size in new[] { 10, 25, 50 })
         {
             <a asp-action="Index"
-               asp-route-searchAcMainGroupId="@Model.SearchAcMainGroupId"
-               asp-route-searchManufacturerId="@Model.SearchManufacturerId"
                asp-route-searchCode="@Model.SearchCode"
                asp-route-searchName="@Model.SearchName"
                asp-route-searchActive="@Model.SearchActive"
@@ -133,65 +103,53 @@
     </div>
 </div>
 
-@* ── Table ────────────────────────────────────────────────────── *@
 <div class="card border-secondary">
     <div class="card-body p-0">
-        <table class="table table-hover table-sm mb-0">
-            <thead style="background-color: darkolivegreen;">
+        <table class="table table-dark table-hover table-sm mb-0">
+            <thead>
                 <tr>
                     @{
                         string SortLink(string col) => Url.Action("Index", new
                         {
-                            searchAcMainGroupId  = Model.SearchAcMainGroupId,
-                            searchManufacturerId = Model.SearchManufacturerId,
-                            searchCode           = Model.SearchCode,
-                            searchName           = Model.SearchName,
-                            searchActive         = Model.SearchActive,
-                            sortColumn           = col,
-                            sortDirection        = Model.SortDirectionFor(col),
-                            pageNumber           = 1,
-                            pageSize             = Model.PageSize
+                            searchCode    = Model.SearchCode,
+                            searchName    = Model.SearchName,
+                            searchActive  = Model.SearchActive,
+                            sortColumn    = col,
+                            sortDirection = Model.SortDirectionFor(col),
+                            pageNumber    = 1,
+                            pageSize      = Model.PageSize
                         })!;
                     }
-                    <th style="width:130px">
-                        <a href="@SortLink("AcMainGroup")"
-                           class="text-white text-decoration-none">
-                            Groupe <i class="fas @Model.SortIconFor("AcMainGroup") ms-1"></i>
-                        </a>
-                    </th>
                     <th style="width:90px">
-                        <a href="@SortLink("Code")"
-                           class="text-white text-decoration-none">
+                        <a href="@SortLink("Code")" class="text-white text-decoration-none">
                             Code <i class="fas @Model.SortIconFor("Code") ms-1"></i>
                         </a>
                     </th>
-                    <th style="width:120px">
-                        <a href="@SortLink("Name")"
-                           class="text-white text-decoration-none">
-                            Nom <i class="fas @Model.SortIconFor("Name") ms-1"></i>
+                    <th>
+                        <a href="@SortLink("Name")" class="text-white text-decoration-none">
+                            Nom du document <i class="fas @Model.SortIconFor("Name") ms-1"></i>
                         </a>
                     </th>
-                    <th style="width:120px" class="text-white text-decoration-none">Constructeur</th>
-                    <th style="width:80px" class="text-center text-white">Masse (kg)</th>
-                    <th style="width:60px" class="text-center text-white">Mot.</th>
-                    <th style="width:60px" class="text-center text-white">Sièges</th>
-                    <th style="width:70px" class="text-center text-white">Versions</th>
-                    <th style="width:70px" class="text-center">
-                        <a href="@SortLink("IsActive")"
-                           class="text-white text-decoration-none">
+                    <th>Description</th>
+                    <th style="width:80px" class="text-center">
+                        <a href="@SortLink("SortOrder")" class="text-white text-decoration-none">
+                            Ordre <i class="fas @Model.SortIconFor("SortOrder") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:90px" class="text-center">
+                        <a href="@SortLink("IsActive")" class="text-white text-decoration-none">
                             Statut <i class="fas @Model.SortIconFor("IsActive") ms-1"></i>
                         </a>
                     </th>
-                    <th style="width:100px" class="text-center text-white">Actions</th>
+                    <th style="width:100px" class="text-center">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @if (!Model.Items.Any())
                 {
                     <tr>
-                        <td colspan="10" class="text-center text-muted py-4">
-                            <i class="fas fa-fighter-jet me-2"></i>
-                            Aucun type trouvé.
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="fas fa-file-alt me-2"></i>Aucun type trouvé.
                         </td>
                     </tr>
                 }
@@ -199,54 +157,12 @@
                 {
                     @foreach (var item in Model.Items)
                     {
-                        <tr id="row-@item.Id"
-                            class="@(!item.IsActive ? "opacity-50" : "")">
-                            <td>
-                                <small class="text-muted">
-                                    @(item.AcMainGroupName ?? "—")
-                                </small>
-                            </td>
-                            <td>
-                                <code class="text-warning">@item.Code</code>
-                            </td>
-                            <td class="fw-500">
-                                @item.Name
-                                @if (!string.IsNullOrEmpty(item.Description))
-                                {
-                                    <br />
-                                    <small class="text-muted">@item.Description</small>
-                                }
-                            </td>
-                            <td>
-                                <small class="text-muted">
-                                    @(item.ManufacturerName ?? "—")
-                                </small>
-                            </td>
+                        <tr id="row-@item.Id" class="@(!item.IsActive ? "opacity-50" : "")">
+                            <td><code class="text-warning">@item.Code</code></td>
+                            <td class="fw-500">@item.Name</td>
+                            <td><small class="text-muted">@(item.Description ?? "—")</small></td>
                             <td class="text-center">
-                                <small class="text-muted font-monospace">
-                                    @item.MaxGrossWeight.ToString("N0")
-                                </small>
-                            </td>
-                            <td class="text-center">
-                                <small class="text-muted">@item.MaxEngines</small>
-                            </td>
-                            <td class="text-center">
-                                <small class="text-muted">@item.SeatCount</small>
-                            </td>
-                            <td class="text-center">
-                                @if (item.VersionCount > 0)
-                                {
-                                    <a asp-controller="AircraftVersions"
-                                       asp-action="Index"
-                                       asp-route-searchAcTypeId="@item.Id"
-                                       class="badge bg-primary text-decoration-none">
-                                        @item.VersionCount
-                                    </a>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">0</span>
-                                }
+                                <small class="text-muted">@item.SortOrder</small>
                             </td>
                             <td class="text-center">
                                 @if (item.IsActive)
@@ -259,10 +175,8 @@
                                 }
                             </td>
                             <td class="text-center">
-                                <a asp-action="Edit"
-                                   asp-route-id="@item.Id"
-                                   class="btn btn-outline-warning btn-sm"
-                                   title="Modifier">
+                                <a asp-action="Edit" asp-route-id="@item.Id"
+                                   class="btn btn-outline-warning btn-sm" title="Modifier">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 @if (item.IsActive)
@@ -292,16 +206,13 @@
     </div>
 </div>
 
-@* ── Pager ────────────────────────────────────────────────────── *@
 @if (Model.TotalPages > 1)
 {
-    <nav class="mt-3" aria-label="Pagination">
+    <nav class="mt-3">
         <ul class="pagination pagination-sm justify-content-center mb-0">
             <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
                 <a class="page-link bg-dark border-secondary text-white"
                    asp-action="Index"
-                   asp-route-searchAcMainGroupId="@Model.SearchAcMainGroupId"
-                   asp-route-searchManufacturerId="@Model.SearchManufacturerId"
                    asp-route-searchCode="@Model.SearchCode"
                    asp-route-searchName="@Model.SearchName"
                    asp-route-searchActive="@Model.SearchActive"
@@ -316,8 +227,6 @@
                 <li class="page-item @(p == Model.PageNumber ? "active" : "")">
                     <a class="page-link bg-dark border-secondary text-white"
                        asp-action="Index"
-                       asp-route-searchAcMainGroupId="@Model.SearchAcMainGroupId"
-                       asp-route-searchManufacturerId="@Model.SearchManufacturerId"
                        asp-route-searchCode="@Model.SearchCode"
                        asp-route-searchName="@Model.SearchName"
                        asp-route-searchActive="@Model.SearchActive"
@@ -330,8 +239,6 @@
             <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
                 <a class="page-link bg-dark border-secondary text-white"
                    asp-action="Index"
-                   asp-route-searchAcMainGroupId="@Model.SearchAcMainGroupId"
-                   asp-route-searchManufacturerId="@Model.SearchManufacturerId"
                    asp-route-searchCode="@Model.SearchCode"
                    asp-route-searchName="@Model.SearchName"
                    asp-route-searchActive="@Model.SearchActive"
@@ -355,11 +262,11 @@
         const action = activate ? 'Activate' : 'Delete';
         const msg    = activate
             ? `Réactiver le type « ${name} » ?`
-            : `Désactiver le type « ${name} » ?\n\nAttention : les versions associées seront également affectées.`;
+            : `Désactiver le type « ${name} » ?`;
 
         if (!confirm(msg)) return;
 
-        fetch(`/Settings/AcTypes/${action}/${id}`, {
+        fetch(`/Settings/CdnDocType/${action}/${id}`, {
             method: 'POST',
             headers: {
                 'RequestVerificationToken': token,

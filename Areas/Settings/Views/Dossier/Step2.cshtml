@@ -1,0 +1,352 @@
+@model FRAProject.Areas.Settings.ViewModels.DossierStep2Dto
+@{
+    ViewData["Title"] = "Immatriculation — Étape 2";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">Identification de l'aéronef</h4>
+        <small class="text-muted">
+            <a asp-action="Index" class="text-muted text-decoration-none">
+                <i class="fas fa-arrow-left me-1"></i>Retour aux dossiers
+            </a>
+        </small>
+    </div>
+    <span class="badge bg-warning text-dark">Form 5a — Étape 2/5</span>
+</div>
+
+@await Html.PartialAsync("_WizardProgress",
+    (FRAProject.Areas.Settings.ViewModels.WizardProgressVm)ViewBag.Progress)
+
+<form asp-action="SaveStep2" asp-route-id="@Model.DossierId" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="DossierId" />
+
+    @* ── SECTION 1: Catégorie & Type ──────────────────────────────── *@
+    <div class="card border-secondary mb-3">
+        <div class="card-header bg-dark border-secondary">
+            <h6 class="mb-0 text-warning">
+                <i class="fas fa-plane me-2"></i>
+                Section 1 — Catégorie & Type d'aéronef
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+
+                @* Category radio cards *@
+                <div class="col-12">
+                    <label class="form-label text-muted small">
+                        Catégorie d'aéronef <span class="text-danger">*</span>
+                    </label>
+                    <div class="row g-2" id="categoryCards">
+                        @foreach (var cat in Model.CategoryOptions.Where(c => c.Value != ""))
+                        {
+                            var isSelected = cat.Value == Model.AircraftCategoryId?.ToString();
+                            <div class="col-md-3">
+                                <label class="d-block p-3 rounded border cursor-pointer
+                                              @(isSelected ? "border-warning bg-warning bg-opacity-10" : "border-secondary")"
+                                       style="cursor:pointer;"
+                                       id="cat-label-@cat.Value">
+                                    <input type="radio"
+                                           name="AircraftCategoryId"
+                                           value="@cat.Value"
+                                           class="d-none category-radio"
+                                           @(isSelected ? "checked" : "") />
+                                    <div class="text-center">
+                                        <div style="font-size:24px;">
+                                            @(cat.Text.Contains("AVION") ? "✈"
+                                              : cat.Text.Contains("HELI") ? "🚁"
+                                              : "◈")
+                                        </div>
+                                        <div class="@(isSelected ? "text-warning fw-600" : "text-muted")"
+                                             style="font-size:12px;margin-top:4px;">
+                                            @cat.Text.Split('—').LastOrDefault()?.Trim()
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        }
+                    </div>
+                    <span asp-validation-for="AircraftCategoryId"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="AcTypeId" class="form-label text-muted small">
+                        Type d'aéronef <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="AcTypeId"
+                            asp-items="Model.AcTypeOptions"
+                            class="form-select bg-dark text-white border-secondary"
+                            id="acTypeSelect">
+                    </select>
+                    <span asp-validation-for="AcTypeId"
+                          class="text-danger small"></span>
+                    <small class="text-muted">Chargé automatiquement selon la catégorie</small>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="AircraftVersionId"
+                           class="form-label text-muted small">
+                        Version / Variante
+                    </label>
+                    <select asp-for="AircraftVersionId"
+                            asp-items="Model.VersionOptions"
+                            class="form-select bg-dark text-white border-secondary"
+                            id="versionSelect">
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="AircraftSerie"
+                           class="form-label text-muted small">
+                        Série dans le type
+                    </label>
+                    <input asp-for="AircraftSerie"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="ex: Block 52+, MR..." />
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="MissionRoleId"
+                           class="form-label text-muted small">
+                        Rôle et mission
+                    </label>
+                    <select asp-for="MissionRoleId"
+                            asp-items="Model.MissionRoleOptions"
+                            class="form-select bg-dark text-white border-secondary"
+                            id="missionRoleSelect">
+                    </select>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    @* ── SECTION 2: Constructeur & Identification ─────────────────── *@
+    <div class="card border-secondary mb-3">
+        <div class="card-header bg-dark border-secondary">
+            <h6 class="mb-0 text-warning">
+                <i class="fas fa-industry me-2"></i>
+                Section 2 — Constructeur & Identification
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label asp-for="ManufacturerId"
+                           class="form-label text-muted small">
+                        Constructeur <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="ManufacturerId"
+                            asp-items="Model.ManufacturerOptions"
+                            class="form-select bg-dark text-white border-secondary">
+                    </select>
+                    <span asp-validation-for="ManufacturerId"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="SerialNumber"
+                           class="form-label text-muted small">
+                        N° de série constructeur <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="SerialNumber"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="Cf. plaque d'identification" />
+                    <span asp-validation-for="SerialNumber"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label asp-for="ManufactureDate"
+                           class="form-label text-muted small">
+                        Date fabrication <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="ManufactureDate"
+                           type="date"
+                           class="form-control bg-dark text-white border-secondary" />
+                    <span asp-validation-for="ManufactureDate"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label asp-for="ServiceEntryDate"
+                           class="form-label text-muted small">
+                        Date entrée en service
+                    </label>
+                    <input asp-for="ServiceEntryDate"
+                           type="date"
+                           class="form-control bg-dark text-white border-secondary" />
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="PortAttacheId"
+                           class="form-label text-muted small">
+                        Port d'attache <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="PortAttacheId"
+                            asp-items="Model.PortAttacheOptions"
+                            class="form-select bg-dark text-white border-secondary">
+                    </select>
+                    <span asp-validation-for="PortAttacheId"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="OriginCountryId"
+                           class="form-label text-muted small">
+                        Pays d'origine
+                    </label>
+                    <select asp-for="OriginCountryId"
+                            asp-items="Model.CountryOptions"
+                            class="form-select bg-dark text-white border-secondary">
+                    </select>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    @* ── SECTION 3: Marque d'immatriculation ─────────────────────── *@
+    <div class="card border-secondary mb-3">
+        <div class="card-header bg-dark border-secondary">
+            <h6 class="mb-0 text-warning">
+                <i class="fas fa-tag me-2"></i>
+                Section 3 — Marque d'immatriculation
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-md-4">
+                    <label asp-for="ImmatriculationSuffix"
+                           class="form-label text-muted small">
+                        Suffixe d'immatriculation (3 lettres)
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-warning fw-bold"
+                              style="font-size:18px;letter-spacing:2px;">CN-</span>
+                        <input asp-for="ImmatriculationSuffix"
+                               class="form-control bg-dark text-white border-secondary text-uppercase"
+                               placeholder="XXX"
+                               maxlength="3"
+                               style="font-family:monospace;font-size:18px;
+                                      letter-spacing:4px;font-weight:700;"
+                               oninput="this.value=this.value.toUpperCase()" />
+                    </div>
+                    <span asp-validation-for="ImmatriculationSuffix"
+                          class="text-danger small"></span>
+                    <small class="text-muted">
+                        Séries attribuées par la DAM — préfixe CN fixe
+                    </small>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="p-3 rounded border border-secondary text-center">
+                        <div class="text-muted small mb-1">Marque complète</div>
+                        <div id="fullImmat"
+                             style="font-family:monospace;font-size:22px;
+                                    font-weight:700;color:#ffc107;
+                                    letter-spacing:4px;">
+                            CN-@(Model.ImmatriculationSuffix?.ToUpper() ?? "—")
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    @* ── Navigation ───────────────────────────────────────────────── *@
+    <div class="d-flex justify-content-between">
+        <a asp-action="Step1"
+           asp-route-id="@Model.DossierId"
+           class="btn btn-outline-secondary">
+            ← Précédent
+        </a>
+        <button type="submit" class="btn btn-primary">
+            Suivant : Navigabilité →
+        </button>
+    </div>
+
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+    const token = document.querySelector(
+        'input[name="__RequestVerificationToken"]')?.value;
+
+    // ── Category radio card selection ─────────────────────────────
+    document.querySelectorAll('.category-radio').forEach(radio => {
+        radio.addEventListener('change', function () {
+            // Reset all card styles
+            document.querySelectorAll('[id^="cat-label-"]').forEach(label => {
+                label.classList.remove('border-warning', 'bg-warning', 'bg-opacity-10');
+                label.classList.add('border-secondary');
+                label.querySelector('div:last-child')?.classList
+                    .replace('text-warning', 'text-muted');
+            });
+
+            // Highlight selected
+            const lbl = document.getElementById('cat-label-' + this.value);
+            if (lbl) {
+                lbl.classList.add('border-warning', 'bg-warning', 'bg-opacity-10');
+                lbl.classList.remove('border-secondary');
+            }
+
+            // Cascade — reload AcTypes and MissionRoles
+            loadAcTypes(this.value);
+            loadMissionRoles(this.value);
+        });
+    });
+
+    // ── AcType cascade ────────────────────────────────────────────
+    function loadAcTypes(categoryId) {
+        fetch(`/Settings/Dossier/GetAcTypes?categoryId=${categoryId}`)
+            .then(r => r.json())
+            .then(data => repopulateSelect('acTypeSelect', data));
+    }
+
+    // ── Version cascade ───────────────────────────────────────────
+    document.getElementById('acTypeSelect')?.addEventListener('change', function () {
+        fetch(`/Settings/Dossier/GetVersions?acTypeId=${this.value}`)
+            .then(r => r.json())
+            .then(data => repopulateSelect('versionSelect', data));
+    });
+
+    // ── MissionRole cascade ───────────────────────────────────────
+    function loadMissionRoles(categoryId) {
+        fetch(`/Settings/Dossier/GetMissionRoles?categoryId=${categoryId}`)
+            .then(r => r.json())
+            .then(data => repopulateSelect('missionRoleSelect', data));
+    }
+
+    // ── Live immat preview ────────────────────────────────────────
+    document.querySelector('[name="ImmatriculationSuffix"]')
+        ?.addEventListener('input', function () {
+            const display = document.getElementById('fullImmat');
+            if (display)
+                display.textContent = 'CN-' + (this.value.toUpperCase() || '—');
+        });
+
+    // ── DDL repopulate helper ─────────────────────────────────────
+    function repopulateSelect(selectId, items) {
+        const sel = document.getElementById(selectId);
+        if (!sel) return;
+        const current = sel.value;
+        sel.innerHTML = '<option value="">— Sélectionner —</option>';
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.value;
+            opt.text  = item.text;
+            if (String(item.value) === current) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    }
+    </script>
+}

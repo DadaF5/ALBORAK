@@ -21,10 +21,15 @@
     <Folder Include="Areas\Settings\Views\Home\" />
     <Folder Include="Areas\Settings\Views\Country\" />
     <Folder Include="Areas\Settings\Views\EmployingAuthority\" />
+    <Folder Include="Areas\Settings\Views\CdnDocType\" />
+    <Folder Include="Areas\Settings\Views\MissionRole\" />
+    <Folder Include="Areas\Settings\Views\ImmatriculationDocType\" />
+    <Folder Include="Areas\Settings\Views\Dossier\" />
     <Folder Include="Controllers\AircraftMaintenance\" />
     <Folder Include="Controllers\HR\" />
     <Folder Include="Controllers\Medical\" />
     <Folder Include="Controllers\SquadronOps\" />
+    <Folder Include="Uploads\Immatriculation\" />
     <Folder Include="Views\Planning\SortieCrew\" />
     <Folder Include="Views\Planning\Sortie\" />
     <Folder Include="Views\Planning\ODV\" />

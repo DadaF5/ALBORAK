@@ -1,118 +1,311 @@
+@model FRAProject.Areas.Settings.ViewModels.SettingsDashboardVm
 @{
-    ViewData["Title"] = "Paramètres";
+    ViewData["Title"] = "Paramètres — Tableau de bord";
     Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
 
+@* ══════════════════════════════════════════════════════════════════
+   SETTINGS DASHBOARD — Lookup tables health overview
+   ══════════════════════════════════════════════════════════════════ *@
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">⚙️ Paramètres du Système</h3>
-                </div>
-                <div class="card-body">
-                    <!-- Navigation Tabs -->
-                    <div class="btn-group mb-3" role="group">
-                        <button type="button" class="btn btn-outline-primary settings-tab active" data-controller="Base">
-                            🏢 Bases Aériennes
-                        </button>
-                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="AircraftManufacturers">
-                            🏭 Constructeurs
-                        </button>
-                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="AircraftVersions">
-                            ✈️ Versions d'Aéronefs
-                        </button>
-                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="AcTypes">
-                            🛩️ Types d'Aéronefs
-                        </button>
-                        <button type="button" class="btn btn-outline-primary settings-tab" data-controller="Positions">
-                            📍 Positions
-                        </button>
-                    </div>
+<style>
+    /* ── Dashboard-specific styles ─────────────────────────────── */
+    .db-header {
+        border-bottom: 1px solid #1e2230;
+        padding-bottom: 16px;
+        margin-bottom: 28px;
+    }
+    .db-title {
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-size: 11px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 4px;
+    }
+    .db-heading {
+        font-size: 22px;
+        font-weight: 700;
+        color: #e2e8f0;
+        margin: 0;
+    }
+    .db-timestamp {
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-size: 10px;
+        color: #475569;
+        margin-top: 4px;
+    }
 
-                    <hr>
+    /* ── Grand total strip ──────────────────────────────────────── */
+    .totals-strip {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 28px;
+    }
+    .total-cell {
+        background: #111318;
+        border: 1px solid #1e2230;
+        border-radius: 8px;
+        padding: 14px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .total-cell.accent { border-color: #c9a84c; }
+    .total-n {
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-size: 28px;
+        font-weight: 700;
+        color: #c9a84c;
+        line-height: 1;
+    }
+    .total-l {
+        font-size: 10px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
 
-                    <!-- Dynamic Content Container -->
-                    <div id="settingsContent">
-                        <div class="text-center text-muted py-5">
-                            <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
-                            <p>Chargement...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    /* ── Section header ─────────────────────────────────────────── */
+    .section-hdr {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        margin-top: 8px;
+    }
+    .section-label {
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #475569;
+    }
+    .section-line {
+        flex: 1;
+        height: 1px;
+        background: #1e2230;
+    }
+
+    /* ── Lookup card ────────────────────────────────────────────── */
+    .lookup-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .lookup-card {
+        background: #111318;
+        border: 1px solid #1e2230;
+        border-radius: 8px;
+        padding: 14px 16px;
+        text-decoration: none;
+        display: block;
+        transition: border-color .15s, background .15s;
+        position: relative;
+        overflow: hidden;
+    }
+    .lookup-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0;
+        width: 3px; height: 100%;
+        background: #1e2230;
+        transition: background .15s;
+    }
+    .lookup-card:hover {
+        border-color: #c9a84c;
+        background: rgba(201,168,76,.04);
+        text-decoration: none;
+    }
+    .lookup-card:hover::before { background: #c9a84c; }
+
+    .lc-icon {
+        font-size: 11px;
+        color: #475569;
+        margin-bottom: 8px;
+    }
+    .lc-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #cbd5e1;
+        margin-bottom: 10px;
+        line-height: 1.3;
+    }
+    .lc-counts {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 8px;
+    }
+    .lc-total {
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-size: 22px;
+        font-weight: 700;
+        color: #e2e8f0;
+        line-height: 1;
+    }
+    .lc-active {
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-size: 10px;
+        color: #64748b;
+        text-align: right;
+    }
+    .lc-active span { display: block; }
+    .lc-active .act { color: #22c55e; }
+    .lc-active .ina { color: #ef4444; }
+
+    /* ── Health bar ─────────────────────────────────────────────── */
+    .health-bar-bg {
+        height: 3px;
+        background: #1e2230;
+        border-radius: 2px;
+        overflow: hidden;
+    }
+    .health-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width .4s ease;
+    }
+    .hb-success { background: #22c55e; }
+    .hb-warning { background: #f59e0b; }
+    .hb-orange  { background: #f97316; }
+    .hb-danger  { background: #ef4444; }
+
+    /* ── Empty state ────────────────────────────────────────────── */
+    .lc-empty {
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-size: 10px;
+        color: #334155;
+        margin-top: 2px;
+    }
+
+    /* ── Action link ────────────────────────────────────────────── */
+    .lc-action {
+        position: absolute;
+        top: 12px; right: 12px;
+        font-size: 9px;
+        color: #334155;
+        transition: color .15s;
+    }
+    .lookup-card:hover .lc-action { color: #c9a84c; }
+</style>
+
+@* ── Header ────────────────────────────────────────────────────── *@
+<div class="db-header">
+    <div class="db-title">2BAFRA · GMAO FRA · Settings</div>
+    <h1 class="db-heading">Tableau de bord — Paramètres</h1>
+    <div class="db-timestamp" id="ts">—</div>
+</div>
+
+@* ── Grand totals strip ───────────────────────────────────────── *@
+<div class="totals-strip">
+    <div class="total-cell accent">
+        <div class="total-n">@Model.TotalTables</div>
+        <div class="total-l">Tables lookup</div>
+    </div>
+    <div class="total-cell">
+        <div class="total-n">@Model.TotalRecords</div>
+        <div class="total-l">Enregistrements total</div>
+    </div>
+    <div class="total-cell">
+        <div class="total-n" style="color:#22c55e;">@Model.TotalActive</div>
+        <div class="total-l">Actifs</div>
+    </div>
+    <div class="total-cell">
+        <div class="total-n" style="color:#ef4444;">@Model.TotalInactive</div>
+        <div class="total-l">Inactifs</div>
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        $(document).ready(function() {
-            // Auto-load first tab
-            loadList('Base');
+@* ── SECTION: Données de base ─────────────────────────────────── *@
+<div class="section-hdr">
+    <span class="section-label">Données de base</span>
+    <div class="section-line"></div>
+    <span class="section-label">@Model.DonneesDeBase.Count tables</span>
+</div>
 
-            // Handle tab clicks
-            $('.settings-tab').on('click', function() {
-                const controller = $(this).data('controller');
+@* <div class="lookup-grid">
+    @foreach (var t in Model.DonneesDeBase)
+    {
+        @LookupCard(t)
+    }
+</div> *@
 
-                // Update active tab
-                $('.settings-tab').removeClass('active');
-                $(this).addClass('active');
+@* ── SECTION: Référentiels ────────────────────────────────────── *@
+@* <div class="section-hdr">
+    <span class="section-label">Référentiels</span>
+    <div class="section-line"></div>
+    <span class="section-label">@Model.Referentiels.Count tables</span>
+</div>
 
-                // Load list
-                loadList(controller);
+<div class="lookup-grid">
+    @foreach (var t in Model.Referentiels)
+    {
+        @LookupCard(t)
+    }
+</div> *@
+
+@* ── SECTION: Immatriculation ─────────────────────────────────── *@
+<div class="section-hdr">
+    <span class="section-label">Immatriculation</span>
+    <div class="section-line"></div>
+    <span class="section-label">@Model.Immatriculation.Count tables</span>
+</div>
+
+@* <div class="lookup-grid">
+    @foreach (var t in Model.Immatriculation)
+    {
+        @LookupCard(t)
+    }
+</div> *@
+
+@* ── Local helper — card markup ───────────────────────────────── *@
+@* @{
+    Func<LookupTableStatVm, IHtmlContent> LookupCard = (t) =>
+    {
+        var barClass = $"hb-{t.HealthClass}";
+        return new HtmlString($@"
+<a href=""/Settings/{t.Controller}"" class=""lookup-card"">
+    <i class=""fas {t.Icon} lc-icon""></i>
+    <i class=""fas fa-arrow-right lc-action""></i>
+    <div class=""lc-title"">{t.Title}</div>
+    <div class=""lc-counts"">
+        <div class=""lc-total"">{t.TotalCount}</div>
+        {(t.TotalCount == 0
+            ? @"<div class=""lc-empty"">— vide —</div>"
+            : $@"<div class=""lc-active"">
+                    <span class=""act"">▲ {t.ActiveCount} actifs</span>
+                    {(t.InactiveCount > 0
+                        ? $@"<span class=""ina"">▼ {t.InactiveCount} inactifs</span>"
+                        : "")}
+                 </div>")}
+    </div>
+    <div class=""health-bar-bg"">
+        <div class=""health-bar-fill {barClass}""
+             style=""width:{t.ActivePercent}%""></div>
+    </div>
+</a>");
+    };
+} *@
+
+@* @section Scripts {
+<script>
+    // Live timestamp
+    function updateTs() {
+        const now = new Date();
+        document.getElementById('ts').textContent =
+            'Données au ' +
+            now.toLocaleDateString('fr-FR', {
+                weekday:'long', day:'numeric',
+                month:'long', year:'numeric'
+            }) +
+            ' — ' +
+            now.toLocaleTimeString('fr-FR', {
+                hour:'2-digit', minute:'2-digit'
             });
-        });
-
-        // Load list for a controller
-        function loadList(controller) {
-            $('#settingsContent').html('<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x"></i></div>');
-
-            // Direct call to controller's List action
-            const url = `/Settings/${controller}/List`;
-
-            $.ajax({
-                url: url,
-                type: 'GET',
-                success: function(response) {
-                    $('#settingsContent').html(response);
-                },
-                error: function(xhr) {
-                    let errorMsg = '<div class="alert alert-danger">' +
-                                  '<i class="fas fa-exclamation-triangle"></i> Erreur de chargement';
-
-                    if (xhr.status === 404) {
-                        errorMsg += ' - Controller ou action introuvable';
-                    } else if (xhr.responseText) {
-                        errorMsg += ': ' + xhr.responseText;
-                    }
-
-                    errorMsg += '</div>';
-                    $('#settingsContent').html(errorMsg);
-                }
-            });
-        }
-
-        // Delete item (called from partial views)
-        function deleteItem(controller, id, name) {
-            if (confirm(`Êtes-vous sûr de vouloir supprimer "${name}" ?`)) {
-                $.ajax({
-                    url: `/Settings/${controller}/Delete/${id}`,
-                    type: 'POST',
-                    data: {
-                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    success: function(response) {
-                        toastr.success('Supprimé avec succès');
-                        loadList(controller);
-                    },
-                    error: function(xhr) {
-                        toastr.error('Erreur lors de la suppression');
-                    }
-                });
-            }
-        }
-    </script>
-}
-
+    }
+    updateTs();
+</script>
+} *@

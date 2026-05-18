@@ -1,0 +1,222 @@
+@using FRAProject.Areas.Settings.ViewModels
+@model FRAProject.Areas.Settings.ViewModels.DossierStep1Dto
+@{
+    ViewData["Title"] = "Immatriculation — Étape 1";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">Nouvelle immatriculation</h4>
+        <small class="text-muted">
+            <a asp-action="Index" class="text-muted text-decoration-none">
+                <i class="fas fa-arrow-left me-1"></i>Retour aux dossiers
+            </a>
+        </small>
+    </div>
+    <span class="badge bg-warning text-dark">Form 5a — DAM</span>
+</div>
+
+@* Progress bar *@
+@if (ViewBag.Progress != null)
+{
+    @await Html.PartialAsync("_WizardProgress",
+        (FRAProject.Areas.Settings.ViewModels.WizardProgressVm)ViewBag.Progress)
+}
+else
+{
+    @* New dossier — render static step 1 active bar *@
+    <div class="card border-secondary mb-4">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex align-items-center gap-2">
+                <div style="width:28px;height:28px;border-radius:50%;
+                            background:rgba(255,193,7,0.15);border:2px solid #ffc107;
+                            display:flex;align-items:center;justify-content:center;
+                            color:#ffc107;font-size:12px;font-weight:700;">1</div>
+                <span class="text-warning" style="font-size:11px;">Autorité d'emploi</span>
+                <div class="flex-fill" style="height:2px;background:#495057;"></div>
+                @for (int i = 2; i <= 5; i++)
+                {
+                    <div style="width:28px;height:28px;border-radius:50%;
+                                border:2px solid #495057;display:flex;
+                                align-items:center;justify-content:center;
+                                color:#6c757d;font-size:12px;">@i</div>
+                    if (i < 5)
+                    {
+                        <div class="flex-fill" style="height:2px;background:#495057;"></div>
+                    }
+                }
+            </div>
+            <div class="mt-2">
+                <small class="text-muted">Étape 1 sur 5</small>
+                <span class="badge bg-secondary float-end">Brouillon</span>
+            </div>
+        </div>
+    </div>
+}
+
+<form asp-action="SaveStep1" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="DossierId" />
+
+    @* ── SECTION 1: Identification AE ────────────────────────────── *@
+    <div class="card border-secondary mb-3">
+        <div class="card-header bg-dark border-secondary">
+            <h6 class="mb-0 text-warning">
+                <i class="fas fa-shield-alt me-2"></i>
+                Section 1 — Identification de l'Autorité d'emploi
+                <small class="text-muted ms-2" style="font-size:10px;">
+                    Réf. Art. 15, GUI-DPC-001
+                </small>
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label asp-for="EmployingAuthorityId"
+                           class="form-label text-muted small">
+                        Autorité d'emploi <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="EmployingAuthorityId"
+                            asp-items="Model.AuthorityOptions"
+                            class="form-select bg-dark text-white border-secondary">
+                    </select>
+                    <span asp-validation-for="EmployingAuthorityId"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="BaseAerienneId"
+                           class="form-label text-muted small">
+                        Base aérienne (BAFRA) <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="BaseAerienneId"
+                            asp-items="Model.BaseOptions"
+                            class="form-select bg-dark text-white border-secondary">
+                    </select>
+                    <span asp-validation-for="BaseAerienneId"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="OgmnNumber"
+                           class="form-label text-muted small">
+                        N° Agrément OGMN <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="OgmnNumber"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="ex: OGMN-FRA-01" />
+                    <span asp-validation-for="OgmnNumber"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="OgmnAggrementDate"
+                           class="form-label text-muted small">
+                        Date d'agrément <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="OgmnAggrementDate"
+                           type="date"
+                           class="form-control bg-dark text-white border-secondary" />
+                    <span asp-validation-for="OgmnAggrementDate"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label text-muted small">
+                        Sous-partie agrément
+                    </label>
+                    <div class="d-flex gap-3 mt-1">
+                        @foreach (var opt in DossierStep1Dto.SousPartieOptions)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="radio"
+                                       name="OgmnSousPartie"
+                                       id="sp-@opt"
+                                       value="@opt"
+                                       @(Model.OgmnSousPartie == opt ? "checked" : "") />
+                                <label class="form-check-label text-muted"
+                                       for="sp-@opt">@opt</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="OgmnResponsable"
+                           class="form-label text-muted small">
+                        Responsable OGMN (nom & grade)
+                    </label>
+                    <input asp-for="OgmnResponsable"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="Col. / Cne..." />
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    @* ── SECTION 2: Coordonnées AE ────────────────────────────────── *@
+    <div class="card border-secondary mb-3">
+        <div class="card-header bg-dark border-secondary">
+            <h6 class="mb-0 text-warning">
+                <i class="fas fa-map-marker-alt me-2"></i>
+                Section 2 — Coordonnées de l'Autorité d'emploi
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label asp-for="AeAddress"
+                           class="form-label text-muted small">
+                        Adresse postale <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="AeAddress"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="Base aérienne, BP..." />
+                    <span asp-validation-for="AeAddress"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="AePhone"
+                           class="form-label text-muted small">Téléphone</label>
+                    <input asp-for="AePhone"
+                           type="tel"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="+212 ..." />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="AeEmail"
+                           class="form-label text-muted small">Email</label>
+                    <input asp-for="AeEmail"
+                           type="email"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="ogmn@fra.mil.ma" />
+                    <span asp-validation-for="AeEmail"
+                          class="text-danger small"></span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    @* ── Navigation ───────────────────────────────────────────────── *@
+    <div class="d-flex justify-content-between">
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-times me-1"></i>Annuler
+        </a>
+        <button type="submit" class="btn btn-primary">
+            Suivant : Identification →
+        </button>
+    </div>
+
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

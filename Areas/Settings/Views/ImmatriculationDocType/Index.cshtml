@@ -1,0 +1,269 @@
+@model FRAProject.Areas.Settings.ViewModels.ImmatriculationDocTypeIndexVm
+@{
+    ViewData["Title"] = "Types de documents d'immatriculation";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">Types de documents d'immatriculation</h4>
+        <small class="text-muted">
+            Pièces justificatives requises — réf. Art. 15, GUI-DPC-001
+        </small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Nouveau type
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@* ── Regulatory warning banner ─────────────────────────────────── *@
+<div class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3" role="alert">
+    <i class="fas fa-exclamation-triangle"></i>
+    <small>
+        Ces types de documents sont définis par la réglementation DAM (Art. 15, GUI-DPC-001).
+        Ne jamais supprimer — utiliser uniquement Désactiver.
+    </small>
+</div>
+
+@* ── Search ───────────────────────────────────────────────────── *@
+<div class="card card-dark border-secondary mb-3">
+    <div class="card-body py-2">
+        <form method="get" asp-action="Index">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-1">
+                    <label class="form-label small text-muted mb-1">Code</label>
+                    <input name="searchCode" value="@Model.SearchCode"
+                           class="form-control form-control-sm bg-dark text-white border-secondary"
+                           placeholder="DOC…" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small text-muted mb-1">Nom</label>
+                    <input name="searchName" value="@Model.SearchName"
+                           class="form-control form-control-sm bg-dark text-white border-secondary"
+                           placeholder="Rechercher par nom…" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">Obligation</label>
+                    <select name="searchIsRequired"
+                            class="form-select form-select-sm bg-dark text-white border-secondary">
+                        <option value="">Tous</option>
+                        <option value="true" @@(Model.SearchIsRequired= =true ? "selected" : "" )>Obligatoire</option>
+                        <option value="false" @@(Model.SearchIsRequired= =false ? "selected" : "" )>Si applicable</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">Statut</label>
+                    <select name="searchActive"
+                            class="form-select form-select-sm bg-dark text-white border-secondary">
+                        <option value="">Tous</option>
+                        <option value="true" @@(Model.SearchActive= =true ? "selected" : "" )>Actifs</option>
+                        <option value="false" @@(Model.SearchActive= =false ? "selected" : "" )>Inactifs</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <input type="hidden" name="sortColumn"    value="@Model.SortColumn" />
+                    <input type="hidden" name="sortDirection" value="@Model.SortDirection" />
+                    <input type="hidden" name="pageSize"      value="@Model.PageSize" />
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-search me-1"></i>Rechercher
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary btn-sm"
+                       title="Réinitialiser">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <small class="text-muted">
+        @if (Model.TotalCount == 0)
+        {
+            <span>Aucun résultat.</span>
+        }
+        else
+        {
+            <span>Affichage @Model.FirstItem–@Model.LastItem sur @Model.TotalCount résultat(s)</span>
+        }
+    </small>
+</div>
+
+<div class="card border-secondary">
+    <div class="card-body p-0">
+        <table class="table table-dark table-hover table-sm mb-0">
+            <thead>
+                <tr>
+                    @{
+                        string SortLink(string col) => Url.Action("Index", new
+                        {
+                            searchCode       = Model.SearchCode,
+                            searchName       = Model.SearchName,
+                            searchIsRequired = Model.SearchIsRequired,
+                            searchActive     = Model.SearchActive,
+                            sortColumn       = col,
+                            sortDirection    = Model.SortDirectionFor(col),
+                            pageNumber       = 1,
+                            pageSize         = Model.PageSize
+                        })!;
+                    }
+                    <th style="width:80px">
+                        <a href="@SortLink("Code")" class="text-white text-decoration-none">
+                            Code <i class="fas @Model.SortIconFor("Code") ms-1"></i>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="@SortLink("Name")" class="text-white text-decoration-none">
+                            Nom du document <i class="fas @Model.SortIconFor("Name") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:90px" class="text-center">Réf.</th>
+                    <th style="width:110px" class="text-center">
+                        <a href="@SortLink("IsRequired")" class="text-white text-decoration-none">
+                            Obligation <i class="fas @Model.SortIconFor("IsRequired") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:100px" class="text-center">Formats</th>
+                    <th style="width:70px" class="text-center">Max Mo</th>
+                    <th style="width:80px" class="text-center">
+                        <a href="@SortLink("SortOrder")" class="text-white text-decoration-none">
+                            Ordre <i class="fas @Model.SortIconFor("SortOrder") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:90px" class="text-center">Statut</th>
+                    <th style="width:100px" class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Items.Any())
+                {
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            <i class="fas fa-file-alt me-2"></i>Aucun type trouvé.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr id="row-@item.Id" class="@(!item.IsActive ? "opacity-50" : "")">
+                            <td><code class="text-warning">@item.Code</code></td>
+                            <td>@item.Name</td>
+                            <td class="text-center">
+                                <small class="text-muted">
+                                    @(item.ArticleReference ?? "—")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                @if (item.IsRequired)
+                                {
+                                    <span class="badge bg-danger">Obligatoire</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Si applicable</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <small class="text-muted font-monospace">
+                                    @(item.AcceptedFormats ?? "—")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <small class="text-muted">
+                                    @(item.MaxFileSizeMb.HasValue ? $"{item.MaxFileSizeMb} Mo" : "—")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <small class="text-muted">@item.SortOrder</small>
+                            </td>
+                            <td class="text-center">
+                                @if (item.IsActive)
+                                {
+                                    <span class="badge bg-success">Actif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactif</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <a asp-action="Edit" asp-route-id="@item.Id"
+                                   class="btn btn-outline-warning btn-sm" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                @if (item.IsActive)
+                                {
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-sm ms-1"
+                                            title="Désactiver"
+                                            onclick="toggleActive(@item.Id, false, '@item.Code')">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            class="btn btn-outline-success btn-sm ms-1"
+                                            title="Réactiver"
+                                            onclick="toggleActive(@item.Id, true, '@item.Code')">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+    const token = document.querySelector(
+        'input[name="__RequestVerificationToken"]')?.value;
+
+    function toggleActive(id, activate, code) {
+        const action = activate ? 'Activate' : 'Delete';
+        const msg    = activate
+            ? `Réactiver le type « ${code} » ?`
+            : `Désactiver le type « ${code} » ?\n\nAttention : ce type est défini par la réglementation DAM.`;
+
+        if (!confirm(msg)) return;
+
+        fetch(`/Settings/ImmatriculationDocType/${action}/${id}`, {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': token,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { window.location.reload(); }
+            else { alert(data.message ?? 'Une erreur est survenue.'); }
+        })
+        .catch(() => alert('Erreur réseau.'));
+    }
+</script>
+}

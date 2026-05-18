@@ -1,4 +1,3 @@
-using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.Settings.ViewModels;
 using FRAProject.Infrastructure.Interfaces;
 using FRAProject.Models;
@@ -11,14 +10,14 @@ namespace FRAProject.Areas.Settings.Controllers
 {
     [Area("Settings")]
     [Authorize(Roles = "Admin")]
-    public class AcMainGroupsController : Controller
+    public class MissionRoleController : Controller
     {
         private readonly IUnitOfWork        _uow;
         private readonly IValidationService _validator;
 
-        private const int DefaultPageSize = 10;
+        private const int DefaultPageSize = 15;
 
-        public AcMainGroupsController(IUnitOfWork uow, IValidationService validator)
+        public MissionRoleController(IUnitOfWork uow, IValidationService validator)
         {
             _uow       = uow;
             _validator = validator;
@@ -26,27 +25,30 @@ namespace FRAProject.Areas.Settings.Controllers
 
         // ── INDEX ────────────────────────────────────────────────────────
         public async Task<IActionResult> Index(
-            string? searchCode         = null,
-            string? searchName         = null,
-            int?    searchAcCategoryId = null,
-            int?    searchBaseId       = null,
-            bool?   searchActive       = null,
-            string  sortColumn         = "SortOrder",
-            string  sortDirection      = "asc",
-            int     pageNumber         = 1,
-            int     pageSize           = DefaultPageSize)
+            string? searchCode       = null,
+            string? searchName       = null,
+            int?    searchCategoryId = null,
+            bool?   searchActive     = null,
+            string  sortColumn       = "SortOrder",
+            string  sortDirection    = "asc",
+            int     pageNumber       = 1,
+            int     pageSize         = DefaultPageSize)
         {
-            var result = await _uow.AcMainGroups.GetPagedAsync(
+            // ── Fetch paged data with AcCategory join ────────────────────
+            // GetPagedAsync returns entities — we project to VM below.
+            // The join to AcCategory.Name is done in memory after paging
+            // because the generic repository doesn't support joins.
+            // With only 11 seed rows this is fine. For large datasets,
+            // consider a custom repository method with Include().
+            var result = await _uow.MissionRoles.GetPagedAsync(
 
                 filter: x =>
                     (string.IsNullOrWhiteSpace(searchCode)
                         || x.Code.Contains(searchCode)) &&
                     (string.IsNullOrWhiteSpace(searchName)
                         || x.Name.Contains(searchName)) &&
-                    (searchAcCategoryId == null
-                        || x.AcCategoryId == searchAcCategoryId) &&
-                    (searchBaseId == null
-                        || x.BaseId == searchBaseId) &&
+                    (searchCategoryId == null
+                        || x.AcCategoryId == searchCategoryId) &&
                     (searchActive == null || x.IsActive == searchActive),
 
                 orderBy: sortColumn switch
@@ -60,9 +62,6 @@ namespace FRAProject.Areas.Settings.Controllers
                     "AcCategory"  => sortDirection == "desc"
                                         ? q => q.OrderByDescending(x => x.AcCategoryId)
                                         : q => q.OrderBy(x => x.AcCategoryId),
-                    "Base"        => sortDirection == "desc"
-                                        ? q => q.OrderByDescending(x => x.BaseId)
-                                        : q => q.OrderBy(x => x.BaseId),
                     "IsActive"    => sortDirection == "desc"
                                         ? q => q.OrderByDescending(x => x.IsActive)
                                         : q => q.OrderBy(x => x.IsActive),
@@ -75,48 +74,41 @@ namespace FRAProject.Areas.Settings.Controllers
                 pageSize:   pageSize
             );
 
-            // Load FK lookup names for display
-            var categories = await _uow.AcCategories
-                .GetWhereAsync(c => c.IsActive);
-            var bases = await _uow.Bases
-                .GetWhereAsync(b => b.IsActive);
+            // Fetch active categories for name lookup + search dropdown
+            var categories = await _uow.AcCategories.GetWhereAsync(
+                c => c.IsActive);
 
-            var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
-            var baseMap     = bases.ToDictionary(b => b.Id, b => b.BaseName);
+            var categoryMap = categories.ToDictionary(
+                c => c.Id, c => c.Name);
 
-            var vm = new AcMainGroupIndexVm
+            var vm = new MissionRoleIndexVm
             {
-                Items = result.Items.Select(x => new AcMainGroupListVm
+                Items = result.Items.Select(x => new MissionRoleListVm
                 {
                     Id             = x.Id,
                     Code           = x.Code,
                     Name           = x.Name,
-                    Description    = x.Description,
                     AcCategoryId   = x.AcCategoryId,
-                    AcCategoryName = categoryMap.TryGetValue(x.AcCategoryId, out var cn)
-                                        ? cn : null,
-                    BaseId         = x.BaseId,
-                    BaseName       = baseMap.TryGetValue(x.BaseId, out var bn)
-                                        ? bn : null,
+                    AcCategoryName = x.AcCategoryId.HasValue &&
+                                     categoryMap.TryGetValue(x.AcCategoryId.Value, out var cn)
+                                         ? cn : null,
                     SortOrder      = x.SortOrder,
                     IsActive       = x.IsActive
                 }).ToList(),
 
-                TotalCount         = result.TotalCount,
-                TotalPages         = result.TotalPages,
-                SearchCode         = searchCode,
-                SearchName         = searchName,
-                SearchAcCategoryId = searchAcCategoryId,
-                SearchBaseId       = searchBaseId,
-                SearchActive       = searchActive,
-                SortColumn         = sortColumn,
-                SortDirection      = sortDirection,
-                PageNumber         = pageNumber,
-                PageSize           = pageSize,
+                TotalCount      = result.TotalCount,
+                TotalPages      = result.TotalPages,
+                SearchCode      = searchCode,
+                SearchName      = searchName,
+                SearchCategoryId = searchCategoryId,
+                SearchActive    = searchActive,
+                SortColumn      = sortColumn,
+                SortDirection   = sortDirection,
+                PageNumber      = pageNumber,
+                PageSize        = pageSize,
 
-                // Filter dropdowns for search bar
-                AcCategoryOptions = BuildCategoryOptions(categories, searchAcCategoryId),
-                BaseOptions       = BuildBaseOptions(bases, searchBaseId)
+                // Category filter dropdown
+                AcCategoryOptions = BuildCategoryOptions(categories, searchCategoryId)
             };
 
             return View(vm);
@@ -125,7 +117,7 @@ namespace FRAProject.Areas.Settings.Controllers
         // ── CREATE GET ───────────────────────────────────────────────────
         public async Task<IActionResult> Create()
         {
-            var dto = new AcMainGroupFormDto { IsActive = true, SortOrder = 99 };
+            var dto = new MissionRoleFormDto { IsActive = true };
             await PopulateDropdowns(dto);
             return View(dto);
         }
@@ -133,26 +125,24 @@ namespace FRAProject.Areas.Settings.Controllers
         // ── CREATE POST ──────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(AcMainGroupFormDto dto)
+        public async Task<IActionResult> Create(MissionRoleFormDto dto)
         {
             if (ModelState.IsValid)
             {
                 var code = dto.Code.Trim().ToUpper();
                 var name = dto.Name.Trim();
 
-                await _validator.CheckUniqueAsync<AcMainGroup>(
+                await _validator.CheckUniqueAsync<MissionRole>(
                     ModelState,
                     excludeId: null,
-                    new UniqueField<AcMainGroup>(
+                    new UniqueField<MissionRole>(
                         x => x.Code == code,
                         nameof(dto.Code),
                         $"Le code '{code}' est deja utilise."),
-                    new UniqueField<AcMainGroup>(
-                        x => x.Name == name &&
-                             x.AcCategoryId == dto.AcCategoryId &&
-                             x.BaseId == dto.BaseId,
+                    new UniqueField<MissionRole>(
+                        x => x.Name == name,
                         nameof(dto.Name),
-                        $"Le nom '{name}' est deja utilise pour cette categorie et base.")
+                        $"Le nom '{name}' est deja utilise.")
                 );
             }
 
@@ -162,11 +152,11 @@ namespace FRAProject.Areas.Settings.Controllers
                 return View(dto);
             }
 
-            var entity = MapToEntity(dto, new AcMainGroup());
-            _uow.AcMainGroups.Add(entity);
+            var entity = MapToEntity(dto, new MissionRole());
+            _uow.MissionRoles.Add(entity);
             await _uow.CompleteAsync();
 
-            TempData["SuccessMessage"] = $"Groupe '{entity.Name}' cree avec succes.";
+            TempData["SuccessMessage"] = $"Role '{entity.Name}' cree avec succes.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -175,7 +165,7 @@ namespace FRAProject.Areas.Settings.Controllers
         {
             if (id == null) return NotFound();
 
-            var entity = await _uow.AcMainGroups.GetByIdAsync(id.Value);
+            var entity = await _uow.MissionRoles.GetByIdAsync(id.Value);
             if (entity == null) return NotFound();
 
             var dto = MapToDto(entity);
@@ -186,7 +176,7 @@ namespace FRAProject.Areas.Settings.Controllers
         // ── EDIT POST ────────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, AcMainGroupFormDto dto)
+        public async Task<IActionResult> Edit(int id, MissionRoleFormDto dto)
         {
             if (id != dto.Id) return BadRequest();
 
@@ -195,19 +185,17 @@ namespace FRAProject.Areas.Settings.Controllers
                 var code = dto.Code.Trim().ToUpper();
                 var name = dto.Name.Trim();
 
-                await _validator.CheckUniqueAsync<AcMainGroup>(
+                await _validator.CheckUniqueAsync<MissionRole>(
                     ModelState,
                     excludeId: id,
-                    new UniqueField<AcMainGroup>(
+                    new UniqueField<MissionRole>(
                         x => x.Code == code,
                         nameof(dto.Code),
                         $"Le code '{code}' est deja utilise."),
-                    new UniqueField<AcMainGroup>(
-                        x => x.Name == name &&
-                             x.AcCategoryId == dto.AcCategoryId &&
-                             x.BaseId == dto.BaseId,
+                    new UniqueField<MissionRole>(
+                        x => x.Name == name,
                         nameof(dto.Name),
-                        $"Le nom '{name}' est deja utilise pour cette categorie et base.")
+                        $"Le nom '{name}' est deja utilise.")
                 );
             }
 
@@ -217,14 +205,14 @@ namespace FRAProject.Areas.Settings.Controllers
                 return View(dto);
             }
 
-            var entity = await _uow.AcMainGroups.GetByIdAsync(id);
+            var entity = await _uow.MissionRoles.GetByIdAsync(id);
             if (entity == null) return NotFound();
 
             MapToEntity(dto, entity);
-            _uow.AcMainGroups.Update(entity);
+            _uow.MissionRoles.Update(entity);
             await _uow.CompleteAsync();
 
-            TempData["SuccessMessage"] = $"Groupe '{entity.Name}' modifie avec succes.";
+            TempData["SuccessMessage"] = $"Role '{entity.Name}' modifie avec succes.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -233,21 +221,21 @@ namespace FRAProject.Areas.Settings.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var entity = await _uow.AcMainGroups.GetByIdAsync(id);
+            var entity = await _uow.MissionRoles.GetByIdAsync(id);
 
             if (entity == null)
                 return Json(new { success = false,
-                    message = "Groupe introuvable." });
+                    message = "Role introuvable." });
 
             if (!entity.IsActive)
                 return Json(new { success = true,
                     message = "Deja desactive." });
 
             entity.IsActive = false;
-            _uow.AcMainGroups.Update(entity);
+            _uow.MissionRoles.Update(entity);
             await _uow.CompleteAsync();
 
-            TempData["SuccessMessage"] = $"Groupe '{entity.Name}' desactive.";
+            TempData["SuccessMessage"] = $"Role '{entity.Name}' desactive.";
             return Json(new { success = true,
                 message = TempData["SuccessMessage"] });
         }
@@ -257,17 +245,17 @@ namespace FRAProject.Areas.Settings.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Activate(int id)
         {
-            var entity = await _uow.AcMainGroups.GetByIdAsync(id);
+            var entity = await _uow.MissionRoles.GetByIdAsync(id);
 
             if (entity == null)
                 return Json(new { success = false,
-                    message = "Groupe introuvable." });
+                    message = "Role introuvable." });
 
             entity.IsActive = true;
-            _uow.AcMainGroups.Update(entity);
+            _uow.MissionRoles.Update(entity);
             await _uow.CompleteAsync();
 
-            TempData["SuccessMessage"] = $"Groupe '{entity.Name}' reactive.";
+            TempData["SuccessMessage"] = $"Role '{entity.Name}' reactive.";
             return Json(new { success = true,
                 message = TempData["SuccessMessage"] });
         }
@@ -276,80 +264,63 @@ namespace FRAProject.Areas.Settings.Controllers
         //  PRIVATE HELPERS
         // ══════════════════════════════════════════════════════════════════
 
-        private static AcMainGroupFormDto MapToDto(AcMainGroup entity) =>
+        private static MissionRoleFormDto MapToDto(MissionRole entity) =>
             new()
             {
                 Id           = entity.Id,
                 Code         = entity.Code,
                 Name         = entity.Name,
-                Description  = entity.Description,
                 AcCategoryId = entity.AcCategoryId,
-                BaseId       = entity.BaseId,
-                SortOrder    = entity.SortOrder,   // byte → int (safe)
+                SortOrder    = entity.SortOrder,
                 IsActive     = entity.IsActive
             };
 
-        private static AcMainGroup MapToEntity(
-            AcMainGroupFormDto dto, AcMainGroup entity)
+        private static MissionRole MapToEntity(MissionRoleFormDto dto, MissionRole entity)
         {
-            entity.Code        = dto.Code.Trim().ToUpper();
-            entity.Name        = dto.Name.Trim();
-            entity.Description = dto.Description?.Trim();
-            entity.AcCategoryId = dto.AcCategoryId!.Value;
-            entity.BaseId      = dto.BaseId!.Value;
-            entity.SortOrder   = (byte)dto.SortOrder;   // int → byte (0–255 validated)
-            entity.IsActive    = dto.IsActive;
+            entity.Code         = dto.Code.Trim().ToUpper();
+            entity.Name         = dto.Name.Trim();
+            entity.AcCategoryId = dto.AcCategoryId;
+            entity.SortOrder    = dto.SortOrder;
+            entity.IsActive     = dto.IsActive;
             return entity;
         }
 
-        // ── Populate both dropdowns on FormDto ────────────────────────────
-        private async Task PopulateDropdowns(AcMainGroupFormDto dto)
+        // ── PopulateDropdowns ────────────────────────────────────────────
+        // Fills AcCategoryOptions on the FormDto.
+        // Called on every GET and on POST validation failure.
+        // "Toutes catégories" option (value="") allows null FK.
+        private async Task PopulateDropdowns(MissionRoleFormDto dto)
         {
             var categories = await _uow.AcCategories
                 .GetWhereAsync(c => c.IsActive);
-            var bases = await _uow.Bases
-                .GetWhereAsync(b => b.IsActive);
 
-            dto.AcCategoryOptions = BuildCategoryOptions(categories, dto.AcCategoryId);
-            dto.BaseOptions       = BuildBaseOptions(bases, dto.BaseId);
+            dto.AcCategoryOptions = BuildCategoryOptions(
+                categories, dto.AcCategoryId);
         }
 
-        // ── DDL builders — shared by Index and PopulateDropdowns ──────────
+        // Shared builder — used by both Index and PopulateDropdowns
         private static IEnumerable<SelectListItem> BuildCategoryOptions(
-            IEnumerable<AcCategory> categories, int? selectedId)
+            IEnumerable<AcCategory> categories,
+            int?                    selectedId)
         {
             var items = new List<SelectListItem>
             {
-                new() { Value = "", Text = "— Toutes categories —",
+                new() { Value = "",   Text = "— Toutes catégories —",
                         Selected = !selectedId.HasValue }
             };
+
             items.AddRange(
-                categories.OrderBy(c => c.SortOrder)
+                categories
+                    .OrderBy(c => c.SortOrder)
                     .Select(c => new SelectListItem
                     {
                         Value    = c.Id.ToString(),
                         Text     = c.DisplayLabel,
-                        Selected = selectedId.HasValue && selectedId.Value == c.Id
-                    }));
-            return items;
-        }
+                        Selected = selectedId.HasValue &&
+                                   selectedId.Value == c.Id
+                    })
+            );
 
-        private static IEnumerable<SelectListItem> BuildBaseOptions(
-            IEnumerable<Base> bases, int? selectedId)
-        {
-            var items = new List<SelectListItem>
-            {
-                new() { Value = "", Text = "— Toutes les bases —",
-                        Selected = !selectedId.HasValue }
-            };
-            items.AddRange(
-                bases.OrderBy(b => b.BaseName)
-                    .Select(b => new SelectListItem
-                    {
-                        Value    = b.Id.ToString(),
-                        Text     = b.BaseName,
-                        Selected = selectedId.HasValue && selectedId.Value == b.Id
-                    }));
             return items;
         }
     }

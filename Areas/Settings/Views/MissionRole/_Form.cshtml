@@ -1,0 +1,64 @@
+@model FRAProject.Areas.Settings.ViewModels.MissionRoleFormDto
+
+<div class="row g-3">
+
+    @* ── Code ─────────────────────────────────────────────────────── *@
+    <div class="col-md-2">
+        <label asp-for="Code" class="form-label text-muted small">
+            Code <span class="text-danger">*</span>
+        </label>
+        <input asp-for="Code"
+               class="form-control bg-dark text-white border-secondary text-uppercase"
+               placeholder="ex: SAR"
+               maxlength="10"
+               style="letter-spacing:2px;font-family:monospace;"
+               oninput="this.value=this.value.toUpperCase()" />
+        <span asp-validation-for="Code" class="text-danger small"></span>
+    </div>
+
+    @* ── Name ─────────────────────────────────────────────────────── *@
+    <div class="col-md-5">
+        <label asp-for="Name" class="form-label text-muted small">
+            Rôle / Mission <span class="text-danger">*</span>
+        </label>
+        <input asp-for="Name"
+               class="form-control bg-dark text-white border-secondary"
+               placeholder="ex: Chasse / Interception…" />
+        <span asp-validation-for="Name" class="text-danger small"></span>
+    </div>
+
+    @* ── AcCategory ───────────────────────────────────────────────── *@
+    <div class="col-md-3">
+        <label asp-for="AcCategoryId" class="form-label text-muted small">
+            Catégorie d'aéronef
+        </label>
+        <select asp-for="AcCategoryId"
+                asp-items="Model.AcCategoryOptions"
+                class="form-select bg-dark text-white border-secondary">
+        </select>
+        <span asp-validation-for="AcCategoryId" class="text-danger small"></span>
+        <small class="text-muted">Laisser vide = toutes catégories</small>
+    </div>
+
+    @* ── Sort Order ───────────────────────────────────────────────── *@
+    <div class="col-md-1">
+        <label asp-for="SortOrder" class="form-label text-muted small">
+            Ordre
+        </label>
+        <input asp-for="SortOrder"
+               type="number"
+               class="form-control bg-dark text-white border-secondary"
+               min="0" max="9999" />
+        <span asp-validation-for="SortOrder" class="text-danger small"></span>
+    </div>
+
+    @* ── IsActive ─────────────────────────────────────────────────── *@
+    <div class="col-md-1 d-flex align-items-end pb-2">
+        <div class="form-check form-switch">
+            <input asp-for="IsActive" class="form-check-input"
+                   type="checkbox" role="switch" />
+            <label asp-for="IsActive" class="form-check-label text-muted">Actif</label>
+        </div>
+    </div>
+
+</div>

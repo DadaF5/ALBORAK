@@ -1,0 +1,232 @@
+@model FRAProject.Areas.Settings.ViewModels.DossierStep3Dto
+@{
+    ViewData["Title"] = "Immatriculation — Étape 3";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">Navigabilité & Certification</h4>
+        <small class="text-muted">
+            Réf. Art. 9, 10 — Guide GUI-DPC-001
+        </small>
+    </div>
+    <span class="badge bg-warning text-dark">Form 5a — Étape 3/5</span>
+</div>
+
+@await Html.PartialAsync("_WizardProgress",
+    (FRAProject.Areas.Settings.ViewModels.WizardProgressVm)ViewBag.Progress)
+
+<form asp-action="SaveStep3" asp-route-id="@Model.DossierId" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="DossierId" />
+
+    @* ── SECTION 1: Document de navigabilité ──────────────────────── *@
+    <div class="card border-secondary mb-3">
+        <div class="card-header bg-dark border-secondary">
+            <h6 class="mb-0 text-warning">
+                <i class="fas fa-certificate me-2"></i>
+                Section 1 — Document de navigabilité
+            </h6>
+        </div>
+        <div class="card-body">
+
+            @* Radio choice *@
+            <div class="row g-2 mb-3">
+                <div class="col-12">
+                    <div class="p-3 rounded border @(Model.HasAirworthinessDoc ? "border-success" : "border-secondary")"
+                         id="panel-has-doc"
+                         style="cursor:pointer;"
+                         onclick="setDocAvailable(true)">
+                        <div class="form-check">
+                            <input type="radio" name="HasAirworthinessDoc"
+                                   id="doc-yes" value="true" class="form-check-input"
+                                   @(Model.HasAirworthinessDoc ? "checked" : "")
+                                   onchange="setDocAvailable(true)" />
+                            <label class="form-check-label fw-500" for="doc-yes">
+                                L'aéronef dispose d'un document de navigabilité valide
+                            </label>
+                        </div>
+
+                        @* Conditional fields — shown when HasAirworthinessDoc = true *@
+                        <div id="cdn-fields"
+                             style="display:@(Model.HasAirworthinessDoc ? "block" : "none");
+                                    margin-top:12px;padding-left:28px;">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label asp-for="CdnDocTypeId"
+                                           class="form-label text-muted small">
+                                        Type de document <span class="text-danger">*</span>
+                                    </label>
+                                    <select asp-for="CdnDocTypeId"
+                                            asp-items="Model.CdnDocTypeOptions"
+                                            class="form-select bg-dark text-white border-secondary">
+                                    </select>
+                                    <span asp-validation-for="CdnDocTypeId"
+                                          class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="CdnReference"
+                                           class="form-label text-muted small">
+                                        Référence du document
+                                    </label>
+                                    <input asp-for="CdnReference"
+                                           class="form-control bg-dark text-white border-secondary"
+                                           placeholder="N° du certificat" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label asp-for="CdnDeliveryDate"
+                                           class="form-label text-muted small">
+                                        Date délivrance
+                                    </label>
+                                    <input asp-for="CdnDeliveryDate"
+                                           type="date"
+                                           class="form-control bg-dark text-white border-secondary" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label asp-for="CdnExpiryDate"
+                                           class="form-label text-muted small">
+                                        Date expiration
+                                    </label>
+                                    <input asp-for="CdnExpiryDate"
+                                           type="date"
+                                           class="form-control bg-dark text-white border-secondary" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded border @(!Model.HasAirworthinessDoc ? "border-warning" : "border-secondary") mt-2"
+                         id="panel-no-doc"
+                         style="cursor:pointer;"
+                         onclick="setDocAvailable(false)">
+                        <div class="form-check">
+                            <input type="radio" name="HasAirworthinessDoc"
+                                   id="doc-no" value="false" class="form-check-input"
+                                   @(!Model.HasAirworthinessDoc ? "checked" : "")
+                                   onchange="setDocAvailable(false)" />
+                            <label class="form-check-label fw-500" for="doc-no">
+                                L'aéronef ne dispose pas encore d'un document de navigabilité
+                            </label>
+                        </div>
+                        <div id="renewal-field"
+                             style="display:@(!Model.HasAirworthinessDoc ? "block" : "none");
+                                    margin-top:10px;padding-left:28px;">
+                            <div class="form-check">
+                                <input asp-for="CdnRenewalRequested"
+                                       type="checkbox"
+                                       class="form-check-input" />
+                                <label asp-for="CdnRenewalRequested"
+                                       class="form-check-label text-muted small">
+                                    Demande de délivrance de CdN associée à soumettre à la DAM
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── SECTION 2: Immatriculation étrangère ─────────────────────── *@
+    <div class="card border-secondary mb-3">
+        <div class="card-header bg-dark border-secondary">
+            <h6 class="mb-0 text-warning">
+                <i class="fas fa-globe me-2"></i>
+                Section 2 — Historique d'immatriculation étrangère
+            </h6>
+        </div>
+        <div class="card-body">
+
+            <div class="form-check form-switch mb-3">
+                <input asp-for="WasForeignRegistered"
+                       type="checkbox"
+                       class="form-check-input"
+                       role="switch"
+                       id="foreignSwitch"
+                       onchange="toggleForeignFields(this.checked)" />
+                <label class="form-check-label" for="foreignSwitch">
+                    Cet aéronef a précédemment figuré sur le registre
+                    d'immatriculation d'un État étranger
+                </label>
+            </div>
+
+            <div id="foreign-fields"
+                 style="display:@(Model.WasForeignRegistered ? "block" : "none");">
+
+                <div class="alert alert-warning py-2 mb-3" style="font-size:12px;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Un certificat de radiation doit être fourni (réf. Art. 15.3)
+                    — ajoutez le document DOC03 à l'étape suivante.
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="ForeignCountryId"
+                               class="form-label text-muted small">
+                            État / Registre d'origine <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="ForeignCountryId"
+                                asp-items="Model.CountryOptions"
+                                class="form-select bg-dark text-white border-secondary">
+                        </select>
+                        <span asp-validation-for="ForeignCountryId"
+                              class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="FormerImmatriculation"
+                               class="form-label text-muted small">
+                            Ancienne immatriculation
+                        </label>
+                        <input asp-for="FormerImmatriculation"
+                               class="form-control bg-dark text-white border-secondary"
+                               placeholder="ex: 84-1231" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="ForeignRadiationDate"
+                               class="form-label text-muted small">
+                            Date de radiation du registre étranger
+                        </label>
+                        <input asp-for="ForeignRadiationDate"
+                               type="date"
+                               class="form-control bg-dark text-white border-secondary" />
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    @* ── Navigation ───────────────────────────────────────────────── *@
+    <div class="d-flex justify-content-between">
+        <a asp-action="Step2"
+           asp-route-id="@Model.DossierId"
+           class="btn btn-outline-secondary">
+            ← Précédent
+        </a>
+        <button type="submit" class="btn btn-primary">
+            Suivant : Documents →
+        </button>
+    </div>
+
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+    function setDocAvailable(hasDoc) {
+        document.getElementById('doc-yes').checked  = hasDoc;
+        document.getElementById('doc-no').checked   = !hasDoc;
+        document.getElementById('cdn-fields').style.display    = hasDoc ? 'block' : 'none';
+        document.getElementById('renewal-field').style.display = hasDoc ? 'none'  : 'block';
+        document.getElementById('panel-has-doc').className =
+            'p-3 rounded border ' + (hasDoc ? 'border-success' : 'border-secondary');
+        document.getElementById('panel-no-doc').className =
+            'p-3 rounded border mt-2 ' + (!hasDoc ? 'border-warning' : 'border-secondary');
+    }
+
+    function toggleForeignFields(show) {
+        document.getElementById('foreign-fields').style.display = show ? 'block' : 'none';
+    }
+    </script>
+}

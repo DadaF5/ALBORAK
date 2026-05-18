@@ -25,9 +25,9 @@ namespace FRAProject.Infrastructure.Interfaces
         IGenericRepository<AcCategory> AcCategories { get; }
         IGenericRepository<AcStatusType> AcStatusTypes { get; }
 
-        //IGenericRepository<CdnDocType> CdnDocTypes { get; }
-        //IGenericRepository<MissionRole> MissionRoles { get; }
-        //IGenericRepository<ImmatriculationDocType> ImmatriculationDocTypes { get; }
+        IGenericRepository<CdnDocType> CdnDocTypes { get; }
+        IGenericRepository<MissionRole> MissionRoles { get; }
+        IGenericRepository<ImmatriculationDocType> ImmatriculationDocTypes { get; }
 
         // ── Settings ──────────────────────────────────────────────────────
         IGenericRepository<AircraftVersion> AircraftVersions { get; }
@@ -35,11 +35,11 @@ namespace FRAProject.Infrastructure.Interfaces
         IGenericRepository<Base> Bases { get; }
 
         // ── Immatriculation dossier ───────────────────────────────────────
-        //IGenericRepository<ImmatriculationDossier> Dossiers { get; }
-        //IGenericRepository<DossierAuthority> DossierAuthorities { get; }
-        //IGenericRepository<DossierAircraft> DossierAircrafts { get; }
-        //IGenericRepository<DossierAirworthiness> DossierAirworthiness { get; }
-        //IGenericRepository<ImmatriculationDocument> ImmatriculationDocuments { get; }
+        IGenericRepository<ImmatriculationDossier> Dossiers { get; }
+        IGenericRepository<DossierAuthority> DossierAuthorities { get; }
+        IGenericRepository<DossierAircraft> DossierAircrafts { get; }
+        IGenericRepository<DossierAirworthiness> DossierAirworthiness { get; }
+        IGenericRepository<ImmatriculationDocument> ImmatriculationDocuments { get; }
 
         // Add more as you build:
         IGenericRepository<AcType> AcTypes { get; }

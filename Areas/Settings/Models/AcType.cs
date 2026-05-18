@@ -1,6 +1,4 @@
 using FRAProject.Areas.AircraftMaintenance.Models;
-using FRAProject.Areas.Settings.Models;
-using FRAProject.Areas.SquadronOps.Controllers;
 using FRAProject.Areas.SquadronOps.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -8,60 +6,92 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace FRAProject.Areas.Settings.Models
 {
     /// <summary>
-    /// Aircraft Type - specific variant of an aircraft (e.g., F-16C, F-16D)
-    /// Child of AcMainGroup (e.g., F-16 Fighting Falcon)
-    /// Parent of AircraftVersion (e.g., Block 50, Block 52+)
+    /// Aircraft Type — specific variant within a main group.
+    /// Hierarchy: AcCategory → AcMainGroup → AcType → AircraftVersion
+    ///
+    /// Examples:
+    ///   AcMainGroup = "Chasse 2BAFRA" → AcType = "F-16C", "F-16D"
+    ///   AcMainGroup = "Transport"     → AcType = "CN-235", "C-130"
+    ///
+    /// Two FK parents:
+    ///   AcMainGroupId          → AcMainGroup  (required)
+    ///   AircraftManufacturerId → AircraftManufacturer (optional)
+    ///
+    /// Technical specs used by:
+    ///   SquadronOps  — sortie planning (SeatCount, MaxPassengers)
+    ///   MRO2         — maintenance limits (MaxGrossWeight, MaxEngines)
+    ///
+    /// Table: "AcTypes" — plural kept (matches existing DB).
+    /// Schema attribute removed — EF uses default schema (dbo).
+    ///
+    /// Changes vs original:
+    ///   [Required] / [ForeignKey] annotations removed → Fluent API
+    ///   virtual keyword removed → not needed in EF Core
+    ///   new HashSet<>() → []
+    ///   Code made non-nullable → Required (platform convention)
+    ///   using SquadronOps.Controllers removed → was wrong namespace
     /// </summary>
-    [Table("AcTypes", Schema = "dbo")]
+    [Table("AcTypes")]
     public class AcType
     {
+        // ── Primary Key ──────────────────────────────────────────────────
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        [Required]
-        [StringLength(100)]
+        // ── Identity fields ──────────────────────────────────────────────
+
+        /// <summary>
+        /// Short uppercase code — unique per AcMainGroup.
+        /// e.g. "F16C", "CN235", "C130"
+        /// Changed from nullable to required — platform convention.
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
+
+        /// <summary>Full type name — e.g. "F-16C Fighting Falcon"</summary>
         public string Name { get; set; } = string.Empty;
 
-        [Required]
-        [StringLength(250)]
-        public string Description { get; set; } = string.Empty;
+        /// <summary>Optional description — 250 chars.</summary>
+        public string? Description { get; set; }
 
-        [StringLength(30)]
-        public string? Code { get; set; }
+        // ── Display ordering & status ─────────────────────────────────────
+        public byte SortOrder { get; set; } = 99;
+        public bool IsActive  { get; set; } = true;
 
-        // Technical specifications
-        [Required]
-        public double MaxGrossweight { get; set; }
+        // ── Technical specifications ──────────────────────────────────────
+        // Used by SquadronOps (sortie planning) and MRO2 (maintenance limits).
 
-        [Required]
-        public int MaxPassengers { get; set; }
+        /// <summary>Maximum gross weight in kilograms.</summary>
+        public double MaxGrossWeight { get; set; }
 
-        [Required]
-        public int SeatCount { get; set; }
-
-        [Required]
+        /// <summary>Maximum number of engines.</summary>
         public int MaxEngines { get; set; }
 
-        public bool IsActive { get; set; } = true;
-        public byte SortOrder { get; set; } = 99;
+        /// <summary>Total seat count (crew + passengers).</summary>
+        public int SeatCount { get; set; }
 
-        // Foreign Keys
-        [Required]
+        /// <summary>Maximum passenger capacity (excluding crew).</summary>
+        public int MaxPassengers { get; set; }
+
+        // ── FK → AcMainGroup (required) ───────────────────────────────────
         public int AcMainGroupId { get; set; }
-        
+
+        // ── FK → AircraftManufacturer (optional) ──────────────────────────
         public int? AircraftManufacturerId { get; set; }
 
-        // Navigation properties
-        [ForeignKey("AcMainGroupId")]
-        public virtual AcMainGroup? AcMainGroup { get; set; }
+        // ── Computed — not mapped to DB ───────────────────────────────────
+        /// <summary>Used in dropdown lists: "Code — Name"</summary>
+        [NotMapped]
+        public string DisplayLabel => $"{Code} — {Name}";
 
-        [ForeignKey("AircraftManufacturerId")]
-        public virtual AircraftManufacturer? AircraftManufacturer { get; set; }
+        // ── Navigation properties ─────────────────────────────────────────
+        // No virtual — EF Core uses explicit Include(), not lazy loading.
+        public AcMainGroup?          AcMainGroup          { get; set; }
+        public AircraftManufacturer? AircraftManufacturer { get; set; }
 
-        // Collections
-        public virtual ICollection<AircraftVersion> AircraftVersions { get; set; } = new HashSet<AircraftVersion>();
-        public virtual ICollection<Aircraft> Aircrafts { get; set; } = new HashSet<Aircraft>();
-        public virtual ICollection<Sortie> Sorties { get; set; } = new HashSet<Sortie>();
+        // Children
+        public ICollection<AircraftVersion> AircraftVersions { get; set; } = [];
+        public ICollection<Aircraft>        Aircrafts        { get; set; } = [];
+        public ICollection<Sortie>          Sorties          { get; set; } = [];
     }
 }

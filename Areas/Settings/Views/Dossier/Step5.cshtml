@@ -1,0 +1,231 @@
+@* ════════════════════════════════════════════════════════════════
+   Save as: Areas/Settings/Views/Dossier/Step5.cshtml
+   ════════════════════════════════════════════════════════════════ *@
+@model FRAProject.Areas.Settings.ViewModels.DossierStep5Dto
+@{
+    ViewData["Title"] = "Immatriculation — Étape 5";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">Récapitulatif & Attestation</h4>
+        <small class="text-muted">
+            Réf. Art. 15 — Guide GUI-DPC-001
+        </small>
+    </div>
+    <span class="badge bg-warning text-dark">Form 5a — Étape 5/5</span>
+</div>
+
+@await Html.PartialAsync("_WizardProgress",
+    (FRAProject.Areas.Settings.ViewModels.WizardProgressVm)ViewBag.Progress)
+
+@* ── Recap panel ──────────────────────────────────────────────── *@
+<div class="card border-secondary mb-3">
+    <div class="card-header bg-dark border-secondary">
+        <h6 class="mb-0 text-warning">
+            <i class="fas fa-clipboard-check me-2"></i>
+            Récapitulatif du dossier
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            <div class="col-md-6">
+                <div class="p-3 rounded border border-secondary">
+                    <div class="text-muted small mb-2"
+                         style="text-transform:uppercase;letter-spacing:.8px;
+                                font-size:10px;">
+                        Autorité d'emploi
+                    </div>
+                    <table class="table table-dark table-sm mb-0" style="font-size:12px;">
+                        <tr>
+                            <td class="text-muted border-0 ps-0" style="width:40%;">
+                                Autorité
+                            </td>
+                            <td class="border-0">@(Model.AuthorityName ?? "—")</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted border-0 ps-0">N° OGMN</td>
+                            <td class="border-0 font-monospace text-warning">
+                                @(Model.OgmnNumber ?? "—")
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="p-3 rounded border border-secondary">
+                    <div class="text-muted small mb-2"
+                         style="text-transform:uppercase;letter-spacing:.8px;
+                                font-size:10px;">
+                        Aéronef
+                    </div>
+                    <table class="table table-dark table-sm mb-0" style="font-size:12px;">
+                        <tr>
+                            <td class="text-muted border-0 ps-0" style="width:40%;">
+                                Immatriculation
+                            </td>
+                            <td class="border-0">
+                                @if (!string.IsNullOrEmpty(Model.FullImmatriculation))
+                                {
+                                    <span class="badge bg-warning text-dark"
+                                          style="font-family:monospace;font-size:14px;
+                                                 font-weight:700;letter-spacing:3px;">
+                                        @Model.FullImmatriculation
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fst-italic">Non attribuée</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted border-0 ps-0">N° Série</td>
+                            <td class="border-0 font-monospace">
+                                @(Model.SerialNumber ?? "—")
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            @* Documents status *@
+            <div class="col-12">
+                <div class="p-3 rounded border @(Model.AllRequiredUploaded ? "border-success" : "border-danger")">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas @(Model.AllRequiredUploaded ? "fa-check-circle text-success" : "fa-exclamation-circle text-danger")"></i>
+                        <span style="font-size:13px;">
+                            Documents : @Model.UploadedDocCount / @Model.RequiredDocCount
+                            obligatoires téléchargés
+                        </span>
+                        @if (!Model.AllRequiredUploaded)
+                        {
+                            <a asp-action="Step4"
+                               asp-route-id="@Model.DossierId"
+                               class="btn btn-outline-danger btn-sm ms-auto">
+                                Compléter les documents
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@* ── Attestation form ─────────────────────────────────────────── *@
+<div class="card border-secondary mb-3">
+    <div class="card-header bg-dark border-secondary">
+        <h6 class="mb-0 text-warning">
+            <i class="fas fa-pen-nib me-2"></i>
+            Attestation du demandeur
+        </h6>
+    </div>
+    <div class="card-body">
+
+        <form asp-action="Submit" asp-route-id="@Model.DossierId" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="DossierId" />
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    @Html.ValidationSummary(false)
+                </div>
+            }
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label asp-for="AttestationCity"
+                           class="form-label text-muted small">
+                        Fait à <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="AttestationCity"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="Ville / Base aérienne" />
+                    <span asp-validation-for="AttestationCity"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="AttestationDate"
+                           class="form-label text-muted small">
+                        Date <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="AttestationDate"
+                           type="date"
+                           class="form-control bg-dark text-white border-secondary" />
+                    <span asp-validation-for="AttestationDate"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-5">
+                    <label asp-for="SignatoryName"
+                           class="form-label text-muted small">
+                        Nom, grade et fonction du signataire
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="SignatoryName"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="Col. / Cne — Chef OGMN" />
+                    <span asp-validation-for="SignatoryName"
+                          class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <div class="p-3 rounded border border-secondary"
+                         style="background:rgba(255,193,7,0.05);">
+                        <div class="form-check">
+                            <input asp-for="AttestationConfirmed"
+                                   type="checkbox"
+                                   class="form-check-input"
+                                   id="attestCheck" />
+                            <label class="form-check-label"
+                                   for="attestCheck"
+                                   style="font-size:13px;">
+                                Le soussigné déclare exacts les renseignements
+                                fournis dans cette demande, conformément à
+                                l'article 15 du Guide GUI-DPC-001 de la Direction
+                                de l'Aéronautique Militaire.
+                            </label>
+                        </div>
+                        <span asp-validation-for="AttestationConfirmed"
+                              class="text-danger small"></span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="d-flex justify-content-between mt-4
+                         pt-3 border-top border-secondary">
+                <a asp-action="Step4"
+                   asp-route-id="@Model.DossierId"
+                   class="btn btn-outline-secondary">
+                    ← Précédent
+                </a>
+                <div class="d-flex gap-2">
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Enregistrer brouillon
+                    </a>
+                    <button type="submit"
+                            class="btn btn-success"
+                            @(!Model.AllRequiredUploaded ? "disabled" : "")>
+                        <i class="fas fa-paper-plane me-1"></i>
+                        Soumettre à la DAM
+                    </button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

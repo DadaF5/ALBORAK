@@ -1,0 +1,46 @@
+@* ════════════════════════════════════════════════════════════════
+   Save as: Areas/Settings/Views/MissionRole/Create.cshtml
+   ════════════════════════════════════════════════════════════════ *@
+@model FRAProject.Areas.Settings.ViewModels.MissionRoleFormDto
+@{
+    ViewData["Title"] = "Nouveau rôle / mission";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">Nouveau rôle / mission</h4>
+        <small class="text-muted">
+            <a asp-action="Index" class="text-muted text-decoration-none">
+                <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+            </a>
+        </small>
+    </div>
+</div>
+
+<div class="card border-secondary">
+    <div class="card-header bg-dark border-secondary">
+        <h6 class="mb-0 text-muted">
+            <i class="fas fa-crosshairs me-2"></i>Informations du rôle
+        </h6>
+    </div>
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            @await Html.PartialAsync("_Form", Model)
+            <hr class="border-secondary mt-4" />
+            <div class="d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Annuler
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

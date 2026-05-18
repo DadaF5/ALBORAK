@@ -30,25 +30,25 @@ namespace FRAProject.Infrastructure
         private IGenericRepository<Country>? _countries;
         private IGenericRepository<AcCategory>? _acCategories;
         private IGenericRepository<AcType>? _acTypes;
-        private IGenericRepository<AircraftVersion>? _aircraftVersions;
+       
         private IGenericRepository<EmployingAuthority>? _employingAuthorities;
         private IGenericRepository<AcStatusType>? _acStatusTypes;
 
-        //private IGenericRepository<CdnDocType>? _cdnDocTypes;
-        //private IGenericRepository<MissionRole>? _missionRoles;
-        //private IGenericRepository<ImmatriculationDocType>? _immatriculationDocTypes;
+        private IGenericRepository<CdnDocType>? _cdnDocTypes;
+        private IGenericRepository<MissionRole>? _missionRoles;
+        private IGenericRepository<ImmatriculationDocType>? _immatriculationDocTypes;
 
-        // Settings
-        //private IGenericRepository<AircraftVersion>? _aircraftVersions;
+        // Settings        
         private IGenericRepository<AircraftManufacturer>? _aircraftManufacturers;
+        private IGenericRepository<AircraftVersion>? _aircraftVersions;
         private IGenericRepository<Base>? _bases;
 
-        //// Immatriculation dossier
-        //private IGenericRepository<ImmatriculationDossier>? _dossiers;
-        //private IGenericRepository<DossierAuthority>? _dossierAuthorities;
-        //private IGenericRepository<DossierAircraft>? _dossierAircrafts;
-        //private IGenericRepository<DossierAirworthiness>? _dossierAirworthiness;
-        //private IGenericRepository<ImmatriculationDocument>? _immatriculationDocuments;
+        // Immatriculation dossier
+        private IGenericRepository<ImmatriculationDossier>? _dossiers;
+        private IGenericRepository<DossierAuthority>? _dossierAuthorities;
+        private IGenericRepository<DossierAircraft>? _dossierAircrafts;
+        private IGenericRepository<DossierAirworthiness>? _dossierAirworthiness;
+        private IGenericRepository<ImmatriculationDocument>? _immatriculationDocuments;
 
         // ── Repository accessors (lazy init) ──────────────────────────────
 
@@ -64,17 +64,14 @@ namespace FRAProject.Infrastructure
             _employingAuthorities ??= new GenericRepository<EmployingAuthority>(_context);
         public IGenericRepository<AcStatusType> AcStatusTypes =>
             _acStatusTypes ??= new GenericRepository<AcStatusType>(_context);
+        public IGenericRepository<CdnDocType> CdnDocTypes =>
+            _cdnDocTypes ??= new GenericRepository<CdnDocType>(_context);
 
+        public IGenericRepository<MissionRole> MissionRoles =>
+            _missionRoles ??= new GenericRepository<MissionRole>(_context);
 
-
-        //public IGenericRepository<CdnDocType> CdnDocTypes =>
-        //    _cdnDocTypes ??= new GenericRepository<CdnDocType>(_context);
-
-        //public IGenericRepository<MissionRole> MissionRoles =>
-        //    _missionRoles ??= new GenericRepository<MissionRole>(_context);
-
-        //public IGenericRepository<ImmatriculationDocType> ImmatriculationDocTypes =>
-        //    _immatriculationDocTypes ??= new GenericRepository<ImmatriculationDocType>(_context);
+        public IGenericRepository<ImmatriculationDocType> ImmatriculationDocTypes =>
+            _immatriculationDocTypes ??= new GenericRepository<ImmatriculationDocType>(_context);
 
         // Settings
         public IGenericRepository<AircraftVersion> AircraftVersions =>
@@ -86,21 +83,21 @@ namespace FRAProject.Infrastructure
         public IGenericRepository<Base> Bases =>
             _bases ??= new GenericRepository<Base>(_context);
 
-        //// Immatriculation dossier
-        //public IGenericRepository<ImmatriculationDossier> Dossiers =>
-        //    _dossiers ??= new GenericRepository<ImmatriculationDossier>(_context);
+        // Immatriculation dossier
+        public IGenericRepository<ImmatriculationDossier> Dossiers =>
+            _dossiers ??= new GenericRepository<ImmatriculationDossier>(_context);
 
-        //public IGenericRepository<DossierAuthority> DossierAuthorities =>
-        //    _dossierAuthorities ??= new GenericRepository<DossierAuthority>(_context);
+        public IGenericRepository<DossierAuthority> DossierAuthorities =>
+            _dossierAuthorities ??= new GenericRepository<DossierAuthority>(_context);
 
-        //public IGenericRepository<DossierAircraft> DossierAircrafts =>
-        //    _dossierAircrafts ??= new GenericRepository<DossierAircraft>(_context);
+        public IGenericRepository<DossierAircraft> DossierAircrafts =>
+            _dossierAircrafts ??= new GenericRepository<DossierAircraft>(_context);
 
-        //public IGenericRepository<DossierAirworthiness> DossierAirworthiness =>
-        //    _dossierAirworthiness ??= new GenericRepository<DossierAirworthiness>(_context);
+        public IGenericRepository<DossierAirworthiness> DossierAirworthiness =>
+            _dossierAirworthiness ??= new GenericRepository<DossierAirworthiness>(_context);
 
-        //public IGenericRepository<ImmatriculationDocument> ImmatriculationDocuments =>
-        //    _immatriculationDocuments ??= new GenericRepository<ImmatriculationDocument>(_context);
+        public IGenericRepository<ImmatriculationDocument> ImmatriculationDocuments =>
+            _immatriculationDocuments ??= new GenericRepository<ImmatriculationDocument>(_context);
 
         // ── Commit ────────────────────────────────────────────────────────
         // Single method — CompleteAsync() — matches IUnitOfWork contract.

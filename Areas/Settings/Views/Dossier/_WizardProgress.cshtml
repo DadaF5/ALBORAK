@@ -1,0 +1,120 @@
+@using FRAProject.Areas.Settings.ViewModels
+@using Microsoft.AspNetCore.Html
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model FRAProject.Areas.Settings.ViewModels.WizardProgressVm
+
+<div class="card border-secondary mb-4">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex align-items-center">
+
+            @for (int i = 1; i <= 5; i++)
+            {
+                var state = Model.StepState(i);
+                var canNav = Model.CanNavigateTo(i);
+                var label = WizardProgressVm.StepLabels[i - 1];
+                var isLast = i == 5;
+
+                <div class="d-flex align-items-center flex-fill">
+
+                    @if (canNav && state == "done")
+                    {
+                        <a asp-action="Step@(i == 1 ? "1" : i.ToString())"
+                           asp-route-id="@Model.DossierId"
+                           class="d-flex align-items-center gap-2 text-decoration-none"
+                           title="Revenir à l'étape @i">
+                            @RenderStepIcon(state, i)
+                            <span class="@StepLabelClass(state) d-none d-md-inline"
+                                  style="font-size:11px;">
+                                @label
+                            </span>
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="d-flex align-items-center gap-2">
+                            @RenderStepIcon(state, i)
+                            <span class="@StepLabelClass(state) d-none d-md-inline"
+                                  style="font-size:11px;">
+                                @label
+                            </span>
+                        </div>
+                    }
+
+                    @if (!isLast)
+                    {
+                        <div class="flex-fill mx-2"
+                             style="height:2px;background:@ConnectorColor(state, i);">
+                        </div>
+                    }
+                </div>
+            }
+
+        </div>
+
+        <div class="mt-2 d-flex justify-content-between">
+            <small class="text-muted">
+                Étape @Model.CurrentStep sur 5
+            </small>
+            <small>
+                @if (Model.Status == "Brouillon")
+                {
+                    <span class="badge bg-secondary">Brouillon</span>
+                }
+                else if (Model.Status == "Soumis")
+                {
+                    <span class="badge bg-primary">Soumis</span>
+                }
+                else
+                {
+                    <span class="badge bg-warning text-dark">@Model.Status</span>
+                }
+            </small>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string StepLabelClass(string state) => state switch
+    {
+        "done" => "text-success fw-500",
+        "active" => "text-warning fw-600",
+        _ => "text-secondary"
+    };
+
+    string ConnectorColor(string state, int stepIndex)
+    {
+        return state == "done" ? "#198754" : "#495057";
+    }
+
+    IHtmlContent RenderStepIcon(string state, int stepNumber)
+    {
+        var html = state switch
+        {
+            "done" => $@"
+<div style=""width:28px;height:28px;border-radius:50%;
+            background:#198754;border:2px solid #198754;
+            display:flex;align-items:center;justify-content:center;
+            flex-shrink:0;"">
+    <i class=""fas fa-check text-white"" style=""font-size:11px;""></i>
+</div>",
+
+            "active" => $@"
+<div style=""width:28px;height:28px;border-radius:50%;
+            background:rgba(255,193,7,0.15);border:2px solid #ffc107;
+            display:flex;align-items:center;justify-content:center;
+            flex-shrink:0;color:#ffc107;font-size:12px;font-weight:700;"">
+    {stepNumber}
+</div>",
+
+            _ => $@"
+<div style=""width:28px;height:28px;border-radius:50%;
+            background:transparent;border:2px solid #495057;
+            display:flex;align-items:center;justify-content:center;
+            flex-shrink:0;color:#6c757d;font-size:12px;"">
+    {stepNumber}
+</div>"
+        };
+
+        return new HtmlString(html);
+    }
+}

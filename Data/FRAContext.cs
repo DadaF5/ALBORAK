@@ -11,7 +11,6 @@ using FRAProject.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using System;
 
 namespace FRAProject.Data
 {
@@ -81,29 +80,21 @@ namespace FRAProject.Data
         public DbSet<AircraftVersion> AircraftVersions { get; set; } = null!;
         public DbSet<AircraftManufacturer> AircraftManufacturers { get; set; } = null!;
 
-        // ── Lookup tables — Form 5a / ImmatriculationDossier feature ─────
+        // ── Lookup tables — Form 5a / ImmatriculationDossier ─────────────
         public DbSet<Country> Countries { get; set; } = null!;
         public DbSet<EmployingAuthority> EmployingAuthorities { get; set; } = null!;
-        //public DbSet<CdnDocType> CdnDocTypes { get; set; } = null!;
-        //public DbSet<MissionRole> MissionRoles { get; set; } = null!;
-        //public DbSet<ImmatriculationDocType> ImmatriculationDocTypes { get; set; } = null!;
+        public DbSet<CdnDocType> CdnDocTypes { get; set; } = null!;
+        public DbSet<MissionRole> MissionRoles { get; set; } = null!;
+        public DbSet<ImmatriculationDocType> ImmatriculationDocTypes { get; set; } = null!;
 
-        //// ── Immatriculation dossier ───────────────────────────────────────
-        //public DbSet<ImmatriculationDossier> Dossiers { get; set; } = null!;
-        //public DbSet<DossierAuthority> DossierAuthorities { get; set; } = null!;
-        //public DbSet<DossierAircraft> DossierAircrafts { get; set; } = null!;
-        //public DbSet<DossierAirworthiness> DossierAirworthiness { get; set; } = null!;
-        //public DbSet<ImmatriculationDocument> ImmatriculationDocuments { get; set; } = null!;
-
-        // Uncomment when ImmatriculationDossier is built:
-        // public DbSet<ImmatriculationDossier>  ImmatriculationDossiers  { get; set; } = null!;
-        // public DbSet<ImmatriculationDocument> ImmatriculationDocuments { get; set; } = null!;
-
-        //public DbSet<MaintenanceType> MaintenanceTypes { get; set; } = null!;
-        //public DbSet<EngineType> EngineTypes { get; set; } = null!;
-        //public DbSet<SgsEventType> SgsEventTypes { get; set; } = null!;
-        //public DbSet<RiskLevel> RiskLevels { get; set; } = null!;
-        //public DbSet<FluidType> FluidTypes { get; set; } = null!;
+        // ── Immatriculation dossier ───────────────────────────────────────
+        // FIX: One DbSet per entity — duplicate ImmatriculationDossiers removed.
+        // "Dossiers" is the correct property name used throughout controllers.
+        public DbSet<ImmatriculationDossier> Dossiers { get; set; } = null!;
+        public DbSet<DossierAuthority> DossierAuthorities { get; set; } = null!;
+        public DbSet<DossierAircraft> DossierAircrafts { get; set; } = null!;
+        public DbSet<DossierAirworthiness> DossierAirworthiness { get; set; } = null!;
+        public DbSet<ImmatriculationDocument> ImmatriculationDocuments { get; set; } = null!;
 
         // ════════════════════════════════════════════════════════════════
         //  OnModelCreating
@@ -119,33 +110,22 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new PhaseConfiguration());
             modelBuilder.ApplyConfiguration(new SortieCrewConfiguration());
 
-            // ── NEW: Country — Fluent API + seed data ─────────────────────
+            // ── Lookup tables — Fluent API + seed data ────────────────────
             modelBuilder.ApplyConfiguration(new CountryConfiguration());
-
-            // ── NEW: EmployingAuthority — Fluent API + seed data ──────────
             modelBuilder.ApplyConfiguration(new EmployingAuthorityConfiguration());
-
-            // ── NEW: AcCategory — Fluent API + seed data ──────────────────
             modelBuilder.ApplyConfiguration(new AcCategoryConfiguration());
+            modelBuilder.ApplyConfiguration(new CdnDocTypeConfiguration());
+            modelBuilder.ApplyConfiguration(new MissionRoleConfiguration());
+            modelBuilder.ApplyConfiguration(new ImmatriculationDocTypeConfiguration());
 
-            //// ── NEW: CdnDocType — Fluent API + seed data ──────────────────
-            //modelBuilder.ApplyConfiguration(new CdnDocTypeConfiguration());
-
-            //// ── NEW: MissionRole — Fluent API + seed data ─────────────────
-            //modelBuilder.ApplyConfiguration(new MissionRoleConfiguration());
-
-            //// ── NEW: ImmatriculationDocType — Fluent API + seed data ──────
-            //// All 6 lookup tables now complete.
-            //modelBuilder.ApplyConfiguration(new ImmatriculationDocTypeConfiguration());
-
-            //// ── Immatriculation dossier — 4 configurations ────────────────
-            //// DossierConfiguration handles the shared PK (1:1) pattern
-            //// and all FK relationships across the 4 tables.
-            //modelBuilder.ApplyConfiguration(new DossierConfiguration());
-            //modelBuilder.ApplyConfiguration(new DossierAuthorityConfiguration());
-            //modelBuilder.ApplyConfiguration(new DossierAircraftConfiguration());
-            //modelBuilder.ApplyConfiguration(new DossierAirworthinessConfiguration());
-            //modelBuilder.ApplyConfiguration(new ImmatriculationDocumentConfiguration());
+            // ── Immatriculation dossier — 5 configurations ───────────────
+            // All class names prefixed with "ImmatriculationDossier" to avoid
+            // conflicts with existing configuration classes in the project.
+            modelBuilder.ApplyConfiguration(new ImmatriculationDossierConfiguration());
+            modelBuilder.ApplyConfiguration(new ImmatriculationDossierAuthorityConfiguration());
+            modelBuilder.ApplyConfiguration(new ImmatriculationDossierAircraftConfiguration());
+            modelBuilder.ApplyConfiguration(new ImmatriculationDossierAirworthinessConfiguration());
+            modelBuilder.ApplyConfiguration(new ImmatriculationDossierDocumentConfiguration());
 
             // ── Decimal precision ─────────────────────────────────────────
             ConfigureDecimalPrecision(modelBuilder);
@@ -168,23 +148,7 @@ namespace FRAProject.Data
                     .WithOne(p => p.CrewMember)
                     .HasForeignKey<CrewMember>(cm => cm.PersonId)
                     .OnDelete(DeleteBehavior.Restrict);
-
-                b.HasOne(cm => cm.Squadron)
-                    .WithMany(s => s.CrewMembers)
-                    .HasForeignKey(cm => cm.SquadronId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                b.HasOne(cm => cm.PrimaryQualification)
-                    .WithMany()
-                    .HasForeignKey(cm => cm.PrimaryQualificationId)
-                    .OnDelete(DeleteBehavior.SetNull);
             });
-
-            modelBuilder.Entity<CrewMember>()
-                .HasMany(cm => cm.MedicalChecks)
-                .WithOne(mc => mc.CrewMember)
-                .HasForeignKey(mc => mc.CrewMemberId)
-                .OnDelete(DeleteBehavior.Cascade);
 
             // ── Qualification ─────────────────────────────────────────────
             modelBuilder.Entity<Qualification>(b =>

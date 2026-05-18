@@ -1,0 +1,117 @@
+@* ════════════════════════════════════════════════════════════════
+   Save as: Areas/Settings/Views/ImmatriculationDocType/_Form.cshtml
+   ════════════════════════════════════════════════════════════════ *@
+@model FRAProject.Areas.Settings.ViewModels.ImmatriculationDocTypeFormDto
+
+<div class="row g-3">
+
+    @* ── Code ─────────────────────────────────────────────────────── *@
+    <div class="col-md-2">
+        <label asp-for="Code" class="form-label text-muted small">
+            Code <span class="text-danger">*</span>
+        </label>
+        <input asp-for="Code"
+               class="form-control bg-dark text-white border-secondary text-uppercase"
+               placeholder="ex: DOC01"
+               maxlength="10"
+               style="letter-spacing:2px;font-family:monospace;"
+               oninput="this.value=this.value.toUpperCase()" />
+        <span asp-validation-for="Code" class="text-danger small"></span>
+    </div>
+
+    @* ── ArticleReference ─────────────────────────────────────────── *@
+    <div class="col-md-2">
+        <label asp-for="ArticleReference" class="form-label text-muted small">
+            Réf. réglementaire
+        </label>
+        <input asp-for="ArticleReference"
+               class="form-control bg-dark text-white border-secondary"
+               placeholder="ex: Art. 15.1"
+               maxlength="20" />
+        <span asp-validation-for="ArticleReference" class="text-danger small"></span>
+    </div>
+
+    @* ── IsRequired ───────────────────────────────────────────────── *@
+    <div class="col-md-2">
+        <label class="form-label text-muted small">Obligatoire</label>
+        <div class="d-flex gap-3 mt-1">
+            <div class="form-check">
+                <input class="form-check-input" type="radio"
+                       name="IsRequired" id="req-yes"
+                       value="true" @(Model.IsRequired ? "checked" : "") />
+                <label class="form-check-label text-success" for="req-yes">
+                    Oui
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio"
+                       name="IsRequired" id="req-no"
+                       value="false" @(!Model.IsRequired ? "checked" : "") />
+                <label class="form-check-label text-muted" for="req-no">
+                    Non
+                </label>
+            </div>
+        </div>
+        <span asp-validation-for="IsRequired" class="text-danger small"></span>
+    </div>
+
+    @* ── AcceptedFormats ──────────────────────────────────────────── *@
+    <div class="col-md-2">
+        <label asp-for="AcceptedFormats" class="form-label text-muted small">
+            Formats acceptés
+        </label>
+        <input asp-for="AcceptedFormats"
+               class="form-control bg-dark text-white border-secondary text-uppercase"
+               placeholder="ex: PDF,JPG"
+               maxlength="50"
+               oninput="this.value=this.value.toUpperCase()" />
+        <span asp-validation-for="AcceptedFormats" class="text-danger small"></span>
+        <small class="text-muted">Séparés par virgule</small>
+    </div>
+
+    @* ── MaxFileSizeMb ────────────────────────────────────────────── *@
+    <div class="col-md-1">
+        <label asp-for="MaxFileSizeMb" class="form-label text-muted small">
+            Max (Mo)
+        </label>
+        <input asp-for="MaxFileSizeMb"
+               type="number"
+               class="form-control bg-dark text-white border-secondary"
+               min="1" max="100" />
+        <span asp-validation-for="MaxFileSizeMb" class="text-danger small"></span>
+    </div>
+
+    @* ── SortOrder ────────────────────────────────────────────────── *@
+    <div class="col-md-1">
+        <label asp-for="SortOrder" class="form-label text-muted small">
+            Ordre
+        </label>
+        <input asp-for="SortOrder"
+               type="number"
+               class="form-control bg-dark text-white border-secondary"
+               min="0" max="9999" />
+        <span asp-validation-for="SortOrder" class="text-danger small"></span>
+    </div>
+
+    @* ── IsActive ─────────────────────────────────────────────────── *@
+    <div class="col-md-2 d-flex align-items-end pb-2">
+        <div class="form-check form-switch">
+            <input asp-for="IsActive" class="form-check-input"
+                   type="checkbox" role="switch" />
+            <label asp-for="IsActive" class="form-check-label text-muted">Actif</label>
+        </div>
+    </div>
+
+    @* ── Name ─────────────────────────────────────────────────────── *@
+    <div class="col-12">
+        <label asp-for="Name" class="form-label text-muted small">
+            Nom du document <span class="text-danger">*</span>
+        </label>
+        <input asp-for="Name"
+               class="form-control bg-dark text-white border-secondary"
+               placeholder="ex: Justificatif de propriété ou droit d'exploitation…"
+               maxlength="200" />
+        <span asp-validation-for="Name" class="text-danger small"></span>
+    </div>
+
+</div>

@@ -1,10 +1,10 @@
 using FRAProject.Areas.Settings.Models;
-using FRAProject.Data;
-using FRAProject.DTOs;
+using FRAProject.Areas.Settings.ViewModels;
+using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Areas.Settings.Controllers
 {
@@ -12,288 +12,379 @@ namespace FRAProject.Areas.Settings.Controllers
     [Authorize(Roles = "Admin")]
     public class AcTypesController : Controller
     {
-        private readonly FRAContext _context;
+        private readonly IUnitOfWork        _uow;
+        private readonly IValidationService _validator;
 
-        public AcTypesController(FRAContext context)
+        private const int DefaultPageSize = 10;
+
+        public AcTypesController(IUnitOfWork uow, IValidationService validator)
         {
-            _context = context;
+            _uow       = uow;
+            _validator = validator;
         }
 
-        // GET: Settings/AcTypes
-        public async Task<IActionResult> Index()
+        // ── INDEX ────────────────────────────────────────────────────────
+        public async Task<IActionResult> Index(
+            string? searchCode           = null,
+            string? searchName           = null,
+            int?    searchAcMainGroupId  = null,
+            int?    searchManufacturerId = null,
+            bool?   searchActive         = null,
+            string  sortColumn           = "SortOrder",
+            string  sortDirection        = "asc",
+            int     pageNumber           = 1,
+            int     pageSize             = DefaultPageSize)
         {
-            var types = await _context.AcTypes
-                .Include(t => t.AcMainGroup)
-                .Include(t => t.AircraftManufacturer)
-                .OrderBy(t => t.AcMainGroup.Name)
-                .ThenBy(t => t.SortOrder)
-                .ThenBy(t => t.Name)
-                .Select(t => new AcTypeDto
+            var result = await _uow.AcTypes.GetPagedAsync(
+
+                filter: x =>
+                    (string.IsNullOrWhiteSpace(searchCode)
+                        || x.Code.Contains(searchCode)) &&
+                    (string.IsNullOrWhiteSpace(searchName)
+                        || x.Name.Contains(searchName)) &&
+                    (searchAcMainGroupId == null
+                        || x.AcMainGroupId == searchAcMainGroupId) &&
+                    (searchManufacturerId == null
+                        || x.AircraftManufacturerId == searchManufacturerId) &&
+                    (searchActive == null || x.IsActive == searchActive),
+
+                orderBy: sortColumn switch
                 {
-                    Id = t.Id,
-                    Code = t.Code ?? string.Empty,
-                    Name = t.Name ?? string.Empty,
-                    Description = t.Description ?? string.Empty,
-                    IsActive = t.IsActive,
-                    SortOrder = t.SortOrder,
-                    MaxGrossweight = t.MaxGrossweight,
-                    MaxPassengers = t.MaxPassengers,
-                    SeatCount = t.SeatCount,
-                    MaxEngines = t.MaxEngines,
-                    AcMainGroupId = t.AcMainGroupId,
-                    AcMainGroupName = t.AcMainGroup != null ? t.AcMainGroup.Name : string.Empty,
-                    AircraftManufacturerId = t.AircraftManufacturerId,
-                    ManufacturerName = t.AircraftManufacturer != null ? t.AircraftManufacturer.Name : null
-                })
-                .ToListAsync();
+                    "Code"         => sortDirection == "desc"
+                                        ? q => q.OrderByDescending(x => x.Code)
+                                        : q => q.OrderBy(x => x.Code),
+                    "Name"         => sortDirection == "desc"
+                                        ? q => q.OrderByDescending(x => x.Name)
+                                        : q => q.OrderBy(x => x.Name),
+                    "AcMainGroup"  => sortDirection == "desc"
+                                        ? q => q.OrderByDescending(x => x.AcMainGroupId)
+                                        : q => q.OrderBy(x => x.AcMainGroupId),
+                    "Manufacturer" => sortDirection == "desc"
+                                        ? q => q.OrderByDescending(x => x.AircraftManufacturerId)
+                                        : q => q.OrderBy(x => x.AircraftManufacturerId),
+                    "IsActive"     => sortDirection == "desc"
+                                        ? q => q.OrderByDescending(x => x.IsActive)
+                                        : q => q.OrderBy(x => x.IsActive),
+                    _              => sortDirection == "desc"
+                                        ? q => q.OrderByDescending(x => x.SortOrder)
+                                        : q => q.OrderBy(x => x.SortOrder)
+                },
 
-            return View(types);
-        }
-
-        // GET: Settings/AcTypes/Create
-        public async Task<IActionResult> Create()
-        {
-            await PopulateDropdowns();
-
-            var dto = new AcTypeCreateDto
-            {
-                IsActive = true,
-                SortOrder = 99
-            };
-
-            return View(dto);
-        }
-
-        // POST: Settings/AcTypes/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(AcTypeCreateDto dto)
-        {
-            var normalizedCode = dto.Code.Trim().ToUpper();
-
-            var normalizedName = dto.Name.Trim() ;
-            var normalizedDescription = dto.Description.Trim() ;
-
-            if (await _context.AcTypes.AnyAsync(t => t.Code != null && t.Code.ToUpper() == normalizedCode))
-            {
-                ModelState.AddModelError("Code", $"Le code '{normalizedCode}' existe déjà.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(normalizedName) &&
-                await _context.AcTypes.AnyAsync(t => t.Name == normalizedName && t.AcMainGroupId == dto.AcMainGroupId))
-            {
-                ModelState.AddModelError("Name", $"Le type '{normalizedName}' existe déjà pour ce groupe principal.");
-            }
-
-            if (!ModelState.IsValid)
-            {
-                await PopulateDropdowns(dto.AcMainGroupId, dto.AircraftManufacturerId);
-                return View(dto);
-            }
-
-            var acType = new AcType
-            {
-                Code = normalizedCode,
-                Name = normalizedName,
-                Description = normalizedDescription,
-                AcMainGroupId = dto.AcMainGroupId,
-                AircraftManufacturerId = dto.AircraftManufacturerId,
-                MaxGrossweight = dto.MaxGrossweight,
-                MaxPassengers = dto.MaxPassengers,
-                SeatCount = dto.SeatCount,
-                MaxEngines = dto.MaxEngines,
-                IsActive = dto.IsActive,
-                SortOrder = dto.SortOrder
-            };
-
-            _context.AcTypes.Add(acType);
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "Type d'aéronef créé avec succès";
-            return RedirectToAction(nameof(Index));
-        }
-
-        // GET: Settings/AcTypes/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var acType = await _context.AcTypes.FindAsync(id);
-            if (acType == null)
-            {
-                return NotFound();
-            }
-
-            var dto = new AcTypeCreateDto
-            {
-                Id = acType.Id,
-                Code = acType.Code ?? string.Empty,
-                Name = acType.Name ?? string.Empty,
-                Description = acType.Description ?? string.Empty,
-                AcMainGroupId = acType.AcMainGroupId,
-                AircraftManufacturerId = acType.AircraftManufacturerId,
-                MaxGrossweight = acType.MaxGrossweight,
-                MaxPassengers = acType.MaxPassengers,
-                SeatCount = acType.SeatCount,
-                MaxEngines = acType.MaxEngines,
-                IsActive = acType.IsActive,
-                SortOrder = acType.SortOrder
-            };
-
-            await PopulateDropdowns(dto.AcMainGroupId, dto.AircraftManufacturerId);
-            return View(dto);
-        }
-
-        // POST: Settings/AcTypes/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, AcTypeCreateDto dto)
-        {
-            if (id != dto.Id)
-            {
-                return NotFound();
-            }
-
-            var normalizedCode = dto.Code.Trim().ToUpper();
-
-            var normalizedName = dto.Name.Trim();
-            var normalizedDescription = dto.Description.Trim() ;
-
-            // Vérification de l'unicité du code (en ignorant l'entité actuelle)
-            if (await _context.AcTypes.AnyAsync(t => t.Code != null && t.Code.ToUpper() == normalizedCode))
-            {
-                ModelState.AddModelError("Code", $"Le code '{normalizedCode}' existe déjà.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(normalizedName) &&
-                await _context.AcTypes.AnyAsync(t => t.Id != id && t.Name == normalizedName && t.AcMainGroupId == dto.AcMainGroupId))
-            {
-                ModelState.AddModelError("Name", $"Le type '{normalizedName}' existe déjà pour ce groupe principal.");
-            }
-
-            if (!ModelState.IsValid)
-            {
-                await PopulateDropdowns(dto.AcMainGroupId, dto.AircraftManufacturerId);
-                return View(dto);
-            }
-
-            try
-            {
-                var acType = await _context.AcTypes.FindAsync(id);
-                if (acType == null)
-                {
-                    return NotFound();
-                }
-
-                acType.Code = normalizedCode;
-                acType.Name = normalizedName;
-                acType.Description = normalizedDescription;
-                acType.AcMainGroupId = dto.AcMainGroupId;
-                acType.AircraftManufacturerId = dto.AircraftManufacturerId;
-                acType.MaxGrossweight = dto.MaxGrossweight;
-                acType.MaxPassengers = dto.MaxPassengers;
-                acType.SeatCount = dto.SeatCount;
-                acType.MaxEngines = dto.MaxEngines;
-                acType.IsActive = dto.IsActive;
-                acType.SortOrder = dto.SortOrder;
-
-                _context.Update(acType);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Type d'aéronef modifié avec succès";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!AcTypeExists(id))
-                {
-                    return NotFound();
-                }
-
-                throw;
-            }
-        }
-
-        // GET: Settings/AcTypes/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var acType = await _context.AcTypes
-                .Include(a => a.AcMainGroup)
-                .Include(a => a.AircraftManufacturer)
-                .FirstOrDefaultAsync(a => a.Id == id);
-
-            if (acType == null)
-            {
-                return NotFound();
-            }
-
-            return View(acType);
-        }
-
-        // POST: Settings/AcTypes/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var acType = await _context.AcTypes.FindAsync(id);
-            if (acType != null)
-            {
-                _context.AcTypes.Remove(acType);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Type d'aéronef supprimé avec succès";
-            }
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool AcTypeExists(int id)
-        {
-            return _context.AcTypes.Any(e => e.Id == id);
-        }
-
-        private async Task PopulateDropdowns(int? selectedAcMainGroupId = null, int? selectedManufacturerId = null)
-        {
-            ViewBag.AcMainGroups = new SelectList(
-                await _context.AcMainGroups
-                    .Where(g => g.Active)
-                    .OrderBy(g => g.Name)
-                    .ToListAsync(),
-                "Id",
-                "Name",
-                selectedAcMainGroupId
+                pageNumber: pageNumber,
+                pageSize:   pageSize
             );
 
-            var manufacturers = await _context.AircraftManufacturers
-                .Where(m => m.IsActive)
-                .OrderBy(m => m.Name)
-                .ToListAsync();
+            // Load FK names for display
+            var groups  = await _uow.AcMainGroups
+                .GetWhereAsync(g => g.IsActive);
+            var mfrs    = await _uow.AircraftManufacturers
+                .GetWhereAsync(m => m.IsActive);
 
-            var manufacturerList = new List<SelectListItem>
+            var groupMap = groups.ToDictionary(g => g.Id, g => g.Name);
+            var mfrMap   = mfrs.ToDictionary(m => m.Id, m => m.Name);
+
+            // Version count per AcType
+            var typeIds = result.Items.Select(x => x.Id).ToList();
+            var versions = await _uow.AircraftVersions
+                .GetWhereAsync(v => typeIds.Contains(v.AcTypeId));
+            var versionCount = versions
+                .GroupBy(v => v.AcTypeId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var vm = new AcTypeIndexVm
             {
-                new SelectListItem
+                Items = result.Items.Select(x => new AcTypeListVm
                 {
-                    Value = "",
-                    Text = "-- Sélectionner un constructeur (optionnel) --"
-                }
+                    Id                    = x.Id,
+                    Code                  = x.Code,
+                    Name                  = x.Name,
+                    Description           = x.Description,
+                    AcMainGroupId         = x.AcMainGroupId,
+                    AcMainGroupName       = groupMap.TryGetValue(x.AcMainGroupId, out var gn)
+                                                ? gn : null,
+                    AircraftManufacturerId = x.AircraftManufacturerId,
+                    ManufacturerName      = x.AircraftManufacturerId.HasValue &&
+                                           mfrMap.TryGetValue(x.AircraftManufacturerId.Value, out var mn)
+                                                ? mn : null,
+                    MaxGrossWeight        = x.MaxGrossWeight,
+                    MaxEngines            = x.MaxEngines,
+                    SeatCount             = x.SeatCount,
+                    MaxPassengers         = x.MaxPassengers,
+                    SortOrder             = x.SortOrder,
+                    IsActive              = x.IsActive,
+                    VersionCount          = versionCount.TryGetValue(x.Id, out var vc)
+                                                ? vc : 0
+                }).ToList(),
+
+                TotalCount           = result.TotalCount,
+                TotalPages           = result.TotalPages,
+                SearchCode           = searchCode,
+                SearchName           = searchName,
+                SearchAcMainGroupId  = searchAcMainGroupId,
+                SearchManufacturerId = searchManufacturerId,
+                SearchActive         = searchActive,
+                SortColumn           = sortColumn,
+                SortDirection        = sortDirection,
+                PageNumber           = pageNumber,
+                PageSize             = pageSize,
+                AcMainGroupOptions   = BuildGroupOptions(groups, searchAcMainGroupId),
+                ManufacturerOptions  = BuildMfrOptions(mfrs, searchManufacturerId)
             };
 
-            manufacturerList.AddRange(manufacturers.Select(m => new SelectListItem
-            {
-                Value = m.Id.ToString(),
-                Text = m.Name,
-                Selected = m.Id == selectedManufacturerId
-            }));
+            return View(vm);
+        }
 
-            ViewBag.Manufacturers = manufacturerList;
+        // ── CREATE GET ───────────────────────────────────────────────────
+        public async Task<IActionResult> Create()
+        {
+            var dto = new AcTypeFormDto
+            {
+                IsActive     = true,
+                SortOrder    = 99,
+                MaxEngines   = 1,
+                SeatCount    = 1,
+                MaxPassengers = 0
+            };
+            await PopulateDropdowns(dto);
+            return View(dto);
+        }
+
+        // ── CREATE POST ──────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(AcTypeFormDto dto)
+        {
+            if (ModelState.IsValid)
+            {
+                var code = dto.Code.Trim().ToUpper();
+                var name = dto.Name.Trim();
+
+                // Uniqueness scoped to same AcMainGroup
+                await _validator.CheckUniqueAsync<AcType>(
+                    ModelState,
+                    excludeId: null,
+                    new UniqueField<AcType>(
+                        x => x.Code == code &&
+                             x.AcMainGroupId == dto.AcMainGroupId,
+                        nameof(dto.Code),
+                        $"Le code '{code}' est deja utilise dans ce groupe."),
+                    new UniqueField<AcType>(
+                        x => x.Name == name &&
+                             x.AcMainGroupId == dto.AcMainGroupId,
+                        nameof(dto.Name),
+                        $"Le nom '{name}' est deja utilise dans ce groupe.")
+                );
+            }
+
+            if (!ModelState.IsValid)
+            {
+                await PopulateDropdowns(dto);
+                return View(dto);
+            }
+
+            var entity = MapToEntity(dto, new AcType());
+            _uow.AcTypes.Add(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Type '{entity.Name}' cree avec succes.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── EDIT GET ─────────────────────────────────────────────────────
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var entity = await _uow.AcTypes.GetByIdAsync(id.Value);
+            if (entity == null) return NotFound();
+
+            var dto = MapToDto(entity);
+            await PopulateDropdowns(dto);
+            return View(dto);
+        }
+
+        // ── EDIT POST ────────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, AcTypeFormDto dto)
+        {
+            if (id != dto.Id) return BadRequest();
+
+            if (ModelState.IsValid)
+            {
+                var code = dto.Code.Trim().ToUpper();
+                var name = dto.Name.Trim();
+
+                await _validator.CheckUniqueAsync<AcType>(
+                    ModelState,
+                    excludeId: id,
+                    new UniqueField<AcType>(
+                        x => x.Code == code &&
+                             x.AcMainGroupId == dto.AcMainGroupId,
+                        nameof(dto.Code),
+                        $"Le code '{code}' est deja utilise dans ce groupe."),
+                    new UniqueField<AcType>(
+                        x => x.Name == name &&
+                             x.AcMainGroupId == dto.AcMainGroupId,
+                        nameof(dto.Name),
+                        $"Le nom '{name}' est deja utilise dans ce groupe.")
+                );
+            }
+
+            if (!ModelState.IsValid)
+            {
+                await PopulateDropdowns(dto);
+                return View(dto);
+            }
+
+            var entity = await _uow.AcTypes.GetByIdAsync(id);
+            if (entity == null) return NotFound();
+
+            MapToEntity(dto, entity);
+            _uow.AcTypes.Update(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Type '{entity.Name}' modifie avec succes.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── DELETE — soft ────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var entity = await _uow.AcTypes.GetByIdAsync(id);
+
+            if (entity == null)
+                return Json(new { success = false,
+                    message = "Type introuvable." });
+
+            if (!entity.IsActive)
+                return Json(new { success = true,
+                    message = "Deja desactive." });
+
+            // Warn if versions exist
+            var hasVersions = await _uow.AircraftVersions
+                .AnyAsync(v => v.AcTypeId == id && v.IsActive);
+
+            if (hasVersions)
+                return Json(new { success = false,
+                    message = "Ce type possede des versions actives. " +
+                              "Desactivez-les d'abord." });
+
+            entity.IsActive = false;
+            _uow.AcTypes.Update(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Type '{entity.Name}' desactive.";
+            return Json(new { success = true,
+                message = TempData["SuccessMessage"] });
+        }
+
+        // ── ACTIVATE ─────────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Activate(int id)
+        {
+            var entity = await _uow.AcTypes.GetByIdAsync(id);
+
+            if (entity == null)
+                return Json(new { success = false,
+                    message = "Type introuvable." });
+
+            entity.IsActive = true;
+            _uow.AcTypes.Update(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Type '{entity.Name}' reactive.";
+            return Json(new { success = true,
+                message = TempData["SuccessMessage"] });
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        //  PRIVATE HELPERS
+        // ══════════════════════════════════════════════════════════════════
+
+        private static AcTypeFormDto MapToDto(AcType entity) =>
+            new()
+            {
+                Id                    = entity.Id,
+                AcMainGroupId         = entity.AcMainGroupId,
+                AircraftManufacturerId = entity.AircraftManufacturerId,
+                Code                  = entity.Code,
+                Name                  = entity.Name,
+                Description           = entity.Description,
+                SortOrder             = entity.SortOrder,   // byte → int
+                IsActive              = entity.IsActive,
+                MaxGrossWeight        = entity.MaxGrossWeight,
+                MaxEngines            = entity.MaxEngines,
+                SeatCount             = entity.SeatCount,
+                MaxPassengers         = entity.MaxPassengers
+            };
+
+        private static AcType MapToEntity(AcTypeFormDto dto, AcType entity)
+        {
+            entity.AcMainGroupId          = dto.AcMainGroupId!.Value;
+            entity.AircraftManufacturerId = dto.AircraftManufacturerId;
+            entity.Code                   = dto.Code.Trim().ToUpper();
+            entity.Name                   = dto.Name.Trim();
+            entity.Description            = dto.Description?.Trim();
+            entity.SortOrder              = (byte)dto.SortOrder;
+            entity.IsActive               = dto.IsActive;
+            entity.MaxGrossWeight         = dto.MaxGrossWeight;
+            entity.MaxEngines             = dto.MaxEngines;
+            entity.SeatCount              = dto.SeatCount;
+            entity.MaxPassengers          = dto.MaxPassengers;
+            return entity;
+        }
+
+        private async Task PopulateDropdowns(AcTypeFormDto dto)
+        {
+            var groups = await _uow.AcMainGroups
+                .GetWhereAsync(g => g.IsActive);
+            var mfrs   = await _uow.AircraftManufacturers
+                .GetWhereAsync(m => m.IsActive);
+
+            dto.AcMainGroupOptions   = BuildGroupOptions(groups, dto.AcMainGroupId);
+            dto.ManufacturerOptions  = BuildMfrOptions(mfrs, dto.AircraftManufacturerId);
+        }
+
+        private static IEnumerable<SelectListItem> BuildGroupOptions(
+            IEnumerable<AcMainGroup> groups, int? selectedId)
+        {
+            var items = new List<SelectListItem>
+            {
+                new() { Value = "", Text = "- Tous les groupes -",
+                        Selected = !selectedId.HasValue }
+            };
+            items.AddRange(
+                groups.OrderBy(g => g.SortOrder).ThenBy(g => g.Name)
+                    .Select(g => new SelectListItem
+                    {
+                        Value    = g.Id.ToString(),
+                        Text     = g.DisplayLabel,
+                        Selected = selectedId.HasValue && selectedId.Value == g.Id
+                    }));
+            return items;
+        }
+
+        private static IEnumerable<SelectListItem> BuildMfrOptions(
+            IEnumerable<AircraftManufacturer> mfrs, int? selectedId)
+        {
+            var items = new List<SelectListItem>
+            {
+                new() { Value = "", Text = "- Tous les constructeurs -",
+                        Selected = !selectedId.HasValue }
+            };
+            items.AddRange(
+                mfrs.OrderBy(m => m.Name)
+                    .Select(m => new SelectListItem
+                    {
+                        Value    = m.Id.ToString(),
+                        Text     = m.DisplayLabel,
+                        Selected = selectedId.HasValue && selectedId.Value == m.Id
+                    }));
+            return items;
         }
     }
 }

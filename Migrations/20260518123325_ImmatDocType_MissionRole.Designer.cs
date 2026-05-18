@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20260518123325_ImmatDocType_MissionRole")]
+    partial class ImmatDocType_MissionRole
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2060,173 +2063,6 @@ namespace FRAProject.Migrations
                         });
                 });
 
-            modelBuilder.Entity("FRAProject.Models.DossierAircraft", b =>
-                {
-                    b.Property<int>("DossierId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("AcTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("AircraftCategoryId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("AircraftSerie")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("AircraftVersionId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ImmatriculationSuffix")
-                        .HasMaxLength(5)
-                        .HasColumnType("nvarchar(5)");
-
-                    b.Property<DateOnly?>("ManufactureDate")
-                        .HasColumnType("date");
-
-                    b.Property<int?>("ManufacturerId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("MissionRoleId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("OriginCountryId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PortAttacheId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SerialNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateOnly?>("ServiceEntryDate")
-                        .HasColumnType("date");
-
-                    b.HasKey("DossierId");
-
-                    b.HasIndex("AcTypeId");
-
-                    b.HasIndex("AircraftCategoryId");
-
-                    b.HasIndex("AircraftVersionId");
-
-                    b.HasIndex("ImmatriculationSuffix")
-                        .IsUnique()
-                        .HasDatabaseName("UX_DossierAircraft_ImmatriculationSuffix")
-                        .HasFilter("[ImmatriculationSuffix] IS NOT NULL");
-
-                    b.HasIndex("ManufacturerId");
-
-                    b.HasIndex("MissionRoleId");
-
-                    b.HasIndex("OriginCountryId");
-
-                    b.HasIndex("PortAttacheId");
-
-                    b.ToTable("DossierAircraft", (string)null);
-                });
-
-            modelBuilder.Entity("FRAProject.Models.DossierAirworthiness", b =>
-                {
-                    b.Property<int>("DossierId")
-                        .HasColumnType("int");
-
-                    b.Property<DateOnly?>("CdnDeliveryDate")
-                        .HasColumnType("date");
-
-                    b.Property<int?>("CdnDocTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<DateOnly?>("CdnExpiryDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("CdnReference")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<bool>("CdnRenewalRequested")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<int?>("ForeignCountryId")
-                        .HasColumnType("int");
-
-                    b.Property<DateOnly?>("ForeignRadiationDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("FormerImmatriculation")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<bool>("HasAirworthinessDoc")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("WasForeignRegistered")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.HasKey("DossierId");
-
-                    b.HasIndex("CdnDocTypeId");
-
-                    b.HasIndex("ForeignCountryId");
-
-                    b.ToTable("DossierAirworthiness", (string)null);
-                });
-
-            modelBuilder.Entity("FRAProject.Models.DossierAuthority", b =>
-                {
-                    b.Property<int>("DossierId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("AeAddress")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("AeEmail")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("AePhone")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<int?>("BaseAerienneId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("EmployingAuthorityId")
-                        .HasColumnType("int");
-
-                    b.Property<DateOnly?>("OgmnAggrementDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("OgmnNumber")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("OgmnResponsable")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("OgmnSousPartie")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.HasKey("DossierId");
-
-                    b.HasIndex("BaseAerienneId");
-
-                    b.HasIndex("EmployingAuthorityId");
-
-                    b.ToTable("DossierAuthority", (string)null);
-                });
-
             modelBuilder.Entity("FRAProject.Models.EmployingAuthority", b =>
                 {
                     b.Property<int>("Id")
@@ -2439,125 +2275,6 @@ namespace FRAProject.Migrations
                             Name = "Documents de dedouanement",
                             SortOrder = 6
                         });
-                });
-
-            modelBuilder.Entity("FRAProject.Models.ImmatriculationDocument", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("DocumentTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DossierId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("FileName")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("FilePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<long?>("FileSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("MimeType")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UploadedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UploadedByUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DocumentTypeId");
-
-                    b.HasIndex("DossierId", "DocumentTypeId", "IsActive")
-                        .HasDatabaseName("IX_ImmatriculationDocument_Dossier_Type");
-
-                    b.ToTable("ImmatriculationDocument", (string)null);
-                });
-
-            modelBuilder.Entity("FRAProject.Models.ImmatriculationDossier", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AttestationCity")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<bool>("AttestationConfirmed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<DateOnly?>("AttestationDate")
-                        .HasColumnType("date");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<string>("CreatedByUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("CurrentStep")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.Property<string>("DossierNumber")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<DateTime?>("LastModifiedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("SignatoryName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("Brouillon");
-
-                    b.Property<DateTime?>("SubmittedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DossierNumber")
-                        .IsUnique()
-                        .HasDatabaseName("UX_ImmatriculationDossier_Number")
-                        .HasFilter("[DossierNumber] IS NOT NULL");
-
-                    b.ToTable("ImmatriculationDossier", (string)null);
                 });
 
             modelBuilder.Entity("FRAProject.Models.MaintenanceComponent", b =>
@@ -3396,12 +3113,13 @@ namespace FRAProject.Migrations
 
                     b.HasOne("FRAProject.Areas.SquadronOps.Models.Qualification", "PrimaryQualification")
                         .WithMany()
-                        .HasForeignKey("PrimaryQualificationId");
+                        .HasForeignKey("PrimaryQualificationId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("FRAProject.Areas.SquadronOps.Models.Squadron", "Squadron")
                         .WithMany("CrewMembers")
                         .HasForeignKey("SquadronId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Person");
@@ -3521,151 +3239,6 @@ namespace FRAProject.Migrations
                         .IsRequired();
 
                     b.Navigation("Wing");
-                });
-
-            modelBuilder.Entity("FRAProject.Models.DossierAircraft", b =>
-                {
-                    b.HasOne("FRAProject.Areas.Settings.Models.AcType", "AcType")
-                        .WithMany()
-                        .HasForeignKey("AcTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_DossierAircraft_AcType");
-
-                    b.HasOne("FRAProject.Models.AcCategory", "AircraftCategory")
-                        .WithMany()
-                        .HasForeignKey("AircraftCategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_DossierAircraft_AcCategory");
-
-                    b.HasOne("FRAProject.Areas.Settings.Models.AircraftVersion", "AircraftVersion")
-                        .WithMany()
-                        .HasForeignKey("AircraftVersionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_DossierAircraft_AircraftVersion");
-
-                    b.HasOne("FRAProject.Models.ImmatriculationDossier", "Dossier")
-                        .WithOne("Aircraft")
-                        .HasForeignKey("FRAProject.Models.DossierAircraft", "DossierId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_DossierAircraft_Dossier");
-
-                    b.HasOne("FRAProject.Areas.Settings.Models.AircraftManufacturer", "Manufacturer")
-                        .WithMany()
-                        .HasForeignKey("ManufacturerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_DossierAircraft_Manufacturer");
-
-                    b.HasOne("FRAProject.Models.MissionRole", "MissionRole")
-                        .WithMany()
-                        .HasForeignKey("MissionRoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_DossierAircraft_MissionRole");
-
-                    b.HasOne("FRAProject.Models.Country", "OriginCountry")
-                        .WithMany()
-                        .HasForeignKey("OriginCountryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_DossierAircraft_OriginCountry");
-
-                    b.HasOne("FRAProject.Areas.Settings.Models.Base", "PortAttache")
-                        .WithMany()
-                        .HasForeignKey("PortAttacheId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_DossierAircraft_PortAttache");
-
-                    b.Navigation("AcType");
-
-                    b.Navigation("AircraftCategory");
-
-                    b.Navigation("AircraftVersion");
-
-                    b.Navigation("Dossier");
-
-                    b.Navigation("Manufacturer");
-
-                    b.Navigation("MissionRole");
-
-                    b.Navigation("OriginCountry");
-
-                    b.Navigation("PortAttache");
-                });
-
-            modelBuilder.Entity("FRAProject.Models.DossierAirworthiness", b =>
-                {
-                    b.HasOne("FRAProject.Models.CdnDocType", "CdnDocType")
-                        .WithMany()
-                        .HasForeignKey("CdnDocTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_DossierAirworthiness_CdnDocType");
-
-                    b.HasOne("FRAProject.Models.ImmatriculationDossier", "Dossier")
-                        .WithOne("Airworthiness")
-                        .HasForeignKey("FRAProject.Models.DossierAirworthiness", "DossierId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_DossierAirworthiness_Dossier");
-
-                    b.HasOne("FRAProject.Models.Country", "ForeignCountry")
-                        .WithMany()
-                        .HasForeignKey("ForeignCountryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_DossierAirworthiness_ForeignCountry");
-
-                    b.Navigation("CdnDocType");
-
-                    b.Navigation("Dossier");
-
-                    b.Navigation("ForeignCountry");
-                });
-
-            modelBuilder.Entity("FRAProject.Models.DossierAuthority", b =>
-                {
-                    b.HasOne("FRAProject.Areas.Settings.Models.Base", "BaseAerienne")
-                        .WithMany()
-                        .HasForeignKey("BaseAerienneId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_DossierAuthority_Base");
-
-                    b.HasOne("FRAProject.Models.ImmatriculationDossier", "Dossier")
-                        .WithOne("Authority")
-                        .HasForeignKey("FRAProject.Models.DossierAuthority", "DossierId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_DossierAuthority_Dossier");
-
-                    b.HasOne("FRAProject.Models.EmployingAuthority", "EmployingAuthority")
-                        .WithMany()
-                        .HasForeignKey("EmployingAuthorityId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_DossierAuthority_EmployingAuthority");
-
-                    b.Navigation("BaseAerienne");
-
-                    b.Navigation("Dossier");
-
-                    b.Navigation("EmployingAuthority");
-                });
-
-            modelBuilder.Entity("FRAProject.Models.ImmatriculationDocument", b =>
-                {
-                    b.HasOne("FRAProject.Models.ImmatriculationDocType", "DocumentType")
-                        .WithMany()
-                        .HasForeignKey("DocumentTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_ImmatriculationDocument_DocType");
-
-                    b.HasOne("FRAProject.Models.ImmatriculationDossier", "Dossier")
-                        .WithMany("Documents")
-                        .HasForeignKey("DossierId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_ImmatriculationDocument_Dossier");
-
-                    b.Navigation("DocumentType");
-
-                    b.Navigation("Dossier");
                 });
 
             modelBuilder.Entity("FRAProject.Models.MaintenanceComponent", b =>
@@ -3940,17 +3513,6 @@ namespace FRAProject.Migrations
             modelBuilder.Entity("FRAProject.Models.AcCategory", b =>
                 {
                     b.Navigation("AcMainGroups");
-                });
-
-            modelBuilder.Entity("FRAProject.Models.ImmatriculationDossier", b =>
-                {
-                    b.Navigation("Aircraft");
-
-                    b.Navigation("Airworthiness");
-
-                    b.Navigation("Authority");
-
-                    b.Navigation("Documents");
                 });
 
             modelBuilder.Entity("FRAProject.Models.MaintenanceComponent", b =>

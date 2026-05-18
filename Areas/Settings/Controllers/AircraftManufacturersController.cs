@@ -1,132 +1,250 @@
 using FRAProject.Areas.Settings.Models;
-using FRAProject.Data;
+using FRAProject.Areas.Settings.ViewModels;
+using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Areas.Settings.Controllers
 {
     [Area("Settings")]
+    [Authorize(Roles = "Admin")]
     public class AircraftManufacturersController : Controller
     {
-        private readonly FRAContext _context;
+        private readonly IUnitOfWork        _uow;
+        private readonly IValidationService _validator;
 
-        public AircraftManufacturersController(FRAContext context)
+        private const int DefaultPageSize = 10;
+
+        public AircraftManufacturersController(
+            IUnitOfWork uow, IValidationService validator)
         {
-            _context = context;
+            _uow       = uow;
+            _validator = validator;
         }
 
-        // GET: Settings/AircraftManufacturers
-        public async Task<IActionResult> Index()
+        // ── INDEX ────────────────────────────────────────────────────────
+        public async Task<IActionResult> Index(
+            string? searchCode    = null,
+            string? searchName    = null,
+            bool?   searchActive  = null,
+            string  sortColumn    = "Name",
+            string  sortDirection = "asc",
+            int     pageNumber    = 1,
+            int     pageSize      = DefaultPageSize)
         {
-            var list = await _context.AircraftManufacturers
-                .OrderBy(x => x.SortOrder)
-                .ThenBy(x => x.Name)
-                .ToListAsync();
+            var result = await _uow.AircraftManufacturers.GetPagedAsync(
 
-            return View(list);
+                filter: x =>
+                    (string.IsNullOrWhiteSpace(searchCode)
+                        || x.Code.Contains(searchCode)) &&
+                    (string.IsNullOrWhiteSpace(searchName)
+                        || x.Name.Contains(searchName)) &&
+                    (searchActive == null || x.IsActive == searchActive),
+
+                orderBy: sortColumn switch
+                {
+                    "Code"      => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.Code)
+                                    : q => q.OrderBy(x => x.Code),
+                    "SortOrder" => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.SortOrder)
+                                    : q => q.OrderBy(x => x.SortOrder),
+                    "IsActive"  => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.IsActive)
+                                    : q => q.OrderBy(x => x.IsActive),
+                    _           => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.Name)
+                                    : q => q.OrderBy(x => x.Name)
+                },
+
+                pageNumber: pageNumber,
+                pageSize:   pageSize
+            );
+
+            var vm = new AircraftManufacturerIndexVm
+            {
+                Items = result.Items.Select(x => new AircraftManufacturerListVm
+                {
+                    Id          = x.Id,
+                    Code        = x.Code,
+                    Name        = x.Name,
+                    Description = x.Description,
+                    SortOrder   = x.SortOrder,
+                    IsActive    = x.IsActive
+                }).ToList(),
+
+                TotalCount    = result.TotalCount,
+                TotalPages    = result.TotalPages,
+                SearchCode    = searchCode,
+                SearchName    = searchName,
+                SearchActive  = searchActive,
+                SortColumn    = sortColumn,
+                SortDirection = sortDirection,
+                PageNumber    = pageNumber,
+                PageSize      = pageSize
+            };
+
+            return View(vm);
         }
 
-        // GET: Settings/AircraftManufacturers/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null) return NotFound();
+        // ── CREATE GET ───────────────────────────────────────────────────
+        public IActionResult Create() =>
+            View(new AircraftManufacturerFormDto { IsActive = true, SortOrder = 99 });
 
-            var entity = await _context.AircraftManufacturers
-                .FirstOrDefaultAsync(x => x.Id == id);
-
-            if (entity == null) return NotFound();
-
-            return View(entity);
-        }
-
-        // GET: Settings/AircraftManufacturers/Create
-        public IActionResult Create()
-        {
-            return View(new AircraftManufacturer());
-        }
-
-        // POST: Settings/AircraftManufacturers/Create
+        // ── CREATE POST ──────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(AircraftManufacturer entity)
+        public async Task<IActionResult> Create(AircraftManufacturerFormDto dto)
         {
-            if (await _context.AircraftManufacturers.AnyAsync(x => x.Code == entity.Code))
+            if (ModelState.IsValid)
             {
-                ModelState.AddModelError(nameof(entity.Code), "Code already exists.");
+                var code = dto.Code.Trim().ToUpper();
+                var name = dto.Name.Trim();
+
+                await _validator.CheckUniqueAsync<AircraftManufacturer>(
+                    ModelState,
+                    excludeId: null,
+                    new UniqueField<AircraftManufacturer>(
+                        x => x.Code == code,
+                        nameof(dto.Code),
+                        $"Le code '{code}' est deja utilise."),
+                    new UniqueField<AircraftManufacturer>(
+                        x => x.Name == name,
+                        nameof(dto.Name),
+                        $"Le nom '{name}' est deja utilise.")
+                );
             }
 
-            if (!ModelState.IsValid) return View(entity);
+            if (!ModelState.IsValid) return View(dto);
 
-            _context.AircraftManufacturers.Add(entity);
-            await _context.SaveChangesAsync();
+            var entity = MapToEntity(dto, new AircraftManufacturer());
+            _uow.AircraftManufacturers.Add(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Constructeur '{entity.Name}' cree avec succes.";
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: Settings/AircraftManufacturers/Edit/5
+        // ── EDIT GET ─────────────────────────────────────────────────────
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
 
-            var entity = await _context.AircraftManufacturers.FindAsync(id);
+            var entity = await _uow.AircraftManufacturers.GetByIdAsync(id.Value);
             if (entity == null) return NotFound();
 
-            return View(entity);
+            return View(MapToDto(entity));
         }
 
-        // POST: Settings/AircraftManufacturers/Edit/5
+        // ── EDIT POST ────────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, AircraftManufacturer entity)
+        public async Task<IActionResult> Edit(int id, AircraftManufacturerFormDto dto)
         {
-            if (id != entity.Id) return NotFound();
+            if (id != dto.Id) return BadRequest();
 
-            if (await _context.AircraftManufacturers.AnyAsync(x => x.Id != entity.Id && x.Code == entity.Code))
+            if (ModelState.IsValid)
             {
-                ModelState.AddModelError(nameof(entity.Code), "Code already exists.");
+                var code = dto.Code.Trim().ToUpper();
+                var name = dto.Name.Trim();
+
+                await _validator.CheckUniqueAsync<AircraftManufacturer>(
+                    ModelState,
+                    excludeId: id,
+                    new UniqueField<AircraftManufacturer>(
+                        x => x.Code == code,
+                        nameof(dto.Code),
+                        $"Le code '{code}' est deja utilise."),
+                    new UniqueField<AircraftManufacturer>(
+                        x => x.Name == name,
+                        nameof(dto.Name),
+                        $"Le nom '{name}' est deja utilise.")
+                );
             }
 
-            if (!ModelState.IsValid) return View(entity);
+            if (!ModelState.IsValid) return View(dto);
 
-            try
-            {
-                _context.Update(entity);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await _context.AircraftManufacturers.AnyAsync(e => e.Id == entity.Id))
-                    return NotFound();
-                throw;
-            }
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        // GET: Settings/AircraftManufacturers/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null) return NotFound();
-
-            var entity = await _context.AircraftManufacturers
-                .FirstOrDefaultAsync(x => x.Id == id);
-
+            var entity = await _uow.AircraftManufacturers.GetByIdAsync(id);
             if (entity == null) return NotFound();
 
-            return View(entity);
+            MapToEntity(dto, entity);
+            _uow.AircraftManufacturers.Update(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Constructeur '{entity.Name}' modifie avec succes.";
+            return RedirectToAction(nameof(Index));
         }
 
-        // POST: Settings/AircraftManufacturers/Delete/5
-        [HttpPost, ActionName("Delete")]
+        // ── DELETE — soft (IsActive = false) ────────────────────────────
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var entity = await _context.AircraftManufacturers.FindAsync(id);
-            if (entity != null)
+            var entity = await _uow.AircraftManufacturers.GetByIdAsync(id);
+
+            if (entity == null)
+                return Json(new { success = false,
+                    message = "Constructeur introuvable." });
+
+            if (!entity.IsActive)
+                return Json(new { success = true,
+                    message = "Deja desactive." });
+
+            entity.IsActive = false;
+            _uow.AircraftManufacturers.Update(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Constructeur '{entity.Name}' desactive.";
+            return Json(new { success = true,
+                message = TempData["SuccessMessage"] });
+        }
+
+        // ── ACTIVATE — reverse soft delete ───────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Activate(int id)
+        {
+            var entity = await _uow.AircraftManufacturers.GetByIdAsync(id);
+
+            if (entity == null)
+                return Json(new { success = false,
+                    message = "Constructeur introuvable." });
+
+            entity.IsActive = true;
+            _uow.AircraftManufacturers.Update(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Constructeur '{entity.Name}' reactive.";
+            return Json(new { success = true,
+                message = TempData["SuccessMessage"] });
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        //  PRIVATE HELPERS
+        // ══════════════════════════════════════════════════════════════════
+
+        private static AircraftManufacturerFormDto MapToDto(
+            AircraftManufacturer entity) =>
+            new()
             {
-                _context.AircraftManufacturers.Remove(entity);
-                await _context.SaveChangesAsync();
-            }
-            return RedirectToAction(nameof(Index));
+                Id          = entity.Id,
+                Code        = entity.Code,
+                Name        = entity.Name,
+                Description = entity.Description,
+                SortOrder   = entity.SortOrder,   // byte → int (safe)
+                IsActive    = entity.IsActive
+            };
+
+        private static AircraftManufacturer MapToEntity(
+            AircraftManufacturerFormDto dto, AircraftManufacturer entity)
+        {
+            entity.Code        = dto.Code.Trim().ToUpper();
+            entity.Name        = dto.Name.Trim();
+            entity.Description = dto.Description?.Trim();
+            entity.SortOrder   = (byte)dto.SortOrder;   // int → byte (0–255 validated)
+            entity.IsActive    = dto.IsActive;
+            return entity;
         }
     }
 }

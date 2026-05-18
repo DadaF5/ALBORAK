@@ -1,0 +1,82 @@
+@model FRAProject.Areas.Settings.ViewModels.AircraftManufacturerFormDto
+
+@* ── Shared form fields — used by both Create.cshtml and Edit.cshtml ── *@
+
+<div class="row g-3">
+
+    @* ── Code ─────────────────────────────────────────────────────── *@
+    <div class="col-md-3">
+        <div class="form-group">
+            <label asp-for="Code" class="form-label text-muted small">
+                Code <span class="text-danger">*</span>
+            </label>
+            <input asp-for="Code"
+                   class="form-control bg-dark text-white border-secondary text-uppercase"
+                   placeholder="ex: BOEING, AIRBUS…"
+                   maxlength="30"
+                   style="letter-spacing:2px;font-family:monospace;"
+                   oninput="this.value=this.value.toUpperCase()" />
+            <span asp-validation-for="Code" class="text-danger small"></span>
+            <small class="text-muted">Max 30 caractères</small>
+        </div>
+    </div>
+
+    @* ── Name ─────────────────────────────────────────────────────── *@
+    <div class="col-md-5">
+        <div class="form-group">
+            <label asp-for="Name" class="form-label text-muted small">
+                Nom du constructeur <span class="text-danger">*</span>
+            </label>
+            <input asp-for="Name"
+                   class="form-control bg-dark text-white border-secondary"
+                   placeholder="ex: The Boeing Company, Airbus S.A.S…"
+                   maxlength="150" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+    </div>
+
+    @* ── Sort Order ───────────────────────────────────────────────── *@
+    <div class="col-md-2">
+        <div class="form-group">
+            <label asp-for="SortOrder" class="form-label text-muted small">
+                Ordre d'affichage
+            </label>
+            <input asp-for="SortOrder"
+                   type="number"
+                   class="form-control bg-dark text-white border-secondary"
+                   min="0" max="255" />
+            <span asp-validation-for="SortOrder" class="text-danger small"></span>
+            <small class="text-muted">0–255</small>
+        </div>
+    </div>
+
+    @* ── IsActive ─────────────────────────────────────────────────── *@
+    <div class="col-md-1 d-flex align-items-end pb-1">
+        <div class="form-check form-switch">
+            <input asp-for="IsActive"
+                   class="form-check-input"
+                   type="checkbox"
+                   role="switch" />
+            <label asp-for="IsActive"
+                   class="form-check-label text-muted"
+                   style="padding-left:20px;">
+                Actif
+            </label>
+        </div>
+    </div>
+
+    @* ── Description ──────────────────────────────────────────────── *@
+    <div class="col-md-12">
+        <div class="form-group">
+            <label asp-for="Description" class="form-label text-muted small">
+                Description
+            </label>
+            <input asp-for="Description"
+                   class="form-control bg-dark text-white border-secondary"
+                   placeholder="Pays d'origine, spécialité, remarques…"
+                   maxlength="250" />
+            <span asp-validation-for="Description" class="text-danger small"></span>
+        </div>
+    </div>
+
+</div>

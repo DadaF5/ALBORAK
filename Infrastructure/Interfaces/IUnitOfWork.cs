@@ -23,6 +23,8 @@ namespace FRAProject.Infrastructure.Interfaces
         IGenericRepository<Country> Countries { get; }
         IGenericRepository<EmployingAuthority> EmployingAuthorities { get; }
         IGenericRepository<AcCategory> AcCategories { get; }
+        IGenericRepository<AcStatusType> AcStatusTypes { get; }
+
         //IGenericRepository<CdnDocType> CdnDocTypes { get; }
         //IGenericRepository<MissionRole> MissionRoles { get; }
         //IGenericRepository<ImmatriculationDocType> ImmatriculationDocTypes { get; }

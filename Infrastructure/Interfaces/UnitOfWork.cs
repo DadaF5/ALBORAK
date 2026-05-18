@@ -32,6 +32,7 @@ namespace FRAProject.Infrastructure
         private IGenericRepository<AcType>? _acTypes;
         private IGenericRepository<AircraftVersion>? _aircraftVersions;
         private IGenericRepository<EmployingAuthority>? _employingAuthorities;
+        private IGenericRepository<AcStatusType>? _acStatusTypes;
 
         //private IGenericRepository<CdnDocType>? _cdnDocTypes;
         //private IGenericRepository<MissionRole>? _missionRoles;
@@ -61,8 +62,10 @@ namespace FRAProject.Infrastructure
 
         public IGenericRepository<EmployingAuthority> EmployingAuthorities =>
             _employingAuthorities ??= new GenericRepository<EmployingAuthority>(_context);
+        public IGenericRepository<AcStatusType> AcStatusTypes =>
+            _acStatusTypes ??= new GenericRepository<AcStatusType>(_context);
 
-        
+
 
         //public IGenericRepository<CdnDocType> CdnDocTypes =>
         //    _cdnDocTypes ??= new GenericRepository<CdnDocType>(_context);

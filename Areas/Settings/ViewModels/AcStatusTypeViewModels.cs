@@ -1,104 +1,97 @@
 using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FRAProject.Areas.Settings.ViewModels
 {
     // ══════════════════════════════════════════════════════════════
     //  FORM DTO  (shared by Create and Edit)
-    //  Validation annotations live here — never on the Model.
     //  Id == 0 → Create
     //  Id  > 0 → Edit
-    //
-    //  StringLength limits match LookupBase:
-    //    Code → 30, Name → 150, Description → 250
     // ══════════════════════════════════════════════════════════════
-    public class AircraftVersionFormDto
+    public class AcStatusTypeFormDto
     {
         public int Id { get; set; }
 
-        // ── AcType FK — required, drives cascade DDLs ─────────────
-        [Required(ErrorMessage = "Le type d'aeronef est obligatoire.")]
-        [Display(Name = "Type d'aeronef")]
-        public int? AcTypeId { get; set; }
-
         [Required(ErrorMessage = "Le code est obligatoire.")]
-        [StringLength(30,
-            ErrorMessage = "Le code ne peut pas depasser 30 caracteres.")]
+        [StringLength(10, MinimumLength = 2,
+            ErrorMessage = "Le code doit contenir entre 2 et 10 caracteres.")]
         [Display(Name = "Code")]
         public string Code { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Le nom est obligatoire.")]
-        [StringLength(150,
-            ErrorMessage = "Le nom ne peut pas depasser 150 caracteres.")]
-        [Display(Name = "Nom")]
+        [StringLength(100,
+            ErrorMessage = "Le nom ne peut pas depasser 100 caracteres.")]
+        [Display(Name = "Nom du statut")]
         public string Name { get; set; } = string.Empty;
 
-        [StringLength(250,
-            ErrorMessage = "La description ne peut pas depasser 250 caracteres.")]
+        [StringLength(200,
+            ErrorMessage = "La description ne peut pas depasser 200 caracteres.")]
         [Display(Name = "Description")]
         public string? Description { get; set; }
 
-        [Range(0, 255,
-            ErrorMessage = "L'ordre doit etre entre 0 et 255.")]
+        [Range(0, 9999,
+            ErrorMessage = "L'ordre doit etre entre 0 et 9999.")]
         [Display(Name = "Ordre d'affichage")]
-        public int SortOrder { get; set; } = 99;
-        // Note: stored as byte in LookupBase (0–255).
-        // Int in DTO for form binding convenience — cast to byte in controller.
+        public int SortOrder { get; set; } = 0;
 
         [Display(Name = "Actif")]
         public bool IsActive { get; set; } = true;
-
-        // ── Dropdown — populated by controller ────────────────────
-        // Not posted — rebuilt on each GET and validation failure.
-        public IEnumerable<SelectListItem> AcTypeOptions { get; set; } = [];
     }
 
     // ══════════════════════════════════════════════════════════════
     //  LIST ITEM VM
     //  One row in the Index table.
-    //  Includes AcTypeName — joined from AcType in controller.
     // ══════════════════════════════════════════════════════════════
-    public class AircraftVersionListVm
+    public class AcStatusTypeListVm
     {
         public int     Id          { get; set; }
         public string  Code        { get; set; } = string.Empty;
         public string  Name        { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public int     AcTypeId    { get; set; }
-        public string? AcTypeName  { get; set; }   // joined from AcType
         public int     SortOrder   { get; set; }
         public bool    IsActive    { get; set; }
+
+        // ── Badge color per status code ───────────────────────────
+        /// <summary>
+        /// Bootstrap badge class matching the operational meaning.
+        ///   OPR — green  (operational)
+        ///   MNT — warning (maintenance)
+        ///   AOG — red    (grounded)
+        ///   STK — secondary (storage)
+        ///   RAD — dark   (retired)
+        /// </summary>
+        public string BadgeClass => Code switch
+        {
+            "OPR" => "bg-success",
+            "MNT" => "bg-warning text-dark",
+            "AOG" => "bg-danger",
+            "STK" => "bg-secondary",
+            "RAD" => "bg-dark border border-secondary",
+            _     => "bg-secondary"
+        };
     }
 
     // ══════════════════════════════════════════════════════════════
     //  INDEX PAGE VM
-    //  Wraps paged list + search / sort / page state.
-    //  Includes AcTypeId filter — user can filter versions by type.
     // ══════════════════════════════════════════════════════════════
-    public class AircraftVersionIndexVm
+    public class AcStatusTypeIndexVm
     {
         // ── Data ─────────────────────────────────────────────────
-        public List<AircraftVersionListVm> Items      { get; set; } = [];
-        public int                         TotalCount { get; set; }
-        public int                         TotalPages { get; set; }
+        public List<AcStatusTypeListVm> Items      { get; set; } = [];
+        public int                      TotalCount { get; set; }
+        public int                      TotalPages { get; set; }
 
         // ── Search criteria ───────────────────────────────────────
-        public string? SearchCode     { get; set; }
-        public string? SearchName     { get; set; }
-        public int?    SearchAcTypeId { get; set; }   // filter by parent type
-        public bool?   SearchActive   { get; set; }
+        public string? SearchCode   { get; set; }
+        public string? SearchName   { get; set; }
+        public bool?   SearchActive { get; set; }
 
         // ── Sorting ───────────────────────────────────────────────
-        public string SortColumn    { get; set; } = "AcType";
+        public string SortColumn    { get; set; } = "SortOrder";
         public string SortDirection { get; set; } = "asc";
 
         // ── Paging ───────────────────────────────────────────────
         public int PageNumber { get; set; } = 1;
         public int PageSize   { get; set; } = 10;
-
-        // ── AcType filter dropdown ────────────────────────────────
-        // Populated by controller — lets user filter by parent type.
-        public IEnumerable<SelectListItem> AcTypeOptions { get; set; } = [];
 
         // ── Convenience flags ─────────────────────────────────────
         public bool HasPreviousPage => PageNumber > 1;

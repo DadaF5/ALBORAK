@@ -1,122 +1,249 @@
-﻿using FRAProject.Areas.Settings.Models;
-using FRAProject.Data;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
+using FRAProject.Areas.Settings.Models;
+using FRAProject.Areas.Settings.ViewModels;
+using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FRAProject.Areas.Settings.Controllers
 {
-    [Area("AircraftMaintenance")]
+    [Area("Settings")]
+    [Authorize(Roles = "Admin")]
     public class AcStatusTypeController : Controller
     {
-        private readonly FRAContext _context;
+        private readonly IUnitOfWork        _uow;
+        private readonly IValidationService _validator;
 
-        public AcStatusTypeController(FRAContext context)
+        private const int DefaultPageSize = 10;
+
+        public AcStatusTypeController(IUnitOfWork uow, IValidationService validator)
         {
-            _context = context;
+            _uow       = uow;
+            _validator = validator;
         }
 
-        // GET: AcStatusTypes
-        public async Task<IActionResult> Index()
+        // ── INDEX ────────────────────────────────────────────────────────
+        public async Task<IActionResult> Index(
+            string? searchCode    = null,
+            string? searchName    = null,
+            bool?   searchActive  = null,
+            string  sortColumn    = "SortOrder",
+            string  sortDirection = "asc",
+            int     pageNumber    = 1,
+            int     pageSize      = DefaultPageSize)
         {
-            return View(await _context.AcStatusTypes.ToListAsync());
+            var result = await _uow.AcStatusTypes.GetPagedAsync(
+
+                filter: x =>
+                    (string.IsNullOrWhiteSpace(searchCode)
+                        || x.Code.Contains(searchCode)) &&
+                    (string.IsNullOrWhiteSpace(searchName)
+                        || x.Name.Contains(searchName)) &&
+                    (searchActive == null || x.IsActive == searchActive),
+
+                orderBy: sortColumn switch
+                {
+                    "Code"     => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.Code)
+                                    : q => q.OrderBy(x => x.Code),
+                    "Name"     => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.Name)
+                                    : q => q.OrderBy(x => x.Name),
+                    "IsActive" => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.IsActive)
+                                    : q => q.OrderBy(x => x.IsActive),
+                    _          => sortDirection == "desc"
+                                    ? q => q.OrderByDescending(x => x.SortOrder)
+                                    : q => q.OrderBy(x => x.SortOrder)
+                },
+
+                pageNumber: pageNumber,
+                pageSize:   pageSize
+            );
+
+            var vm = new AcStatusTypeIndexVm
+            {
+                Items = result.Items.Select(x => new AcStatusTypeListVm
+                {
+                    Id          = x.Id,
+                    Code        = x.Code,
+                    Name        = x.Name,
+                    Description = x.Description,
+                    SortOrder   = x.SortOrder,
+                    IsActive    = x.IsActive
+                }).ToList(),
+
+                TotalCount    = result.TotalCount,
+                TotalPages    = result.TotalPages,
+                SearchCode    = searchCode,
+                SearchName    = searchName,
+                SearchActive  = searchActive,
+                SortColumn    = sortColumn,
+                SortDirection = sortDirection,
+                PageNumber    = pageNumber,
+                PageSize      = pageSize
+            };
+
+            return View(vm);
         }
 
-        // GET: AcStatusTypes/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null) return NotFound();
+        // ── CREATE GET ───────────────────────────────────────────────────
+        public IActionResult Create() =>
+            View(new AcStatusTypeFormDto { IsActive = true });
 
-            var acStatusType = await _context.AcStatusTypes
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (acStatusType == null) return NotFound();
-
-            return View(acStatusType);
-        }
-
-        // GET: AcStatusTypes/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: AcStatusTypes/Create AcStatusType
+        // ── CREATE POST ──────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(
-            [Bind("StatusName,Description")] AcStatusType  acStatusType)
+        public async Task<IActionResult> Create(AcStatusTypeFormDto dto)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(acStatusType);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                var code = dto.Code.Trim().ToUpper();
+                var name = dto.Name.Trim();
+
+                await _validator.CheckUniqueAsync<AcStatusType>(
+                    ModelState,
+                    excludeId: null,
+                    new UniqueField<AcStatusType>(
+                        x => x.Code == code,
+                        nameof(dto.Code),
+                        $"Le code '{code}' est deja utilise."),
+                    new UniqueField<AcStatusType>(
+                        x => x.Name == name,
+                        nameof(dto.Name),
+                        $"Le nom '{name}' est deja utilise.")
+                );
             }
-            return View(acStatusType);
+
+            if (!ModelState.IsValid) return View(dto);
+
+            var entity = MapToEntity(dto, new AcStatusType());
+            _uow.AcStatusTypes.Add(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Statut '{entity.Name}' cree avec succes.";
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: AcStatusTypes/Edit/5
+        // ── EDIT GET ─────────────────────────────────────────────────────
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
 
-            var acStatusType = await _context.AcStatusTypes.FindAsync(id);
-            if (acStatusType == null) return NotFound();
+            var entity = await _uow.AcStatusTypes.GetByIdAsync(id.Value);
+            if (entity == null) return NotFound();
 
-            return View(acStatusType);
+            return View(MapToDto(entity));
         }
 
-        // POST: AcStatusTypes/Edit/5
+        // ── EDIT POST ────────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, AcStatusType acStatusType)
+        public async Task<IActionResult> Edit(int id, AcStatusTypeFormDto dto)
         {
-            if (id != acStatusType.Id) return NotFound();
+            if (id != dto.Id) return BadRequest();
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    _context.Update(acStatusType);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!_context.AcStatusTypes.Any(e => e.Id == acStatusType.Id))
-                        return NotFound();
-                    else
-                        throw;
-                }
-                return RedirectToAction(nameof(Index));
+                var code = dto.Code.Trim().ToUpper();
+                var name = dto.Name.Trim();
+
+                await _validator.CheckUniqueAsync<AcStatusType>(
+                    ModelState,
+                    excludeId: id,
+                    new UniqueField<AcStatusType>(
+                        x => x.Code == code,
+                        nameof(dto.Code),
+                        $"Le code '{code}' est deja utilise."),
+                    new UniqueField<AcStatusType>(
+                        x => x.Name == name,
+                        nameof(dto.Name),
+                        $"Le nom '{name}' est deja utilise.")
+                );
             }
-            return View(acStatusType);
-        }
 
-        // GET: AcStatusTypes/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null) return NotFound();
+            if (!ModelState.IsValid) return View(dto);
 
-            var acStatusType = await _context.AcStatusTypes
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (acStatusType == null) return NotFound();
+            var entity = await _uow.AcStatusTypes.GetByIdAsync(id);
+            if (entity == null) return NotFound();
 
-            return View(acStatusType);
-        }
+            MapToEntity(dto, entity);
+            _uow.AcStatusTypes.Update(entity);
+            await _uow.CompleteAsync();
 
-        // POST: AcStatusTypes/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var acStatusType = await _context.AcStatusTypes.FindAsync(id);
-            if (acStatusType != null)
-            {
-                _context.AcStatusTypes.Remove(acStatusType);
-                await _context.SaveChangesAsync();
-            }
+            TempData["SuccessMessage"] = $"Statut '{entity.Name}' modifie avec succes.";
             return RedirectToAction(nameof(Index));
+        }
+
+        // ── DELETE — soft ────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var entity = await _uow.AcStatusTypes.GetByIdAsync(id);
+
+            if (entity == null)
+                return Json(new { success = false,
+                    message = "Statut introuvable." });
+
+            if (!entity.IsActive)
+                return Json(new { success = true,
+                    message = "Deja desactive." });
+
+            entity.IsActive = false;
+            _uow.AcStatusTypes.Update(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Statut '{entity.Name}' desactive.";
+            return Json(new { success = true,
+                message = TempData["SuccessMessage"] });
+        }
+
+        // ── ACTIVATE ─────────────────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Activate(int id)
+        {
+            var entity = await _uow.AcStatusTypes.GetByIdAsync(id);
+
+            if (entity == null)
+                return Json(new { success = false,
+                    message = "Statut introuvable." });
+
+            entity.IsActive = true;
+            _uow.AcStatusTypes.Update(entity);
+            await _uow.CompleteAsync();
+
+            TempData["SuccessMessage"] = $"Statut '{entity.Name}' reactive.";
+            return Json(new { success = true,
+                message = TempData["SuccessMessage"] });
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        //  PRIVATE HELPERS
+        // ══════════════════════════════════════════════════════════════════
+
+        private static AcStatusTypeFormDto MapToDto(AcStatusType entity) =>
+            new()
+            {
+                Id          = entity.Id,
+                Code        = entity.Code,
+                Name        = entity.Name,
+                Description = entity.Description,
+                SortOrder   = entity.SortOrder,
+                IsActive    = entity.IsActive
+            };
+
+        private static AcStatusType MapToEntity(
+            AcStatusTypeFormDto dto, AcStatusType entity)
+        {
+            entity.Code        = dto.Code.Trim().ToUpper();
+            entity.Name        = dto.Name.Trim();
+            entity.Description = dto.Description?.Trim();
+            entity.SortOrder   = dto.SortOrder;
+            entity.IsActive    = dto.IsActive;
+            return entity;
         }
     }
 }
-

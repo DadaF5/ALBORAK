@@ -1,50 +1,52 @@
-@model FRAProject.Areas.Settings.Models.AircraftManufacturer
+@model FRAProject.Areas.Settings.ViewModels.AircraftManufacturerFormDto
 @{
-    ViewData["Title"] = "Nouveau Constructeur";
+    ViewData["Title"] = "Nouveau constructeur";
     Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
 
-
 <div class="container mt-3">
+    <div class="card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="mb-0">Nouveau constructeur</h4>
+                <small class="text-muted">
+                    <a asp-action="Index" class="text-muted text-decoration-none">
+                        <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+                    </a>
+                </small>
+            </div>
+        </div>
 
-<h2>@ViewData["Title"]</h2>
+        <div class="card border-secondary">
+            <div class="card-header bg-gradient-dark border-secondary">
+                <h6 class="mb-0 text-muted text-white">
+                    <i class="fas fa-industry me-2"></i>Informations du constructeur
+                </h6>
+            </div>
+            <div class="card-body">
 
-<form asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Create" method="post">
-    <div class="mb-3">
-        <label asp-for="Code" class="form-label"></label>
-        <input asp-for="Code" class="form-control" />
-        <span asp-validation-for="Code" class="text-danger"></span>
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+
+                    @await Html.PartialAsync("_Form", Model)
+
+                    <hr class="border-secondary mt-4" />
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label asp-for="Name" class="form-label"></label>
-        <input asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="Description" class="form-label"></label>
-        <input asp-for="Description" class="form-control" />
-        <span asp-validation-for="Description" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="SortOrder" class="form-label"></label>
-        <input asp-for="SortOrder" class="form-control" type="number" />
-        <span asp-validation-for="SortOrder" class="text-danger"></span>
-    </div>
-
-    <div class="form-check mb-3">
-        <input asp-for="IsActive" class="form-check-input" />
-        <label asp-for="IsActive" class="form-check-label pl-4"></label>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Save</button>
-    <a asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Index" class="btn btn-secondary">Cancel</a>
-</form>
+</div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-
- </div>

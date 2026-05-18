@@ -243,63 +243,123 @@
                         role="menu"
                         data-accordion="false">
 
+                        <!-- ── Vue d'ensemble ─────────────────────────────── -->
                         <li class="nav-header">VUE D'ENSEMBLE</li>
                         <li class="nav-item">
-                            <a asp-area="" asp-controller="Home" asp-action="Index" class="nav-link">
+                            <a asp-area="" asp-controller="Home" asp-action="Index"
+                               class="nav-link">
                                 <i class="nav-icon fas fa-chart-bar"></i>
                                 <p>Tableau de bord</p>
                             </a>
                         </li>
 
+                        <!-- ── Administration ─────────────────────────────── -->
                         <li class="nav-header">ADMINISTRATION</li>
                         <li class="nav-item">
-                            <a asp-area="Settings" asp-controller="Home" asp-action="Index" class="nav-link">
+                            <a asp-area="Settings" asp-controller="Home" asp-action="Index"
+                               class="nav-link">
                                 <i class="nav-icon fas fa-cog"></i>
                                 <p>Param&egrave;tres syst&egrave;me</p>
                             </a>
                         </li>
 
+                        <!-- ── Immatriculation ────────────────────────────── -->
+                        <li class="nav-header">IMMATRICULATION</li>
+                        <li class="nav-item">
+                            <a asp-area="Settings" asp-controller="Dossier" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-folder-open"></i>
+                                <p>Dossiers DAM</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="Settings" asp-controller="Dossier" asp-action="Create"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-plus-circle"></i>
+                                <p>Nouveau dossier</p>
+                            </a>
+                        </li>
+
+                        <!-- ── Données de base ────────────────────────────── -->
                         <li class="nav-header">DONN&Eacute;ES DE BASE</li>
                         <li class="nav-item">
-                            <a asp-area="Settings" asp-controller="AcMainGroup" asp-action="Index" class="nav-link">
+                            <a asp-area="Settings" asp-controller="AcMainGroups" asp-action="Index"
+                               class="nav-link">
                                 <i class="nav-icon fas fa-layer-group"></i>
                                 <p>Groupes d'a&eacute;ronefs</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a asp-area="Settings" asp-controller="AcTypes" asp-action="Index" class="nav-link">
+                            <a asp-area="Settings" asp-controller="AcTypes" asp-action="Index"
+                               class="nav-link">
                                 <i class="nav-icon fas fa-fighter-jet"></i>
                                 <p>Types d'a&eacute;ronefs</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a asp-area="Settings" asp-controller="AircraftVersions" asp-action="Index" class="nav-link">
+                            <a asp-area="Settings" asp-controller="AircraftVersions" asp-action="Index"
+                               class="nav-link">
                                 <i class="nav-icon fas fa-plane"></i>
                                 <p>Versions d'a&eacute;ronefs</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a asp-area="Settings" asp-controller="Base" asp-action="Index" class="nav-link">
+                            <a asp-area="Settings" asp-controller="AcCategory" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-tags"></i>
+                                <p>Cat&eacute;gories</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="Settings" asp-controller="MissionRole" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-crosshairs"></i>
+                                <p>R&ocirc;les et missions</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="Settings" asp-controller="Base" asp-action="Index"
+                               class="nav-link">
                                 <i class="nav-icon fas fa-map-marker-alt"></i>
                                 <p>Bases a&eacute;riennes</p>
                             </a>
                         </li>
+
+                        <!-- ── Référentiels ───────────────────────────────── -->
+                        <li class="nav-header">R&Eacute;F&Eacute;RENTIELS</li>
                         <li class="nav-item">
-                            <a asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Index" class="nav-link">
+                            <a asp-area="Settings" asp-controller="Country" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-globe"></i>
+                                <p>Pays</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="Settings" asp-controller="EmployingAuthority" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-shield-alt"></i>
+                                <p>Autorit&eacute;s d'emploi</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="Settings" asp-controller="AircraftManufacturers" asp-action="Index"
+                               class="nav-link">
                                 <i class="nav-icon fas fa-industry"></i>
                                 <p>Constructeurs</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a asp-area="Settings" asp-controller="EmployingAuthority" asp-action="Index" class="nav-link">
-                                <i class="fas fa-shield-alt"></i>
-                                <p>Authorité & Employeur</p>
+                            <a asp-area="Settings" asp-controller="CdnDocType" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-certificate"></i>
+                                <p>Types CdN</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a asp-area="Settings" asp-controller="Country" asp-action="Index" class="nav-link">
-                                <i class="nav-icon fas fa-map-marker-alt"></i>
-                                <p>Pays</p>
+                            <a asp-area="Settings" asp-controller="ImmatriculationDocType" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-file-alt"></i>
+                                <p>Types documents</p>
                             </a>
                         </li>
 

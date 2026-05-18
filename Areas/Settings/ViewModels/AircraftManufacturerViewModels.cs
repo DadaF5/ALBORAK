@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FRAProject.Areas.Settings.ViewModels
 {
@@ -12,14 +11,9 @@ namespace FRAProject.Areas.Settings.ViewModels
     //  StringLength limits match LookupBase:
     //    Code → 30, Name → 150, Description → 250
     // ══════════════════════════════════════════════════════════════
-    public class AircraftVersionFormDto
+    public class AircraftManufacturerFormDto
     {
         public int Id { get; set; }
-
-        // ── AcType FK — required, drives cascade DDLs ─────────────
-        [Required(ErrorMessage = "Le type d'aeronef est obligatoire.")]
-        [Display(Name = "Type d'aeronef")]
-        public int? AcTypeId { get; set; }
 
         [Required(ErrorMessage = "Le code est obligatoire.")]
         [StringLength(30,
@@ -30,7 +24,7 @@ namespace FRAProject.Areas.Settings.ViewModels
         [Required(ErrorMessage = "Le nom est obligatoire.")]
         [StringLength(150,
             ErrorMessage = "Le nom ne peut pas depasser 150 caracteres.")]
-        [Display(Name = "Nom")]
+        [Display(Name = "Nom du constructeur")]
         public string Name { get; set; } = string.Empty;
 
         [StringLength(250,
@@ -42,30 +36,22 @@ namespace FRAProject.Areas.Settings.ViewModels
             ErrorMessage = "L'ordre doit etre entre 0 et 255.")]
         [Display(Name = "Ordre d'affichage")]
         public int SortOrder { get; set; } = 99;
-        // Note: stored as byte in LookupBase (0–255).
-        // Int in DTO for form binding convenience — cast to byte in controller.
+        // Stored as byte in LookupBase (0–255).
+        // Int in DTO for form binding — cast to (byte) in controller.
 
         [Display(Name = "Actif")]
         public bool IsActive { get; set; } = true;
-
-        // ── Dropdown — populated by controller ────────────────────
-        // Not posted — rebuilt on each GET and validation failure.
-        public IEnumerable<SelectListItem> AcTypeOptions { get; set; } = [];
     }
 
     // ══════════════════════════════════════════════════════════════
-    //  LIST ITEM VM
-    //  One row in the Index table.
-    //  Includes AcTypeName — joined from AcType in controller.
+    //  LIST ITEM VM — one row in the Index table
     // ══════════════════════════════════════════════════════════════
-    public class AircraftVersionListVm
+    public class AircraftManufacturerListVm
     {
         public int     Id          { get; set; }
         public string  Code        { get; set; } = string.Empty;
         public string  Name        { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public int     AcTypeId    { get; set; }
-        public string? AcTypeName  { get; set; }   // joined from AcType
         public int     SortOrder   { get; set; }
         public bool    IsActive    { get; set; }
     }
@@ -73,32 +59,26 @@ namespace FRAProject.Areas.Settings.ViewModels
     // ══════════════════════════════════════════════════════════════
     //  INDEX PAGE VM
     //  Wraps paged list + search / sort / page state.
-    //  Includes AcTypeId filter — user can filter versions by type.
     // ══════════════════════════════════════════════════════════════
-    public class AircraftVersionIndexVm
+    public class AircraftManufacturerIndexVm
     {
         // ── Data ─────────────────────────────────────────────────
-        public List<AircraftVersionListVm> Items      { get; set; } = [];
-        public int                         TotalCount { get; set; }
-        public int                         TotalPages { get; set; }
+        public List<AircraftManufacturerListVm> Items      { get; set; } = [];
+        public int                              TotalCount { get; set; }
+        public int                              TotalPages { get; set; }
 
         // ── Search criteria ───────────────────────────────────────
-        public string? SearchCode     { get; set; }
-        public string? SearchName     { get; set; }
-        public int?    SearchAcTypeId { get; set; }   // filter by parent type
-        public bool?   SearchActive   { get; set; }
+        public string? SearchCode   { get; set; }
+        public string? SearchName   { get; set; }
+        public bool?   SearchActive { get; set; }
 
         // ── Sorting ───────────────────────────────────────────────
-        public string SortColumn    { get; set; } = "AcType";
+        public string SortColumn    { get; set; } = "Name";
         public string SortDirection { get; set; } = "asc";
 
         // ── Paging ───────────────────────────────────────────────
         public int PageNumber { get; set; } = 1;
         public int PageSize   { get; set; } = 10;
-
-        // ── AcType filter dropdown ────────────────────────────────
-        // Populated by controller — lets user filter by parent type.
-        public IEnumerable<SelectListItem> AcTypeOptions { get; set; } = [];
 
         // ── Convenience flags ─────────────────────────────────────
         public bool HasPreviousPage => PageNumber > 1;

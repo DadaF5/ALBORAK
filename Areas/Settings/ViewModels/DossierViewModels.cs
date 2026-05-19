@@ -264,9 +264,10 @@ namespace FRAProject.Areas.Settings.ViewModels
         [Display(Name = "Nom, grade et fonction du signataire")]
         public string? SignatoryName { get; set; }
 
+        // FIX: No [Range] annotation — validated manually in controller.
+        // [Range(typeof(bool), "true", "true")] does not work reliably
+        // with ASP.NET Core checkbox model binding.
         [Display(Name = "Attestation du demandeur")]
-        [Range(typeof(bool), "true", "true",
-            ErrorMessage = "Vous devez confirmer l'attestation avant de soumettre.")]
         public bool AttestationConfirmed { get; set; } = false;
 
         // ── Read-only summary — populated by controller ────────────

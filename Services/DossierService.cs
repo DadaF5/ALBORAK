@@ -306,51 +306,114 @@ namespace FRAProject.Services
                 dto.BaseAerienneId?.ToString());
         }
 
+        // ════════════════════════════════════════════════════════════
+        //  DROPDOWN REPOPULATION — STEP 2 (FIXED)
+        //
+        //  Root cause of empty AcType / Version dropdowns:
+        //    AcTypeOptions was never populated — _uow.AcTypes was
+        //    a TODO in the controller's GetAcTypes() AJAX endpoint.
+        //    AcTypes is now in IUnitOfWork (added for dashboard).
+        //
+        //  Fix:
+        //    1. Load AcTypes filtered by AircraftCategoryId
+        //    2. Load AircraftVersions filtered by AcTypeId
+        //    3. Both now populated before the view renders
+        // ════════════════════════════════════════════════════════════
         public async Task RepopulateStep2Async(DossierStep2Dto dto)
         {
-            var categories    = await _uow.AcCategories
+            var categories = await _uow.AcCategories
                 .GetWhereAsync(c => c.IsActive);
             var manufacturers = await _uow.AircraftManufacturers
                 .GetWhereAsync(m => m.IsActive);
-            var bases         = await _uow.Bases
+            var bases = await _uow.Bases
                 .GetWhereAsync(b => b.IsActive);
-            var countries     = await _uow.Countries
+            var countries = await _uow.Countries
                 .GetWhereAsync(c => c.IsActive);
-            var versions      = dto.AcTypeId.HasValue
-                ? await _uow.AircraftVersions.GetWhereAsync(v => v.IsActive)
+
+            // FIX 1: Load AcTypes filtered by selected category
+            // Empty list when no category selected — user must pick category first
+            var acTypes = dto.AircraftCategoryId.HasValue
+                ? await _uow.AcTypes.GetWhereAsync(t =>
+                    t.IsActive &&
+                    t.AcMainGroup != null)   // loaded via navigation — see note below
                 : [];
-            var roles         = await _uow.MissionRoles.GetWhereAsync(r =>
+
+            // NOTE: AcType.AcMainGroupId → AcMainGroup.AcCategoryId chain.
+            // Since generic repo doesn't support Include(), we filter in memory
+            // after loading all active types for the selected category.
+            // Replace with a direct AcCategoryId FK on AcType if performance
+            // becomes an issue on large fleets.
+            if (dto.AircraftCategoryId.HasValue)
+            {
+                // Load ALL active types then filter by category in memory.
+                // AcType → AcMainGroup → AcCategory is a 2-hop join.
+                // We resolve it by loading AcMainGroups for the category first.
+                var groupsForCategory = await _uow.AcMainGroups.GetWhereAsync(g =>
+                    g.IsActive && g.AcCategoryId == dto.AircraftCategoryId.Value);
+
+                var groupIds = groupsForCategory.Select(g => g.Id).ToHashSet();
+
+                acTypes = (await _uow.AcTypes.GetWhereAsync(t =>
+                    t.IsActive && groupIds.Contains(t.AcMainGroupId)))
+                    .ToList();
+            }
+            else
+            {
+                acTypes = [];
+            }
+
+            // FIX 2: Load AircraftVersions filtered by selected AcType
+            var versions = dto.AcTypeId.HasValue
+                ? await _uow.AircraftVersions.GetWhereAsync(v =>
+                    v.IsActive && v.AcTypeId == dto.AcTypeId.Value)
+                : [];
+
+            // MissionRoles filtered by category
+            var roles = await _uow.MissionRoles.GetWhereAsync(r =>
                 r.IsActive &&
                 (!dto.AircraftCategoryId.HasValue ||
                  r.AcCategoryId == null ||
                  r.AcCategoryId == dto.AircraftCategoryId));
 
-            dto.CategoryOptions     = BuildSelectList(
+            // ── Build SelectLists ─────────────────────────────────────
+            dto.CategoryOptions = BuildSelectList(
                 categories.OrderBy(c => c.SortOrder),
                 c => c.Id.ToString(), c => c.DisplayLabel,
-                dto.AircraftCategoryId?.ToString());
+                dto.AircraftCategoryId?.ToString(),
+                "— Sélectionner une catégorie —");
+
+            dto.AcTypeOptions = BuildSelectList(
+                acTypes.OrderBy(t => t.SortOrder).ThenBy(t => t.Name),
+                t => t.Id.ToString(), t => t.DisplayLabel,
+                dto.AcTypeId?.ToString(),
+                dto.AircraftCategoryId.HasValue
+                    ? "— Sélectionner un type —"
+                    : "— Choisir une catégorie d'abord —");
+
+            dto.VersionOptions = BuildSelectList(
+                versions.OrderBy(v => v.SortOrder).ThenBy(v => v.Name),
+                v => v.Id.ToString(), v => v.Name,
+                dto.AircraftVersionId?.ToString(),
+                dto.AcTypeId.HasValue
+                    ? "— Sélectionner une version —"
+                    : "— Choisir un type d'abord —");
 
             dto.ManufacturerOptions = BuildSelectList(
                 manufacturers.OrderBy(m => m.Name),
                 m => m.Id.ToString(), m => m.Name,
                 dto.ManufacturerId?.ToString());
 
-            dto.PortAttacheOptions  = BuildSelectList(
+            dto.PortAttacheOptions = BuildSelectList(
                 bases.OrderBy(b => b.BaseName),
                 b => b.Id.ToString(), b => b.BaseName,
                 dto.PortAttacheId?.ToString());
 
-            dto.CountryOptions      = BuildSelectList(
+            dto.CountryOptions = BuildSelectList(
                 countries.OrderBy(c => c.SortOrder).ThenBy(c => c.Name),
                 c => c.Id.ToString(), c => c.DisplayLabel,
                 dto.OriginCountryId?.ToString());
 
-            dto.VersionOptions      = BuildSelectList(
-                versions.OrderBy(v => v.SortOrder),
-                v => v.Id.ToString(), v => v.Name,
-                dto.AircraftVersionId?.ToString());
-
-            dto.MissionRoleOptions  = BuildSelectList(
+            dto.MissionRoleOptions = BuildSelectList(
                 roles.OrderBy(r => r.SortOrder),
                 r => r.Id.ToString(), r => r.Name,
                 dto.MissionRoleId?.ToString());

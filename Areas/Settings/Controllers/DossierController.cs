@@ -14,7 +14,7 @@ namespace FRAProject.Areas.Settings.Controllers
     /// Single responsibility: HTTP in → service call → HTTP out.
     /// </summary>
     [Area("Settings")]
-    [Authorize(Roles = "Administrators")]
+    [Authorize(Roles = "Admin")]
     public class DossierController : Controller
     {
         private readonly IDossierService    _dossierService;
@@ -256,7 +256,18 @@ namespace FRAProject.Areas.Settings.Controllers
         }
 
         // ════════════════════════════════════════════════════════════════
-        //  SUBMIT — POST
+        //  SUBMIT — POST (FIXED)
+        //
+        //  FIX: AttestationConfirmed validated manually here instead of
+        //  relying on [Range(typeof(bool),"true","true")] annotation.
+        //
+        //  Root cause: ASP.NET Core renders asp-for checkbox as:
+        //    <input type="checkbox" name="AttestationConfirmed" value="true" />
+        //    <input type="hidden"   name="AttestationConfirmed" value="false" />
+        //  The hidden input always posts "false". The Range validator
+        //  reads this and fails even when the checkbox is checked.
+        //
+        //  Manual check reads the actual bound bool value — reliable.
         // ════════════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -264,6 +275,13 @@ namespace FRAProject.Areas.Settings.Controllers
         {
             dto.DossierId = id;
 
+            // FIX: manual check replaces [Range(typeof(bool),"true","true")]
+            if (!dto.AttestationConfirmed)
+                ModelState.AddModelError(
+                    nameof(dto.AttestationConfirmed),
+                    "Vous devez confirmer l'attestation avant de soumettre.");
+
+            // Check all required documents uploaded
             var allUploaded = await _dossierService.AllRequiredDocsUploadedAsync(id);
             if (!allUploaded)
                 ModelState.AddModelError(string.Empty,
@@ -272,9 +290,9 @@ namespace FRAProject.Areas.Settings.Controllers
             if (!ModelState.IsValid)
             {
                 var rebuilt = await _dossierService.BuildStep5DtoAsync(id);
-                rebuilt.AttestationCity      = dto.AttestationCity;
-                rebuilt.AttestationDate      = dto.AttestationDate;
-                rebuilt.SignatoryName        = dto.SignatoryName;
+                rebuilt.AttestationCity = dto.AttestationCity;
+                rebuilt.AttestationDate = dto.AttestationDate;
+                rebuilt.SignatoryName = dto.SignatoryName;
                 rebuilt.AttestationConfirmed = dto.AttestationConfirmed;
                 ViewBag.Progress = await _dossierService.GetProgressVmAsync(id);
                 return View("Step5", rebuilt);
@@ -302,27 +320,48 @@ namespace FRAProject.Areas.Settings.Controllers
         }
 
         // ════════════════════════════════════════════════════════════════
-        //  AJAX — CASCADING DROPDOWNS
+        //  AJAX — CASCADING DROPDOWNS (FIXED)
+        //
+        //  GetAcTypes was returning Array.Empty — TODO comment never done.
+        //  Now queries _uow.AcTypes via AcMainGroup → AcCategory chain.
         // ════════════════════════════════════════════════════════════════
 
         [HttpGet]
         public async Task<IActionResult> GetAcTypes(int? categoryId)
         {
-            // TODO: add IRepository<AcType> to IUnitOfWork
-            // then filter: t => t.IsActive && t.AcCategoryId == categoryId
-            return Json(Array.Empty<object>());
+            if (!categoryId.HasValue)
+                return Json(Array.Empty<object>());
+
+            // AcType → AcMainGroup → AcCategory (2-hop)
+            // Step 1: get AcMainGroup Ids for this category
+            var groups = await _uow.AcMainGroups.GetWhereAsync(g =>
+                g.IsActive && g.AcCategoryId == categoryId.Value);
+
+            var groupIds = groups.Select(g => g.Id).ToHashSet();
+
+            // Step 2: get AcTypes belonging to those groups
+            var types = await _uow.AcTypes.GetWhereAsync(t =>
+                t.IsActive && groupIds.Contains(t.AcMainGroupId));
+
+            return Json(types
+                .OrderBy(t => t.SortOrder)
+                .ThenBy(t => t.Name)
+                .Select(t => new { value = t.Id, text = t.DisplayLabel }));
         }
 
         [HttpGet]
         public async Task<IActionResult> GetVersions(int? acTypeId)
         {
-            if (!acTypeId.HasValue) return Json(Array.Empty<object>());
+            if (!acTypeId.HasValue)
+                return Json(Array.Empty<object>());
 
+            // FIX: filter by AcTypeId — was returning ALL versions
             var versions = await _uow.AircraftVersions
-                .GetWhereAsync(v => v.IsActive);
+                .GetWhereAsync(v => v.IsActive && v.AcTypeId == acTypeId.Value);
 
             return Json(versions
                 .OrderBy(v => v.SortOrder)
+                .ThenBy(v => v.Name)
                 .Select(v => new { value = v.Id, text = v.Name }));
         }
 

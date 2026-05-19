@@ -133,15 +133,15 @@ namespace FRAProject.Areas.Settings.Controllers
                         total:      await _uow.ImmatriculationDocTypes.CountAsync(_ => true),
                         active:     await _uow.ImmatriculationDocTypes.CountAsync(x => x.IsActive)
                     )
-                    //,
-                    //await BuildStatAsync(
-                    //    title:      "Dossiers DAM",
-                    //    controller: "Dossier",
-                    //    icon:       "fa-folder-open",
-                    //    section:    "Immatriculation",
-                    //    total:      await _uow.Dossiers.CountAsync(_ => true),
-                    //    active:     await _uow.Dossiers.CountAsync(x => x.IsActive)
-                    //)
+                    ,
+                    await BuildStatAsync(
+                        title:      "Dossiers DAM",
+                        controller: "Dossier",
+                        icon:       "fa-folder-open",
+                        section:    "Immatriculation",
+                        total:      await _uow.Dossiers.CountAsync(_ => true),
+                        active:     await _uow.Dossiers.CountAsync(x => x.IsActive)
+                    )
                     ,
                 ]
             };
@@ -155,10 +155,10 @@ namespace FRAProject.Areas.Settings.Controllers
             string section, int total, int active) =>
             Task.FromResult(new LookupTableStatVm
             {
-                Title      = title,
+                Title = title,
                 Controller = controller,
-                Icon       = icon,
-                Section    = section,
+                Icon = icon,
+                Section = section,
                 TotalCount = total,
                 ActiveCount = active
             });

@@ -1,70 +1,192 @@
 @model FRAProject.Areas.Settings.ViewModels.SettingsDashboardVm
+@using FRAProject.Areas.Settings.ViewModels
+@using Microsoft.AspNetCore.Html
+@using System.Text
 @{
     ViewData["Title"] = "Paramètres — Tableau de bord";
     Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
 
-@* ══════════════════════════════════════════════════════════════════
-   SETTINGS DASHBOARD — Lookup tables health overview
-   ══════════════════════════════════════════════════════════════════ *@
+@functions {
+
+    // ── Color scheme per section ──────────────────────────────────
+    // Each section gets its own accent color applied to:
+    //   - left border strip
+    //   - icon color
+    //   - count number color
+    //   - health bar color (overrides HealthClass)
+    //   - hover border
+
+    string SectionAccent(string section) => section switch
+    {
+        "Données de base" => "#3b82f6",   // blue
+        "Référentiels" => "#a78bfa",   // purple
+        "Immatriculation" => "#f59e0b",   // amber
+        _ => "#c9a84c"
+    };
+
+    string SectionAccentDim(string section) => section switch
+    {
+        "Données de base" => "rgba(59,130,246,.08)",
+        "Référentiels" => "rgba(167,139,250,.08)",
+        "Immatriculation" => "rgba(245,158,11,.08)",
+        _ => "rgba(201,168,76,.08)"
+    };
+
+    IHtmlContent LookupCard(LookupTableStatVm t)
+    {
+        var sb = new StringBuilder();
+        var accent = SectionAccent(t.Section);
+        var accentD = SectionAccentDim(t.Section);
+
+        // Health bar — always use section accent color
+        string barColor;
+        if (t.TotalCount == 0)
+            barColor = "#334155";
+        else if (t.ActivePercent == 100)
+            barColor = "#22c55e";
+        else if (t.ActivePercent >= 80)
+            barColor = "#f59e0b";
+        else
+            barColor = "#ef4444";
+
+        // Counts block
+        string countsHtml;
+        if (t.TotalCount == 0)
+        {
+            countsHtml = "<div class=\"lc-empty\">— vide —</div>";
+        }
+        else
+        {
+            var inner = new StringBuilder();
+            inner.Append("<div class=\"lc-active\">");
+            inner.Append("<span class=\"act\">▲ " + t.ActiveCount + " actifs</span>");
+            if (t.InactiveCount > 0)
+                inner.Append("<span class=\"ina\">▼ " + t.InactiveCount + " inactifs</span>");
+            inner.Append("</div>");
+            countsHtml = inner.ToString();
+        }
+
+        // Card — inline styles for accent colors so no CSS class conflict
+        sb.Append("<a href=\"/Settings/" + t.Controller + "\" ");
+        sb.Append("class=\"lookup-card\" ");
+        sb.Append("style=\"--card-accent:" + accent + ";--card-accent-dim:" + accentD + ";\" ");
+        sb.Append("onmouseenter=\"this.style.borderColor='" + accent + "';this.style.background='" + accentD + "'\" ");
+        sb.Append("onmouseleave=\"this.style.borderColor='#1e2230';this.style.background='#111318'\">");
+
+        sb.Append("<i class=\"fas " + t.Icon + " lc-icon\" style=\"color:" + accent + "\"></i>");
+        sb.Append("<i class=\"fas fa-arrow-right lc-action\"></i>");
+        sb.Append("<div class=\"lc-title\">" + t.Title + "</div>");
+        sb.Append("<div class=\"lc-counts\">");
+        sb.Append("<div class=\"lc-total\" style=\"color:" + accent + "\">" + t.TotalCount + "</div>");
+        sb.Append(countsHtml);
+        sb.Append("</div>");
+        sb.Append("<div class=\"health-bar-bg\">");
+        sb.Append("<div class=\"health-bar-fill\" style=\"width:" + t.ActivePercent + "%;background:" + barColor + "\"></div>");
+        sb.Append("</div>");
+        sb.Append("</a>");
+
+        return new HtmlString(sb.ToString());
+    }
+}
 
 <style>
-    /* ── Dashboard-specific styles ─────────────────────────────── */
+    /* ── Base ───────────────────────────────────────────────────── */
     .db-header {
         border-bottom: 1px solid #1e2230;
         padding-bottom: 16px;
         margin-bottom: 28px;
     }
+
     .db-title {
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-family: 'JetBrains Mono','Courier New',monospace;
         font-size: 11px;
         letter-spacing: 3px;
         text-transform: uppercase;
         color: #64748b;
         margin-bottom: 4px;
     }
+
     .db-heading {
         font-size: 22px;
         font-weight: 700;
-        color: #e2e8f0;
         margin: 0;
     }
+
     .db-timestamp {
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-family: 'JetBrains Mono','Courier New',monospace;
         font-size: 10px;
         color: #475569;
         margin-top: 4px;
     }
 
-    /* ── Grand total strip ──────────────────────────────────────── */
+    /* ── Grand totals ───────────────────────────────────────────── */
     .totals-strip {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(4,1fr);
         gap: 12px;
-        margin-bottom: 28px;
+        margin-bottom: 32px;
     }
+
     .total-cell {
-        background: #111318;
-        border: 1px solid #1e2230;
-        border-radius: 8px;
-        padding: 14px 20px;
+        border-radius: 10px;
+        padding: 18px 22px;
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 4px;
+        border: 1px solid transparent;
+        position: relative;
+        overflow: hidden;
     }
-    .total-cell.accent { border-color: #c9a84c; }
+    /* Individual total cell colors */
+    .tc-tables {
+        background: rgba(201,168,76,.1);
+        border-color: rgba(201,168,76,.3);
+    }
+
+    .tc-total {
+        background: rgba(59,130,246,.1);
+        border-color: rgba(59,130,246,.3);
+    }
+
+    .tc-active {
+        background: rgba(34,197,94,.1);
+        border-color: rgba(34,197,94,.3);
+    }
+
+    .tc-inactive {
+        background: rgba(239,68,68,.1);
+        border-color: rgba(239,68,68,.3);
+    }
+
     .total-n {
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
-        font-size: 28px;
-        font-weight: 700;
-        color: #c9a84c;
+        font-family: 'JetBrains Mono','Courier New',monospace;
+        font-size: 32px;
+        font-weight: 800;
         line-height: 1;
     }
+
+    .tc-tables .total-n {
+        color: #c9a84c;
+    }
+
+    .tc-total .total-n {
+        color: #60a5fa;
+    }
+
+    .tc-active .total-n {
+        color: #4ade80;
+    }
+
+    .tc-inactive .total-n {
+        color: #f87171;
+    }
+
     .total-l {
         font-size: 10px;
-        color: #64748b;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 1.5px;
+        color: #64748b;
     }
 
     /* ── Section header ─────────────────────────────────────────── */
@@ -75,121 +197,166 @@
         margin-bottom: 12px;
         margin-top: 8px;
     }
+
     .section-label {
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
-        font-size: 10px;
-        letter-spacing: 2px;
+        font-family: 'JetBrains Mono','Courier New',monospace;
+        font-size: 9px;
+        letter-spacing: 2.5px;
         text-transform: uppercase;
         color: #475569;
+        white-space: nowrap;
     }
+
     .section-line {
         flex: 1;
         height: 1px;
         background: #1e2230;
     }
 
-    /* ── Lookup card ────────────────────────────────────────────── */
+    /* ── Section accent dots ─────────────────────────────────────── */
+    .dot-base {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #3b82f6;
+        margin-right: 6px;
+    }
+
+    .dot-ref {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #a78bfa;
+        margin-right: 6px;
+    }
+
+    .dot-immat {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #f59e0b;
+        margin-right: 6px;
+    }
+
+    /* ── Lookup grid ────────────────────────────────────────────── */
     .lookup-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fill,minmax(210px,1fr));
         gap: 10px;
-        margin-bottom: 20px;
+        margin-bottom: 28px;
     }
+
+    /* ── Lookup card ────────────────────────────────────────────── */
     .lookup-card {
         background: #111318;
         border: 1px solid #1e2230;
-        border-radius: 8px;
-        padding: 14px 16px;
+        border-radius: 10px;
+        padding: 16px;
         text-decoration: none;
         display: block;
-        transition: border-color .15s, background .15s;
         position: relative;
         overflow: hidden;
+        /* transition handled by inline onmouseenter/leave for accent color */
+        transition: transform .1s;
     }
-    .lookup-card::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0;
-        width: 3px; height: 100%;
-        background: #1e2230;
-        transition: background .15s;
-    }
-    .lookup-card:hover {
-        border-color: #c9a84c;
-        background: rgba(201,168,76,.04);
-        text-decoration: none;
-    }
-    .lookup-card:hover::before { background: #c9a84c; }
+
+        .lookup-card:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+
+        /* Left accent strip — color comes from var(--card-accent) set inline */
+        .lookup-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--card-accent, #1e2230);
+        }
 
     .lc-icon {
-        font-size: 11px;
-        color: #475569;
-        margin-bottom: 8px;
-    }
-    .lc-title {
-        font-size: 12px;
-        font-weight: 600;
-        color: #cbd5e1;
+        font-size: 13px;
         margin-bottom: 10px;
-        line-height: 1.3;
+        display: block;
     }
+
+    .lc-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-bottom: 12px;
+        line-height: 1.4;
+    }
+
     .lc-counts {
         display: flex;
         justify-content: space-between;
         align-items: flex-end;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
     }
+
+    /* lc-total color set inline per card */
     .lc-total {
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
-        font-size: 22px;
-        font-weight: 700;
-        color: #e2e8f0;
+        font-family: 'JetBrains Mono','Courier New',monospace;
+        font-size: 28px;
+        font-weight: 800;
         line-height: 1;
     }
+
     .lc-active {
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
-        font-size: 10px;
-        color: #64748b;
+        font-family: 'JetBrains Mono','Courier New',monospace;
+        font-size: 9px;
         text-align: right;
     }
-    .lc-active span { display: block; }
-    .lc-active .act { color: #22c55e; }
-    .lc-active .ina { color: #ef4444; }
 
-    /* ── Health bar ─────────────────────────────────────────────── */
+        .lc-active span {
+            display: block;
+        }
+
+        .lc-active .act {
+            color: #22c55e;
+        }
+
+        .lc-active .ina {
+            color: #ef4444;
+        }
+
+    .lc-empty {
+        font-family: 'JetBrains Mono','Courier New',monospace;
+        font-size: 9px;
+        color: #334155;
+    }
+
     .health-bar-bg {
         height: 3px;
         background: #1e2230;
         border-radius: 2px;
         overflow: hidden;
     }
+
     .health-bar-fill {
         height: 100%;
         border-radius: 2px;
-        transition: width .4s ease;
-    }
-    .hb-success { background: #22c55e; }
-    .hb-warning { background: #f59e0b; }
-    .hb-orange  { background: #f97316; }
-    .hb-danger  { background: #ef4444; }
-
-    /* ── Empty state ────────────────────────────────────────────── */
-    .lc-empty {
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
-        font-size: 10px;
-        color: #334155;
-        margin-top: 2px;
+        transition: width .5s ease;
     }
 
-    /* ── Action link ────────────────────────────────────────────── */
     .lc-action {
         position: absolute;
-        top: 12px; right: 12px;
+        top: 14px;
+        right: 14px;
         font-size: 9px;
         color: #334155;
         transition: color .15s;
     }
-    .lookup-card:hover .lc-action { color: #c9a84c; }
+
+    .lookup-card:hover .lc-action {
+        color: #94a3b8;
+    }
 </style>
 
 @* ── Header ────────────────────────────────────────────────────── *@
@@ -199,113 +366,82 @@
     <div class="db-timestamp" id="ts">—</div>
 </div>
 
-@* ── Grand totals strip ───────────────────────────────────────── *@
+@* ── Grand totals ─────────────────────────────────────────────── *@
 <div class="totals-strip">
-    <div class="total-cell accent">
+    <div class="total-cell tc-tables">
         <div class="total-n">@Model.TotalTables</div>
         <div class="total-l">Tables lookup</div>
     </div>
-    <div class="total-cell">
+    <div class="total-cell tc-total">
         <div class="total-n">@Model.TotalRecords</div>
         <div class="total-l">Enregistrements total</div>
     </div>
-    <div class="total-cell">
-        <div class="total-n" style="color:#22c55e;">@Model.TotalActive</div>
+    <div class="total-cell tc-active">
+        <div class="total-n">@Model.TotalActive</div>
         <div class="total-l">Actifs</div>
     </div>
-    <div class="total-cell">
-        <div class="total-n" style="color:#ef4444;">@Model.TotalInactive</div>
+    <div class="total-cell tc-inactive">
+        <div class="total-n">@Model.TotalInactive</div>
         <div class="total-l">Inactifs</div>
     </div>
 </div>
 
 @* ── SECTION: Données de base ─────────────────────────────────── *@
 <div class="section-hdr">
+    <span class="dot-base"></span>
     <span class="section-label">Données de base</span>
     <div class="section-line"></div>
     <span class="section-label">@Model.DonneesDeBase.Count tables</span>
 </div>
-
-@* <div class="lookup-grid">
+<div class="lookup-grid">
     @foreach (var t in Model.DonneesDeBase)
     {
         @LookupCard(t)
     }
-</div> *@
+</div>
 
 @* ── SECTION: Référentiels ────────────────────────────────────── *@
-@* <div class="section-hdr">
+<div class="section-hdr">
+    <span class="dot-ref"></span>
     <span class="section-label">Référentiels</span>
     <div class="section-line"></div>
     <span class="section-label">@Model.Referentiels.Count tables</span>
 </div>
-
 <div class="lookup-grid">
     @foreach (var t in Model.Referentiels)
     {
         @LookupCard(t)
     }
-</div> *@
+</div>
 
 @* ── SECTION: Immatriculation ─────────────────────────────────── *@
 <div class="section-hdr">
+    <span class="dot-immat"></span>
     <span class="section-label">Immatriculation</span>
     <div class="section-line"></div>
     <span class="section-label">@Model.Immatriculation.Count tables</span>
 </div>
-
-@* <div class="lookup-grid">
+<div class="lookup-grid">
     @foreach (var t in Model.Immatriculation)
     {
         @LookupCard(t)
     }
-</div> *@
+</div>
 
-@* ── Local helper — card markup ───────────────────────────────── *@
-@* @{
-    Func<LookupTableStatVm, IHtmlContent> LookupCard = (t) =>
-    {
-        var barClass = $"hb-{t.HealthClass}";
-        return new HtmlString($@"
-<a href=""/Settings/{t.Controller}"" class=""lookup-card"">
-    <i class=""fas {t.Icon} lc-icon""></i>
-    <i class=""fas fa-arrow-right lc-action""></i>
-    <div class=""lc-title"">{t.Title}</div>
-    <div class=""lc-counts"">
-        <div class=""lc-total"">{t.TotalCount}</div>
-        {(t.TotalCount == 0
-            ? @"<div class=""lc-empty"">— vide —</div>"
-            : $@"<div class=""lc-active"">
-                    <span class=""act"">▲ {t.ActiveCount} actifs</span>
-                    {(t.InactiveCount > 0
-                        ? $@"<span class=""ina"">▼ {t.InactiveCount} inactifs</span>"
-                        : "")}
-                 </div>")}
-    </div>
-    <div class=""health-bar-bg"">
-        <div class=""health-bar-fill {barClass}""
-             style=""width:{t.ActivePercent}%""></div>
-    </div>
-</a>");
-    };
-} *@
-
-@* @section Scripts {
-<script>
-    // Live timestamp
-    function updateTs() {
-        const now = new Date();
-        document.getElementById('ts').textContent =
-            'Données au ' +
-            now.toLocaleDateString('fr-FR', {
-                weekday:'long', day:'numeric',
-                month:'long', year:'numeric'
-            }) +
-            ' — ' +
-            now.toLocaleTimeString('fr-FR', {
-                hour:'2-digit', minute:'2-digit'
-            });
-    }
-    updateTs();
-</script>
-} *@
+@section Scripts {
+    <script>
+        function updateTs() {
+            const now = new Date();
+            document.getElementById('ts').textContent =
+                'Données au ' +
+                now.toLocaleDateString('fr-FR', {
+                    weekday: 'long', day: 'numeric',
+                    month: 'long', year: 'numeric'
+                }) + ' — ' +
+                now.toLocaleTimeString('fr-FR', {
+                    hour: '2-digit', minute: '2-digit'
+                });
+        }
+        updateTs();
+    </script>
+}

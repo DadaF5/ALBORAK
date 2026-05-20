@@ -1,0 +1,653 @@
+@model FRAProject.Areas.Settings.Models.Aircraft
+@{
+    ViewData["Title"] = $"Fiche Aéronef — {Model.Registration}";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Fiche Aéronef — @Model.Registration</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0a1628;
+            --navy2: #0e1f3a;
+            --gold: #c8a84b;
+            --gold2: #e8c96a;
+            --text: #1a2540;
+            --muted: #5a6a8a;
+            --line: rgba(200,168,75,.25);
+            --bg: #f4f1ea;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #ccc9be;
+            font-family: 'Barlow Condensed',sans-serif;
+            font-size: 13px;
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px;
+            gap: 16px;
+        }
+
+        .sheet {
+            width: 297mm;
+            min-height: 210mm;
+            background: var(--bg);
+            box-shadow: 0 8px 40px rgba(0,0,0,.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+            .sheet::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background-image: repeating-linear-gradient(0deg,transparent,transparent 28px, rgba(200,168,75,.05) 28px,rgba(200,168,75,.05) 29px);
+                pointer-events: none;
+            }
+
+        .wm {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%) rotate(-35deg);
+            font-family: 'Rajdhani',sans-serif;
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            color: rgba(200,168,75,.055);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .hdr {
+            background: var(--navy);
+            padding: 12px 20px 10px;
+            display: grid;
+            grid-template-columns: 56px 1fr auto;
+            align-items: center;
+            gap: 14px;
+            border-bottom: 3px solid var(--gold);
+        }
+
+        .crest {
+            width: 50px;
+            height: 50px;
+            border: 2px solid var(--gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .crest-star {
+            color: var(--gold);
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .crest-txt {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 7px;
+            color: var(--gold);
+            letter-spacing: 1px;
+        }
+
+        .hdr-org {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 8px;
+            letter-spacing: 3px;
+            color: rgba(200,168,75,.55);
+            margin-bottom: 3px;
+        }
+
+        .hdr-title {
+            font-family: 'Rajdhani',sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+            line-height: 1;
+        }
+
+        .hdr-sub {
+            font-size: 9px;
+            color: rgba(255,255,255,.4);
+            letter-spacing: 2px;
+            margin-top: 2px;
+        }
+
+        .hdr-r {
+            text-align: right;
+        }
+
+        .hdr-immat {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 26px;
+            color: var(--gold);
+            letter-spacing: 6px;
+            line-height: 1;
+        }
+
+        .hdr-tail {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 10px;
+            color: rgba(200,168,75,.6);
+            letter-spacing: 2px;
+            margin-top: 2px;
+        }
+
+        .hdr-date {
+            font-size: 9px;
+            color: rgba(255,255,255,.35);
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        /* Ribbon */
+        .ribbon {
+            display: flex;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .rc {
+            flex: 1;
+            padding: 5px 14px;
+            border-right: 1px solid var(--line);
+        }
+
+            .rc:last-child {
+                border-right: none;
+            }
+
+        .rcl {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 7px;
+            letter-spacing: 2px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 1px;
+        }
+
+        .rcv {
+            font-family: 'Rajdhani',sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .s-opr {
+            color: #1a5c2a;
+        }
+
+        .s-mnt {
+            color: #7a5a00;
+        }
+
+        .s-aog {
+            color: #8b1a1a;
+        }
+
+        .s-stk {
+            color: var(--muted);
+        }
+
+        .s-rad {
+            color: #333;
+        }
+
+        /* Body grid */
+        .body-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .sec {
+            padding: 9px 16px 11px;
+            border-right: 1px solid var(--line);
+        }
+
+            .sec:last-child {
+                border-right: none;
+            }
+
+        .sec-full {
+            border-top: 1px solid var(--line);
+            grid-column: 1/-1;
+            border-right: none;
+        }
+
+        .sh {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 7px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .sn {
+            width: 16px;
+            height: 16px;
+            background: var(--navy);
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 8px;
+            color: var(--gold);
+        }
+
+        .st {
+            font-family: 'Rajdhani',sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--navy);
+        }
+
+        /* Fields */
+        .fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px 14px;
+        }
+
+        .f3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .f4 {
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+        }
+
+        .fl {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 7px;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 1px;
+        }
+
+        .fv {
+            font-family: 'Rajdhani',sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            border-bottom: 1px solid rgba(200,168,75,.3);
+            padding-bottom: 1px;
+            min-height: 18px;
+            line-height: 1.2;
+        }
+
+        .fv-mono {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 12px;
+        }
+
+        .fv-lg {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--navy);
+            letter-spacing: 3px;
+        }
+
+        /* Counters */
+        .counters {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+        }
+
+        .cc {
+            padding: 7px 16px;
+            text-align: center;
+            border-right: 1px solid var(--line);
+        }
+
+            .cc:last-child {
+                border-right: none;
+            }
+
+        .ccl {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 7px;
+            letter-spacing: 2px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .ccv {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 24px;
+            color: var(--navy);
+            letter-spacing: 2px;
+            line-height: 1;
+        }
+
+        .ccu {
+            font-size: 8px;
+            color: var(--muted);
+            margin-top: 2px;
+            letter-spacing: 1px;
+        }
+
+        /* Signatures */
+        .sigs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            border-top: 1px solid var(--line);
+        }
+
+        .sig {
+            padding: 8px 16px 12px;
+            border-right: 1px solid var(--line);
+        }
+
+            .sig:last-child {
+                border-right: none;
+            }
+
+        .sigl {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 7px;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .sigline {
+            height: 1px;
+            background: var(--navy);
+            margin: 22px 12px 3px;
+        }
+
+        .sign {
+            font-size: 8px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--navy);
+            padding: 5px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px solid var(--gold);
+        }
+
+        .fr {
+            font-family: 'Share Tech Mono',monospace;
+            font-size: 7px;
+            letter-spacing: 2px;
+            color: rgba(200,168,75,.5);
+        }
+
+        /* Print */
+        @@media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+
+            .sheet {
+                box-shadow: none;
+                width: 100%;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            @@page {
+                size: A4 landscape;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="display:flex;gap:8px;">
+        <button onclick="window.print()"
+                style="background:var(--gold);color:#000;border:none;
+                 padding:8px 20px;font-family:'Rajdhani',sans-serif;
+                 font-size:14px;font-weight:700;cursor:pointer;border-radius:4px;">
+            ⎙ IMPRIMER
+        </button>
+        <button onclick="window.close()"
+                style="background:#0a1628;color:#c8a84b;border:1px solid #c8a84b;
+                 padding:8px 16px;font-family:'Rajdhani',sans-serif;
+                 font-size:14px;font-weight:700;cursor:pointer;border-radius:4px;">
+            ✕ FERMER
+        </button>
+    </div>
+
+    <div class="sheet">
+        <div class="wm">RMAF · 2ème BAFRA</div>
+        <div class="content">
+
+            <div class="hdr">
+                <div class="crest">
+                    <div class="crest-star">★</div>
+                    <div class="crest-txt">RMAF</div>
+                </div>
+                <div>
+                    <div class="hdr-org">Forces Royales Air · 2ème Base Aérienne de Réaction Rapide</div>
+                    <div class="hdr-title">FICHE TECHNIQUE AÉRONEF</div>
+                    <div class="hdr-sub">FORMULAIRE FA-001 · REGISTRE OPÉRATIONNEL</div>
+                </div>
+                <div class="hdr-r">
+                    <div class="hdr-immat">@Model.Registration</div>
+                    <div class="hdr-tail">QUEUE N° @Model.TailNumber</div>
+                    <div class="hdr-date">Éditée le @DateTime.Now.ToString("dd/MM/yyyy")</div>
+                </div>
+            </div>
+
+            <div class="ribbon">
+                <div class="rc">
+                    <div class="rcl">Statut opérationnel</div>
+                    <div class="rcv s-@(Model.AcStatusType?.Code?.ToLower() ?? "stk")">
+                        @(Model.AcStatusType?.Code ?? "—") — @(Model.AcStatusType?.Name ?? "—")
+                    </div>
+                </div>
+                <div class="rc">
+                    <div class="rcl">Base d'affectation</div>
+                    <div class="rcv">@(Model.Base?.BaseName ?? "—")</div>
+                </div>
+                <div class="rc">
+                    <div class="rcl">Rôle et mission</div>
+                    <div class="rcv">@(Model.MissionRole?.Name ?? "—")</div>
+                </div>
+                <div class="rc">
+                    <div class="rcl">Date immatriculation DAM</div>
+                    <div class="rcv">@(Model.RegistrationDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                </div>
+            </div>
+
+            <div class="body-grid">
+
+                <div class="sec">
+                    <div class="sh">
+                        <div class="sn">1</div>
+                        <div class="st">Identification de l'aéronef</div>
+                    </div>
+                    <div class="fields">
+                        <div>
+                            <div class="fl">Type d'aéronef</div>
+                            <div class="fv">@(Model.AcType?.Name ?? "—")</div>
+                        </div>
+                        <div>
+                            <div class="fl">Version / Variante</div>
+                            <div class="fv">@(Model.AircraftVersion?.Code ?? "—")</div>
+                        </div>
+                        <div>
+                            <div class="fl">Constructeur</div>
+                            <div class="fv">@(Model.AircraftManufacturerNav?.Name ?? "—")</div>
+                        </div>
+                        <div>
+                            <div class="fl">Pays d'origine</div>
+                            <div class="fv">@(Model.OriginCountry?.Name ?? "—")</div>
+                        </div>
+                        <div>
+                            <div class="fl">N° de série constructeur</div>
+                            <div class="fv fv-mono">@(Model.SerialNumber ?? "—")</div>
+                        </div>
+                        <div>
+                            <div class="fl">Marque d'immatriculation</div>
+                            <div class="fv fv-lg">@Model.Registration</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sec">
+                    <div class="sh">
+                        <div class="sn">2</div>
+                        <div class="st">Spécifications techniques</div>
+                    </div>
+                    <div class="fields f4">
+                        <div>
+                            <div class="fl">Masse maxi (kg)</div>
+                            <div class="fv fv-mono">
+                                @(Model.AcType?.MaxGrossWeight.ToString("N0") ?? "—")
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fl">Moteurs</div>
+                            <div class="fv fv-mono">
+                                @(Model.AcType?.MaxEngines.ToString() ?? "—")
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fl">Sièges</div>
+                            <div class="fv fv-mono">
+                                @(Model.AcType?.SeatCount.ToString() ?? "—")
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fl">Passagers max</div>
+                            <div class="fv fv-mono">
+                                @(Model.AcType?.MaxPassengers.ToString() ?? "—")
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sh" style="margin-top:9px;">
+                        <div class="sn">3</div>
+                        <div class="st">Historique d'immatriculation</div>
+                    </div>
+                    <div class="fields f4">
+                        <div>
+                            <div class="fl">Date fabrication</div>
+                            <div class="fv fv-mono">
+                                @(Model.ManufactureDate?.ToString("MM/yyyy") ?? "—")
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fl">Entrée en service</div>
+                            <div class="fv fv-mono">
+                                @(Model.ServiceEntryDate?.ToString("dd/MM/yyyy") ?? "—")
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fl">Immatriculation DAM</div>
+                            <div class="fv fv-mono">
+                                @(Model.RegistrationDate?.ToString("dd/MM/yyyy") ?? "—")
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fl">N° Dossier</div>
+                            <div class="fv fv-mono" style="font-size:9px;">
+                                @(Model.Dossier?.DossierNumber ?? "—")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="sec sec-full" style="padding:0;">
+                <div style="display:flex;align-items:center;gap:7px;
+                  padding:5px 16px 4px;border-bottom:1px solid var(--line);">
+                    <div class="sn">4</div>
+                    <div class="st">Compteurs depuis neuf (TSN)</div>
+                    <span style="font-family:'Share Tech Mono',monospace;font-size:7px;
+                     color:var(--muted);margin-left:6px;">
+                        Stockés en minutes — affichés en HH:MM
+                    </span>
+                </div>
+                <div class="counters">
+                    <div class="cc">
+                        <div class="ccl">Heures de vol (HdV)</div>
+                        <div class="ccv">@Model.FlightHoursDisplay</div>
+                        <div class="ccu">HH:MM</div>
+                    </div>
+                    <div class="cc">
+                        <div class="ccl">Cycles moteur</div>
+                        <div class="ccv">@Model.TotalCycles.ToString("N0")</div>
+                        <div class="ccu">CYCLES</div>
+                    </div>
+                    <div class="cc">
+                        <div class="ccl">Atterrissages</div>
+                        <div class="ccv">@Model.TotalLandings.ToString("N0")</div>
+                        <div class="ccu">LDG</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sigs">
+                <div class="sig">
+                    <div class="sigl">Commandant de Base / Chef d'Escadre</div>
+                    <div class="sigline"></div>
+                    <div class="sign">Signature &amp; cachet</div>
+                </div>
+                <div class="sig">
+                    <div class="sigl">Officier Navigabilité (OGMN)</div>
+                    <div class="sigline"></div>
+                    <div class="sign">Signature &amp; cachet</div>
+                </div>
+                <div class="sig">
+                    <div class="sigl">Responsable Technique (Chef Maintenance)</div>
+                    <div class="sigline"></div>
+                    <div class="sign">Signature &amp; cachet</div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div class="fr">FA-001 · @Model.Registration · @DateTime.Now.Year</div>
+                <div class="fr">2ème BASE AÉRIENNE DE RÉACTION RAPIDE · USAGE OFFICIEL</div>
+                <div class="fr">Page 1 / 1</div>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

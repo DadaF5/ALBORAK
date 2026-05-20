@@ -1,4 +1,5 @@
-﻿using FRAProject.Areas.Settings.Interfaces;
+﻿
+using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Models;
 
@@ -43,7 +44,7 @@ namespace FRAProject.Infrastructure.Interfaces
 
         // Add more as you build:
         IGenericRepository<AcType> AcTypes { get; }
-        // IGenericRepository<Aircraft>  Aircraft  { get; }
+        IGenericRepository<Aircraft> Aircraft { get; }
 
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>

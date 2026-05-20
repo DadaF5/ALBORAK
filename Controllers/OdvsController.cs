@@ -1,4 +1,4 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
+﻿using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Data;
 using FRAProject.Models;
@@ -874,7 +874,7 @@ namespace FRAProject.Controllers
             // Eager-load AcType so AcType.Name is available without lazy loading
             var aircrafts = await _context.Aircrafts
                 .Include(a => a.AcType)
-                .OrderBy(a => a.Registration)
+                .OrderBy(a => a.AircraftVersion)
                 .ToListAsync();
 
             var vm = new AircraftSelectVm
@@ -885,7 +885,7 @@ namespace FRAProject.Controllers
                     Id = a.Id,
                     Registration = a.Registration,
                     AcType = a.AcType.Name,
-                    Status = a.Status
+                    Status = (FRAProject.ViewModels.AircraftStatus)a.Status // Explicit cast to fix CS0266
                 }).ToList()
             };
 
@@ -918,17 +918,17 @@ namespace FRAProject.Controllers
                 var aircraft = await _context.Aircrafts.FirstOrDefaultAsync(a => a.Id == aircraftId);
                 if (aircraft == null) return NotFound($"Aircraft {aircraftId} not found.");
 
-                if (aircraft.Status == AircraftStatus.Unserviceable)
+                if (aircraft.Status == Areas.Settings.Models.AircraftStatus.Unserviceable)
                 {
                     return StatusCode(409, new { success = false, error = $"Aircraft {aircraft.Registration ?? aircraft.Id.ToString()} is unserviceable and cannot be assigned." });
                 }
 
-                if (aircraft.Status == AircraftStatus.Airborne)
+                if (aircraft.Status == Areas.Settings.Models.AircraftStatus.Airborne)
                 {
                     return StatusCode(409, new { success = false, error = $"Aircraft {aircraft.Registration ?? aircraft.Id.ToString()} is airborne and cannot be assigned." });
                 }
 
-                if (aircraft.Status == AircraftStatus.Assigned)
+                if (aircraft.Status == Areas.Settings.Models.AircraftStatus.Assigned)
                 {
                     return StatusCode(409, new { success = false, error = $"Aircraft {aircraft.Registration ?? aircraft.Id.ToString()} is already assigned to another sortie." });
                 }
@@ -938,7 +938,7 @@ namespace FRAProject.Controllers
                 sortie.UpdatedAtUtc = DateTime.UtcNow;
                 SetUpdatedAudit(sortie);
 
-                aircraft.Status = AircraftStatus.Assigned;
+                aircraft.Status = Areas.Settings.Models.AircraftStatus.Assigned;
 
                 _context.Sorties.Update(sortie);
                 _context.Aircrafts.Update(aircraft);
@@ -994,7 +994,7 @@ namespace FRAProject.Controllers
                 var aircraft = await _context.Aircrafts.FirstOrDefaultAsync(a => a.Id == sortie.AircraftId);
                 if (aircraft == null) return NotFound("Aircraft not found");
 
-                if (aircraft.Status == AircraftStatus.Airborne)
+                if (aircraft.Status == Areas.Settings.Models.AircraftStatus.Airborne)
                 {
                     return StatusCode(409, new { success = false, error = "Aircraft already airborne (not released). TWR must release before proceeding." });
                 }
@@ -1004,7 +1004,7 @@ namespace FRAProject.Controllers
                 sortie.UpdatedAtUtc = DateTime.UtcNow;
                 SetUpdatedAudit(sortie);
 
-                aircraft.Status = AircraftStatus.Airborne;
+                aircraft.Status = Areas.Settings.Models.AircraftStatus.Airborne;
                 _context.Sorties.Update(sortie);
                 _context.Aircrafts.Update(aircraft);
 
@@ -1054,7 +1054,7 @@ namespace FRAProject.Controllers
                 sortie.UpdatedAtUtc = DateTime.UtcNow;
                 SetUpdatedAudit(sortie);
 
-                aircraft.Status = AircraftStatus.Available;
+                aircraft.Status = Areas.Settings.Models.AircraftStatus.Available;
                 _context.Sorties.Update(sortie);
                 _context.Aircrafts.Update(aircraft);
 

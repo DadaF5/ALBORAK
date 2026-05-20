@@ -16,7 +16,7 @@
                     {
                         <tr data-sortie-id="@s.Id">
                             <td>@s.Id</td>
-                            <td>@(s.Aircraft?.DisplayName ?? "-")</td>
+                            <td>@(s.Aircraft?.Registration ?? "-")</td>
                             <td>@(s.StartTime?.ToString("HH:mm") ?? "-")</td>
                             <td>
                                 @if (s.SortieCrews?.Any() == true)

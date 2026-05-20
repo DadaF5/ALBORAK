@@ -1,0 +1,387 @@
+@model FRAProject.Areas.Settings.ViewModels.AircraftFormDto
+
+<div class="card border-secondary mb-3">
+    <div class="card-header bg-dark border-secondary py-2">
+        <h6 class="mb-0 text-muted small">
+            <i class="fas fa-id-card me-2"></i>
+            Identification de l'aéronef
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            <div class="col-md-2">
+                <label asp-for="Registration" class="form-label text-muted small">
+                    Marque d'immatriculation <span class="text-danger">*</span>
+                </label>
+                <input asp-for="Registration"
+                       class="form-control bg-dark text-white border-secondary text-uppercase fw-bold"
+                       placeholder="CN-FAA"
+                       maxlength="50"
+                       style="font-family:monospace;font-size:15px;letter-spacing:3px;"
+                       oninput="this.value=this.value.toUpperCase()" />
+                <span asp-validation-for="Registration" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-1">
+                <label asp-for="TailNo" class="form-label text-muted small">
+                    N° queue <span class="text-danger">*</span>
+                </label>
+                <input asp-for="TailNo"
+                       type="number"
+                       class="form-control bg-dark text-white border-secondary"
+                       placeholder="501"
+                       min="1" max="9999" />
+                <span asp-validation-for="TailNo" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="AcTypeId" class="form-label text-muted small">
+                    Type d'aéronef <span class="text-danger">*</span>
+                </label>
+                <select asp-for="AcTypeId"
+                        asp-items="Model.AcTypeOptions"
+                        class="form-select bg-dark text-white border-secondary"
+                        id="acTypeSelect">
+                </select>
+                <span asp-validation-for="AcTypeId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="AircraftVersionId" class="form-label text-muted small">
+                    Version / Variante
+                </label>
+                <select asp-for="AircraftVersionId"
+                        asp-items="Model.VersionOptions"
+                        class="form-select bg-dark text-white border-secondary"
+                        id="versionSelect">
+                </select>
+                <small class="text-muted">Chargé selon le type sélectionné</small>
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="ManufacturerId" class="form-label text-muted small">
+                    Constructeur
+                </label>
+                <select asp-for="ManufacturerId"
+                        asp-items="Model.ManufacturerOptions"
+                        class="form-select bg-dark text-white border-secondary">
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="SerialNumber" class="form-label text-muted small">
+                    N° de série constructeur
+                </label>
+                <input asp-for="SerialNumber"
+                       class="form-control bg-dark text-white border-secondary"
+                       placeholder="Cf. plaque d'identification"
+                       maxlength="100" />
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="OriginCountryId" class="form-label text-muted small">
+                    Pays d'origine
+                </label>
+                <select asp-for="OriginCountryId"
+                        asp-items="Model.CountryOptions"
+                        class="form-select bg-dark text-white border-secondary">
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label asp-for="ManufactureDate" class="form-label text-muted small">
+                    Date de fabrication
+                </label>
+                <input asp-for="ManufactureDate"
+                       type="date"
+                       class="form-control bg-dark text-white border-secondary" />
+            </div>
+
+            <div class="col-md-2">
+                <label asp-for="ServiceEntryDate" class="form-label text-muted small">
+                    Entrée en service
+                </label>
+                <input asp-for="ServiceEntryDate"
+                       type="date"
+                       class="form-control bg-dark text-white border-secondary" />
+            </div>
+
+            <div class="col-md-2">
+                <label asp-for="RegistrationDate" class="form-label text-muted small">
+                    Date immatriculation DAM
+                </label>
+                <input asp-for="RegistrationDate"
+                       type="date"
+                       class="form-control bg-dark text-white border-secondary" />
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="Obs" class="form-label text-muted small">
+                    Désignation / remarques
+                </label>
+                <input asp-for="Obs"
+                       class="form-control bg-dark text-white border-secondary"
+                       placeholder="ex: F-16C Block 52+ / CN-FAA"
+                       maxlength="500" />
+                <span asp-validation-for="Obs" class="text-danger small"></span>
+                <small class="text-muted">
+                    Optionnel — peut être auto-rempli depuis le type et la marque
+                </small>
+            </div>
+
+            <div class="col-md-2">
+                <label asp-for="SortOrder" class="form-label text-muted small">Ordre</label>
+                <input asp-for="SortOrder"
+                       type="number"
+                       class="form-control bg-dark text-white border-secondary"
+                       min="0" max="255" />
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end pb-1">
+                <div class="form-check form-switch">
+                    <input asp-for="IsActive"
+                           class="form-check-input"
+                           type="checkbox" role="switch" />
+                    <label asp-for="IsActive"
+                           class="form-check-label text-muted"
+                           style="padding-left:20px;">Actif</label>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="card border-secondary mb-3">
+    <div class="card-header bg-dark border-secondary py-2">
+        <h6 class="mb-0 text-muted small">
+            <i class="fas fa-map-marker-alt me-2"></i>
+            Affectation opérationnelle
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <label asp-for="AcStatusTypeId" class="form-label text-muted small">
+                    Statut opérationnel <span class="text-danger">*</span>
+                </label>
+                <select asp-for="AcStatusTypeId"
+                        asp-items="Model.StatusOptions"
+                        class="form-select bg-dark text-white border-secondary"
+                        id="statusSelect">
+                </select>
+                <span asp-validation-for="AcStatusTypeId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="BaseId" class="form-label text-muted small">
+                    Base d'affectation <span class="text-danger">*</span>
+                </label>
+                <select asp-for="BaseId"
+                        asp-items="Model.BaseOptions"
+                        class="form-select bg-dark text-white border-secondary">
+                </select>
+                <span asp-validation-for="BaseId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="MissionRoleId" class="form-label text-muted small">
+                    Rôle et mission
+                </label>
+                <select asp-for="MissionRoleId"
+                        asp-items="Model.MissionRoleOptions"
+                        class="form-select bg-dark text-white border-secondary"
+                        id="missionRoleSelect">
+                </select>
+                <small class="text-muted">Chargé selon le type sélectionné</small>
+            </div>
+
+            <div class="col-12">
+                <div id="statusPreview" class="d-none">
+                    <small class="text-muted me-2">Statut sélectionné :</small>
+                    <span id="statusBadge" class="badge fs-6"></span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="card border-secondary mb-3">
+    <div class="card-header bg-dark border-secondary py-2">
+        <h6 class="mb-0 text-muted small">
+            <i class="fas fa-tachometer-alt me-2"></i>
+            Compteurs depuis neuf (TSN)
+            <small class="text-muted ms-2" style="font-size:10px;">
+                stockés en minutes — affichés en HH:MM
+            </small>
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <label class="form-label text-muted small">
+                    Heures de vol (HdV) <span class="text-danger">*</span>
+                </label>
+                <input type="hidden" asp-for="TotalFlightMinutes" id="totalFlightMinutes" />
+                <div class="input-group">
+                    <input type="number"
+                           id="fh-hours"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="HH"
+                           min="0" max="99999"
+                           value="@Model.FlightHours"
+                           oninput="syncMinutes()" />
+                    <span class="input-group-text bg-dark border-secondary text-muted fw-bold">:</span>
+                    <input type="number"
+                           id="fh-mins"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="MM"
+                           min="0" max="59"
+                           value="@Model.FlightMinutes"
+                           oninput="syncMinutes()" />
+                    <span class="input-group-text bg-dark border-secondary text-muted">min</span>
+                </div>
+                <small class="text-muted">
+                    Total : <span id="fhDisplay">@Model.FlightHours:@Model.FlightMinutes.ToString("D2")</span>
+                </small>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="TotalCycles" class="form-label text-muted small">
+                    Cycles moteur
+                </label>
+                <input asp-for="TotalCycles"
+                       type="number"
+                       class="form-control bg-dark text-white border-secondary"
+                       min="0"
+                       placeholder="0" />
+                <span asp-validation-for="TotalCycles" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="TotalLandings" class="form-label text-muted small">
+                    Atterrissages
+                </label>
+                <input asp-for="TotalLandings"
+                       type="number"
+                       class="form-control bg-dark text-white border-secondary"
+                       min="0"
+                       placeholder="0" />
+                <span asp-validation-for="TotalLandings" class="text-danger small"></span>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@if (Model.DossierId.HasValue)
+{
+    <div class="alert alert-info py-2 mb-3 d-flex align-items-center gap-2">
+        <i class="fas fa-link"></i>
+        <small>
+            Lié au dossier DAM
+            <strong class="font-monospace ms-1">
+                @(Model.DossierNumber ?? $"#{Model.DossierId}")
+            </strong>
+        </small>
+        <input type="hidden" asp-for="DossierId" />
+    </div>
+}
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        function syncMinutes() {
+            const h = parseInt(document.getElementById('fh-hours').value) || 0;
+            const m = parseInt(document.getElementById('fh-mins').value) || 0;
+            const tot = (h * 60) + m;
+            document.getElementById('totalFlightMinutes').value = tot;
+            document.getElementById('fhDisplay').textContent = h + ':' + String(m).padStart(2, '0');
+        }
+        syncMinutes();
+
+        document.getElementById('acTypeSelect')?.addEventListener('change', function () {
+            loadVersions(this.value);
+            loadMissionRoles(this.value);
+            buildObs();
+        });
+
+        function loadVersions(acTypeId) {
+            if (!acTypeId) {
+                repopulate('versionSelect', [], '— Version (optionnel) —');
+                return;
+            }
+            fetch(`/Settings/Aircraft/GetVersions?acTypeId=${acTypeId}`)
+                .then(r => r.json())
+                .then(data => repopulate('versionSelect', data, '— Version (optionnel) —'));
+        }
+
+        function loadMissionRoles(acTypeId) {
+            if (!acTypeId) {
+                repopulate('missionRoleSelect', [], '— Rôle (optionnel) —');
+                return;
+            }
+            fetch(`/Settings/Aircraft/GetMissionRoles?acTypeId=${acTypeId}`)
+                .then(r => r.json())
+                .then(data => repopulate('missionRoleSelect', data, '— Rôle (optionnel) —'));
+        }
+
+        function repopulate(selectId, items, placeholder) {
+            const sel = document.getElementById(selectId);
+            if (!sel) return;
+            sel.innerHTML = `<option value="">${placeholder}</option>`;
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.text = item.text;
+                sel.appendChild(opt);
+            });
+        }
+
+        function buildObs() {
+            const typeText = document.getElementById('acTypeSelect')?.selectedOptions[0]?.text ?? '';
+            const registration = document.querySelector('[name="Registration"]')?.value ?? '';
+            const obsField = document.querySelector('[name="Obs"]');
+
+            if (obsField && typeText && typeText !== '— Sélectionner le type —') {
+                const typePart = typeText.split('—').pop()?.trim() ?? typeText;
+                obsField.value = registration
+                    ? `${typePart} / ${registration.toUpperCase()}`
+                    : typePart;
+            }
+        }
+
+        document.querySelector('[name="Registration"]')?.addEventListener('input', buildObs);
+
+        const statusColors = {
+            'OPR': 'bg-success',
+            'MNT': 'bg-warning text-dark',
+            'AOG': 'bg-danger',
+            'STK': 'bg-secondary',
+            'RAD': 'bg-dark border border-secondary'
+        };
+
+        document.getElementById('statusSelect')?.addEventListener('change', function () {
+            const opt = this.selectedOptions[0];
+            const code = opt?.text?.split('—')[0]?.trim();
+            const badge = document.getElementById('statusBadge');
+            const wrap = document.getElementById('statusPreview');
+
+            if (code && statusColors[code]) {
+                badge.className = `badge fs-6 ${statusColors[code]}`;
+                badge.textContent = opt.text;
+                wrap.classList.remove('d-none');
+            } else {
+                wrap.classList.add('d-none');
+            }
+        });
+
+        document.getElementById('statusSelect')?.dispatchEvent(new Event('change'));
+    </script>
+}

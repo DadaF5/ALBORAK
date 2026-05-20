@@ -1,4 +1,4 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
+﻿
 using FRAProject.Areas.HR.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -35,7 +35,7 @@ namespace FRAProject.Areas.Settings.Models
         // Navigation
         public ICollection<Department> Departments { get; set; } = new HashSet<Department>();
         public ICollection<AcMainGroup> AcMainGroups { get; set; } = new HashSet<AcMainGroup>();
-        public ICollection<Aircraft> Aircraft { get; set; } = new HashSet<Aircraft>();
+        public ICollection<Aircraft> Aircrafts { get; set; } = new HashSet<Aircraft>();
 
 
     }

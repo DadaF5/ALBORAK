@@ -6,7 +6,7 @@
 <div class="row g-3">
 
     @* ── AcType DDL ───────────────────────────────────────────────── *@
-    <div class="col-md-4">
+    <div class="col-md-2">
         <div class="form-group">
             <label asp-for="AcTypeId" class="form-label text-muted small">
                 Type d'aéronef <span class="text-danger">*</span>
@@ -37,7 +37,7 @@
     </div>
 
     @* ── Name ─────────────────────────────────────────────────────── *@
-    <div class="col-md-6">
+    <div class="col-md-3">
         <div class="form-group">
             <label asp-for="Name" class="form-label text-muted small">
                 Nom <span class="text-danger">*</span>
@@ -51,7 +51,7 @@
     </div>
 
     @* ── Description ──────────────────────────────────────────────── *@
-    <div class="col-md-8">
+    <div class="col-md-4">
         <div class="form-group">
             <label asp-for="Description" class="form-label text-muted small">
                 Description
@@ -80,16 +80,14 @@
     </div>
 
     @* ── IsActive ─────────────────────────────────────────────────── *@
-    <div class="col-md-2 d-flex align-items-end pb-1">
+    <div class="col-md-2 d-flex align-items-end pb-2">
         <div class="form-check form-switch">
             <input asp-for="IsActive"
                    class="form-check-input"
                    type="checkbox"
                    role="switch" />
-            <label asp-for="IsActive"
-                   class="form-check-label text-muted"
-                   style="padding-left:20px;">
-                Version active
+            <label asp-for="IsActive" class="form-check-label text-muted" style="padding-left:20px;">
+                Actif
             </label>
         </div>
     </div>

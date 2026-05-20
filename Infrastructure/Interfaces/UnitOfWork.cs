@@ -1,4 +1,5 @@
-﻿using FRAProject.Areas.Settings.Interfaces;
+﻿
+using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.Settings.Repositories;
 using FRAProject.Data;
@@ -30,7 +31,9 @@ namespace FRAProject.Infrastructure
         private IGenericRepository<Country>? _countries;
         private IGenericRepository<AcCategory>? _acCategories;
         private IGenericRepository<AcType>? _acTypes;
-       
+        private IGenericRepository<Aircraft>? _aircraft;
+
+
         private IGenericRepository<EmployingAuthority>? _employingAuthorities;
         private IGenericRepository<AcStatusType>? _acStatusTypes;
 
@@ -59,6 +62,8 @@ namespace FRAProject.Infrastructure
             _acCategories ??= new GenericRepository<AcCategory>(_context);
         public IGenericRepository<AcType> AcTypes =>
             _acTypes ??= new GenericRepository<AcType>(_context);
+        public IGenericRepository<Aircraft> Aircraft =>
+            _aircraft ??= new GenericRepository<Aircraft>(_context);
 
         public IGenericRepository<EmployingAuthority> EmployingAuthorities =>
             _employingAuthorities ??= new GenericRepository<EmployingAuthority>(_context);

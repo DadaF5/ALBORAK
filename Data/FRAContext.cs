@@ -1,7 +1,5 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
-using FRAProject.Areas.HR.Models;
+﻿using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.Medical.Models;
-using FRAProject.Areas.Settings;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Data.Configurations;
@@ -118,6 +116,9 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new MissionRoleConfiguration());
             modelBuilder.ApplyConfiguration(new ImmatriculationDocTypeConfiguration());
 
+            // Aircraft configurations
+            modelBuilder.ApplyConfiguration(new AircraftConfiguration());
+
             // ── Immatriculation dossier — 5 configurations ───────────────
             // All class names prefixed with "ImmatriculationDossier" to avoid
             // conflicts with existing configuration classes in the project.
@@ -187,14 +188,7 @@ namespace FRAProject.Data
                 .HasMany(w => w.Squadrons)
                 .WithOne(s => s.Wing)
                 .HasForeignKey(s => s.WingId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // ── Aircraft ───────────────────────────────────────────────────
-            modelBuilder.Entity<Aircraft>()
-                .HasOne(a => a.AcType)
-                .WithMany(t => t.Aircrafts)
-                .HasForeignKey(a => a.AcTypeId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict);            
 
             // ── AircraftDocumentType ───────────────────────────────────────
             modelBuilder.Entity<AircraftDocumentType>()
@@ -267,15 +261,7 @@ namespace FRAProject.Data
 
         private void ConfigureMaintenance(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<MaintenanceComponent>(e =>
-            {
-                e.HasKey(c => c.Id);
-                e.HasOne(c => c.Aircraft)
-                 .WithMany(a => a.Components)
-                 .HasForeignKey(c => c.AircraftId)
-                 .OnDelete(DeleteBehavior.Cascade);
-            });
-
+           
             modelBuilder.Entity<MaintenanceThreshold>(e =>
             {
                 e.HasKey(t => t.Id);

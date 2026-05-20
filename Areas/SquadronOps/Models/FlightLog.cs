@@ -1,4 +1,5 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
+﻿
+using FRAProject.Areas.Settings.Models;
 
 namespace FRAProject.Areas.SquadronOps.Models
 {

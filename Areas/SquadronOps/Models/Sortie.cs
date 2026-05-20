@@ -1,9 +1,7 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
+﻿
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Models;
-using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

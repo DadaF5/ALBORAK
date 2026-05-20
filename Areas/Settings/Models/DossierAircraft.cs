@@ -1,4 +1,4 @@
-using FRAProject.Areas.AircraftMaintenance.Models;
+
 using FRAProject.Areas.Settings.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

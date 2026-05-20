@@ -1,9 +1,8 @@
-﻿// Areas/AircraftMaintenance/Models/AircraftDocumentType.cs
-using System.Collections.Generic;
+﻿
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FRAProject.Areas.AircraftMaintenance.Models
+namespace FRAProject.Areas.Settings.Models
 {
     [Table("AircraftDocumentTypes", Schema = "dbo")]
     public class AircraftDocumentType

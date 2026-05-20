@@ -1,109 +1,166 @@
 @model FRAProject.Areas.Settings.ViewModels.AcMainGroupFormDto
 
-@* ── Shared form fields — used by both Create.cshtml and Edit.cshtml ── *@
+@{
+    ViewData["Title"] = "Modifier le groupe";
+}
 
-<div class="row g-3">
+<div class="container-fluid px-4 py-4">
+    <div class="mx-auto" style="max-width: 1180px;">
 
-    @* ── AcCategory DDL ───────────────────────────────────────────── *@
-    <div class="col-md-4">
-        <div class="form-group">
-            <label asp-for="AcCategoryId" class="form-label text-muted small">
-                Catégorie d'aéronef <span class="text-danger">*</span>
-            </label>
-            <select asp-for="AcCategoryId"
-                    asp-items="Model.AcCategoryOptions"
-                    class="form-select bg-dark text-white border-secondary">
-            </select>
-            <span asp-validation-for="AcCategoryId" class="text-danger small"></span>
+      @*   <!-- Page header -->
+        <div class="mb-4">
+            <div class="d-flex align-items-center gap-3 mb-1">
+                <h1 class="h2 mb-0 fw-semibold text-dark">Modifier le groupe</h1>
+                <span class="badge rounded-pill text-bg-light border text-warning-emphasis px-3 py-2 fw-semibold">
+                    @Model.Code
+                </span>
+            </div>
+
+            <div>
+                <a asp-action="Index"
+                   class="text-decoration-none small text-secondary">
+                    <i class="bi bi-arrow-left-short"></i> Retour à la liste
+                </a>
+            </div>
+        </div> *@
+
+        <!-- Main card -->
+        <div class="card border-0 shadow-sm">
+           @*  <div class="card-header bg-dark text-white border-0 py-3 px-4">
+                <div class="d-flex align-items-center gap-2 fw-semibold">
+                    <i class="bi bi-stack"></i>
+                    <span>Informations du groupe</span>
+                </div>
+            </div> *@
+
+            <div class="card-body px-4 py-4">
+                <form asp-action="Edit" method="post" novalidate>
+                    <input type="hidden" asp-for="Id" />
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                    <div class="row g-4">
+
+                        <!-- Row 1 -->
+                        <div class="col-md-4">
+                            <label asp-for="AcCategoryId" class="form-label text-muted small fw-semibold mb-2">
+                                Catégorie d'aéronef <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="AcCategoryId"
+                                    asp-items="Model.AcCategoryOptions"
+                                    class="form-select bg-dark text-white border-secondary shadow-sm">
+                            </select>
+                            <span asp-validation-for="AcCategoryId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="BaseId" class="form-label text-muted small fw-semibold mb-2">
+                                Base aérienne <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="BaseId"
+                                    asp-items="Model.BaseOptions"
+                                    class="form-select bg-dark text-white border-secondary shadow-sm">
+                            </select>
+                            <span asp-validation-for="BaseId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="Code" class="form-label text-muted small fw-semibold mb-2">
+                                Code <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Code"
+                                   class="form-control bg-dark text-white border-secondary text-uppercase shadow-sm"
+                                   maxlength="30"
+                                   placeholder="ex: CHASSE-2B"
+                                   style="max-width: 240px; letter-spacing: 1px; font-family: monospace;"
+                                   oninput="this.value=this.value.toUpperCase()" />
+                            <span asp-validation-for="Code" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Row 2 -->
+                        <div class="col-md-4">
+                            <label asp-for="Name" class="form-label text-muted small fw-semibold mb-2">
+                                Nom du groupe <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Name"
+                                   class="form-control bg-dark text-white border-secondary shadow-sm"
+                                   maxlength="50"
+                                   placeholder="ex: Chasse 2ème BAFRA…" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="Description" class="form-label text-muted small fw-semibold mb-2">
+                                Description
+                            </label>
+                            <input asp-for="Description"
+                                   class="form-control bg-dark text-white border-secondary shadow-sm"
+                                   maxlength="50"
+                                   placeholder="Remarques…" />
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-7">
+                                    <label asp-for="SortOrder" class="form-label text-muted small fw-semibold mb-2">
+                                        Ordre d'affichage
+                                    </label>
+                                    <input asp-for="SortOrder"
+                                           type="number"
+                                           class="form-control bg-dark text-white border-secondary shadow-sm"
+                                           min="0"
+                                           max="255" />
+                                    <span asp-validation-for="SortOrder" class="text-danger small"></span>
+                                    <div class="form-text small">0–255</div>
+                                </div>
+
+                                <div class="col-5">
+                                    <div class="border rounded bg-light px-3 py-2 h-100 d-flex align-items-center">
+                                        <div class="form-check form-switch m-0">
+                                            <input asp-for="IsActive"
+                                                   class="form-check-input"
+                                                   type="checkbox"
+                                                   role="switch" />
+                                            <label asp-for="IsActive" class="form-check-label text-muted fw-semibold ms-2">
+                                                Groupe actif
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    @* <!-- Footer actions -->
+                    <div class="mt-5 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="submit"
+                                    formaction="@Url.Action("Deactivate", "AcMainGroup", new { area = "Settings", id = Model.Id })"
+                                    formmethod="post"
+                                    class="btn btn-outline-danger">
+                                <i class="bi bi-ban"></i> Désactiver ce groupe
+                            </button>
+
+                            <div class="d-flex gap-2">
+                                <a asp-action="Index" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-lg"></i> Annuler
+                                </a>
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <i class="bi bi-floppy"></i> Enregistrer
+                                </button>
+                            </div>
+                        </div>
+                    </div> *@
+
+                </form>
+            </div>
         </div>
-    </div>
 
-    @* ── Base DDL ─────────────────────────────────────────────────── *@
-    <div class="col-md-4">
-        <div class="form-group">
-            <label asp-for="BaseId" class="form-label text-muted small">
-                Base aérienne <span class="text-danger">*</span>
-            </label>
-            <select asp-for="BaseId"
-                    asp-items="Model.BaseOptions"
-                    class="form-select bg-dark text-white border-secondary">
-            </select>
-            <span asp-validation-for="BaseId" class="text-danger small"></span>
-        </div>
     </div>
-
-    @* ── Code ─────────────────────────────────────────────────────── *@
-    <div class="col-md-4">
-        <div class="form-group">
-            <label asp-for="Code" class="form-label text-muted small">
-                Code <span class="text-danger">*</span>
-            </label>
-            <input asp-for="Code"
-                   class="form-control bg-dark text-white border-secondary text-uppercase"
-                   placeholder="ex: CHASSE-2B"
-                   maxlength="30"
-                   style="letter-spacing:1px;font-family:monospace;"
-                   oninput="this.value=this.value.toUpperCase()" />
-            <span asp-validation-for="Code" class="text-danger small"></span>
-        </div>
-    </div>
-
-    @* ── Name ─────────────────────────────────────────────────────── *@
-    <div class="col-md-6">
-        <div class="form-group">
-            <label asp-for="Name" class="form-label text-muted small">
-                Nom du groupe <span class="text-danger">*</span>
-            </label>
-            <input asp-for="Name"
-                   class="form-control bg-dark text-white border-secondary"
-                   placeholder="ex: Chasse 2ème BAFRA…"
-                   maxlength="50" />
-            <span asp-validation-for="Name" class="text-danger small"></span>
-        </div>
-    </div>
-
-    @* ── Description ──────────────────────────────────────────────── *@
-    <div class="col-md-6">
-        <div class="form-group">
-            <label asp-for="Description" class="form-label text-muted small">
-                Description
-            </label>
-            <input asp-for="Description"
-                   class="form-control bg-dark text-white border-secondary"
-                   placeholder="Remarques…"
-                   maxlength="50" />
-            <span asp-validation-for="Description" class="text-danger small"></span>
-        </div>
-    </div>
-
-    @* ── Sort Order ───────────────────────────────────────────────── *@
-    <div class="col-md-2">
-        <div class="form-group">
-            <label asp-for="SortOrder" class="form-label text-muted small">
-                Ordre d'affichage
-            </label>
-            <input asp-for="SortOrder"
-                   type="number"
-                   class="form-control bg-dark text-white border-secondary"
-                   min="0" max="255" />
-            <span asp-validation-for="SortOrder" class="text-danger small"></span>
-            <small class="text-muted">0–255</small>
-        </div>
-    </div>
-
-    @* ── IsActive ─────────────────────────────────────────────────── *@
-    <div class="col-md-4 d-flex align-items-end pb-1">
-        <div class="form-check form-switch">
-            <input asp-for="IsActive"
-                   class="form-check-input"
-                   type="checkbox"
-                   role="switch" />
-            <label asp-for="IsActive"
-                   class="form-check-label text-muted"
-                   style="padding-left:20px;">
-                Groupe actif
-            </label>
-        </div>
-    </div>
-
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

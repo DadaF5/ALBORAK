@@ -34,7 +34,7 @@
                                 {
                                     <tr>
                                         <td>@s.Id</td>
-                                        <td>@(s.Aircraft?.DisplayName ?? "-")</td>
+                                        <td>@(s.Aircraft?.Registration ?? "-")</td>
                                         <td>@(s.Configuration ?? "-")</td>
                                         <td>@(s.StartTime?.ToString("HH:mm") ?? "-")</td>
                                         <td>@(s.LandingTime?.ToString("HH:mm") ?? "-")</td>

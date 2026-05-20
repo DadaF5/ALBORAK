@@ -12,7 +12,7 @@
         else aircraftDisplay = "Aircraft";
     }
 
-    string aircraftStatusText = aircraft != null ? aircraft.Status.ToString() : "N/A";
+    string aircraftStatusText = aircraft != null ? aircraft.ToString() : "N/A";
 
     // Show the "Open selector" button only if user is CrewChief and sortie in Planned state and ODV approved
     bool showSelector = User.IsInRole("CrewChief") && Model.Status == SortieStatus.Planned && (Model.Odv?.IsPreflightApproved ?? false);

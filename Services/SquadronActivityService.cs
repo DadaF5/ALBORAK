@@ -34,9 +34,7 @@ namespace FRAProject.Services
             try
             {
                 var sortie = await _context.Sorties
-                    .Include(s => s.Aircraft).ThenInclude(a => a.AcType)
-                    .Include(s => s.Aircraft).ThenInclude(a => a.Components)
-                    .ThenInclude(c => c.Thresholds)
+                    .Include(s => s.Aircraft).ThenInclude(a => a.AcType) 
                     .FirstOrDefaultAsync(s => s.Id == sortieId);
 
                 if (sortie == null)
@@ -81,46 +79,46 @@ namespace FRAProject.Services
                 //aircraft.TotalCycles += cycles;
 
                 // Update components and evaluate thresholds
-                foreach (var comp in aircraft.Components ?? Enumerable.Empty<MaintenanceComponent>())
-                {
-                    comp.TotalMinutes += durationMinutes;
-                    comp.TotalCycles += cycles;
-                    comp.LastUpdatedUtc = DateTime.UtcNow;
+                //foreach (var comp in aircraft.Components ?? Enumerable.Empty<MaintenanceComponent>())
+                //{
+                //    comp.TotalMinutes += durationMinutes;
+                //    comp.TotalCycles += cycles;
+                //    comp.LastUpdatedUtc = DateTime.UtcNow;
 
-                    foreach (var thr in comp.Thresholds ?? Enumerable.Empty<MaintenanceThreshold>())
-                    {
-                        var triggered = false;
-                        if (string.Equals(thr.ThresholdType, "Minutes", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (comp.TotalMinutes >= thr.Value && (thr.LastTriggeredUtc == null || (comp.TotalMinutes - durationMinutes) < thr.Value))
-                                triggered = true;
-                        }
-                        else if (string.Equals(thr.ThresholdType, "Cycles", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (comp.TotalCycles >= thr.Value && (thr.LastTriggeredUtc == null || (comp.TotalCycles - cycles) < thr.Value))
-                                triggered = true;
-                        }
+                //    foreach (var thr in comp.Thresholds ?? Enumerable.Empty<MaintenanceThreshold>())
+                //    {
+                //        var triggered = false;
+                //        if (string.Equals(thr.ThresholdType, "Minutes", StringComparison.OrdinalIgnoreCase))
+                //        {
+                //            if (comp.TotalMinutes >= thr.Value && (thr.LastTriggeredUtc == null || (comp.TotalMinutes - durationMinutes) < thr.Value))
+                //                triggered = true;
+                //        }
+                //        else if (string.Equals(thr.ThresholdType, "Cycles", StringComparison.OrdinalIgnoreCase))
+                //        {
+                //            if (comp.TotalCycles >= thr.Value && (thr.LastTriggeredUtc == null || (comp.TotalCycles - cycles) < thr.Value))
+                //                triggered = true;
+                //        }
 
-                        if (triggered)
-                        {
-                            var wo = new MaintenanceWorkOrder
-                            {
-                                AircraftId = aircraft.Id,
-                                ComponentId = comp.Id,
-                                ThresholdId = thr.Id,
-                                Title = $"Auto: maintenance for {comp.PartNumber} - threshold {thr.Value} {thr.ThresholdType}",
-                                Description = $"Auto-generated after sortie completion. Component total minutes: {comp.TotalMinutes}, cycles: {comp.TotalCycles}",
-                                Status = "Open",
-                                TriggeredTotalMinutes = comp.TotalMinutes,
-                                TriggeredTotalCycles = comp.TotalCycles,
-                                CreatedAtUtc = DateTime.UtcNow
-                            };
-                            _context.MaintenanceWorkOrders.Add(wo);
+                //        if (triggered)
+                //        {
+                //            var wo = new MaintenanceWorkOrder
+                //            {
+                //                AircraftId = aircraft.Id,
+                //                ComponentId = comp.Id,
+                //                ThresholdId = thr.Id,
+                //                Title = $"Auto: maintenance for {comp.PartNumber} - threshold {thr.Value} {thr.ThresholdType}",
+                //                Description = $"Auto-generated after sortie completion. Component total minutes: {comp.TotalMinutes}, cycles: {comp.TotalCycles}",
+                //                Status = "Open",
+                //                TriggeredTotalMinutes = comp.TotalMinutes,
+                //                TriggeredTotalCycles = comp.TotalCycles,
+                //                CreatedAtUtc = DateTime.UtcNow
+                //            };
+                //            _context.MaintenanceWorkOrders.Add(wo);
 
-                            thr.LastTriggeredUtc = DateTime.UtcNow;
-                        }
-                    }
-                }
+                //            thr.LastTriggeredUtc = DateTime.UtcNow;
+                //        }
+                //    }
+                //}
 
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();

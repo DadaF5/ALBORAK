@@ -1,9 +1,8 @@
-﻿// Areas/AircraftMaintenance/Models/AircraftDocument.cs
-using System;
+﻿
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FRAProject.Areas.AircraftMaintenance.Models
+namespace FRAProject.Areas.Settings.Models
 {
     [Table("AircraftDocuments", Schema = "dbo")]
     public class AircraftDocument

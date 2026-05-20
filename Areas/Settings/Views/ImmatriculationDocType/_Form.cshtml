@@ -39,7 +39,7 @@
                 <input class="form-check-input" type="radio"
                        name="IsRequired" id="req-yes"
                        value="true" @(Model.IsRequired ? "checked" : "") />
-                <label class="form-check-label text-success" for="req-yes">
+                <label class="form-check-label text-success pl-4" for="req-yes">
                     Oui
                 </label>
             </div>
@@ -47,7 +47,7 @@
                 <input class="form-check-input" type="radio"
                        name="IsRequired" id="req-no"
                        value="false" @(!Model.IsRequired ? "checked" : "") />
-                <label class="form-check-label text-muted" for="req-no">
+                <label class="form-check-label text-muted  pl-4" for="req-no">
                     Non
                 </label>
             </div>
@@ -98,7 +98,7 @@
         <div class="form-check form-switch">
             <input asp-for="IsActive" class="form-check-input"
                    type="checkbox" role="switch" />
-            <label asp-for="IsActive" class="form-check-label text-muted">Actif</label>
+            <label asp-for="IsActive" class="form-check-label text-muted pl-4">Actif</label>
         </div>
     </div>
 

@@ -346,7 +346,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             vm.Aircrafts = await _context.Aircrafts
                 .OrderBy(a => a.Registration)
-                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.DisplayName })
+                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Registration })
                 .ToListAsync();
 
             vm.CrewMembers = await _context.CrewMembers

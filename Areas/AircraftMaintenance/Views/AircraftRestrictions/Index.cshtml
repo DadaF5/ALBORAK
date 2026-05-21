@@ -1,0 +1,506 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.AircraftRestrictionIndexVm
+@{
+    ViewData["Title"] = "Restrictions aéronefs";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="container mt-3">
+
+@* ── Header ───────────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">Restrictions aéronefs</h4>
+        <small class="text-muted">
+            Restrictions opérationnelles et de maintenance — flotte active
+        </small>
+    </div>
+    <a asp-action="Create" class="btn btn-danger btn-sm">
+        <i class="fas fa-plus me-1"></i> Nouvelle restriction
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@* ── Summary strip ────────────────────────────────────────────── *@
+<div class="row g-2 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="card border-danger text-center py-2"
+             style="background:rgba(239,68,68,.06);">
+            <div style="font-family:monospace;font-size:24px;
+                        font-weight:700;color:#ef4444;">
+                @Model.CountCritical
+            </div>
+            <small class="text-muted">Critiques</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-warning text-center py-2"
+             style="background:rgba(245,158,11,.06);">
+            <div style="font-family:monospace;font-size:24px;
+                        font-weight:700;color:#f59e0b;">
+                @Model.CountHigh
+            </div>
+            <small class="text-muted">Élevées</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-secondary text-center py-2">
+            <div style="font-family:monospace;font-size:24px;
+                        font-weight:700;color:#e2e8f0;">
+                @Model.TotalCount
+            </div>
+            <small class="text-muted">Total (page)</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-secondary text-center py-2">
+            <div style="font-family:monospace;font-size:24px;
+                        font-weight:700;color:#64748b;">
+                @(Model.SearchActiveOnly ? "Actives" : "Toutes")
+            </div>
+            <small class="text-muted">Filtre actuel</small>
+        </div>
+    </div>
+</div>
+
+@* ── Search ───────────────────────────────────────────────────── *@
+<div class="card border-secondary mb-3">
+    <div class="card-body py-2">
+        <form method="get" asp-action="Index">
+            <div class="row g-2 align-items-end">
+
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">Aéronef</label>
+                    <select name="searchAircraftId"
+                            asp-items="Model.AircraftOptions"
+                            class="form-select form-select-sm bg-dark
+                                   text-white border-secondary">
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">Type</label>
+                        <select name="searchSeverity"
+                                class="form-select form-select-sm bg-dark text-white border-secondary">
+                            @* Render full <option> elements conditionally to avoid C# inside attribute area *@
+                            @if (string.IsNullOrEmpty(Model.SearchSeverity))
+                            {
+                                <option value="" selected>Toutes</option>
+                            }
+                            else
+                            {
+                                <option value="">Toutes</option>
+                            }
+
+                            @if (Model.SearchSeverity == "CRITICAL")
+                            {
+                                <option value="CRITICAL" selected>Critique</option>
+                            }
+                            else
+                            {
+                                <option value="CRITICAL">Critique</option>
+                            }
+
+                            @if (Model.SearchSeverity == "HIGH")
+                            {
+                                <option value="HIGH" selected>Élevée</option>
+                            }
+                            else
+                            {
+                                <option value="HIGH">Élevée</option>
+                            }
+
+                            @if (Model.SearchSeverity == "MEDIUM")
+                            {
+                                <option value="MEDIUM" selected>Moyenne</option>
+                            }
+                            else
+                            {
+                                <option value="MEDIUM">Moyenne</option>
+                            }
+                        </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">Sévérité</label>
+                        <select name="searchSeverity"
+                                class="form-select form-select-sm bg-dark
+               text-white border-secondary">
+                            @* Render full <option> elements conditionally to avoid C# inside attribute area *@
+                            @if (string.IsNullOrEmpty(Model.SearchSeverity))
+                            {
+                                <option value="" selected>Toutes</option>
+                            }
+                            else
+                            {
+                                <option value="">Toutes</option>
+                            }
+
+                            @if (Model.SearchSeverity == "CRITICAL")
+                            {
+                                <option value="CRITICAL" selected>Critique</option>
+                            }
+                            else
+                            {
+                                <option value="CRITICAL">Critique</option>
+                            }
+
+                            @if (Model.SearchSeverity == "HIGH")
+                            {
+                                <option value="HIGH" selected>Élevée</option>
+                            }
+                            else
+                            {
+                                <option value="HIGH">Élevée</option>
+                            }
+
+                            @if (Model.SearchSeverity == "MEDIUM")
+                            {
+                                <option value="MEDIUM" selected>Moyenne</option>
+                            }
+                            else
+                            {
+                                <option value="MEDIUM">Moyenne</option>
+                            }
+                        </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">Filtre</label>
+                        <select name="showActiveOnly"
+                                class="form-select form-select-sm bg-dark text-white border-secondary">
+                            @if (Model.SearchActiveOnly)
+                            {
+                                <option value="true" selected>Actives uniquement</option>
+                                <option value="false">Toutes</option>
+                            }
+                            else
+                            {
+                                <option value="true">Actives uniquement</option>
+                                <option value="false" selected>Toutes</option>
+                            }
+                        </select>
+                </div>
+
+                <div class="col-md-3 d-flex gap-2">
+                    <input type="hidden" name="sortColumn"
+                           value="@Model.SortColumn" />
+                    <input type="hidden" name="sortDirection"
+                           value="@Model.SortDirection" />
+                    <input type="hidden" name="pageSize"
+                           value="@Model.PageSize" />
+                    <button type="submit"
+                            class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-search me-1"></i>Rechercher
+                    </button>
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary btn-sm"
+                       title="Réinitialiser">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ── Results info ─────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <small class="text-muted">
+        @if (Model.TotalCount == 0)
+        {
+            <span>Aucune restriction trouvée.</span>
+        }
+        else
+        {
+            <span>
+                Affichage @Model.FirstItem–@Model.LastItem
+                sur @Model.TotalCount restriction(s)
+            </span>
+        }
+    </small>
+</div>
+
+@* ── Table ────────────────────────────────────────────────────── *@
+<div class="card border-secondary">
+    <div class="card-body p-0">
+        <table class="table table-hover table-sm mb-0">
+            <thead style="background-color: darkolivegreen;">
+                <tr>
+                    @{
+                        string SortLink(string col) => Url.Action("Index", new
+                        {
+                            searchAircraftId = Model.SearchAircraftId,
+                            searchType       = Model.SearchType,
+                            searchSeverity   = Model.SearchSeverity,
+                            showActiveOnly   = Model.SearchActiveOnly,
+                            sortColumn       = col,
+                            sortDirection    = Model.SortDirectionFor(col),
+                            pageNumber       = 1,
+                            pageSize         = Model.PageSize
+                        })!;
+                    }
+                    <th style="width:110px">Aéronef</th>
+                    <th style="width:80px" class="text-center">Type</th>
+                    <th style="width:100px" class="text-center">
+                        <a href="@SortLink("Severity")"
+                           class="text-white text-decoration-none">
+                            Sévérité
+                            <i class="fas @Model.SortIconFor("Severity") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:130px">Référence</th>
+                    <th>Description</th>
+                    <th style="width:100px">Émis par</th>
+                    <th style="width:100px" class="text-center">
+                        <a href="@SortLink("StartDate")"
+                           class="text-white text-decoration-none">
+                            Début
+                            <i class="fas @Model.SortIconFor("StartDate") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:110px" class="text-center">
+                        <a href="@SortLink("ExpiryDate")"
+                           class="text-white text-decoration-none">
+                            Expiration
+                            <i class="fas @Model.SortIconFor("ExpiryDate") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:80px" class="text-center">Statut</th>
+                    <th style="width:100px" class="text-center text-white">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Items.Any())
+                {
+                    <tr>
+                        <td colspan="10"
+                            class="text-center text-muted py-4">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Aucune restriction active.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr id="row-@item.Id"
+                            class="@(!item.IsActive ? "opacity-50" : "")
+                                   @(item.IsExpired ? "table-secondary" : "")">
+                            <td>
+                                <span class="fw-bold font-monospace text-warning"
+                                      style="letter-spacing:1px;">
+                                    @item.AircraftRegistration
+                                </span>
+                                <br />
+                                <small class="text-muted">
+                                    @(item.AircraftTypeName ?? "")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @(item.RestrictionType == "OPS"
+                                    ? "bg-info text-dark" : "bg-secondary")">
+                                    @item.RestrictionType
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @item.SeverityBadgeClass">
+                                    @item.Severity
+                                </span>
+                            </td>
+                            <td>
+                                <code class="text-warning"
+                                      style="font-size:11px;">
+                                    @item.Reference
+                                </code>
+                                @if (!string.IsNullOrEmpty(item.CertificateReference))
+                                {
+                                    <br />
+                                    <small class="text-muted">
+                                        <i class="fas fa-link me-1"></i>
+                                        @item.CertificateReference
+                                    </small>
+                                }
+                            </td>
+                            <td>
+                                <small>@item.Description</small>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    @(item.IssuedBy ?? "—")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <small class="font-monospace">
+                                    @item.StartDate.ToString("dd/MM/yy")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                @if (item.ExpiryDate.HasValue)
+                                {
+                                    var cls = item.IsExpired   ? "text-danger"
+                                            : item.DaysRemaining <= 7 ? "text-warning"
+                                            : "text-muted";
+                                    <small class="font-monospace @cls">
+                                        @item.ExpiryDate.Value.ToString("dd/MM/yy")
+                                        @if (!item.IsExpired && item.DaysRemaining <= 30)
+                                        {
+                                            <br />
+                                            <span style="font-size:9px;">
+                                                J-@item.DaysRemaining
+                                            </span>
+                                        }
+                                    </small>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">Indéfinie</small>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (!item.IsActive)
+                                {
+                                    <span class="badge bg-secondary">Levée</span>
+                                }
+                                else if (item.IsExpired)
+                                {
+                                    <span class="badge bg-dark border border-secondary">
+                                        Expirée
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Active</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <a asp-action="Edit"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-outline-warning btn-sm"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                @if (item.IsActive)
+                                {
+                                    <button type="button"
+                                            class="btn btn-outline-success btn-sm ms-1"
+                                            title="Lever la restriction"
+                                            onclick="toggleActive(
+                                                @item.Id, false,
+                                                '@Html.Raw(item.Reference
+                                                    .Replace("'", "\\'"))')">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-sm ms-1"
+                                            title="Réactiver"
+                                            onclick="toggleActive(
+                                                @item.Id, true,
+                                                '@Html.Raw(item.Reference
+                                                    .Replace("'", "\\'"))')">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@* ── Pager ────────────────────────────────────────────────────── *@
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-3" aria-label="Pagination">
+        <ul class="pagination pagination-sm justify-content-center mb-0">
+            <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                <a class="page-link bg-dark border-secondary text-white"
+                   asp-action="Index"
+                   asp-route-searchAircraftId="@Model.SearchAircraftId"
+                   asp-route-searchType="@Model.SearchType"
+                   asp-route-searchSeverity="@Model.SearchSeverity"
+                   asp-route-showActiveOnly="@Model.SearchActiveOnly"
+                   asp-route-sortColumn="@Model.SortColumn"
+                   asp-route-sortDirection="@Model.SortDirection"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-pageNumber="@(Model.PageNumber - 1)">&laquo;</a>
+            </li>
+            @for (int p = Math.Max(1, Model.PageNumber - 2);
+                      p <= Math.Min(Model.TotalPages, Model.PageNumber + 2); p++)
+            {
+                <li class="page-item @(p == Model.PageNumber ? "active" : "")">
+                    <a class="page-link bg-dark border-secondary text-white"
+                       asp-action="Index"
+                       asp-route-searchAircraftId="@Model.SearchAircraftId"
+                       asp-route-searchType="@Model.SearchType"
+                       asp-route-searchSeverity="@Model.SearchSeverity"
+                       asp-route-showActiveOnly="@Model.SearchActiveOnly"
+                       asp-route-sortColumn="@Model.SortColumn"
+                       asp-route-sortDirection="@Model.SortDirection"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-pageNumber="@p">@p</a>
+                </li>
+            }
+            <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                <a class="page-link bg-dark border-secondary text-white"
+                   asp-action="Index"
+                   asp-route-searchAircraftId="@Model.SearchAircraftId"
+                   asp-route-searchType="@Model.SearchType"
+                   asp-route-searchSeverity="@Model.SearchSeverity"
+                   asp-route-showActiveOnly="@Model.SearchActiveOnly"
+                   asp-route-sortColumn="@Model.SortColumn"
+                   asp-route-sortDirection="@Model.SortDirection"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-pageNumber="@(Model.PageNumber + 1)">&raquo;</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+    const token = document.querySelector(
+        'input[name="__RequestVerificationToken"]')?.value;
+
+    function toggleActive(id, activate, ref) {
+        const action = activate ? 'Activate' : 'Delete';
+        const msg    = activate
+            ? `Réactiver la restriction « ${ref} » ?`
+            : `Lever la restriction « ${ref} » ?\n\nL'aéronef retrouve ses droits de vol.`;
+
+        if (!confirm(msg)) return;
+
+        fetch(`/Settings/AircraftRestrictions/${action}/${id}`, {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': token,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { window.location.reload(); }
+            else { alert(data.message ?? 'Erreur.'); }
+        })
+        .catch(() => alert('Erreur réseau.'));
+    }
+</script>
+}
+</div>

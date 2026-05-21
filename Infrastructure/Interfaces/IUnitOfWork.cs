@@ -1,6 +1,8 @@
 ﻿
+using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
+using FRAProject.Data.Configurations;
 using FRAProject.Models;
 
 namespace FRAProject.Infrastructure.Interfaces
@@ -45,6 +47,8 @@ namespace FRAProject.Infrastructure.Interfaces
         // Add more as you build:
         IGenericRepository<AcType> AcTypes { get; }
         IGenericRepository<Aircraft> Aircraft { get; }
+        IGenericRepository<AircraftCertificate> AircraftCertificates { get; }
+        IGenericRepository<AircraftRestriction> AircraftRestrictions { get; }
 
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>

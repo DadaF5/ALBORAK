@@ -1,174 +1,1066 @@
-﻿<!doctype html>
+﻿@using System.Security.Claims
+@{
+    // =========================
+    // Current route information
+    // =========================
+    var currentArea = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    // =========================
+    // Helper: active menu item
+    // =========================
+    string IsActive(string area, string controller, string action = "Index")
+    {
+        return string.Equals(currentArea, area, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase)
+            ? "active"
+            : "";
+    }
+
+    // ==========================================
+    // Default behavior: all groups open on load
+    // ==========================================
+    var overviewOpen = true;
+    var flotteOpen = true;
+    var navigabiliteOpen = true;
+    var operationsOpen = true;
+    var administrationOpen = true;
+
+    // =========================
+    // Display name for top bar
+    // =========================
+    var displayName =
+        User.FindFirst("full_name")?.Value ??
+        User.FindFirst("name")?.Value ??
+        User.FindFirst(ClaimTypes.GivenName)?.Value ??
+        User.Identity?.Name ??
+        "Utilisateur";
+}
+<!doctype html>
 <html lang="fr">
 <head>
+    <!-- HEAD START -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - AL-BORAK</title>
-    
+
     <link href="~/css/adminlte.min.css" rel="stylesheet" />
     <link href="~/css/custom.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/gmao_fra.css" asp-append-version="true" />
+    <style>
+        /* =========================================
+                       ROOT VARIABLES
+            ========================================= */
+        :root {
+            --sidebar-width: 290px;
+            --sidebar-collapsed-width: 58px;
+            --submenu-bg: rgba(255,255,255,0.04);
+            --menu-hover: rgba(255,255,255,0.08);
+            --menu-active: rgba(255,255,255,0.14);
+            --panel-bg: #121826;
+            --panel-border: rgba(255,255,255,0.08);
+            --text-muted: rgba(255,255,255,0.65);
+            --flyout-bg: #182131;
+            --flyout-shadow: 0 12px 32px rgba(0,0,0,0.35);
+            --topbar-height: 64px;
+        }
+
+        /* =========================================
+                       PAGE LAYOUT
+            ========================================= */
+
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .main {
+            width: calc(100% - var(--sidebar-width));
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            transition: width .22s ease;
+            overflow-x: hidden;
+        }
+
+        .content {
+            flex: 1;
+            padding: 24px;
+            overflow-x: hidden;
+        }
+
+        body.sidebar-collapsed .main {
+            width: calc(100% - var(--sidebar-collapsed-width));
+        }
+
+        /* =========================================
+                       SIDEBAR
+            ========================================= */
+
+        .sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            max-width: var(--sidebar-width);
+            flex-shrink: 0;
+            overflow: visible;
+            transition: width .22s ease, min-width .22s ease, max-width .22s ease, transform .22s ease;
+            position: relative;
+            border-right: 1px solid var(--panel-border);
+            z-index: 1200;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            min-height: 92px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .sidebar-logo-image {
+            width: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+            .sidebar-logo-image img {
+                max-width: 52px;
+                max-height: 52px;
+                width: auto;
+                height: auto;
+                object-fit: contain;
+            }
+
+        .logo-text {
+            min-width: 0;
+        }
+
+        .sidebar-section {
+            padding: 10px 8px;
+        }
+
+        .menu-group {
+            margin-bottom: 6px;
+            position: relative;
+        }
+
+        .menu-group-toggle {
+            width: 100%;
+            min-height: 40px;
+            border: 0;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: 10px;
+            color: inherit;
+            cursor: pointer;
+            text-align: left;
+        }
+
+            .menu-group-toggle:hover {
+                background: var(--menu-hover);
+            }
+
+        .menu-group-title {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            min-width: 0;
+        }
+
+        .menu-group-label {
+            font-weight: 600;
+            letter-spacing: .02em;
+            white-space: nowrap;
+            font-size: .92rem;
+        }
+
+        .menu-group-arrow {
+            transition: transform .2s ease;
+            font-size: .9rem;
+        }
+
+        .menu-group.open .menu-group-arrow {
+            transform: rotate(90deg);
+        }
+
+        .submenu {
+            margin-top: 4px;
+            padding: 4px;
+            border-radius: 12px;
+            background: var(--submenu-bg);
+        }
+
+            .submenu .nav-item {
+                margin-bottom: 2px;
+            }
+
+                .submenu .nav-item:last-child {
+                    margin-bottom: 0;
+                }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            min-height: 38px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: inherit;
+            transition: background-color .18s ease, color .18s ease;
+            position: relative;
+        }
+
+            .nav-item:hover {
+                text-decoration: none;
+                color: inherit;
+                background: var(--menu-hover);
+            }
+
+            .nav-item.active {
+                background: var(--menu-active);
+                font-weight: 600;
+            }
+
+        .nav-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            min-width: 18px;
+            font-size: 15px;
+        }
+
+        .nav-text {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+        }
+
+        /* =========================================
+                       TOPBAR
+            ========================================= */
+
+        .topbar {
+            min-height: var(--topbar-height);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--panel-border);
+            overflow: hidden;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+
+        .topbar-title {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            min-width: 0;
+        }
+
+        .topbar-title-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .topbar-breadcrumb {
+            margin-top: 2px;
+            font-size: .82rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .sidebar-toggle,
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            background: var(--panel-bg);
+            color: inherit;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .search-box {
+            flex: 1;
+            max-width: 420px;
+            min-width: 180px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 40px;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 0 12px;
+            background: var(--panel-bg);
+        }
+
+            .search-box input {
+                flex: 1;
+                border: 0;
+                outline: 0;
+                background: transparent;
+                color: inherit;
+                min-width: 0;
+            }
+
+        .topbar-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .topbar-user {
+            position: relative;
+        }
+
+        .topbar-user-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 40px;
+            padding: 0 12px;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            background: var(--panel-bg);
+            color: inherit;
+            cursor: pointer;
+            max-width: 220px;
+        }
+
+        .topbar-user-name {
+            white-space: nowrap;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .topbar-user-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 220px;
+            background: var(--flyout-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: var(--flyout-shadow);
+            padding: 8px;
+            display: none;
+            z-index: 1300;
+        }
+
+        .topbar-user.open .topbar-user-menu {
+            display: block;
+        }
+
+        .topbar-user-link,
+        .topbar-user-menu form button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            text-decoration: none;
+            border-radius: 10px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+            .topbar-user-link:hover,
+            .topbar-user-menu form button:hover {
+                background: var(--menu-hover);
+                text-decoration: none;
+                color: inherit;
+            }
+
+        /* =========================================
+           COLLAPSED SIDEBAR
+        ========================================= */
+
+        body.sidebar-collapsed .sidebar {
+            width: var(--sidebar-collapsed-width);
+            min-width: var(--sidebar-collapsed-width);
+            max-width: var(--sidebar-collapsed-width);
+            overflow: visible;
+        }
+
+        body.sidebar-collapsed .logo-text,
+        body.sidebar-collapsed .menu-group-label,
+        body.sidebar-collapsed .menu-group-arrow,
+        body.sidebar-collapsed .nav-text,
+        body.sidebar-collapsed .nav-badge {
+            display: none !important;
+        }
+
+        body.sidebar-collapsed .submenu {
+            display: none !important;
+            background: transparent !important;
+            border: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        body.sidebar-collapsed .sidebar-logo {
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0;
+            min-height: 92px;
+        }
+
+        body.sidebar-collapsed .sidebar-logo-image {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+            body.sidebar-collapsed .sidebar-logo-image img {
+                max-width: 42px;
+                max-height: 42px;
+            }
+
+        body.sidebar-collapsed .sidebar-section {
+            padding: 8px 0;
+        }
+
+        body.sidebar-collapsed .menu-group {
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        body.sidebar-collapsed .menu-group-toggle,
+        body.sidebar-collapsed .nav-item {
+            width: 44px;
+            height: 44px;
+            min-height: 44px;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            border-radius: 12px;
+        }
+
+            body.sidebar-collapsed .menu-group-toggle .menu-group-title {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0;
+            }
+
+        body.sidebar-collapsed .nav-icon {
+            width: 20px;
+            min-width: 20px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.sidebar-collapsed .menu-group:hover .menu-group-toggle {
+            background: var(--menu-hover);
+        }
+
+        /* IMPORTANT: flyout panel */
+        body.sidebar-collapsed .menu-group:hover > .submenu {
+            display: block !important;
+            position: absolute;
+            top: 0;
+            left: calc(100% + 8px);
+            min-width: 240px;
+            background: var(--flyout-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            box-shadow: var(--flyout-shadow);
+            padding: 8px;
+            z-index: 3000;
+        }
+
+            /* IMPORTANT: make links readable/clickable in flyout */
+            body.sidebar-collapsed .menu-group:hover > .submenu .nav-item {
+                width: 100%;
+                min-height: 38px;
+                justify-content: flex-start;
+                align-items: center;
+                gap: .75rem;
+                padding: 8px 10px;
+                margin: 0 0 2px 0;
+            }
+
+            body.sidebar-collapsed .menu-group:hover > .submenu .nav-text {
+                display: block !important;
+                flex: 1;
+                min-width: 0;
+            }
+
+            body.sidebar-collapsed .menu-group:hover > .submenu .nav-badge {
+                display: inline-flex !important;
+            }
+
+            body.sidebar-collapsed .menu-group:hover > .submenu .nav-icon {
+                width: 18px;
+                min-width: 18px;
+            }
+
+        /* keep hover usable on flyout itself */
+        body.sidebar-collapsed .menu-group > .submenu:hover {
+            display: block !important;
+        }
+
+        /* =========================================
+           RESPONSIVE
+        ========================================= */
+
+        @@media (max-width: 991.98px) {
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                z-index: 1040;
+                width: var(--sidebar-width);
+                transform: translateX(0);
+            }
+
+            .main {
+                width: 100%;
+            }
+
+            body.sidebar-collapsed .sidebar {
+                width: var(--sidebar-width);
+                min-width: var(--sidebar-width);
+                max-width: var(--sidebar-width);
+                transform: translateX(-100%);
+            }
+
+            body.sidebar-collapsed .logo-text,
+            body.sidebar-collapsed .menu-group-label,
+            body.sidebar-collapsed .menu-group-arrow,
+            body.sidebar-collapsed .nav-text,
+            body.sidebar-collapsed .nav-badge {
+                display: revert !important;
+            }
+
+            body.sidebar-collapsed .submenu {
+                display: none !important;
+            }
+
+            body.sidebar-collapsed .menu-group:hover > .submenu {
+                display: none !important;
+            }
+
+            body.sidebar-collapsed .menu-group-toggle,
+            body.sidebar-collapsed .nav-item {
+                width: 100%;
+                justify-content: flex-start;
+                gap: .75rem;
+                padding: 8px 10px;
+            }
+
+            .topbar {
+                flex-wrap: wrap;
+            }
+
+            .topbar-actions {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+    <!-- HEAD END -->
 </head>
 <body>
+    <!-- APP SHELL START -->
+    <div class="app-shell">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="sidebar-logo" style="height:100px;">
-            <div >
-                <img src="~/Images/Air_Force_small.png" width="70px" />
-            </div>
-            <div class="logo-text">
-                <div class="name">FORCES ROYALES AIR</div>
-                <div class="sub">GMAO FRA</div>  
-            </div>
-           
-        </div>
+        <!-- SIDEBAR START -->
+        <aside class="sidebar" id="appSidebar">
 
-        <div class="sidebar-section">
+            <!-- SIDEBAR LOGO START -->
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-image">
+                    <img src="~/Images/Air_Force_small.png" alt="Logo FRA" />
+                </div>
+                <div class="logo-text">
+                    <div class="name">FORCES ROYALES AIR</div>
+                    <div class="sub">GMAO FRA</div>
+                </div>
+            </div>
+            <!-- SIDEBAR LOGO END -->
+            <!-- SIDEBAR MENU START -->
             <div class="sidebar-section">
-                <div class="sidebar-section-label">Vue d'ensemble</div>
 
-                <a class="nav-item" href="#" title="Tableau de bord">
-                    <span class="nav-icon">📊</span>
-                    <span class="nav-text">Tableau de bord</span>
-                </a>
-
-                <a class="nav-item" href="#" title="Alertes">
-                    <span class="nav-icon">🔔</span>
-                    <span class="nav-text">Alertes</span>
-                    <span class="nav-badge badge-red">7</span>
-                    
-                </a>
-
-                <div class="sidebar-section-label">Flotte</div>
-                <div class="nav-item" onclick="navigate('fleet')">
-                    <span class="nav-icon">✈</span> Flotte & Immatriculation
-                </div>
-                <div class="nav-item" onclick="navigate('navigabilite')">
-                    <span class="nav-icon">🛡</span> Navigabilité
-                    <span class="nav-badge badge-amber">3</span>
-                </div>
-                <div class="nav-item" onclick="navigate('pea')">
-                    <span class="nav-icon">📋</span> Programme PEA
-                </div>
-                <div class="nav-item" onclick="navigate('crm')">
-                    <span class="nav-icon">🔧</span> CRM / Défauts
-                    <span class="nav-badge badge-red">12</span>
-                </div>
-
-                @* <div class="sidebar-section-label">Maintenance</div>
-                <div class="nav-item" onclick="navigate('maintenance')">
-                    <span class="nav-icon">🔩</span> Entretien (MoMAR 145)
-                </div>
-                <div class="nav-item" onclick="navigate('lme')">
-                    <span class="nav-icon">📄</span> LME / LTTE / CDL
-                </div>
-                <div class="nav-item" onclick="navigate('cn')">
-                    <span class="nav-icon">📌</span> Consignes de Nav.
-                </div>
-
-                <div class="sidebar-section-label">RH & Formation</div>
-                <div class="nav-item" onclick="navigate('licences')">
-                    <span class="nav-icon">🪪</span> Licences LMAM
-                </div>
-                <div class="nav-item" onclick="navigate('formation')">
-                    <span class="nav-icon">🎓</span> Formation Type
-                </div>
-
-                <div class="sidebar-section-label">Logistique</div>
-                <div class="nav-item" onclick="navigate('pmel')">
-                    <span class="nav-icon">⚗</span> PMEL / Étalonnage
-                </div>
-                <div class="nav-item" onclick="navigate('analyse')">
-                    <span class="nav-icon">🧪</span> Analyse Produits
-                </div>
-
-                <div class="sidebar-section-label">Qualité & Sécurité</div>
-                <div class="nav-item" onclick="navigate('sgs')">
-                    <span class="nav-icon">⚠</span> SGS Sécurité
-                    <span class="nav-badge badge-amber">2</span>
-                </div> *@
-                <div class="nav-item" onclick="navigate('reporting')">
-                    <span class="nav-icon">📊</span> Reporting & KPI
-                </div>
-
-               @*  <div class="sidebar-section-label">Administration</div>
-                <div class="nav-item" onclick="navigate('parametres')">
-                    <span class="nav-icon">⚙</span> Paramètres système
-                </div> *@
-            </div>
-            <div class="sidebar-section-label">Administration</div>
-
-            <!-- Keep links dead except Settings -->
-            <a class="nav-item active" title="Paramètres système"
-               asp-area="Settings" asp-controller="Home" asp-action="Index">
-                <span class="nav-icon">⚙</span>
-                <span class="nav-text">Paramètres système</span>
-            </a>
-
-            <a class="nav-item" href="#" title="Tableau de bord">
-                <span class="nav-icon">📊</span>
-                <span class="nav-text">Tableau de bord</span>
-            </a>
-
-            <a class="nav-item" href="#" title="Alertes">
-                <span class="nav-icon">🔔</span>
-                <span class="nav-text">Alertes</span>
-                <span class="nav-badge badge-red">7</span>
-            </a>
-        </div>
-
-       @*  <div class="sidebar-footer">
-            <div class="user-card">
-                <div class="user-avatar">CM</div>
-                <div class="user-info">
-                    <div class="name">@User.Identity?.Name</div>
-                    <div class="role">Utilisateur</div>
-                </div>
-            </div>
-        </div> *@
-    </aside>
-
-    <!-- MAIN -->
-    <div class="main">
-        <!-- TOPBAR -->
-        <header class="topbar">
-
-            <div>
-                
-                <div class="topbar-title">
-                    <button class="icon-btn sidebar-toggle" type="button" id="sidebarToggle" title="Réduire / étendre">
-                        ☰
+                <!-- GROUP: VUE D'ENSEMBLE START -->
+                <div class="menu-group @(overviewOpen ? "open" : "")" data-group>
+                    <button type="button"
+                            class="menu-group-toggle"
+                            data-group-toggle
+                            aria-expanded="@(overviewOpen.ToString().ToLower())"
+                            title="Vue d'ensemble">
+                        <span class="menu-group-title">
+                            <span class="nav-icon">🏠</span>
+                            <span class="menu-group-label">Vue d'ensemble</span>
+                        </span>
+                        <span class="menu-group-arrow">›</span>
                     </button>
-                    @ViewData["Title"]</div>
-                <div class="topbar-breadcrumb">FRA <span>›</span> Administration</div>
+
+                    <div class="submenu" data-group-menu style="display:block">
+                        <a class="nav-item @IsActive("Dashboard", "Home")"
+                           asp-area="Dashboard"
+                           asp-controller="Home"
+                           asp-action="Index"
+                           title="Tableau de bord">
+                            <span class="nav-icon">📊</span>
+                            <span class="nav-text">Tableau de bord</span>
+                        </a>
+
+                        <a class="nav-item @IsActive("Alerts", "Home")"
+                           asp-area="Alerts"
+                           asp-controller="Home"
+                           asp-action="Index"
+                           title="Alertes">
+                            <span class="nav-icon">🔔</span>
+                            <span class="nav-text">Alertes</span>
+                            <span class="nav-badge badge-red">7</span>
+                        </a>
+                    </div>
+                </div>
+                <!-- GROUP: VUE D'ENSEMBLE END -->
+                <!-- GROUP: FLOTTE START -->
+                <div class="menu-group @(flotteOpen ? "open" : "")" data-group>
+                    <button type="button"
+                            class="menu-group-toggle"
+                            data-group-toggle
+                            aria-expanded="@(flotteOpen.ToString().ToLower())"
+                            title="Flotte">
+                        <span class="menu-group-title">
+                            <span class="nav-icon">✈</span>
+                            <span class="menu-group-label">Flotte</span>
+                        </span>
+                        <span class="menu-group-arrow">›</span>
+                    </button>
+
+                    <div class="submenu" data-group-menu style="display:block">
+                        <a class="nav-item @IsActive("Settings", "Aircraft")"
+                           asp-area="Settings"
+                           asp-controller="Aircraft"
+                           asp-action="Index"
+                           title="Aéronefs">
+                            <span class="nav-icon">🛩️</span>
+                            <span class="nav-text">Aéronefs</span>
+                        </a>
+
+                        <a class="nav-item @IsActive("Fleet", "Registration")"
+                           asp-area="Fleet"
+                           asp-controller="Registration"
+                           asp-action="Index"
+                           title="Flotte & immatriculation">
+                            <span class="nav-icon">📌</span>
+                            <span class="nav-text">Flotte & immatriculation</span>
+                        </a>
+                    </div>
+                </div>
+                <!-- GROUP: FLOTTE END -->
+                <!-- GROUP: NAVIGABILITE START -->
+                <div class="menu-group @(navigabiliteOpen ? "open" : "")" data-group>
+                    <button type="button"
+                            class="menu-group-toggle"
+                            data-group-toggle
+                            aria-expanded="@(navigabiliteOpen.ToString().ToLower())"
+                            title="Navigabilité">
+                        <span class="menu-group-title">
+                            <span class="nav-icon">🛡</span>
+                            <span class="menu-group-label">Navigabilité</span>
+                        </span>
+                        <span class="menu-group-arrow">›</span>
+                    </button>
+
+                    <div class="submenu" data-group-menu style="display:block">
+                        <a class="nav-item @IsActive("Settings", "DamDashboard")"
+                           asp-area="Settings"
+                           asp-controller="DamDashboard"
+                           asp-action="Index"
+                           title="Dashboard DAM">
+                            <span class="nav-icon">📈</span>
+                            <span class="nav-text">Dashboard DAM</span>
+                        </a>
+
+                        <a class="nav-item @IsActive("AircraftMaintenance", "AircraftCertificates")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="AircraftCertificates"
+                           asp-action="Index"
+                           title="Certificats de navigabilité">
+                            <span class="nav-icon">📄</span>
+                            <span class="nav-text">Certificats de navigabilité</span>
+                        </a>
+
+                        <a class="nav-item @IsActive("AircraftMaintenance", "AircraftRestrictions")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="AircraftRestrictions"
+                           asp-action="Index"
+                           title="Restrictions">
+                            <span class="nav-icon">⚠</span>
+                            <span class="nav-text">Restrictions</span>
+                        </a>
+                    </div>
+                </div>
+                <!-- GROUP: NAVIGABILITE END -->
+                <!-- GROUP: OPERATIONS START -->
+                <div class="menu-group @(operationsOpen ? "open" : "")" data-group>
+                    <button type="button"
+                            class="menu-group-toggle"
+                            data-group-toggle
+                            aria-expanded="@(operationsOpen.ToString().ToLower())"
+                            title="Opérations">
+                        <span class="menu-group-title">
+                            <span class="nav-icon">🔧</span>
+                            <span class="menu-group-label">Opérations</span>
+                        </span>
+                        <span class="menu-group-arrow">›</span>
+                    </button>
+
+                    <div class="submenu" data-group-menu style="display:block">
+                        <a class="nav-item @IsActive("PEA", "Home")"
+                           asp-area="PEA"
+                           asp-controller="Home"
+                           asp-action="Index"
+                           title="Programme PEA">
+                            <span class="nav-icon">📋</span>
+                            <span class="nav-text">Programme PEA</span>
+                        </a>
+
+                        <a class="nav-item @IsActive("CRM", "Defauts")"
+                           asp-area="CRM"
+                           asp-controller="Defauts"
+                           asp-action="Index"
+                           title="CRM / Défauts">
+                            <span class="nav-icon">🧰</span>
+                            <span class="nav-text">CRM / Défauts</span>
+                            <span class="nav-badge badge-red">12</span>
+                        </a>
+
+                        <a class="nav-item @IsActive("Reporting", "Home")"
+                           asp-area="Reporting"
+                           asp-controller="Home"
+                           asp-action="Index"
+                           title="Reporting & KPI">
+                            <span class="nav-icon">📊</span>
+                            <span class="nav-text">Reporting & KPI</span>
+                        </a>
+                    </div>
+                </div>
+                <!-- GROUP: OPERATIONS END -->
+                <!-- GROUP: ADMINISTRATION START -->
+                <div class="menu-group @(administrationOpen ? "open" : "")" data-group>
+                    <button type="button"
+                            class="menu-group-toggle"
+                            data-group-toggle
+                            aria-expanded="@(administrationOpen.ToString().ToLower())"
+                            title="Administration">
+                        <span class="menu-group-title">
+                            <span class="nav-icon">⚙</span>
+                            <span class="menu-group-label">Administration</span>
+                        </span>
+                        <span class="menu-group-arrow">›</span>
+                    </button>
+
+                    <div class="submenu" data-group-menu style="display:block">
+                        <a class="nav-item @IsActive("Settings", "Home")"
+                           asp-area="Settings"
+                           asp-controller="Home"
+                           asp-action="Index"
+                           title="Paramètres système">
+                            <span class="nav-icon">🛠</span>
+                            <span class="nav-text">Paramètres système</span>
+                        </a>
+                    </div>
+                </div>
+                <!-- GROUP: ADMINISTRATION END -->
+
             </div>
+            <!-- SIDEBAR MENU END -->
 
-            <div class="search-box" title="Recherche">
-                <span>🔎</span>
-                <input placeholder="Rechercher aéronef, défaut, …" />
-            </div>
+        </aside>
+        <!-- SIDEBAR END -->
+        <!-- MAIN START -->
+        <div class="main">
 
-            <div class="topbar-actions">
-                @await Html.PartialAsync("_LoginPartial")
+            <!-- TOP BAR START -->
+            <header class="topbar">
 
-                <button class="icon-btn" type="button" title="Notifications">
-                    🔔 <span class="notif-dot"></span>
-                </button>
-                <button class="icon-btn" type="button" title="Aide">?</button>
-                <button class="icon-btn" type="button" title="Paramètres">⚙</button>
-            </div>
-        </header>
+                <!-- TOP BAR LEFT START -->
+                <div class="topbar-left">
+                    <div class="topbar-title">
+                        <button class="icon-btn sidebar-toggle"
+                                type="button"
+                                id="sidebarToggle"
+                                title="Réduire / étendre"
+                                aria-label="Réduire ou étendre la barre latérale"
+                                aria-expanded="true">
+                            ☰
+                        </button>
+                        <span class="topbar-title-text">@ViewData["Title"]</span>
+                    </div>
+                    <div class="topbar-breadcrumb">
+                        FRA <span>›</span> @(string.IsNullOrWhiteSpace(currentArea) ? "Accueil" : currentArea)
+                    </div>
+                </div>
+                <!-- TOP BAR LEFT END -->
+                <!-- TOP BAR CENTER START -->
+                <div class="search-box" title="Recherche">
+                    <span>🔎</span>
+                    <input type="text" placeholder="Rechercher aéronef, défaut, …" />
+                </div>
+                <!-- TOP BAR CENTER END -->
+                <!-- TOP BAR RIGHT START -->
+                <div class="topbar-actions">
+                    <div class="topbar-user" id="topbarUserMenu">
+                        <button type="button"
+                                class="topbar-user-trigger"
+                                id="topbarUserTrigger"
+                                aria-expanded="false">
+                            <span>👤</span>
+                            <span class="topbar-user-name">@displayName</span>
+                            <span>▾</span>
+                        </button>
 
-        <!-- CONTENT -->
-        <main class="content">
-            @RenderBody()
-        </main>
+                        <div class="topbar-user-menu" id="topbarUserDropdown">
+                            <a class="topbar-user-link"
+                               asp-area="Identity"
+                               asp-page="/Account/Manage/Index">
+                                <span>⚙</span>
+                                <span>Mon profil</span>
+                            </a>
+
+                            <a class="topbar-user-link"
+                               asp-area="Identity"
+                               asp-page="/Account/Manage/ChangePassword">
+                                <span>🔐</span>
+                                <span>Changer mot de passe</span>
+                            </a>
+
+                            <form asp-area="Identity"
+                                  asp-page="/Account/Logout"
+                                  asp-route-returnUrl="@Url.Page("/", new { area = "" })"
+                                  method="post">
+                                <button type="submit">
+                                    <span>🚪</span>
+                                    <span>Déconnexion</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <button class="icon-btn" type="button" title="Notifications">🔔</button>
+                    <button class="icon-btn" type="button" title="Aide">?</button>
+                    <button class="icon-btn" type="button" title="Paramètres">⚙</button>
+                </div>
+                <!-- TOP BAR RIGHT END -->
+
+            </header>
+            <!-- TOP BAR END -->
+            <!-- PAGE CONTENT START -->
+            <main class="content">
+                @RenderBody()
+            </main>
+            <!-- PAGE CONTENT END -->
+
+        </div>
+        <!-- MAIN END -->
+
     </div>
-    
-    <script src="~/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/gmao-fra.js" asp-append-version="true"></script>   
-    @RenderSection("Scripts", required: false)
+    <!-- APP SHELL END -->
 
+    <script>
+        (function () {
+            // =========================
+            // Element references
+            // =========================
+            const body = document.body;
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const userMenu = document.getElementById('topbarUserMenu');
+            const userTrigger = document.getElementById('topbarUserTrigger');
+
+            // =========================
+            // Local storage keys
+            // =========================
+            const sidebarStorageKey = 'gmao.sidebar.collapsed';
+            const groupStorageKey = 'gmao.sidebar.groups';
+
+            // =========================
+            // Sidebar collapse / expand
+            // =========================
+            function applySidebarState(collapsed) {
+                body.classList.toggle('sidebar-collapsed', collapsed);
+
+                if (sidebarToggle) {
+                    sidebarToggle.setAttribute('aria-expanded', (!collapsed).toString());
+                }
+            }
+
+            // =========================
+            // Menu groups
+            // =========================
+            function getGroups() {
+                return Array.from(document.querySelectorAll('[data-group]'));
+            }
+
+            function applyGroup(group, open) {
+                const menu = group.querySelector('[data-group-menu]');
+                const toggle = group.querySelector('[data-group-toggle]');
+
+                group.classList.toggle('open', open);
+
+                if (menu && !body.classList.contains('sidebar-collapsed')) {
+                    menu.style.display = open ? 'block' : 'none';
+                }
+
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', open.toString());
+                }
+            }
+
+            function saveGroupState() {
+                const state = {};
+                getGroups().forEach((group, index) => {
+                    state[index] = group.classList.contains('open');
+                });
+                localStorage.setItem(groupStorageKey, JSON.stringify(state));
+            }
+
+            function restoreGroupState() {
+                const saved = localStorage.getItem(groupStorageKey);
+                if (!saved) return;
+
+                try {
+                    const parsed = JSON.parse(saved);
+                    getGroups().forEach((group, index) => {
+                        if (Object.prototype.hasOwnProperty.call(parsed, index)) {
+                            applyGroup(group, !!parsed[index]);
+                        }
+                    });
+                } catch (error) {
+                    console.warn('Impossible de restaurer l’état du menu latéral.', error);
+                }
+            }
+
+            // =========================
+            // Initialize sidebar state
+            // =========================
+            if (sidebarToggle) {
+                const savedSidebarState = localStorage.getItem(sidebarStorageKey);
+                applySidebarState(savedSidebarState === 'true');
+
+                sidebarToggle.addEventListener('click', function () {
+                    const collapsed = !body.classList.contains('sidebar-collapsed');
+                    applySidebarState(collapsed);
+                    localStorage.setItem(sidebarStorageKey, collapsed.toString());
+
+                    if (!collapsed) {
+                        getGroups().forEach(function (group) {
+                            const isOpen = group.classList.contains('open');
+                            const menu = group.querySelector('[data-group-menu]');
+                            if (menu) {
+                                menu.style.display = isOpen ? 'block' : 'none';
+                            }
+                        });
+                    }
+                });
+            }
+
+            // =========================
+            // Group toggle behavior
+            // =========================
+            getGroups().forEach(function (group) {
+                const toggle = group.querySelector('[data-group-toggle]');
+                if (!toggle) return;
+
+                toggle.addEventListener('click', function () {
+                    if (body.classList.contains('sidebar-collapsed') && window.innerWidth > 991.98) {
+                        return;
+                    }
+
+                    const isOpen = group.classList.contains('open');
+                    applyGroup(group, !isOpen);
+                    saveGroupState();
+                });
+            });
+
+            // =========================
+            // User dropdown
+            // =========================
+            if (userMenu && userTrigger) {
+                userTrigger.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const isOpen = userMenu.classList.toggle('open');
+                    userTrigger.setAttribute('aria-expanded', isOpen.toString());
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (!userMenu.contains(e.target)) {
+                        userMenu.classList.remove('open');
+                        userTrigger.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            }
+
+            // =========================
+            // Restore saved group state
+            // =========================
+            restoreGroupState();
+        })();
+    </script>
+
+    @RenderSection("Scripts", required: false)
 </body>
 </html>

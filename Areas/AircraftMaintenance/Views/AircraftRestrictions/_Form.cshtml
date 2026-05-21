@@ -1,0 +1,281 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.AircraftRestrictionFormDto
+
+@* ── Aircraft info banner (read-only) ────────────────────────── *@
+@if (!string.IsNullOrEmpty(Model.AircraftRegistration))
+{
+    <div class="alert alert-secondary py-2 mb-3 d-flex align-items-center gap-3">
+        <i class="fas fa-plane text-warning"></i>
+        <div>
+            <span class="fw-bold font-monospace text-warning"
+                  style="letter-spacing:2px;font-size:15px;">
+                @Model.AircraftRegistration
+            </span>
+            <span class="text-muted ms-2">·</span>
+            <small class="text-muted ms-2">@(Model.AircraftTypeName ?? "—")</small>
+        </div>
+        <input type="hidden" asp-for="AircraftId" />
+        <input type="hidden" asp-for="AircraftRegistration" />
+        <input type="hidden" asp-for="AircraftTypeName" />
+    </div>
+}
+
+@* ════════════════════════════════════════════════════════════════
+   SECTION 1 — Classification
+   ════════════════════════════════════════════════════════════════ *@
+<div class="card border-secondary mb-3">
+    <div class="card-header bg-warning border-secondary py-2">
+        <h6 class="mb-0 small text-black">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Classification de la restriction
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            @* ── Type OPS / MNT ───────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="RestrictionType"
+                       class="form-label text-muted small">
+                    Type <span class="text-danger">*</span>
+                </label>
+                <select asp-for="RestrictionType"
+                        asp-items="Model.TypeOptions"
+                        class="form-select bg-dark text-white border-secondary"
+                        id="typeSelect">
+                    <option value="">— Sélectionner —</option>
+                </select>
+                <span asp-validation-for="RestrictionType"
+                      class="text-danger small"></span>
+            </div>
+
+            @* ── Severity ─────────────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="Severity"
+                       class="form-label text-muted small">
+                    Sévérité <span class="text-danger">*</span>
+                </label>
+                <select asp-for="Severity"
+                        asp-items="Model.SeverityOptions"
+                        class="form-select bg-dark text-white border-secondary"
+                        id="severitySelect">
+                </select>
+                <span asp-validation-for="Severity"
+                      class="text-danger small"></span>
+                @* Live severity badge *@
+                <div id="severityPreview" class="mt-1">
+                    <span id="severityBadge" class="badge"></span>
+                </div>
+            </div>
+
+            @* ── IsActive ─────────────────────────────────────────── *@
+            <div class="col-md-4 d-flex align-items-end pb-1">
+                <div class="form-check form-switch">
+                    <input asp-for="IsActive"
+                           class="form-check-input"
+                           type="checkbox" role="switch" />
+                    <label asp-for="IsActive"
+                           class="form-check-label text-muted"
+                           style="padding-left:20px;">
+                        Restriction active
+                    </label>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@* ════════════════════════════════════════════════════════════════
+   SECTION 2 — Identity
+   ════════════════════════════════════════════════════════════════ *@
+<div class="card border-secondary mb-3">
+    <div class="card-header bg-warning border-secondary py-2">
+        <h6 class="mb-0 small text-black">
+            <i class="fas fa-file-alt me-2"></i>
+            Identification
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            @* ── Reference ───────────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="Reference"
+                       class="form-label text-muted small">
+                    Référence <span class="text-danger">*</span>
+                </label>
+                <input asp-for="Reference"
+                       class="form-control bg-dark text-white border-secondary
+                              font-monospace"
+                       placeholder="ex: CRM-2024-045"
+                       maxlength="80" />
+                <span asp-validation-for="Reference"
+                      class="text-danger small"></span>
+            </div>
+
+            @* ── Issued by ────────────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="IssuedBy"
+                       class="form-label text-muted small">
+                    Émis par
+                </label>
+                <input asp-for="IssuedBy"
+                       class="form-control bg-dark text-white border-secondary"
+                       placeholder="ex: DAM, OGMN, Chef Maintenance…"
+                       maxlength="80" />
+            </div>
+
+            @* ── Linked certificate ───────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="CertificateId"
+                       class="form-label text-muted small">
+                    Certificat lié
+                    <small class="text-muted ms-1">(optionnel)</small>
+                </label>
+                <select asp-for="CertificateId"
+                        asp-items="Model.CertificateOptions"
+                        class="form-select bg-dark text-white border-secondary">
+                </select>
+                <small class="text-muted">
+                    Restriction levée depuis un certificat expiré / suspendu
+                </small>
+            </div>
+
+            @* ── Description ──────────────────────────────────────── *@
+            <div class="col-12">
+                <label asp-for="Description"
+                       class="form-label text-muted small">
+                    Description de la restriction <span class="text-danger">*</span>
+                </label>
+                <textarea asp-for="Description"
+                          class="form-control bg-dark text-white border-secondary"
+                          rows="2"
+                          placeholder="ex: Vol IFR interdit, Limitation G max 6G,
+                                        Remplacement pièce requis avant vol…"
+                          maxlength="500"></textarea>
+                <span asp-validation-for="Description"
+                      class="text-danger small"></span>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@* ════════════════════════════════════════════════════════════════
+   SECTION 3 — Validity period
+   ════════════════════════════════════════════════════════════════ *@
+<div class="card border-secondary mb-3">
+    <div class="card-header bg-warning border-secondary py-2">
+        <h6 class="mb-0 small text-black">
+            <i class="fas fa-calendar-alt me-2"></i>
+            Période de validité
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            @* ── Start date ───────────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="StartDate"
+                       class="form-label text-muted small">
+                    Date de début <span class="text-danger">*</span>
+                </label>
+                <input asp-for="StartDate"
+                       type="date"
+                       class="form-control bg-dark text-white border-secondary" />
+                <span asp-validation-for="StartDate"
+                      class="text-danger small"></span>
+            </div>
+
+            @* ── Expiry date ──────────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="ExpiryDate"
+                       class="form-label text-muted small">
+                    Date d'expiration
+                </label>
+                <input asp-for="ExpiryDate"
+                       type="date"
+                       class="form-control bg-dark text-white border-secondary"
+                       id="expiryDate" />
+                <small class="text-muted">
+                    Laisser vide si restriction indéfinie
+                </small>
+                <div id="expiryStatus" class="mt-1" style="display:none;">
+                    <span id="expiryBadge" class="badge"></span>
+                </div>
+            </div>
+
+            @* ── Notes ───────────────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="Notes"
+                       class="form-label text-muted small">
+                    Notes / Observations
+                </label>
+                <textarea asp-for="Notes"
+                          class="form-control bg-dark text-white border-secondary"
+                          rows="2"
+                          placeholder="Conditions de levée, références réglementaires…"
+                          maxlength="500"></textarea>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+    // ── Severity badge preview ────────────────────────────────────
+    const severityColors = {
+        'CRITICAL': { cls: 'bg-danger',          label: '⛔ Critique — vol interdit' },
+        'HIGH':     { cls: 'bg-warning text-dark', label: '⚠ Élevée — impact majeur' },
+        'MEDIUM':   { cls: 'bg-info text-dark',    label: 'ℹ Moyenne — suivi requis' }
+    };
+
+    function updateSeverityBadge() {
+        const val    = document.getElementById('severitySelect')?.value;
+        const badge  = document.getElementById('severityBadge');
+        if (!badge) return;
+        const config = severityColors[val];
+        if (config) {
+            badge.className   = `badge ${config.cls}`;
+            badge.textContent = config.label;
+        } else {
+            badge.className   = 'badge bg-secondary';
+            badge.textContent = '';
+        }
+    }
+    document.getElementById('severitySelect')
+        ?.addEventListener('change', updateSeverityBadge);
+    updateSeverityBadge();
+
+    // ── Expiry badge preview ──────────────────────────────────────
+    function updateExpiryBadge() {
+        const val    = document.getElementById('expiryDate')?.value;
+        const wrap   = document.getElementById('expiryStatus');
+        const badge  = document.getElementById('expiryBadge');
+        if (!wrap || !badge) return;
+
+        if (!val) { wrap.style.display = 'none'; return; }
+
+        const expiry   = new Date(val);
+        const today    = new Date(); today.setHours(0,0,0,0);
+        const diffDays = Math.round((expiry - today) / 86400000);
+
+        wrap.style.display = '';
+        if (diffDays < 0) {
+            badge.className   = 'badge bg-danger';
+            badge.textContent = `Expirée depuis ${Math.abs(diffDays)} jour(s)`;
+        } else if (diffDays <= 7) {
+            badge.className   = 'badge bg-warning text-dark';
+            badge.textContent = `Expire dans ${diffDays} jour(s)`;
+        } else {
+            badge.className   = 'badge bg-success';
+            badge.textContent = `Valide — ${diffDays} jour(s) restants`;
+        }
+    }
+    document.getElementById('expiryDate')
+        ?.addEventListener('change', updateExpiryBadge);
+    updateExpiryBadge();
+    </script>
+}

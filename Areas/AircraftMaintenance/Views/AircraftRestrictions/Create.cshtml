@@ -1,0 +1,36 @@
+@* ════════════════════════════════════════════════════════════════
+   Save as: Areas/Settings/Views/AircraftRestrictions/Create.cshtml
+   ════════════════════════════════════════════════════════════════ *@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.AircraftRestrictionFormDto
+@{
+    ViewData["Title"] = "Nouvelle restriction";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-2 bg-gradient-danger text-white p-2">Nouvelle restriction aéronef</h4>
+            <small class="text-muted">
+                <a asp-action="Index" class="text-muted text-decoration-none">
+                    <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+                </a>
+            </small>
+        </div>
+    </div>
+
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="AircraftId" />
+        @await Html.PartialAsync("_Form", Model)
+        <div class="d-flex justify-content-end gap-2 mt-3">
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-1"></i>Annuler
+            </a>
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                Enregistrer la restriction
+            </button>
+        </div>
+    </form>
+</div>

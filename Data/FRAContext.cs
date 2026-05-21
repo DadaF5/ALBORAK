@@ -1,4 +1,5 @@
-﻿using FRAProject.Areas.HR.Models;
+﻿using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.Medical.Models;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.SquadronOps.Models;
@@ -71,6 +72,9 @@ namespace FRAProject.Data
         public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;
         public DbSet<AircraftDocumentType> AircraftDocumentTypes { get; set; } = null!;
         public DbSet<AircraftDocument> AircraftDocuments { get; set; } = null!;
+        public DbSet<AircraftRestriction> AircraftRestrictions { get; set; } = null!;
+        public DbSet<AircraftCertificate> AircraftCertificates { get; set; } = null!;
+
 
         // =====================================
         // Settings & Lookups
@@ -127,6 +131,11 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new ImmatriculationDossierAircraftConfiguration());
             modelBuilder.ApplyConfiguration(new ImmatriculationDossierAirworthinessConfiguration());
             modelBuilder.ApplyConfiguration(new ImmatriculationDossierDocumentConfiguration());
+
+
+            // Maintenance configurations
+            modelBuilder.ApplyConfiguration(new AircraftCertificateConfiguration());
+            modelBuilder.ApplyConfiguration(new AircraftRestrictionConfiguration());
 
             // ── Decimal precision ─────────────────────────────────────────
             ConfigureDecimalPrecision(modelBuilder);

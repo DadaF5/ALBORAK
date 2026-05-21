@@ -1,4 +1,5 @@
 ﻿
+using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.Settings.Repositories;
@@ -33,6 +34,10 @@ namespace FRAProject.Infrastructure
         private IGenericRepository<AcType>? _acTypes;
         private IGenericRepository<Aircraft>? _aircraft;
 
+        // Maintenance ------ START
+        private IGenericRepository<AircraftCertificate>? _aircraftCertificates;
+        private IGenericRepository<AircraftRestriction>? _aircraftRestrictions;
+        // Maintenance ------ END
 
         private IGenericRepository<EmployingAuthority>? _employingAuthorities;
         private IGenericRepository<AcStatusType>? _acStatusTypes;
@@ -103,6 +108,13 @@ namespace FRAProject.Infrastructure
 
         public IGenericRepository<ImmatriculationDocument> ImmatriculationDocuments =>
             _immatriculationDocuments ??= new GenericRepository<ImmatriculationDocument>(_context);
+        
+        // Maintenance
+        public IGenericRepository<AircraftCertificate> AircraftCertificates =>
+            _aircraftCertificates ??= new GenericRepository<AircraftCertificate>(_context);
+        public IGenericRepository<AircraftRestriction> AircraftRestrictions =>
+            _aircraftRestrictions ??= new GenericRepository<AircraftRestriction>(_context);
+
 
         // ── Commit ────────────────────────────────────────────────────────
         // Single method — CompleteAsync() — matches IUnitOfWork contract.

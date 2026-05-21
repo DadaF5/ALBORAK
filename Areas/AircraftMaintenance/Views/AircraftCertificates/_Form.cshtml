@@ -1,0 +1,233 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.AircraftCertificateFormDto
+
+@* ── Shared form — used by Create and Edit ─────────────────────── *@
+
+@* ── Aircraft info banner (read-only) ────────────────────────── *@
+@if (!string.IsNullOrEmpty(Model.AircraftCode))
+{
+    <div class="alert alert-secondary py-2 mb-3 d-flex align-items-center gap-3">
+        <i class="fas fa-plane text-warning"></i>
+        <div>
+            <span class="fw-bold font-monospace text-warning"
+                  style="letter-spacing:2px;font-size:15px;">
+                @Model.AircraftCode
+            </span>
+            <span class="text-muted ms-2">·</span>
+            <small class="text-muted ms-2">
+                @(Model.AircraftTypeName ?? "—")
+            </small>
+            <span class="text-muted ms-2">·</span>
+            <small class="text-muted ms-2">
+                Queue @Model.AircraftTail
+            </small>
+        </div>
+        <input type="hidden" asp-for="AircraftId" />
+        <input type="hidden" asp-for="AircraftCode" />
+        <input type="hidden" asp-for="AircraftTail" />
+        <input type="hidden" asp-for="AircraftTypeName" />
+    </div>
+}
+
+<div class="card border-secondary mb-3">
+    <div class="card-header bg-dark border-secondary py-2">
+        <h6 class="mb-0 text-muted small">
+            <i class="fas fa-certificate me-2"></i>
+            Identification du certificat
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            @* ── CertType DDL ─────────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="CertType"
+                       class="form-label text-muted small">
+                    Type de certificat <span class="text-danger">*</span>
+                </label>
+                <select asp-for="CertType"
+                        asp-items="Model.CertTypeOptions"
+                        class="form-select bg-dark text-white border-secondary"
+                        id="certTypeSelect">
+                </select>
+                <span asp-validation-for="CertType"
+                      class="text-danger small"></span>
+            </div>
+
+            @* ── Reference ────────────────────────────────────────── *@
+            <div class="col-md-5">
+                <label asp-for="Reference"
+                       class="form-label text-muted small">
+                    Référence / N° certificat <span class="text-danger">*</span>
+                </label>
+                <input asp-for="Reference"
+                       class="form-control bg-dark text-white border-secondary
+                              font-monospace"
+                       placeholder="ex: CdN-FRA-2024-00042"
+                       maxlength="80" />
+                <span asp-validation-for="Reference"
+                      class="text-danger small"></span>
+            </div>
+
+            @* ── IsActive ─────────────────────────────────────────── *@
+            <div class="col-md-3 d-flex align-items-end pb-1">
+                <div class="form-check form-switch">
+                    <input asp-for="IsActive"
+                           class="form-check-input"
+                           type="checkbox" role="switch" />
+                    <label asp-for="IsActive"
+                           class="form-check-label text-muted"
+                           style="padding-left:20px;">
+                        Certificat actif
+                    </label>
+                </div>
+            </div>
+
+            @* ── Issuing Authority ────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="IssuingAuthority"
+                       class="form-label text-muted small">
+                    Autorité de délivrance
+                </label>
+                <input asp-for="IssuingAuthority"
+                       class="form-control bg-dark text-white border-secondary"
+                       placeholder="ex: DAM, DGAC, EASA, FAA…"
+                       maxlength="80" />
+            </div>
+
+            @* ── Issue date ───────────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="IssueDate"
+                       class="form-label text-muted small">
+                    Date de délivrance
+                </label>
+                <input asp-for="IssueDate"
+                       type="date"
+                       class="form-control bg-dark text-white border-secondary" />
+            </div>
+
+            @* ── Expiry date ──────────────────────────────────────── *@
+            <div class="col-md-4">
+                <label asp-for="ExpiryDate"
+                       class="form-label text-muted small">
+                    Date d'expiration
+                </label>
+                <input asp-for="ExpiryDate"
+                       type="date"
+                       class="form-control bg-dark text-white border-secondary"
+                       id="expiryDate" />
+                <small class="text-muted">
+                    Laisser vide si sans limite (PEA, LME, CDL)
+                </small>
+                @* Live expiry status *@
+                <div id="expiryStatus" class="mt-1" style="display:none;">
+                    <span id="expiryBadge" class="badge"></span>
+                </div>
+            </div>
+
+            @* ── Notes ───────────────────────────────────────────── *@
+            <div class="col-12">
+                <label asp-for="Notes"
+                       class="form-label text-muted small">
+                    Notes / Observations
+                </label>
+                <textarea asp-for="Notes"
+                          class="form-control bg-dark text-white border-secondary"
+                          rows="2"
+                          placeholder="Conditions particulières, remarques…"
+                          maxlength="500"></textarea>
+                <span asp-validation-for="Notes"
+                      class="text-danger small"></span>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@* ── Document upload ──────────────────────────────────────────── *@
+<div class="card border-secondary">
+    <div class="card-header bg-dark border-secondary py-2">
+        <h6 class="mb-0 text-muted small">
+            <i class="fas fa-file-pdf me-2"></i>
+            Document numérisé
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            @if (!string.IsNullOrEmpty(Model.DocumentName))
+            {
+                <div class="col-12">
+                    <div class="d-flex align-items-center gap-2 p-2
+                                border border-secondary rounded">
+                        <i class="fas fa-file-pdf text-danger fs-5"></i>
+                        <div>
+                            <div class="small fw-600">
+                                @Model.DocumentName
+                            </div>
+                            <small class="text-muted font-monospace"
+                                   style="font-size:9px;">
+                                @Model.DocumentPath
+                            </small>
+                        </div>
+                        <span class="badge bg-success ms-auto">
+                            Fichier existant
+                        </span>
+                    </div>
+                </div>
+            }
+
+            <div class="col-12">
+                <label asp-for="DocumentFile"
+                       class="form-label text-muted small">
+                    @(string.IsNullOrEmpty(Model.DocumentName)
+                        ? "Téléverser le certificat (PDF)"
+                        : "Remplacer le document")
+                </label>
+                <input asp-for="DocumentFile"
+                       type="file"
+                       class="form-control bg-dark text-white border-secondary"
+                       accept=".pdf,.jpg,.jpeg,.png" />
+                <small class="text-muted">
+                    Formats acceptés : PDF, JPG, PNG · Max 10 Mo
+                </small>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+    // ── Live expiry status badge ──────────────────────────────────
+    const expiryInput  = document.getElementById('expiryDate');
+    const expiryStatus = document.getElementById('expiryStatus');
+    const expiryBadge  = document.getElementById('expiryBadge');
+
+    function updateExpiryBadge() {
+        const val = expiryInput?.value;
+        if (!val) { expiryStatus.style.display = 'none'; return; }
+
+        const expiry  = new Date(val);
+        const today   = new Date();
+        today.setHours(0,0,0,0);
+        const diffMs  = expiry - today;
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+        expiryStatus.style.display = '';
+        if (diffDays < 0) {
+            expiryBadge.className   = 'badge bg-danger';
+            expiryBadge.textContent = `Expiré depuis ${Math.abs(diffDays)} jour(s)`;
+        } else if (diffDays <= 30) {
+            expiryBadge.className   = 'badge bg-warning text-dark';
+            expiryBadge.textContent = `Expire dans ${diffDays} jour(s)`;
+        } else {
+            expiryBadge.className   = 'badge bg-success';
+            expiryBadge.textContent = `Valide — ${diffDays} jour(s) restants`;
+        }
+    }
+
+    expiryInput?.addEventListener('change', updateExpiryBadge);
+    updateExpiryBadge(); // init on load (Edit form)
+    </script>
+}

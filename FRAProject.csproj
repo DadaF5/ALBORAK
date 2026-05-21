@@ -18,6 +18,8 @@
     <Folder Include="Areas\AircraftMaintenance\Models\" />
     <Folder Include="Areas\AircraftMaintenance\Repositories\" />
     <Folder Include="Areas\AircraftMaintenance\Views\AircraftDashboard\" />
+    <Folder Include="Areas\AircraftMaintenance\Views\AircraftCertificates\" />
+    <Folder Include="Areas\AircraftMaintenance\Views\AircraftRestrictions\" />
     <Folder Include="Areas\Settings\Views\AircraftVersions\" />
     <Folder Include="Areas\Settings\Views\AircraftManufacturers\" />
     <Folder Include="Areas\Settings\Views\Home\" />

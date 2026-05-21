@@ -1,0 +1,486 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.AircraftCertificateIndexVm
+@{
+    ViewData["Title"] = "Certificats de navigabilité";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="container mt-3">
+
+@* ── Header ───────────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">Certificats de navigabilité</h4>
+        <small class="text-muted">
+            CdN · CEN · PEA · LME · CDL — par aéronef
+        </small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Nouveau certificat
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@* ── Summary strip ────────────────────────────────────────────── *@
+<div class="row g-2 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="card border-danger text-center py-2"
+             style="background:rgba(239,68,68,.06);">
+            <div style="font-family:monospace;font-size:24px;
+                        font-weight:700;color:#ef4444;">
+                @Model.CountExpired
+            </div>
+            <small class="text-muted">Expirés</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-warning text-center py-2"
+             style="background:rgba(245,158,11,.06);">
+            <div style="font-family:monospace;font-size:24px;
+                        font-weight:700;color:#f59e0b;">
+                @Model.CountExpiringSoon
+            </div>
+            <small class="text-muted">Expirent ≤ 30 j</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-success text-center py-2"
+             style="background:rgba(34,197,94,.06);">
+            <div style="font-family:monospace;font-size:24px;
+                        font-weight:700;color:#22c55e;">
+                @Model.CountValid
+            </div>
+            <small class="text-muted">Valides</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-secondary text-center py-2">
+            <div style="font-family:monospace;font-size:24px;
+                        font-weight:700;color:#e2e8f0;">
+                @Model.TotalCount
+            </div>
+            <small class="text-muted">Total</small>
+        </div>
+    </div>
+</div>
+
+@* ── Search ───────────────────────────────────────────────────── *@
+<div class="card border-secondary mb-3">
+    <div class="card-body py-2">
+        <form method="get" asp-action="Index">
+            <div class="row g-2 align-items-end">
+
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">Aéronef</label>
+                    <select name="searchAircraftId"
+                            asp-items="Model.AircraftOptions"
+                            class="form-select form-select-sm bg-dark
+                                   text-white border-secondary">
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">
+                        Type de certificat
+                    </label>
+                    <select name="searchCertType"
+                            asp-items="Model.CertTypeOptions"
+                            class="form-select form-select-sm bg-dark
+                                   text-white border-secondary">
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">
+                        Expiration proche
+                    </label>
+                        <select name="searchExpiringSoon"
+                                class="form-select form-select-sm bg-dark
+                                   text-white border-secondary">
+                            @* Render the entire option elements conditionally to avoid C# inside attribute area (fixes RZ1031) *@
+                            @if (!Model.SearchExpiringSoon)
+                            {
+                                <option value="false" selected>Tous</option>
+                            }
+                            else
+                            {
+                                <option value="false">Tous</option>
+                            }
+
+                            @if (Model.SearchExpiringSoon)
+                            {
+                                <option value="true" selected>≤ 30 jours</option>
+                            }
+                            else
+                            {
+                                <option value="true">≤ 30 jours</option>
+                            }
+                        </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">Statut</label>
+                        <select name="searchActive"
+                                class="form-select form-select-sm bg-dark
+                                   text-white border-secondary">
+                            <option value="">Tous</option>
+
+                            @* Render whole option elements conditionally to avoid C# in attribute declaration *@
+                            @if (Model.SearchActive == true)
+                            {
+                                <option value="true" selected>Actifs</option>
+                            }
+                            else
+                            {
+                                <option value="true">Actifs</option>
+                            }
+
+                            @if (Model.SearchActive == false)
+                            {
+                                <option value="false" selected>Inactifs</option>
+                            }
+                            else
+                            {
+                                <option value="false">Inactifs</option>
+                            }
+                        </select>
+                </div>
+
+                <div class="col-md-3 d-flex gap-2">
+                    <input type="hidden" name="sortColumn"
+                           value="@Model.SortColumn" />
+                    <input type="hidden" name="sortDirection"
+                           value="@Model.SortDirection" />
+                    <input type="hidden" name="pageSize"
+                           value="@Model.PageSize" />
+                    <button type="submit"
+                            class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-search me-1"></i>Rechercher
+                    </button>
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary btn-sm"
+                       title="Réinitialiser">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ── Results info ─────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <small class="text-muted">
+        @if (Model.TotalCount == 0)
+        {
+            <span>Aucun certificat trouvé.</span>
+        }
+        else
+        {
+            <span>
+                Affichage @Model.FirstItem–@Model.LastItem
+                sur @Model.TotalCount certificat(s)
+            </span>
+        }
+    </small>
+    <div class="d-flex align-items-center gap-1">
+        <small class="text-muted me-1">Par page :</small>
+        @foreach (var size in new[] { 10, 15, 25 })
+        {
+            <a asp-action="Index"
+               asp-route-searchAircraftId="@Model.SearchAircraftId"
+               asp-route-searchCertType="@Model.SearchCertType"
+               asp-route-searchExpiringSoon="@Model.SearchExpiringSoon"
+               asp-route-searchActive="@Model.SearchActive"
+               asp-route-sortColumn="@Model.SortColumn"
+               asp-route-sortDirection="@Model.SortDirection"
+               asp-route-pageSize="@size"
+               asp-route-pageNumber="1"
+               class="btn btn-outline-secondary btn-sm
+                      @(Model.PageSize == size ? "active" : "")">
+                @size
+            </a>
+        }
+    </div>
+</div>
+
+@* ── Table ────────────────────────────────────────────────────── *@
+<div class="card border-secondary">
+    <div class="card-body p-0">
+        <table class="table table-hover table-sm mb-0">
+            <thead style="background-color: darkolivegreen;">
+                <tr>
+                    @{
+                        string SortLink(string col) => Url.Action("Index", new
+                        {
+                            searchAircraftId  = Model.SearchAircraftId,
+                            searchCertType    = Model.SearchCertType,
+                            searchExpiringSoon = Model.SearchExpiringSoon,
+                            searchActive      = Model.SearchActive,
+                            sortColumn        = col,
+                            sortDirection     = Model.SortDirectionFor(col),
+                            pageNumber        = 1,
+                            pageSize          = Model.PageSize
+                        })!;
+                    }
+                    <th style="width:110px">Aéronef</th>
+                    <th style="width:80px" class="text-center">
+                        <a href="@SortLink("CertType")"
+                           class="text-white text-decoration-none">
+                            Type
+                            <i class="fas @Model.SortIconFor("CertType") ms-1"></i>
+                        </a>
+                    </th>
+                    <th>Référence</th>
+                    <th style="width:120px">Autorité</th>
+                    <th style="width:100px" class="text-center">
+                        <a href="@SortLink("IssueDate")"
+                           class="text-white text-decoration-none">
+                            Délivrance
+                            <i class="fas @Model.SortIconFor("IssueDate") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:120px" class="text-center">
+                        <a href="@SortLink("ExpiryDate")"
+                           class="text-white text-decoration-none">
+                            Expiration
+                            <i class="fas @Model.SortIconFor("ExpiryDate") ms-1"></i>
+                        </a>
+                    </th>
+                    <th style="width:90px" class="text-center">Statut</th>
+                    <th style="width:70px" class="text-center">Doc</th>
+                    <th style="width:100px" class="text-center text-white">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Items.Any())
+                {
+                    <tr>
+                        <td colspan="9"
+                            class="text-center text-muted py-4">
+                            <i class="fas fa-certificate me-2"></i>
+                            Aucun certificat trouvé.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr id="row-@item.Id"
+                            class="@(!item.IsActive ? "opacity-50" : "")">
+                            <td>
+                                <span class="fw-bold font-monospace text-warning"
+                                      style="letter-spacing:1px;font-size:12px;">
+                                    @item.AircraftCode
+                                </span>
+                                <br />
+                                <small class="text-muted">
+                                    @(item.AircraftTypeName ?? "")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-primary font-monospace">
+                                    @item.CertType
+                                </span>
+                            </td>
+                            <td>
+                                <code style="font-size:11px;">
+                                    @item.Reference
+                                </code>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    @(item.IssuingAuthority ?? "—")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <small class="font-monospace text-muted">
+                                    @(item.IssueDate?.ToString("dd/MM/yyyy") ?? "—")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                @if (item.ExpiryDate.HasValue)
+                                {
+                                    <span class="@item.StatusClass"
+                                          style="font-size:10px;">
+                                        @item.StatusLabel
+                                    </span>
+                                    <br />
+                                    <small class="font-monospace
+                                           @(item.DaysRemaining < 0 ? "text-danger"
+                                           : item.DaysRemaining <= 30 ? "text-warning"
+                                           : "text-muted")">
+                                        @item.ExpiryDate.Value.ToString("dd/MM/yyyy")
+                                        @if (item.DaysRemaining >= 0 &&
+                                             item.DaysRemaining <= 30)
+                                        {
+                                            <text> · J-@item.DaysRemaining</text>
+                                        }
+                                    </small>
+                                }
+                                else
+                                {
+                                    <span class="@item.StatusClass"
+                                          style="font-size:10px;">
+                                        @item.StatusLabel
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @{
+                                    var badgeCls = item.DaysRemaining == int.MaxValue
+                                        ? "bg-secondary"
+                                        : item.DaysRemaining < 0    ? "bg-danger"
+                                        : item.DaysRemaining <= 30  ? "bg-warning text-dark"
+                                        :                              "bg-success";
+                                }
+                                <span class="badge @badgeCls"
+                                      style="font-size:10px;">
+                                    @item.StatusLabel
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                @if (item.HasDocument)
+                                {
+                                    <i class="fas fa-file-pdf text-danger"
+                                       title="Document disponible"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-file text-muted"
+                                       title="Pas de document"></i>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <a asp-action="Edit"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-outline-warning btn-sm"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                @if (item.IsActive)
+                                {
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-sm ms-1"
+                                            title="Désactiver"
+                                            onclick="toggleActive(
+                                                @item.Id, false,
+                                                '@Html.Raw(item.Reference
+                                                    .Replace("'","\\'"
+                                                ))')">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            class="btn btn-outline-success btn-sm ms-1"
+                                            title="Réactiver"
+                                            onclick="toggleActive(
+                                                @item.Id, true,
+                                                '@Html.Raw(item.Reference
+                                                    .Replace("'","\\'"
+                                                ))')">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@* ── Pager ────────────────────────────────────────────────────── *@
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-3" aria-label="Pagination">
+        <ul class="pagination pagination-sm justify-content-center mb-0">
+            <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                <a class="page-link bg-dark border-secondary text-white"
+                   asp-action="Index"
+                   asp-route-searchAircraftId="@Model.SearchAircraftId"
+                   asp-route-searchCertType="@Model.SearchCertType"
+                   asp-route-searchExpiringSoon="@Model.SearchExpiringSoon"
+                   asp-route-searchActive="@Model.SearchActive"
+                   asp-route-sortColumn="@Model.SortColumn"
+                   asp-route-sortDirection="@Model.SortDirection"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-pageNumber="@(Model.PageNumber - 1)">&laquo;</a>
+            </li>
+            @for (int p = Math.Max(1, Model.PageNumber - 2);
+                      p <= Math.Min(Model.TotalPages, Model.PageNumber + 2); p++)
+            {
+                <li class="page-item @(p == Model.PageNumber ? "active" : "")">
+                    <a class="page-link bg-dark border-secondary text-white"
+                       asp-action="Index"
+                       asp-route-searchAircraftId="@Model.SearchAircraftId"
+                       asp-route-searchCertType="@Model.SearchCertType"
+                       asp-route-searchExpiringSoon="@Model.SearchExpiringSoon"
+                       asp-route-searchActive="@Model.SearchActive"
+                       asp-route-sortColumn="@Model.SortColumn"
+                       asp-route-sortDirection="@Model.SortDirection"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-pageNumber="@p">@p</a>
+                </li>
+            }
+            <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                <a class="page-link bg-dark border-secondary text-white"
+                   asp-action="Index"
+                   asp-route-searchAircraftId="@Model.SearchAircraftId"
+                   asp-route-searchCertType="@Model.SearchCertType"
+                   asp-route-searchExpiringSoon="@Model.SearchExpiringSoon"
+                   asp-route-searchActive="@Model.SearchActive"
+                   asp-route-sortColumn="@Model.SortColumn"
+                   asp-route-sortDirection="@Model.SortDirection"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-pageNumber="@(Model.PageNumber + 1)">&raquo;</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+    const token = document.querySelector(
+        'input[name="__RequestVerificationToken"]')?.value;
+
+    function toggleActive(id, activate, ref) {
+        const action = activate ? 'Activate' : 'Delete';
+        const msg    = activate
+            ? `Réactiver le certificat « ${ref} » ?`
+            : `Désactiver le certificat « ${ref} » ?`;
+
+        if (!confirm(msg)) return;
+
+        fetch(`/Settings/AircraftCertificates/${action}/${id}`, {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': token,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { window.location.reload(); }
+            else { alert(data.message ?? 'Erreur.'); }
+        })
+        .catch(() => alert('Erreur réseau.'));
+    }
+</script>
+}
+</div>

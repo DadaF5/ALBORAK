@@ -1,0 +1,111 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.AircraftCertificateFormDto
+@{
+    ViewData["Title"] = $"Modifier certificat — {Model.CertType} · {Model.Reference}";
+    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0">
+            Modifier le certificat
+            <span class="badge bg-primary font-monospace ms-2">
+                @Model.CertType
+            </span>
+            <code class="text-warning ms-2" style="font-size:14px;">
+                @Model.Reference
+            </code>
+        </h4>
+        <small class="text-muted">
+            <a asp-action="Index" class="text-muted text-decoration-none">
+                <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+            </a>
+        </small>
+    </div>
+    @if (!Model.IsActive)
+    {
+        <span class="badge bg-secondary fs-6">Inactif</span>
+    }
+</div>
+
+<form asp-action="Edit" asp-route-id="@Model.Id"
+      method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="AircraftId" />
+
+    @await Html.PartialAsync("_Form", Model)
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+
+        @* Left — activate / deactivate *@
+        <div>
+            @if (Model.IsActive)
+            {
+                <button type="button"
+                        class="btn btn-outline-danger btn-sm"
+                        onclick="quickToggle(
+                            @Model.Id, false,
+                            '@Html.Raw(Model.Reference.Replace("'", "\\'"))')">
+                    <i class="fas fa-ban me-1"></i>Désactiver ce certificat
+                </button>
+            }
+            else
+            {
+                <button type="button"
+                        class="btn btn-outline-success btn-sm"
+                        onclick="quickToggle(
+                            @Model.Id, true,
+                            '@Html.Raw(Model.Reference.Replace("'", "\\'"))')">
+                    <i class="fas fa-check me-1"></i>Réactiver ce certificat
+                </button>
+            }
+        </div>
+
+        @* Right — save / cancel *@
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-1"></i>Annuler
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i>Enregistrer
+            </button>
+        </div>
+
+    </div>
+</form>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        const token = document.querySelector(
+            'input[name="__RequestVerificationToken"]')?.value;
+
+        function quickToggle(id, activate, ref) {
+            const action = activate ? 'Activate' : 'Delete';
+            const msg    = activate
+                ? `Réactiver le certificat « ${ref} » ?`
+                : `Désactiver le certificat « ${ref} » ?`;
+
+            if (!confirm(msg)) return;
+
+            fetch(`/Settings/AircraftCertificates/${action}/${id}`, {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/Settings/AircraftCertificates';
+                } else {
+                    alert(data.message ?? 'Erreur.');
+                }
+            })
+            .catch(() => alert('Erreur réseau.'));
+        }
+    </script>
+}

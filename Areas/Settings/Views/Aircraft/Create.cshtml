@@ -1,6 +1,3 @@
-@* ════════════════════════════════════════════════════════════════
-   Save as: Areas/Settings/Views/Aircraft/Create.cshtml
-   ════════════════════════════════════════════════════════════════ *@
 @model FRAProject.Areas.Settings.ViewModels.AircraftFormDto
 @{
     ViewData["Title"] = "Nouvel aéronef";
@@ -40,3 +37,100 @@
         </div>
     </form>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        function syncMinutes() {
+            const h = parseInt(document.getElementById('fh-hours')?.value) || 0;
+            const m = parseInt(document.getElementById('fh-mins')?.value) || 0;
+            const tot = (h * 60) + m;
+            document.getElementById('totalFlightMinutes').value = tot;
+            document.getElementById('fhDisplay').textContent = h + ':' + String(m).padStart(2, '0');
+        }
+
+        document.getElementById('fh-hours')?.addEventListener('input', syncMinutes);
+        document.getElementById('fh-mins')?.addEventListener('input', syncMinutes);
+        syncMinutes();
+
+        document.getElementById('acTypeSelect')?.addEventListener('change', function () {
+            loadVersions(this.value);
+            loadMissionRoles(this.value);
+            buildObs();
+        });
+
+        function loadVersions(acTypeId) {
+            if (!acTypeId) {
+                repopulate('versionSelect', [], '— Version (optionnel) —');
+                return;
+            }
+            fetch(`/Settings/Aircraft/GetVersions?acTypeId=${acTypeId}`)
+                .then(r => r.json())
+                .then(data => repopulate('versionSelect', data, '— Version (optionnel) —'));
+        }
+
+        function loadMissionRoles(acTypeId) {
+            if (!acTypeId) {
+                repopulate('missionRoleSelect', [], '— Rôle (optionnel) —');
+                return;
+            }
+            fetch(`/Settings/Aircraft/GetMissionRoles?acTypeId=${acTypeId}`)
+                .then(r => r.json())
+                .then(data => repopulate('missionRoleSelect', data, '— Rôle (optionnel) —'));
+        }
+
+        function repopulate(selectId, items, placeholder) {
+            const sel = document.getElementById(selectId);
+            if (!sel) return;
+            sel.innerHTML = `<option value="">${placeholder}</option>`;
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.text = item.text;
+                sel.appendChild(opt);
+            });
+        }
+
+        function buildObs() {
+            const typeText = document.getElementById('acTypeSelect')?.selectedOptions[0]?.text ?? '';
+            const registration = document.querySelector('[name="Registration"]')?.value ?? '';
+            const obsField = document.querySelector('[name="Obs"]');
+
+            if (obsField && typeText && typeText !== '— Sélectionner le type —') {
+                const typePart = typeText.split('—').pop()?.trim() ?? typeText;
+                obsField.value = registration
+                    ? `${typePart} / ${registration.toUpperCase()}`
+                    : typePart;
+            }
+        }
+
+        document.querySelector('[name="Registration"]')?.addEventListener('input', buildObs);
+
+        const statusColors = {
+            'OPR': 'bg-success',
+            'MNT': 'bg-warning text-dark',
+            'AOG': 'bg-danger',
+            'STK': 'bg-secondary',
+            'RAD': 'bg-dark border border-secondary'
+        };
+
+        document.getElementById('statusSelect')?.addEventListener('change', function () {
+            const opt = this.selectedOptions[0];
+            const code = opt?.text?.split('—')[0]?.trim();
+            const badge = document.getElementById('statusBadge');
+            const wrap = document.getElementById('statusPreview');
+
+            if (code && statusColors[code]) {
+                badge.className = `badge fs-6 ${statusColors[code]}`;
+                badge.textContent = opt.text;
+                wrap.classList.remove('d-none');
+            } else {
+                wrap.classList.add('d-none');
+            }
+        });
+
+        document.getElementById('statusSelect')?.dispatchEvent(new Event('change'));
+    </script>
+}

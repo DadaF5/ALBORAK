@@ -36,7 +36,8 @@ Open `https://localhost:5001` (or the URL reported by the run output).
 - `appsettings.json` - configuration
 
 ## Documentation
-See the `docs/` folder for architecture, setup, development, deployment, API reference, and contribution guidelines.
+- `DOMAIN_ARCHITECTURE.md` - current domain layout and integration points
+- `docs/authorization-scope-design.md` - proposed cross-area authorization and scope design
 
 ## Contribution
 Please review `docs/contributing.md` for contribution guidelines and PR process.

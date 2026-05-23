@@ -72,8 +72,29 @@ namespace FRAProject.Data
         public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;
         public DbSet<AircraftDocumentType> AircraftDocumentTypes { get; set; } = null!;
         public DbSet<AircraftDocument> AircraftDocuments { get; set; } = null!;
+
+        // =====================================
+        // Restrictions & Certificates
+        // =====================================
         public DbSet<AircraftRestriction> AircraftRestrictions { get; set; } = null!;
         public DbSet<AircraftCertificate> AircraftCertificates { get; set; } = null!;
+
+        // =====================================
+        // DOMAIN: Aircraft Maintenance — Inspection Process
+        // =====================================
+        public DbSet<InspectionType> InspectionTypes { get; set; } = null!;
+        public DbSet<MaintenanceProgram> MaintenancePrograms { get; set; } = null!;
+        public DbSet<InspectionTypeProgram> InspectionTypePrograms { get; set; } = null!;
+        public DbSet<JobCard> JobCards { get; set; } = null!;
+        public DbSet<ProgramJobCard> ProgramJobCards { get; set; } = null!;
+        public DbSet<JobCardPlanningRule> JobCardPlanningRules { get; set; } = null!;
+        public DbSet<JobCardAttachment> JobCardAttachments { get; set; } = null!;
+        public DbSet<InspectionState> InspectionStates { get; set; } = null!;
+        public DbSet<AircraftJobCardState> AircraftJobCardStates { get; set; } = null!;
+        public DbSet<WorkOrder> WorkOrders { get; set; } = null!;
+        public DbSet<WorkOrderJobCard> WorkOrderJobCards { get; set; } = null!;
+        public DbSet<WorkOrderJobCardSignOff> WorkOrderJobCardSignOffs { get; set; } = null!;
+
 
 
         // =====================================
@@ -136,6 +157,21 @@ namespace FRAProject.Data
             // Maintenance configurations
             modelBuilder.ApplyConfiguration(new AircraftCertificateConfiguration());
             modelBuilder.ApplyConfiguration(new AircraftRestrictionConfiguration());
+
+            // Maintenance Inspection configuration
+            // Inspection Process configurations
+            modelBuilder.ApplyConfiguration(new InspectionTypeConfiguration());
+            modelBuilder.ApplyConfiguration(new MaintenanceProgramConfiguration());
+            modelBuilder.ApplyConfiguration(new InspectionTypeProgramConfiguration());
+            modelBuilder.ApplyConfiguration(new JobCardConfiguration());
+            modelBuilder.ApplyConfiguration(new ProgramJobCardConfiguration());
+            modelBuilder.ApplyConfiguration(new JobCardPlanningRuleConfiguration());
+            modelBuilder.ApplyConfiguration(new JobCardAttachmentConfiguration());
+            modelBuilder.ApplyConfiguration(new InspectionStateConfiguration());
+            modelBuilder.ApplyConfiguration(new AircraftJobCardStateConfiguration());
+            modelBuilder.ApplyConfiguration(new WorkOrderConfiguration());
+            modelBuilder.ApplyConfiguration(new WorkOrderJobCardConfiguration());
+            modelBuilder.ApplyConfiguration(new WorkOrderJobCardSignOffConfiguration());
 
             // ── Decimal precision ─────────────────────────────────────────
             ConfigureDecimalPrecision(modelBuilder);

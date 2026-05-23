@@ -1,0 +1,391 @@
+@model FRAProject.Areas.Settings.ViewModels.DamDashboardVm
+@{
+    ViewData["Title"] = "Dashboard DAM";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@* ── Custom styles matching the DAM mockup ───────────────────── *@
+<style>
+    :root {
+        --dam-success: #10b981;
+        --dam-warning: #f59e0b;
+        --dam-danger:  #ef4444;
+        --dam-dark:    #1e293b;
+    }
+    .badge-valid    { background-color: var(--dam-success); color:#fff; }
+    .badge-expired  { background-color: var(--dam-danger);  color:#fff; }
+    .badge-warning  { background-color: var(--dam-warning); color:#fff; }
+    .badge-active   { background-color: var(--dam-success); color:#fff; }
+    .badge-inactive { background-color: #6c757d; color:#fff; }
+    .card-dam       { border-top: 3px solid #2563eb; }
+    .card-navigabilite { border-left: 4px solid #06b6d4; }
+    .alert-critical {
+        background-color: #fee2e2;
+        border-left: 4px solid var(--dam-danger);
+        padding: .85rem 1rem; margin-bottom: .5rem;
+    }
+    .alert-high {
+        background-color: #fed7aa;
+        border-left: 4px solid var(--dam-warning);
+        padding: .85rem 1rem; margin-bottom: .5rem;
+    }
+    .counter-display { font-size:1.2rem; font-weight:600; color:#2563eb; }
+    .due-alert {
+        background-color: #fef3c7;
+        border-left: 4px solid var(--dam-warning);
+        padding: .75rem; margin-bottom: .5rem;
+    }
+    .overdue-alert {
+        background-color: #fee2e2;
+        border-left: 4px solid var(--dam-danger);
+        padding: .75rem; margin-bottom: .5rem;
+    }
+    .table-dam thead {
+        background-color: var(--dam-dark); color: white;
+    }
+    .table-dam tbody tr:hover { background-color: #f1f5f9; }
+    .cert-valid::before {
+        content: "\f058"; font-family:"Font Awesome 5 Free";
+        font-weight:900; color:var(--dam-success); margin-right:4px;
+    }
+    .cert-warning::before {
+        content: "\f071"; font-family:"Font Awesome 5 Free";
+        font-weight:900; color:var(--dam-warning); margin-right:4px;
+    }
+    .cert-expired::before {
+        content: "\f057"; font-family:"Font Awesome 5 Free";
+        font-weight:900; color:var(--dam-danger); margin-right:4px;
+    }
+    .stub-notice {
+        background: rgba(37,99,235,.06);
+        border: 1px dashed rgba(37,99,235,.3);
+        border-radius: 6px;
+        padding: 12px 16px;
+        font-size: 11px;
+        color: #64748b;
+        font-family: monospace;
+    }
+</style>
+
+@* ── Content header ───────────────────────────────────────────── *@
+<div class="content-header px-0 mb-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-0">Tableau de bord DAM</h4>
+            <small class="text-muted">
+                Direction de l'Aéronautique Militaire — Navigabilité
+            </small>
+        </div>
+        <small class="text-muted" id="dashTs"></small>
+    </div>
+</div>
+
+@* ── 4 KPI info boxes ─────────────────────────────────────────── *@
+<div class="row">
+    <div class="col-md-3 col-sm-6 col-12">
+        <div class="info-box">
+            <span class="info-box-icon bg-info elevation-1 text-white">
+                <i class="fas fa-fighter-jet text-white"></i>
+            </span>
+            <div class="info-box-content text-primary">
+                <span class="info-box-text">Total Aéronefs</span>
+                <span class="info-box-number">@Model.Kpi.TotalAircraft</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 col-12">
+        <div class="info-box">
+            <span class="info-box-icon bg-success elevation-1">
+                <i class="fas fa-check-circle"></i>
+            </span>
+            <div class="info-box-content text-success">
+                <span class="info-box-text">Navigables (OPR)</span>
+                <span class="info-box-number">@Model.Kpi.TotalNavigable</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 col-12">
+        <div class="info-box">
+            <span class="info-box-icon bg-warning elevation-1">
+                <i class="fas fa-exclamation-triangle"></i>
+            </span>
+            <div class="info-box-content">
+                <span class="info-box-text">Échéances Proches</span>
+                <span class="info-box-number">
+                    @(Model.Kpi.TotalDueSoon > 0
+                        ? Model.Kpi.TotalDueSoon.ToString()
+                        : "—")
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 col-12">
+        <div class="info-box">
+            <span class="info-box-icon bg-danger elevation-1">
+                <i class="fas fa-times-circle"></i>
+            </span>
+            <div class="info-box-content">
+                <span class="info-box-text">Restrictions Actives</span>
+                <span class="info-box-number">
+                    @(Model.Kpi.TotalRestrictions > 0
+                        ? Model.Kpi.TotalRestrictions.ToString()
+                        : "—")
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Échéances + Restrictions ─────────────────────────────────── *@
+<div class="row">
+
+    @* Échéances proches *@
+    <div class="col-md-6">
+        <div class="card card-dam">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-exclamation-circle text-warning mr-2"></i>
+                    Échéances Proches (7 jours)
+                </h3>
+            </div>
+            <div class="card-body p-2">
+                @if (Model.HasDueData)
+                {
+                    @foreach (var due in Model.DueSoon)
+                    {
+                        <div class="@due.AlertClass">
+                            <strong>@due.AcTypeName (@due.AircraftCode)</strong>
+                            — @due.TaskName
+                            @if (due.DueFh.HasValue)
+                            {
+                                <text>— Due FH: @due.DueFh (Actuel: @due.CurrentFh)</text>
+                                <div class="progress mt-2" style="height:22px;">
+                                    <div class="progress-bar @(due.CompliancePct >= 95 ? "bg-danger" : "bg-warning")"
+                                         role="progressbar"
+                                         style="width:@due.CompliancePct%">
+                                        @due.CompliancePct%
+                                    </div>
+                                </div>
+                            }
+                            @if (due.DueDate.HasValue)
+                            {
+                                <text>— Expire: @due.DueDate.Value.ToString("dd/MM/yyyy")</text>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="stub-notice">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Module à venir</strong> — Les échéances seront calculées
+                        depuis la table <code>AircraftDue</code> (MaintenanceDue) une fois
+                        le module Maintenance construit.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Restrictions critiques *@
+    <div class="col-md-6">
+        <div class="card card-dam">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-ban text-danger mr-2"></i>
+                    Restrictions Critiques
+                </h3>
+            </div>
+            <div class="card-body p-2">
+                @if (Model.HasRestrictionData)
+                {
+                    @foreach (var r in Model.Restrictions)
+                    {
+                        <div class="@r.AlertClass">
+                            <strong>@r.AcTypeName (@r.AircraftCode)</strong>
+                            <p class="mb-0">
+                                <small>
+                                    @r.Reference —
+                                    @r.Description
+                                    @if (r.ExpiryDate.HasValue)
+                                    {
+                                        <text>jusqu'au @r.ExpiryDate.Value.ToString("dd/MM/yyyy")</text>
+                                    }
+                                </small>
+                            </p>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="stub-notice">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Module à venir</strong> — Les restrictions seront chargées
+                        depuis la table <code>AircraftRestriction</code> une fois
+                        le module Restrictions construit.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@* ── État certificats table ───────────────────────────────────── *@
+<div class="row">
+    <div class="col-12">
+        <div class="card card-navigabilite">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title">
+                    <i class="fas fa-certificate mr-2"></i>
+                    État Certificats de Navigabilité
+                </h3>
+                @if (!Model.HasCertificateData && Model.Fleet.Any())
+                {
+                    <span class="badge badge-secondary"
+                          style="font-size:10px;">
+                        Certificats : module à venir
+                    </span>
+                }
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.Fleet.Any())
+                {
+                    <div class="p-4 text-center text-muted">
+                        <i class="fas fa-plane mr-2"></i>
+                        Aucun aéronef enregistré dans la flotte.
+                        <a asp-controller="Aircraft" asp-action="Create"
+                           class="ml-2">Ajouter un aéronef</a>
+                    </div>
+                }
+                else
+                {
+                    <table class="table table-dam table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Queue</th>
+                                <th>Type</th>
+                                <th>CdN</th>
+                                <th>CEN</th>
+                                <th>PEA</th>
+                                <th class="text-center">FH (h)</th>
+                                <th class="text-center">Cycles</th>
+                                <th class="text-center">Atterr.</th>
+                                <th class="text-center">Statut</th>
+                                <th class="text-center"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.Fleet)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@row.TailNumber</strong>
+                                    </td>
+                                    <td>@row.AcTypeName</td>
+
+                                    @* CdN *@
+                                    <td>
+                                        @if (row.CdN != null)
+                                        {
+                                            <span class="@row.CdN.StatusClass">
+                                                @row.CdN.StatusLabel
+                                            </span>
+                                            <br />
+                                            <small>
+                                                Exp:
+                                                @row.CdN.ExpiryDate?.ToString("dd/MM/yyyy")
+                                            </small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted"
+                                                  style="font-size:10px;">—</span>
+                                        }
+                                    </td>
+
+                                    @* CEN *@
+                                    <td>
+                                        @if (row.CEN != null)
+                                        {
+                                            <span class="@row.CEN.StatusClass">
+                                                @row.CEN.StatusLabel
+                                            </span>
+                                            <br />
+                                            <small>
+                                                Exp:
+                                                @row.CEN.ExpiryDate?.ToString("dd/MM/yyyy")
+                                            </small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted"
+                                                  style="font-size:10px;">—</span>
+                                        }
+                                    </td>
+
+                                    @* PEA *@
+                                    <td>
+                                        @if (row.PEA != null)
+                                        {
+                                            <small>@row.PEA.Reference</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted"
+                                                  style="font-size:10px;">—</span>
+                                        }
+                                    </td>
+
+                                    <td class="text-center counter-display">
+                                        @row.FlightHours.ToString("N0")
+                                    </td>
+                                    <td class="text-center counter-display">
+                                        @row.Cycles.ToString("N0")
+                                    </td>
+                                    <td class="text-center counter-display">
+                                        @row.Landings.ToString("N0")
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge @row.StatusBadgeClass">
+                                            @row.StatusBadgeLabel
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a asp-controller="Aircraft"
+                                           asp-action="Edit"
+                                           asp-route-id="@row.AircraftId"
+                                           class="btn btn-xs btn-outline-secondary"
+                                           title="Détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-controller="Aircraft"
+                                           asp-action="Print"
+                                           asp-route-id="@row.AircraftId"
+                                           class="btn btn-xs btn-outline-secondary ml-1"
+                                           title="Fiche"
+                                           target="_blank">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const now = new Date();
+    document.getElementById('dashTs').textContent =
+        'Mise à jour : ' + now.toLocaleDateString('fr-FR', {
+            day:'2-digit', month:'long', year:'numeric'
+        }) + ' — ' + now.toLocaleTimeString('fr-FR', {
+            hour:'2-digit', minute:'2-digit'
+        });
+</script>
+}

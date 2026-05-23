@@ -46,6 +46,8 @@ builder.Services.AddSingleton<IAuthorizationHandler, SquadronOrBaseMaintenanceHa
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IAcMainGroupRepository, AcMainGroupRepository>();
+builder.Services.AddScoped<IInspectionTypeRepository, InspectionTypeRepository>();
+builder.Services.AddScoped<IUserMaintenanceAssignmentRepository, UserMaintenanceAssignmentRepository>();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("SameSquadron", p => p.Requirements.Add(new SameSquadronRequirement()));

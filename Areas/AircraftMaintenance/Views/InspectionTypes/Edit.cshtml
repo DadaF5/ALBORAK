@@ -1,0 +1,72 @@
+@model FRAProject.ViewModels.AircraftMaintenance.InspectionTypeViewModel
+@{
+    ViewData["Title"] = "Edit Inspection Type";
+}
+
+<div class="container mt-3">
+    <div class="card">
+        <div class="card-header">
+            <h4>Edit Inspection Type</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <input type="hidden" asp-for="Id" />
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="AcTypeId" class="form-label fw-bold"></label>
+                        <select asp-for="AcTypeId" class="form-select" asp-items="Model.AcTypes">
+                            <option value="">-- Select Aircraft Type --</option>
+                        </select>
+                        <span asp-validation-for="AcTypeId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label asp-for="Code" class="form-label fw-bold"></label>
+                        <input asp-for="Code" class="form-control text-uppercase" />
+                        <span asp-validation-for="Code" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label asp-for="SortOrder" class="form-label fw-bold"></label>
+                        <input asp-for="SortOrder" type="number" min="0" max="255" class="form-control" />
+                        <span asp-validation-for="SortOrder" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label fw-bold"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="NextInspectionTypeId" class="form-label"></label>
+                    <select asp-for="NextInspectionTypeId" class="form-select" asp-items="Model.NextInspectionTypes">
+                        <option value="">-- None (end of chain) --</option>
+                    </select>
+                    <span asp-validation-for="NextInspectionTypeId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input asp-for="IsActive" class="form-check-input" />
+                    <label asp-for="IsActive" class="form-check-label">Active</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

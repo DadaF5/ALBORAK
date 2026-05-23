@@ -1,0 +1,61 @@
+@using FRAProject.Areas.AircraftMaintenance.Models
+@model InspectionType
+@{
+    ViewData["Title"] = "Inspection Type Details";
+}
+
+<div class="container mt-3">
+    <div class="card">
+        <div class="card-header">
+            <h4>Inspection Type: <code>@Model.Code</code></h4>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Code</dt>
+                <dd class="col-sm-9"><code>@Model.Code</code></dd>
+
+                <dt class="col-sm-3">Name</dt>
+                <dd class="col-sm-9">@Model.Name</dd>
+
+                <dt class="col-sm-3">Aircraft Type</dt>
+                <dd class="col-sm-9">@Model.AcType?.Name</dd>
+
+                <dt class="col-sm-3">Next Inspection Type</dt>
+                <dd class="col-sm-9">
+                    @if (Model.NextInspectionType != null)
+                    {
+                        <a asp-action="Details" asp-route-id="@Model.NextInspectionType.Id">
+                            @Model.NextInspectionType.Code – @Model.NextInspectionType.Name
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="text-muted">— (end of chain)</span>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">Description</dt>
+                <dd class="col-sm-9">@(Model.Description ?? "—")</dd>
+
+                <dt class="col-sm-3">Sort Order</dt>
+                <dd class="col-sm-9">@Model.SortOrder</dd>
+
+                <dt class="col-sm-3">Status</dt>
+                <dd class="col-sm-9">
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Inactive</span>
+                    }
+                </dd>
+            </dl>
+        </div>
+        <div class="card-footer">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-info">Edit</a>
+            <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+        </div>
+    </div>
+</div>

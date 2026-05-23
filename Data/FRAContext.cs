@@ -84,6 +84,19 @@ namespace FRAProject.Data
 
 
         // =====================================
+        // DOMAIN: Aircraft Maintenance – Inspection Module
+        // =====================================
+        public DbSet<InspectionType> InspectionTypes { get; set; } = null!;       // Inspection type catalog per AcType
+
+        // =====================================
+        // DOMAIN: Maintenance Assignment Module
+        // Tracks which user is assigned to which base/group/role over time
+        // =====================================
+        public DbSet<MaintenanceRole> MaintenanceRoles { get; set; } = null!;                                           // Role lookup (Technician, Base Supervisor, Master Supervisor)
+        public DbSet<UserMaintenanceAssignment> UserMaintenanceAssignments { get; set; } = null!;                       // Historical assignment records
+        public DbSet<UserMaintenanceAssignmentGroup> UserMaintenanceAssignmentGroups { get; set; } = null!;             // Temporary extra group scopes
+
+        // =====================================
         // Settings & Lookups (dbo)
         public DbSet<AircraftVersion> AircraftVersions { get; set; } = null!;     // Lookup for aircraft versions
         public DbSet<AircraftManufacturer> AircraftManufacturers { get; set; } = null!;
@@ -161,6 +174,14 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new MissionConfiguration());
             modelBuilder.ApplyConfiguration(new PhaseConfiguration());
             modelBuilder.ApplyConfiguration(new SortieCrewConfiguration());
+
+            // Inspection module
+            modelBuilder.ApplyConfiguration(new InspectionTypeConfiguration());
+
+            // Maintenance assignment module
+            modelBuilder.ApplyConfiguration(new MaintenanceRoleConfiguration());
+            modelBuilder.ApplyConfiguration(new UserMaintenanceAssignmentConfiguration());
+            modelBuilder.ApplyConfiguration(new UserMaintenanceAssignmentGroupConfiguration());
             // Decimal precision configuration
             ConfigureDecimalPrecision(modelBuilder);
 

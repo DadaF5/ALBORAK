@@ -1,5 +1,6 @@
 ﻿
 using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.AircraftMaintenance.Repositories;
 using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.Settings.Repositories;
@@ -21,10 +22,12 @@ namespace FRAProject.Infrastructure
             // AcMainGroups uses a specialist repository (custom methods)
             // so it is initialized directly — not lazy like the others.
             AcMainGroups = new AcMainGroupRepository(_context);
+            InspectionTypes = new InspectionTypeRepository(_context);
         }
 
         // ── Specialist repository ─────────────────────────────────────────
         public IAcMainGroupRepository AcMainGroups { get; private set; }
+        public IInspectionTypeRepository InspectionTypes { get; private set; }
 
         // ── Backing fields — null until first access ──────────────────────
 

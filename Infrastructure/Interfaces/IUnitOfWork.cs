@@ -1,5 +1,6 @@
 ﻿
 using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.AircraftMaintenance.Repositories;
 using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Data.Configurations;
@@ -21,6 +22,7 @@ namespace FRAProject.Infrastructure.Interfaces
         // IAcMainGroupRepository extends IGenericRepository<AcMainGroup>
         // so it has all generic methods PLUS any custom ones you added.
         IAcMainGroupRepository AcMainGroups { get; }
+        IInspectionTypeRepository InspectionTypes { get; }
 
         // ── Lookup tables ─────────────────────────────────────────────────
         IGenericRepository<Country> Countries { get; }
@@ -50,6 +52,9 @@ namespace FRAProject.Infrastructure.Interfaces
         IGenericRepository<AircraftCertificate> AircraftCertificates { get; }
         IGenericRepository<AircraftRestriction> AircraftRestrictions { get; }
 
+        // Maintenance Inspection 
+
+       
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>
         /// Flush all staged changes to the database in one transaction.

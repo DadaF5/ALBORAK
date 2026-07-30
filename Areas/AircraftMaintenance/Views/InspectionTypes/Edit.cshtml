@@ -1,0 +1,24 @@
+@model FRAProject.ViewModels.AircraftMaintenance.InspectionTypeFormViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Modifier le type d'inspection";
+}
+
+<div class="card card-outline card-primary">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-edit mr-1"></i> Modifier — @Model.Code</h3>
+    </div>
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        <div class="card-body">
+            @await Html.PartialAsync("_Form", Model)
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
+            <a asp-action="Index" class="btn btn-default">Annuler</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

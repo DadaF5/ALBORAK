@@ -1,0 +1,60 @@
+@model FRAProject.ViewModels.AircraftMaintenance.InspectionTypeDetailsViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Supprimer le type d'inspection";
+}
+
+<div class="card card-outline card-danger">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-1"></i> Supprimer — @Model.Code</h3>
+    </div>
+    <div class="card-body">
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+
+        <p>Vous êtes sur le point de supprimer le type d'inspection <strong>@Model.Code — @Model.Name</strong>
+            (@Model.AcTypeLabel).</p>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card card-outline card-success h-100">
+                    <div class="card-header"><strong>Désactiver (recommandé)</strong></div>
+                    <div class="card-body">
+                        <p>Le type d'inspection reste dans l'historique et les références existantes,
+                           mais n'apparaît plus comme actif. Réversible à tout moment.</p>
+                    </div>
+                    <div class="card-footer">
+                        <form asp-action="ToggleActive" asp-route-id="@Model.Id" method="post">
+                            <button type="submit" class="btn btn-success btn-block">
+                                <i class="fas fa-ban"></i> Désactiver
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card card-outline card-danger h-100">
+                    <div class="card-header"><strong>Supprimer définitivement</strong></div>
+                    <div class="card-body">
+                        <p>Suppression permanente. Impossible si ce type d'inspection est référencé
+                           par des programmes de maintenance ou des ordres de travail.</p>
+                    </div>
+                    <div class="card-footer">
+                        <form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post"
+                              onsubmit="return confirm('Cette action est irréversible. Continuer ?');">
+                            <button type="submit" class="btn btn-danger btn-block">
+                                <i class="fas fa-trash"></i> Supprimer définitivement
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <a asp-action="Index" class="btn btn-default">Annuler / Retour</a>
+    </div>
+</div>

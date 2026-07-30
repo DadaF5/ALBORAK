@@ -1,0 +1,175 @@
+@model FRAProject.ViewModels.AircraftMaintenance.InspectionTypeFormViewModel
+
+<style>
+    .insp-form .form-control {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+    .insp-form .form-control:focus {
+        background-color: #2b2f36;
+        border-color: #0d6efd;
+        color: #fff;
+        box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+    }
+    .insp-form .form-control::placeholder {
+        color: #8a9099;
+    }
+    .insp-form label {
+        color: #c9ccd1;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    .insp-form .required-mark {
+        color: #ff6b6b;
+        margin-left: 2px;
+    }
+    .insp-form .card-interval {
+        border-left: 3px solid #0d6efd;
+    }
+    .insp-form .card-tolerance {
+        border-left: 3px solid #f0ad4e;
+    }
+    .insp-form .advanced-toggle {
+        cursor: pointer;
+        color: #8ab4ff;
+        font-size: 0.85rem;
+        user-select: none;
+    }
+</style>
+
+<div class="insp-form">
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <input type="hidden" asp-for="Id" />
+
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label asp-for="AcTypeId">Type d'aéronef<span class="required-mark">*</span></label>
+            <select asp-for="AcTypeId" class="form-control" asp-items="Model.AcTypes.Select(a => new SelectListItem(a.DisplayLabel, a.Id.ToString()))">
+                <option value="">-- Sélectionner --</option>
+            </select>
+            <span asp-validation-for="AcTypeId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6 form-group">
+            <label asp-for="Code">Code<span class="required-mark">*</span></label>
+            <input asp-for="Code" class="form-control text-uppercase" id="codeInput" placeholder="ex : 1200PE" />
+            <span asp-validation-for="Code" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Name">Nom<span class="required-mark">*</span></label>
+        <input asp-for="Name" class="form-control" placeholder="ex : PE-1200-Heures" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="card card-outline card-secondary card-interval mb-3">
+        <div class="card-header"><strong>Intervalle</strong></div>
+        <div class="card-body row">
+            <div class="col-md-4 form-group">
+                <label asp-for="IntervalHours">Heures d'intervalle</label>
+                <input asp-for="IntervalHours" class="form-control" />
+            </div>
+            <div class="col-md-4 form-group">
+                <label asp-for="IntervalCycles">Cycles d'intervalle</label>
+                <input asp-for="IntervalCycles" class="form-control" />
+            </div>
+            <div class="col-md-2 form-group">
+                <label asp-for="CalendarValue">Valeur calendaire</label>
+                <input asp-for="CalendarValue" class="form-control" />
+            </div>
+            <div class="col-md-2 form-group">
+                <label asp-for="CalendarUnit">Unité calendaire</label>
+                <select asp-for="CalendarUnit" class="form-control">
+                    <option value="">--</option>
+                    @foreach (var u in Model.CalendarUnitOptions)
+                    {
+                        <option value="@u">@u</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-outline card-secondary card-tolerance mb-3">
+        <div class="card-header"><strong>Tolérance</strong></div>
+        <div class="card-body row">
+            <div class="col-md-4 form-group">
+                <label asp-for="ToleranceHours">Heures de tolérance</label>
+                <input asp-for="ToleranceHours" class="form-control" />
+            </div>
+            <div class="col-md-4 form-group">
+                <label asp-for="ToleranceCycles">Cycles de tolérance</label>
+                <input asp-for="ToleranceCycles" class="form-control" />
+            </div>
+            <div class="col-md-2 form-group">
+                <label asp-for="ToleranceCalendarValue">Valeur calendaire</label>
+                <input asp-for="ToleranceCalendarValue" class="form-control" />
+            </div>
+            <div class="col-md-2 form-group">
+                <label asp-for="ToleranceCalendarUnit">Unité calendaire</label>
+                <select asp-for="ToleranceCalendarUnit" class="form-control">
+                    <option value="">--</option>
+                    @foreach (var u in Model.CalendarUnitOptions)
+                    {
+                        <option value="@u">@u</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="NextInspectionTypeId">Type d'inspection suivant</label>
+        <select asp-for="NextInspectionTypeId" class="form-control" asp-items="Model.NextInspectionTypes.Select(n => new SelectListItem(n.Label, n.Id.ToString()))">
+            <option value="">-- Aucun --</option>
+        </select>
+    </div>
+
+    <p class="advanced-toggle mb-2" data-toggle="collapse" data-target="#advancedOptions" aria-expanded="false">
+        <i class="fas fa-chevron-right mr-1"></i> Options avancées (genre, ordre d'affichage, statut)
+    </p>
+
+    <div class="collapse" id="advancedOptions">
+        <div class="row">
+            <div class="col-md-4 form-group">
+                <label asp-for="Kind">Genre</label>
+                <select asp-for="Kind" class="form-control">
+                    @foreach (var k in Model.KindOptions)
+                    {
+                        <option value="@k">@k</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4 form-group">
+                <label asp-for="SortOrder">Ordre d'affichage</label>
+                <input asp-for="SortOrder" class="form-control" />
+            </div>
+            <div class="col-md-4 form-group d-flex align-items-end">
+                <div class="custom-control custom-switch">
+                    <input asp-for="IsActive" class="custom-control-input" />
+                    <label class="custom-control-label" asp-for="IsActive">Actif</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('codeInput')?.addEventListener('input', function (e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+        // Flip the chevron when the advanced section opens/closes
+        var toggle = document.querySelector('.advanced-toggle');
+        var panel = document.getElementById('advancedOptions');
+        if (toggle && panel) {
+            panel.addEventListener('shown.bs.collapse', () => toggle.querySelector('i').classList.replace('fa-chevron-right', 'fa-chevron-down'));
+            panel.addEventListener('hidden.bs.collapse', () => toggle.querySelector('i').classList.replace('fa-chevron-down', 'fa-chevron-right'));
+        }
+    </script>
+}

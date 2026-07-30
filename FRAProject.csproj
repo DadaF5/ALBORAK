@@ -19,6 +19,7 @@
     <Folder Include="Areas\AircraftMaintenance\Views\AircraftCertificates\" />
     <Folder Include="Areas\AircraftMaintenance\Views\AircraftRestrictions\" />
     <Folder Include="Areas\AircraftMaintenance\Views\DamDashboard\" />
+    <Folder Include="Areas\AircraftMaintenance\Views\InspectionTypes\" />
     <Folder Include="Areas\Settings\Views\AircraftVersions\" />
     <Folder Include="Areas\Settings\Views\AircraftManufacturers\" />
     <Folder Include="Areas\Settings\Views\Home\" />

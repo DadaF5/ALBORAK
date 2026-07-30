@@ -1,0 +1,92 @@
+@model FRAProject.ViewModels.AircraftMaintenance.InspectionTypeDetailsViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Détails du type d'inspection";
+}
+
+<style>
+    .insp-details dt {
+        color: #8a9099;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    .insp-details dd {
+        color: #e9ecef;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+    .insp-details .card-interval {
+        border-left: 3px solid #0d6efd;
+    }
+    .insp-details .card-tolerance {
+        border-left: 3px solid #f0ad4e;
+    }
+</style>
+
+<div class="insp-details card card-outline card-primary">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title"><i class="fas fa-clipboard-check mr-1"></i> @Model.Code — @Model.Name</h3>
+        <span class="badge @(Model.IsActive ? "badge-success" : "badge-secondary")">
+            @(Model.IsActive ? "Actif" : "Inactif")
+        </span>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Type d'aéronef</dt>
+            <dd class="col-sm-9">@Model.AcTypeLabel</dd>
+
+            <dt class="col-sm-3">Genre</dt>
+            <dd class="col-sm-9"><span class="badge badge-info">@Model.Kind</span></dd>
+        </dl>
+
+        <div class="card card-outline card-secondary card-interval mb-3">
+            <div class="card-header"><strong>Intervalle</strong></div>
+            <div class="card-body">
+                @(Model.IntervalHours.HasValue ? $"{Model.IntervalHours} h" : "—")
+                @(Model.IntervalCycles.HasValue ? $" · {Model.IntervalCycles} cycles" : "")
+                @(Model.CalendarValue.HasValue ? $" · {Model.CalendarValue} {Model.CalendarUnit}" : "")
+            </div>
+        </div>
+
+        <div class="card card-outline card-secondary card-tolerance mb-3">
+            <div class="card-header"><strong>Tolérance</strong></div>
+            <div class="card-body">
+                @(Model.ToleranceHours.HasValue ? $"{Model.ToleranceHours} h" : "—")
+                @(Model.ToleranceCycles.HasValue ? $" · {Model.ToleranceCycles} cycles" : "")
+                @(Model.ToleranceCalendarValue.HasValue ? $" · {Model.ToleranceCalendarValue} {Model.ToleranceCalendarUnit}" : "")
+            </div>
+        </div>
+
+        <dl class="row">
+            <dt class="col-sm-3">Type d'inspection suivant</dt>
+            <dd class="col-sm-9">@(Model.NextInspectionTypeLabel ?? "—")</dd>
+
+            <dt class="col-sm-3">Ordre d'affichage</dt>
+            <dd class="col-sm-9">@Model.SortOrder</dd>
+
+            <dt class="col-sm-3">Créé le (UTC)</dt>
+            <dd class="col-sm-9">@Model.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</dd>
+
+            <dt class="col-sm-3">Modifié le (UTC)</dt>
+            <dd class="col-sm-9">@(Model.UpdatedAtUtc?.ToString("dd/MM/yyyy HH:mm") ?? "—")</dd>
+        </dl>
+
+        @if (Model.Programs.Any())
+        {
+            <hr />
+            <h5>Programmes de maintenance associés</h5>
+            <ul>
+                @foreach (var p in Model.Programs)
+                {
+                    <li>@p.Name</li>
+                }
+            </ul>
+        }
+    </div>
+    <div class="card-footer">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fas fa-edit"></i> Modifier</a>
+        <a asp-action="Index" class="btn btn-default">Retour à la liste</a>
+    </div>
+</div>

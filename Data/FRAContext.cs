@@ -59,6 +59,15 @@ namespace FRAProject.Data
         public DbSet<MenuItem> MenuItems { get; set; } = null!;
 
         // =====================================
+        // DOMAIN: Platform Access Control (NEW)
+        // =====================================
+        public DbSet<UserProfile> UserProfiles { get; set; } = null!;
+        public DbSet<Module> Modules { get; set; } = null!;
+        public DbSet<ModuleRole> ModuleRoles { get; set; } = null!;
+        //public DbSet<UserAssignment> UserAssignments { get; set; } = null!;
+
+
+        // =====================================
         // DOMAIN: Aircraft Maintenance
         // =====================================
         public DbSet<AcCategory> AcCategories { get; set; } = null!;
@@ -172,6 +181,13 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new WorkOrderConfiguration());
             modelBuilder.ApplyConfiguration(new WorkOrderJobCardConfiguration());
             modelBuilder.ApplyConfiguration(new WorkOrderJobCardSignOffConfiguration());
+
+            // ── Platform access control ───────────────────────────────────
+            modelBuilder.ApplyConfiguration(new UserProfileConfiguration());
+            modelBuilder.ApplyConfiguration(new ModuleConfiguration());
+            modelBuilder.ApplyConfiguration(new ModuleRoleConfiguration());
+            //modelBuilder.ApplyConfiguration(new UserAssignmentConfiguration());
+
 
             // ── Decimal precision ─────────────────────────────────────────
             ConfigureDecimalPrecision(modelBuilder);

@@ -155,13 +155,27 @@ using (var scope = app.Services.CreateScope())
 
         // Optional demo docs (only if you want development data)
         await AircraftDocumentSeeder.SeedAsync(context);
-        // TODO: Add domain-specific seeders here for development/testing
-        // Domain order (respecting FK dependencies): HR → Aircraft → Squadron Ops → Medical
-        // Example:
-        // await HRSeeder.SeedAsync(context);                    // Organizational structure and personnel
-        // await AircraftMaintenanceSeeder.SeedAsync(context);   // Aircraft inventory and maintenance
-        // await SquadronOpsSeeder.SeedAsync(context);           // Flight operations, crew, sorties
-        // await MedicalCareSeeder.SeedAsync(context);           // Medical checks and fitness records
+        // ── Lookup tables (independent) ──────────────────────────────
+        await AcCategorySeeder.SeedAsync(context);
+        await AcStatusTypeSeeder.SeedAsync(context);
+        await EmployingAuthoritySeeder.SeedAsync(context);
+        await CountrySeeder.SeedAsync(context);
+        await CdnDocTypeSeeder.SeedAsync(context);
+        await MissionRoleSeeder.SeedAsync(context);
+        await ImmatriculationDocTypeSeeder.SeedAsync(context);
+        await AircraftManufacturerSeeder.SeedAsync(context);
+        await BaseSeeder.SeedAsync(context);
+
+        // ── Aircraft hierarchy (each seeder pulls its own FK parents too,
+        //    so calling only the leaf is enough — but calling all explicitly
+        //    here is harmless since every SeedAsync is idempotent) ────────
+        await AcMainGroupSeeder.SeedAsync(context);
+        await AcTypeSeeder.SeedAsync(context);
+        await AircraftVersionSeeder.SeedAsync(context);
+        await AircraftSeeder.SeedAsync(context);
+
+        // ── Inspection Process ───────────────────────────────────────
+        await MaintenanceProgramSeeder.SeedAsync(context);
 
         logger.LogInformation("Reference data seeded successfully.");
     }

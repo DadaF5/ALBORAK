@@ -11,27 +11,32 @@ namespace FRAProject.ViewModels.AircraftMaintenance
         public int AcTypeId { get; set; }
 
         [Required]
-        [StringLength(20)]
-        [Display(Name = "Program Code")]
+        [StringLength(30)]
+        [Display(Name = "Code")]
         public string Code { get; set; } = string.Empty;
 
         [Required]
-        [StringLength(100)]
-        [Display(Name = "Program Name")]
+        [StringLength(150)]
+        [Display(Name = "Name")]
         public string Name { get; set; } = string.Empty;
+
+        [StringLength(250)]
+        [Display(Name = "Description")]
+        public string? Description { get; set; }
 
         [StringLength(100)]
         [Display(Name = "Document Reference")]
         public string? DocReference { get; set; }
 
-        [StringLength(30)]
+        [StringLength(20)]
         [Display(Name = "Edition")]
         public string? Edition { get; set; }
 
-        [Display(Name = "Change No")]
+        [Display(Name = "Change Number")]
         public int? ChangeNo { get; set; }
 
         [Display(Name = "Change Date")]
+        [DataType(DataType.Date)]
         public DateOnly? ChangeDate { get; set; }
 
         [Display(Name = "Sort Order")]

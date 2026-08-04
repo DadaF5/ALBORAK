@@ -320,6 +320,12 @@
             flex-shrink: 0;
         }
 
+        .icon-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
         .search-box {
             flex: 1;
             max-width: 420px;
@@ -752,6 +758,15 @@
                             <span class="nav-icon">⚠</span>
                             <span class="nav-text">Restrictions</span>
                         </a>
+
+                        <a class="nav-item @IsActive("AircraftMaintenance", "MaintenancePrograms")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="MaintenancePrograms"
+                           asp-action="Index"
+                           title="Programmes d'entretien">
+                            <span class="nav-icon">📘</span>
+                            <span class="nav-text">Programmes d'entretien</span>
+                        </a>
                     </div>
                 </div>
                 <!-- GROUP: NAVIGABILITE END -->
@@ -901,9 +916,13 @@
                         </div>
                     </div>
 
-                    <button class="icon-btn" type="button" title="Notifications">🔔</button>
-                    <button class="icon-btn" type="button" title="Aide">?</button>
-                    <button class="icon-btn" type="button" title="Paramètres">⚙</button>
+                    <button class="icon-btn disabled" type="button" title="Notifications (à venir)" disabled>🔔</button>
+                    <button class="icon-btn disabled" type="button" title="Aide (à venir)" disabled>?</button>
+                    <a class="icon-btn"
+                       asp-area="Settings"
+                       asp-controller="Home"
+                       asp-action="Index"
+                       title="Paramètres">⚙</a>
                 </div>
                 <!-- TOP BAR RIGHT END -->
 

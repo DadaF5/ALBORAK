@@ -52,9 +52,9 @@ namespace FRAProject.Infrastructure.Interfaces
         IGenericRepository<AircraftCertificate> AircraftCertificates { get; }
         IGenericRepository<AircraftRestriction> AircraftRestrictions { get; }
 
-        // Maintenance Inspection 
+        // Maintenance Inspection        
+        IMaintenanceProgramRepository MaintenancePrograms { get; }
 
-       
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>
         /// Flush all staged changes to the database in one transaction.

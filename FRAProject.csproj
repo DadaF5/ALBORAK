@@ -14,7 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\AircraftMaintenance\Controllers\" />
     <Folder Include="Areas\AircraftMaintenance\Views\AircraftDashboard\" />
     <Folder Include="Areas\AircraftMaintenance\Views\AircraftCertificates\" />
     <Folder Include="Areas\AircraftMaintenance\Views\AircraftRestrictions\" />

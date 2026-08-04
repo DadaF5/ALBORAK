@@ -23,12 +23,13 @@ namespace FRAProject.Infrastructure
             // so it is initialized directly — not lazy like the others.
             AcMainGroups = new AcMainGroupRepository(_context);
             InspectionTypes = new InspectionTypeRepository(_context);
+            MaintenancePrograms = new MaintenanceProgramRepository(_context);
         }
 
         // ── Specialist repository ─────────────────────────────────────────
         public IAcMainGroupRepository AcMainGroups { get; private set; }
         public IInspectionTypeRepository InspectionTypes { get; private set; }
-
+        public IMaintenanceProgramRepository MaintenancePrograms { get; private set; }
         // ── Backing fields — null until first access ──────────────────────
 
         // Lookup tables

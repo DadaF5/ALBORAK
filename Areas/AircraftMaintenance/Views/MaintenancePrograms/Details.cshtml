@@ -1,0 +1,80 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.MaintenanceProgramDetailsViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Détails du programme d'entretien";
+}
+
+<style>
+    .mp-details dt {
+        color: #8a9099;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .mp-details dd {
+        color: #e9ecef;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .mp-details .card-doc {
+        border-left: 3px solid #0d6efd;
+    }
+</style>
+
+<div class="mp-details card card-outline card-primary">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title"><i class="fas fa-book mr-1"></i> @Model.Code — @Model.Name</h3>
+        <span class="badge @(Model.IsActive ? "badge-success" : "badge-secondary")">
+            @(Model.IsActive ? "Actif" : "Inactif")
+        </span>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Type d'aéronef</dt>
+            <dd class="col-sm-9">@Model.AcTypeLabel</dd>
+
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">@(Model.Description ?? "—")</dd>
+        </dl>
+
+        <div class="card card-outline card-secondary card-doc mb-3">
+            <div class="card-header"><strong>Référence documentaire</strong></div>
+            <div class="card-body">
+                @(Model.DocReference ?? "—")
+                @(!string.IsNullOrEmpty(Model.Edition) ? $" · Édition {Model.Edition}" : "")
+                @(Model.ChangeNo.HasValue ? $" · Changement n° {Model.ChangeNo}" : "")
+                @(Model.ChangeDate.HasValue ? $" · {Model.ChangeDate.Value:dd/MM/yyyy}" : "")
+            </div>
+        </div>
+
+        <dl class="row">
+            <dt class="col-sm-3">Ordre d'affichage</dt>
+            <dd class="col-sm-9">@Model.SortOrder</dd>
+
+            <dt class="col-sm-3">Créé le (UTC)</dt>
+            <dd class="col-sm-9">@Model.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</dd>
+
+            <dt class="col-sm-3">Modifié le (UTC)</dt>
+            <dd class="col-sm-9">@(Model.UpdatedAtUtc?.ToString("dd/MM/yyyy HH:mm") ?? "—")</dd>
+        </dl>
+
+        @if (Model.InspectionTypes.Any())
+        {
+            <hr />
+            <h5>Types d'inspection associés</h5>
+            <ul>
+                @foreach (var it in Model.InspectionTypes)
+                {
+                    <li>@it.Name</li>
+                }
+            </ul>
+        }
+    </div>
+    <div class="card-footer">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fas fa-edit"></i> Modifier</a>
+        <a asp-action="Index" class="btn btn-default">Retour à la liste</a>
+    </div>
+</div>

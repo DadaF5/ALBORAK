@@ -1,0 +1,184 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.JobCardFormViewModel
+
+<style>
+    .jc-form .form-control {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+    .jc-form .form-control:focus {
+        background-color: #2b2f36;
+        border-color: #0d6efd;
+        color: #fff;
+        box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+    }
+    .jc-form .form-control::placeholder {
+        color: #8a9099;
+    }
+    .jc-form label {
+        color: #c9ccd1;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    .jc-form .required-mark {
+        color: #ff6b6b;
+        margin-left: 2px;
+    }
+    .jc-form .card-doc {
+        border-left: 3px solid #0d6efd;
+    }
+    .jc-form .card-safety {
+        border-left: 3px solid #ffc107;
+    }
+    .jc-form .advanced-toggle {
+        cursor: pointer;
+        color: #8ab4ff;
+        font-size: 0.85rem;
+        user-select: none;
+    }
+</style>
+
+<div class="jc-form">
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <input type="hidden" asp-for="Id" />
+
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label asp-for="AcTypeId">Type d'aéronef<span class="required-mark">*</span></label>
+            <select asp-for="AcTypeId" class="form-control" asp-items="Model.AcTypes.Select(a => new SelectListItem(a.DisplayLabel, a.Id.ToString()))">
+                <option value="">-- Sélectionner --</option>
+            </select>
+            <span asp-validation-for="AcTypeId" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6 form-group">
+            <label asp-for="CardCode">Code<span class="required-mark">*</span></label>
+            <input asp-for="CardCode" class="form-control text-uppercase" id="codeInput" placeholder="ex : 1-036" />
+            <span asp-validation-for="CardCode" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Title">Titre<span class="required-mark">*</span></label>
+        <input asp-for="Title" class="form-control" placeholder="ex : Inspection commandes de vol" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Description">Description</label>
+        <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="row">
+        <div class="col-md-2 form-group">
+            <label asp-for="AtaCode">Chapitre ATA</label>
+            <input asp-for="AtaCode" class="form-control" placeholder="ex : 27" />
+        </div>
+        <div class="col-md-3 form-group">
+            <label asp-for="Specialty">Spécialité</label>
+            <select asp-for="Specialty" class="form-control">
+                <option value="">-- Aucune --</option>
+                @foreach (var opt in FRAProject.ViewModels.AircraftMaintenance.JobCardFormViewModel.SpecialtyOptions)
+                {
+                    <option value="@opt">@opt</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3 form-group">
+            <label asp-for="AllocatedTimeMinutes">Temps alloué (min)</label>
+            <input asp-for="AllocatedTimeMinutes" class="form-control" type="number" min="0" />
+            <span asp-validation-for="AllocatedTimeMinutes" class="text-danger"></span>
+        </div>
+        <div class="col-md-2 form-group">
+            <label asp-for="WorkAreas">Zone(s) de travail</label>
+            <input asp-for="WorkAreas" class="form-control" placeholder="ex : 1" />
+        </div>
+        <div class="col-md-2 form-group">
+            <label asp-for="MechNo">Nb. mécaniciens</label>
+            <input asp-for="MechNo" class="form-control" type="number" min="0" />
+        </div>
+    </div>
+
+    <div class="card card-outline card-warning card-safety mb-3">
+        <div class="card-header"><strong>⚠ Conditions de sécurité</strong></div>
+        <div class="card-body row">
+            <div class="col-md-4 form-group mb-0">
+                <label asp-for="ElectricalPowerRequired">Alimentation électrique</label>
+                <select asp-for="ElectricalPowerRequired" class="form-control">
+                    <option value="">-- Non spécifié --</option>
+                    @foreach (var opt in FRAProject.ViewModels.AircraftMaintenance.JobCardFormViewModel.ElectricalPowerOptions)
+                    {
+                        <option value="@opt">@opt</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4 form-group mb-0">
+                <label asp-for="FigureRef">Référence illustration</label>
+                <input asp-for="FigureRef" class="form-control" placeholder="ex : N1-M143" />
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-outline card-secondary card-doc mb-3">
+        <div class="card-header"><strong>Référence documentaire</strong></div>
+        <div class="card-body row">
+            <div class="col-md-3 form-group">
+                <label asp-for="ToReference">Référence T.O.</label>
+                <input asp-for="ToReference" class="form-control" />
+            </div>
+            <div class="col-md-3 form-group">
+                <label asp-for="DocReference">Référence document</label>
+                <input asp-for="DocReference" class="form-control" placeholder="ex : AMM-27-21" />
+            </div>
+            <div class="col-md-2 form-group">
+                <label asp-for="Edition">Édition</label>
+                <input asp-for="Edition" class="form-control" placeholder="ex : Rev. 12" />
+            </div>
+            <div class="col-md-2 form-group">
+                <label asp-for="ChangeNo">N° changement</label>
+                <input asp-for="ChangeNo" class="form-control" />
+            </div>
+            <div class="col-md-2 form-group">
+                <label asp-for="ChangeDate">Date changement</label>
+                <input asp-for="ChangeDate" class="form-control" type="date" />
+            </div>
+        </div>
+    </div>
+
+    <p class="advanced-toggle mb-2" data-toggle="collapse" data-target="#advancedOptions" aria-expanded="false">
+        <i class="fas fa-chevron-right mr-1"></i> Options avancées (ordre d'affichage, statut)
+    </p>
+
+    <div class="collapse" id="advancedOptions">
+        <div class="row">
+            <div class="col-md-4 form-group">
+                <label asp-for="SortOrder">Ordre d'affichage</label>
+                <input asp-for="SortOrder" class="form-control" />
+            </div>
+            <div class="col-md-4 form-group d-flex align-items-end">
+                <div class="custom-control custom-switch">
+                    <input asp-for="IsActive" class="custom-control-input" />
+                    <label class="custom-control-label" asp-for="IsActive">Actif</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('codeInput')?.addEventListener('input', function (e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+        var toggle = document.querySelector('.advanced-toggle');
+        var panel = document.getElementById('advancedOptions');
+        if (toggle && panel) {
+            panel.addEventListener('shown.bs.collapse', () => toggle.querySelector('i').classList.replace('fa-chevron-right', 'fa-chevron-down'));
+            panel.addEventListener('hidden.bs.collapse', () => toggle.querySelector('i').classList.replace('fa-chevron-down', 'fa-chevron-right'));
+        }
+    </script>
+}

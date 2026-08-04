@@ -54,7 +54,7 @@ namespace FRAProject.Infrastructure.Interfaces
 
         // Maintenance Inspection        
         IMaintenanceProgramRepository MaintenancePrograms { get; }
-
+        IJobCardRepository JobCards { get; }              // ← ADD THIS 
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>
         /// Flush all staged changes to the database in one transaction.

@@ -24,12 +24,14 @@ namespace FRAProject.Infrastructure
             AcMainGroups = new AcMainGroupRepository(_context);
             InspectionTypes = new InspectionTypeRepository(_context);
             MaintenancePrograms = new MaintenanceProgramRepository(_context);
+            JobCards = new JobCardRepository(_context);
         }
 
         // ── Specialist repository ─────────────────────────────────────────
         public IAcMainGroupRepository AcMainGroups { get; private set; }
         public IInspectionTypeRepository InspectionTypes { get; private set; }
         public IMaintenanceProgramRepository MaintenancePrograms { get; private set; }
+        public IJobCardRepository JobCards { get; private set; }           // ← ADD THIS LINE
         // ── Backing fields — null until first access ──────────────────────
 
         // Lookup tables

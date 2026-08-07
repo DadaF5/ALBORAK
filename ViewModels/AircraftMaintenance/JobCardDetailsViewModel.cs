@@ -10,11 +10,12 @@
         public int AcTypeId { get; set; }
         public string AcTypeLabel { get; set; } = string.Empty;
 
-        public string? AtaCode { get; set; }
+        public int? AtaId { get; set; }
+        public string? AtaLabel { get; set; }
+
         public string? Specialty { get; set; }
         public int AllocatedTimeMinutes { get; set; }
 
-        // ── Added fields ─────────────────────────────────────────────────
         public string? WorkAreas { get; set; }
         public int? MechNo { get; set; }
         public string? ElectricalPowerRequired { get; set; }

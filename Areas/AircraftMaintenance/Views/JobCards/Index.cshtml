@@ -74,7 +74,7 @@
                             <td><code>@item.CardCode</code></td>
                             <td>@item.Title</td>
                             <td>@item.AcTypeLabel</td>
-                            <td>@item.AtaCode</td>
+                            <td>@(item.AtaLabel ?? "—")</td>
                             <td>
                                 @if (!string.IsNullOrEmpty(item.Specialty))
                                 {

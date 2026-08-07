@@ -1,0 +1,79 @@
+﻿@model FRAProject.ViewModels.Settings.AtaFormViewModel
+
+<style>
+    .ata-form .form-control {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+
+        .ata-form .form-control:focus {
+            background-color: #2b2f36;
+            border-color: #0d6efd;
+            color: #fff;
+            box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+        }
+
+    .ata-form label {
+        color: #c9ccd1;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .ata-form .required-mark {
+        color: #ff6b6b;
+        margin-left: 2px;
+    }
+</style>
+
+<div class="ata-form">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <input type="hidden" asp-for="Id" />
+
+    <div class="row">
+        <div class="col-md-3 form-group">
+            <label asp-for="Code">Code ATA<span class="required-mark">*</span></label>
+            <input asp-for="Code" class="form-control text-uppercase" id="codeInput" placeholder="ex : 27" />
+            <span asp-validation-for="Code" class="text-danger"></span>
+        </div>
+        <div class="col-md-5 form-group">
+            <label asp-for="Name">Titre<span class="required-mark">*</span></label>
+            <input asp-for="Name" class="form-control" placeholder="ex : Flight Controls" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="col-md-4 form-group">
+            <label asp-for="AtaCategoryId">Catégorie</label>
+            <select asp-for="AtaCategoryId" class="form-control" asp-items="Model.Categories.Select(c => new SelectListItem(c.DisplayLabel, c.Id.ToString()))">
+                <option value="">-- Aucune --</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Description">Description</label>
+        <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <label asp-for="SortOrder">Ordre d'affichage</label>
+            <input asp-for="SortOrder" class="form-control" />
+        </div>
+        <div class="col-md-4 form-group d-flex align-items-end">
+            <div class="custom-control custom-switch">
+                <input asp-for="IsActive" class="custom-control-input" />
+                <label class="custom-control-label" asp-for="IsActive">Actif</label>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('codeInput')?.addEventListener('input', function (e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    </script>
+}

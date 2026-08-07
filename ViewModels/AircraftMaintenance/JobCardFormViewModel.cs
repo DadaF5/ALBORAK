@@ -24,9 +24,8 @@ namespace FRAProject.ViewModels.AircraftMaintenance
         [Display(Name = "Description")]
         public string? Description { get; set; }
 
-        [StringLength(10)]
         [Display(Name = "ATA Chapter")]
-        public string? AtaCode { get; set; }
+        public int? AtaId { get; set; }
 
         [Display(Name = "Specialty")]
         public string? Specialty { get; set; }
@@ -35,7 +34,6 @@ namespace FRAProject.ViewModels.AircraftMaintenance
         [Display(Name = "Allocated Time (minutes)")]
         public int AllocatedTimeMinutes { get; set; }
 
-        // ── Added fields ─────────────────────────────────────────────────
         [StringLength(20)]
         [Display(Name = "Work Area(s)")]
         public string? WorkAreas { get; set; }
@@ -76,9 +74,8 @@ namespace FRAProject.ViewModels.AircraftMaintenance
         public bool IsActive { get; set; } = true;
 
         public List<AcTypeLookupViewModel> AcTypes { get; set; } = [];
+        public List<AtaLookupViewModel> AtaChapters { get; set; } = [];
 
-        // Extended per real TO XX1F-5E-6WC-3 card data — "APG" added, list
-        // may still be incomplete pending more card samples.
         public static readonly List<string> SpecialtyOptions =
             ["MECA", "AVION", "ELEC", "STRUCT", "APG", "OTHER"];
 

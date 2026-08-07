@@ -3,6 +3,7 @@ using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.AircraftMaintenance.Repositories;
 using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
+using FRAProject.Areas.Settings.Repositories;
 using FRAProject.Data.Configurations;
 using FRAProject.Models;
 
@@ -54,6 +55,8 @@ namespace FRAProject.Infrastructure.Interfaces
 
         // Maintenance Inspection        
         IMaintenanceProgramRepository MaintenancePrograms { get; }
+        IAtaCategoryRepository AtaCategories { get; }
+        IAtaRepository Ata { get; }
         IJobCardRepository JobCards { get; }              // ← ADD THIS 
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>

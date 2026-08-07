@@ -1,14 +1,14 @@
-﻿@model FRAProject.ViewModels.AircraftMaintenance.MaintenanceProgramFormViewModel
+﻿@model FRAProject.ViewModels.Settings.AtaFormViewModel
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    ViewData["Title"] = "Nouveau programme d'entretien";
+    ViewData["Title"] = "Modifier le chapitre ATA";
 }
 
 <div class="card card-outline card-primary">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-plus mr-1"></i> Nouveau programme d'entretien</h3>
+        <h3 class="card-title"><i class="fas fa-edit mr-1"></i> Modifier — @Model.Code</h3>
     </div>
-    <form asp-action="Create" method="post">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
         <div class="card-body">
             @await Html.PartialAsync("_Form", Model)
         </div>
@@ -23,9 +23,4 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-     <script>
-              console.log('Form script loaded');
-              console.log('advancedToggle element:', document.getElementById('advancedToggle'));
-              console.log('advancedOptions element:', document.getElementById('advancedOptions'));
-    </script>
 }

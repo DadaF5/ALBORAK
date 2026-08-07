@@ -9,7 +9,15 @@ namespace FRAProject.Areas.AircraftMaintenance.Models
         public int AcTypeId { get; set; }
         public AcType? AcType { get; set; }
 
+        // ── ATA now a real FK to the Ata lookup table ─────────────────────
+        public int? AtaId { get; set; }
+        public Ata? Ata { get; set; }
+
+        // Legacy free-text column — kept for old data, no longer written to
+        // by Create/Edit going forward. Safe to drop in a future cleanup
+        // migration once confirmed unused.
         public string? AtaCode { get; set; }
+
         public string CardCode { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
@@ -17,12 +25,10 @@ namespace FRAProject.Areas.AircraftMaintenance.Models
         public string? Specialty { get; set; } // MECA | AVION | ELEC | STRUCT | APG | OTHER
         public int AllocatedTimeMinutes { get; set; }
 
-        // ── Added fields — confirmed against real TO XX1F-5E-6WC-3 card ──
-        // Additive only, all nullable — no impact on existing rows.
-        public string? WorkAreas { get; set; }              // e.g. "1" — card's WORK AREA(S)
-        public int? MechNo { get; set; }                    // number of mechanics required
+        public string? WorkAreas { get; set; }
+        public int? MechNo { get; set; }
         public string? ElectricalPowerRequired { get; set; } // ON | OFF | NA
-        public string? FigureRef { get; set; }               // illustration ref, e.g. "N1-M143"
+        public string? FigureRef { get; set; }
 
         public string? ToReference { get; set; }
         public string? DocReference { get; set; }
@@ -43,13 +49,5 @@ namespace FRAProject.Areas.AircraftMaintenance.Models
         public ICollection<JobCardAttachment> Attachments { get; set; } = [];
         public ICollection<AircraftJobCardState> AircraftJobCardStates { get; set; } = [];
         public ICollection<WorkOrderJobCard> WorkOrderJobCards { get; set; } = [];
-
-        // ── FUTURE — deferred, not built yet ──────────────────────────────
-        // Real cards show a per-instruction-line breakdown (ManMin, WorkArea,
-        // WorkUnitCode SYS/SUB) — e.g. 4 separate lines each with their own
-        // values. That's a one-to-many child entity (JobCardStep), not a flat
-        // field on JobCard. Add when the paper-card replication becomes a
-        // priority — not required for current CRUD/scheduling scope.
-        // public ICollection<JobCardStep> Steps { get; set; } = [];
     }
 }

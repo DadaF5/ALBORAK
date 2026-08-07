@@ -17,7 +17,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         {
             _uow = uow;
         }
-       
+
         // GET: AircraftMaintenance/JobCards
         public async Task<IActionResult> Index()
         {
@@ -30,14 +30,15 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 Title = x.Title,
                 AcTypeId = x.AcTypeId,
                 AcTypeLabel = x.AcType != null ? $"{x.AcType.Code} — {x.AcType.Name}" : "—",
-                AtaCode = x.AtaCode,
+                AtaId = x.AtaId,
+                AtaLabel = x.Ata != null ? $"{x.Ata.Code} — {x.Ata.Name}" : null,
                 Specialty = x.Specialty,
                 AllocatedTimeMinutes = x.AllocatedTimeMinutes,
-                ToReference = x.ToReference,           // ← ADD
-                DocReference = x.DocReference,         // ← ADD
-                Edition = x.Edition,                   // ← ADD
-                ChangeNo = x.ChangeNo,                 // ← ADD
-                ChangeDate = x.ChangeDate,              // ← ADD
+                ToReference = x.ToReference,
+                DocReference = x.DocReference,
+                Edition = x.Edition,
+                ChangeNo = x.ChangeNo,
+                ChangeDate = x.ChangeDate,
                 IsActive = x.IsActive,
                 SortOrder = x.SortOrder
             }).ToList();
@@ -86,13 +87,13 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 CardCode = vm.CardCode.Trim().ToUpper(),
                 Title = vm.Title.Trim(),
                 Description = vm.Description,
-                AtaCode = vm.AtaCode,
+                AtaId = vm.AtaId,
                 Specialty = vm.Specialty,
                 AllocatedTimeMinutes = vm.AllocatedTimeMinutes,
-                WorkAreas = vm.WorkAreas,                                   // ← ADD
-                MechNo = vm.MechNo,                                         // ← ADD
-                ElectricalPowerRequired = vm.ElectricalPowerRequired,       // ← ADD
-                FigureRef = vm.FigureRef,                                   // ← ADD
+                WorkAreas = vm.WorkAreas,
+                MechNo = vm.MechNo,
+                ElectricalPowerRequired = vm.ElectricalPowerRequired,
+                FigureRef = vm.FigureRef,
                 ToReference = vm.ToReference,
                 DocReference = vm.DocReference,
                 Edition = vm.Edition,
@@ -123,13 +124,13 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 CardCode = entity.CardCode,
                 Title = entity.Title,
                 Description = entity.Description,
-                AtaCode = entity.AtaCode,
+                AtaId = entity.AtaId,
                 Specialty = entity.Specialty,
                 AllocatedTimeMinutes = entity.AllocatedTimeMinutes,
-                WorkAreas = entity.WorkAreas,                               // ← ADD
-                MechNo = entity.MechNo,                                     // ← ADD
-                ElectricalPowerRequired = entity.ElectricalPowerRequired,   // ← ADD
-                FigureRef = entity.FigureRef,                               // ← ADD
+                WorkAreas = entity.WorkAreas,
+                MechNo = entity.MechNo,
+                ElectricalPowerRequired = entity.ElectricalPowerRequired,
+                FigureRef = entity.FigureRef,
                 ToReference = entity.ToReference,
                 DocReference = entity.DocReference,
                 Edition = entity.Edition,
@@ -172,13 +173,13 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             entity.CardCode = vm.CardCode.Trim().ToUpper();
             entity.Title = vm.Title.Trim();
             entity.Description = vm.Description;
-            entity.AtaCode = vm.AtaCode;
+            entity.AtaId = vm.AtaId;
             entity.Specialty = vm.Specialty;
             entity.AllocatedTimeMinutes = vm.AllocatedTimeMinutes;
-            entity.WorkAreas = vm.WorkAreas;                                // ← ADD
-            entity.MechNo = vm.MechNo;                                      // ← ADD
-            entity.ElectricalPowerRequired = vm.ElectricalPowerRequired;    // ← ADD
-            entity.FigureRef = vm.FigureRef;                                // ← ADD
+            entity.WorkAreas = vm.WorkAreas;
+            entity.MechNo = vm.MechNo;
+            entity.ElectricalPowerRequired = vm.ElectricalPowerRequired;
+            entity.FigureRef = vm.FigureRef;
             entity.ToReference = vm.ToReference;
             entity.DocReference = vm.DocReference;
             entity.Edition = vm.Edition;
@@ -196,7 +197,6 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         }
 
         // GET: AircraftMaintenance/JobCards/Delete/5
-        // Confirmation page — offers Deactivate (soft, recommended) or Delete (hard).
         public async Task<IActionResult> Delete(int id)
         {
             var entity = await _uow.JobCards.GetByIdWithDetailsAsync(id);
@@ -206,7 +206,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             return View(vm);
         }
 
-        // POST: AircraftMaintenance/JobCards/DeleteConfirmed/5 (hard delete)
+        // POST: AircraftMaintenance/JobCards/DeleteConfirmed/5
         [HttpPost, ActionName("DeleteConfirmed")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -230,7 +230,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // POST: AircraftMaintenance/JobCards/ToggleActive/5 (soft delete / reactivate)
+        // POST: AircraftMaintenance/JobCards/ToggleActive/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleActive(int id)
@@ -261,13 +261,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             Description = x.Description,
             AcTypeId = x.AcTypeId,
             AcTypeLabel = x.AcType != null ? $"{x.AcType.Code} — {x.AcType.Name}" : "—",
-            AtaCode = x.AtaCode,
+            AtaId = x.AtaId,
+            AtaLabel = x.Ata != null ? $"{x.Ata.Code} — {x.Ata.Name}" : null,
             Specialty = x.Specialty,
             AllocatedTimeMinutes = x.AllocatedTimeMinutes,
-            WorkAreas = x.WorkAreas,                                        // ← ADD
-            MechNo = x.MechNo,                                              // ← ADD
-            ElectricalPowerRequired = x.ElectricalPowerRequired,            // ← ADD
-            FigureRef = x.FigureRef,                                        // ← ADD
+            WorkAreas = x.WorkAreas,
+            MechNo = x.MechNo,
+            ElectricalPowerRequired = x.ElectricalPowerRequired,
+            FigureRef = x.FigureRef,
             ToReference = x.ToReference,
             DocReference = x.DocReference,
             Edition = x.Edition,
@@ -277,8 +278,6 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             IsActive = x.IsActive,
             CreatedAtUtc = x.CreatedAtUtc,
             UpdatedAtUtc = x.UpdatedAtUtc
-            // MaintenancePrograms intentionally left empty here — the
-            // ProgramJobCard junction doesn't have a controller yet.
         };
 
         private async Task PopulateDropdownsAsync(JobCardFormViewModel vm)
@@ -290,6 +289,18 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 {
                     Id = a.Id,
                     Code = a.Code ?? string.Empty,
+                    Name = a.Name
+                })
+                .ToList();
+
+            var ataChapters = await _uow.Ata.GetAllAsync();
+            vm.AtaChapters = ataChapters
+                .Where(a => a.IsActive)
+                .OrderBy(a => a.SortOrder).ThenBy(a => a.Code)
+                .Select(a => new AtaLookupViewModel
+                {
+                    Id = a.Id,
+                    Code = a.Code,
                     Name = a.Name
                 })
                 .ToList();

@@ -81,7 +81,8 @@ namespace FRAProject.Data
         public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders { get; set; } = null!;
         public DbSet<AircraftDocumentType> AircraftDocumentTypes { get; set; } = null!;
         public DbSet<AircraftDocument> AircraftDocuments { get; set; } = null!;
-
+        public DbSet<AtaCategory> AtaCategories { get; set; } = null!;
+        public DbSet<Ata> Ata { get; set; } = null!;
         // =====================================
         // Restrictions & Certificates
         // =====================================
@@ -249,8 +250,24 @@ namespace FRAProject.Data
                 .HasMany(w => w.Squadrons)
                 .WithOne(s => s.Wing)
                 .HasForeignKey(s => s.WingId)
-                .OnDelete(DeleteBehavior.Restrict);            
+                .OnDelete(DeleteBehavior.Restrict);
 
+            // AtaCategory → Ata (ATA Chapters) relationship
+            modelBuilder.Entity<AtaCategory>()
+                .HasIndex(c => c.Code)
+                .IsUnique();
+
+            modelBuilder.Entity<Ata>()
+                .HasOne(a => a.AtaCategory)
+                .WithMany(c => c.AtaChapters)
+                .HasForeignKey(a => a.AtaCategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<JobCard>()
+               .HasOne(j => j.Ata)
+               .WithMany()
+               .HasForeignKey(j => j.AtaId)
+               .OnDelete(DeleteBehavior.Restrict);
             // ── AircraftDocumentType ───────────────────────────────────────
             modelBuilder.Entity<AircraftDocumentType>()
                 .HasIndex(x => x.Code)

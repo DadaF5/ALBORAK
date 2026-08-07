@@ -49,10 +49,11 @@
     <link href="~/css/adminlte.min.css" rel="stylesheet" />
     <link href="~/css/custom.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/gmao_fra.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
         /* =========================================
-                       ROOT VARIABLES
-            ========================================= */
+                               ROOT VARIABLES
+                    ========================================= */
         :root {
             --sidebar-width: 290px;
             --sidebar-collapsed-width: 58px;
@@ -68,8 +69,8 @@
         }
 
         /* =========================================
-                       PAGE LAYOUT
-            ========================================= */
+                               PAGE LAYOUT
+                    ========================================= */
 
         html,
         body {
@@ -107,8 +108,8 @@
         }
 
         /* =========================================
-                       SIDEBAR
-            ========================================= */
+                               SIDEBAR
+                    ========================================= */
 
         .sidebar {
             width: var(--sidebar-width);
@@ -263,8 +264,8 @@
         }
 
         /* =========================================
-                       TOPBAR
-            ========================================= */
+                               TOPBAR
+                    ========================================= */
 
         .topbar {
             min-height: var(--topbar-height);
@@ -320,11 +321,11 @@
             flex-shrink: 0;
         }
 
-        .icon-btn.disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
+            .icon-btn.disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
 
         .search-box {
             flex: 1;
@@ -424,8 +425,8 @@
             }
 
         /* =========================================
-           COLLAPSED SIDEBAR
-        ========================================= */
+                   COLLAPSED SIDEBAR
+                ========================================= */
 
         body.sidebar-collapsed .sidebar {
             width: var(--sidebar-collapsed-width);
@@ -562,8 +563,8 @@
         }
 
         /* =========================================
-           RESPONSIVE
-        ========================================= */
+                   RESPONSIVE
+                ========================================= */
 
         @@media (max-width: 991.98px) {
 
@@ -705,6 +706,14 @@
                             <span class="nav-icon">🛩️</span>
                             <span class="nav-text">Aéronefs</span>
                         </a>
+                        <a class="nav-item @IsActive("Settings", "Ata")"
+                           asp-area="Settings"
+                           asp-controller="Ata"
+                           asp-action="Index"
+                           title="Chapitres ATA">
+                            <span class="nav-icon">🔢</span>
+                            <span class="nav-text">Chapitres ATA</span>
+                        </a>
 
                         <a class="nav-item @IsActive("Fleet", "Registration")"
                            asp-area="Fleet"
@@ -767,6 +776,7 @@
                             <span class="nav-icon">📘</span>
                             <span class="nav-text">Programmes d'entretien</span>
                         </a>
+
                         <a class="nav-item @IsActive("AircraftMaintenance", "JobCards")"
                            asp-area="AircraftMaintenance"
                            asp-controller="JobCards"
@@ -1088,6 +1098,18 @@
         })();
     </script>
 
-    @RenderSection("Scripts", required: false)
+    <!-- Core scripts — jQuery MUST load before Bootstrap/AdminLTE and before
+         any page's @@section Scripts (e.g. _ValidationScriptsPartial), since
+         jquery.validate.min.js assumes jQuery is already globally defined. -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @* adminlte.min.js intentionally NOT included — this layout uses a fully
+       custom shell (app-shell / sidebar / menu-group with its own JS toggle
+       logic above), not AdminLTE's official skeleton. Loading adminlte.min.js
+       caused it to run layout-height init routines against a DOM structure
+       it doesn't recognize, which broke the page's vertical scroll. Only
+       jQuery + Bootstrap are actually needed here (validation + Collapse). *@
+    @*     "D:\ALBORAK\wwwroot\lib\dist\js\adminlte.min.js"
+ *@    @RenderSection("Scripts", required: false)
 </body>
 </html>

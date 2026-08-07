@@ -18,6 +18,11 @@
             color: #8a9099;
         }
 
+        .mp-form .form-control.input-validation-error {
+            border-color: #ff6b6b !important;
+            background-color: rgba(255, 107, 107, 0.1);
+        }
+
     .mp-form label {
         color: #c9ccd1;
         font-weight: 600;
@@ -38,7 +43,45 @@
         color: #8ab4ff;
         font-size: 0.85rem;
         user-select: none;
+        transition: opacity 0.2s ease;
+        padding: 8px 4px;
+        margin: 0;
     }
+
+        .mp-form .advanced-toggle:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        .mp-form .advanced-toggle:active {
+            opacity: 0.6;
+        }
+
+    .mp-form .text-danger {
+        font-size: 0.75rem;
+        margin-top: 4px;
+        display: block;
+        color: #ff6b6b;
+    }
+
+    .mp-form .advanced-toggle {
+        cursor: pointer;
+        color: #8ab4ff;
+        font-size: 0.95rem;
+        user-select: none;
+        transition: all 0.2s ease;
+        padding: 12px 0;
+        margin: 16px 0 12px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+        .mp-form .advanced-toggle:hover {
+            opacity: 0.8;
+        }
+
+        .mp-form .advanced-toggle:active {
+            opacity: 0.6;
+        }
 </style>
 
 <div class="mp-form">
@@ -81,53 +124,42 @@
             <div class="col-md-4 form-group">
                 <label asp-for="DocReference">Référence document</label>
                 <input asp-for="DocReference" class="form-control" placeholder="ex : AMM-34-21" />
+                <span asp-validation-for="DocReference" class="text-danger"></span>
             </div>
             <div class="col-md-3 form-group">
                 <label asp-for="Edition">Édition</label>
-                <input asp-for="Edition" class="form-control" placeholder="ex : Rev. 12" />
+                <input asp-for="Edition" class="form-control" placeholder="ex : Rev. 12" maxlength="20" />
+                <span asp-validation-for="Edition" class="text-danger"></span>
             </div>
             <div class="col-md-2 form-group">
                 <label asp-for="ChangeNo">N° changement</label>
-                <input asp-for="ChangeNo" class="form-control" />
+                <input asp-for="ChangeNo" class="form-control" type="number" placeholder="ex : 1" min="0" />
+                <span asp-validation-for="ChangeNo" class="text-danger"></span>
             </div>
             <div class="col-md-3 form-group">
                 <label asp-for="ChangeDate">Date changement</label>
                 <input asp-for="ChangeDate" class="form-control" type="date" />
+                <span asp-validation-for="ChangeDate" class="text-danger"></span>
             </div>
         </div>
     </div>
 
-    <p class="advanced-toggle mb-2" data-toggle="collapse" data-target="#advancedOptions" aria-expanded="false">
-        <i class="fas fa-chevron-right mr-1"></i> Options avancées (ordre d'affichage, statut)
-    </p>
-
-    <div class="collapse" id="advancedOptions">
-        <div class="row">
-            <div class="col-md-4 form-group">
-                <label asp-for="SortOrder">Ordre d'affichage</label>
-                <input asp-for="SortOrder" class="form-control" />
-            </div>
-            <div class="col-md-4 form-group d-flex align-items-end">
-                <div class="custom-control custom-switch">
-                    <input asp-for="IsActive" class="custom-control-input" />
-                    <label class="custom-control-label" asp-for="IsActive">Actif</label>
-                </div>
+    <div class="card card-outline card-secondary card-doc mb-3">
+    <div class="card-header"><strong>Options avancées (ordre d'affichage, statut)</strong></div>
+        <div class="card-body row">
+        <div class="col-md-4 form-group">
+            <label asp-for="SortOrder">Ordre d'affichage</label>
+            <input asp-for="SortOrder" class="form-control" type="number" placeholder="ex : 1" min="0" />
+            <span asp-validation-for="SortOrder" class="text-danger"></span>
+        </div>
+        <div class="col-md-4 form-group d-flex align-items-end">
+            <div class="custom-control custom-switch">
+                <input asp-for="IsActive" class="custom-control-input" type="checkbox" id="IsActive" />
+                <label class="custom-control-label" for="IsActive">Actif</label>
             </div>
         </div>
     </div>
-
+   </div>
 </div>
 
-@section Scripts {
-    <script>
-        document.getElementById('codeInput')?.addEventListener('input', function (e) {
-            e.target.value = e.target.value.toUpperCase();
-        });
-        var toggle = document.querySelector('.advanced-toggle');
-        var panel = document.getElementById('advancedOptions');
-        if (toggle && panel) {
-            panel.addEventListener('shown.bs.collapse', () => toggle.querySelector('i').classList.replace('fa-chevron-right', 'fa-chevron-down'));
-            panel.addEventListener('hidden.bs.collapse', () => toggle.querySelector('i').classList.replace('fa-chevron-down', 'fa-chevron-right'));
-        }
-    </script>
-}
+

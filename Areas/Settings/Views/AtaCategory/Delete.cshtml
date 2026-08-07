@@ -1,0 +1,40 @@
+﻿@model FRAProject.ViewModels.Settings.AtaCategoryListItemViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Supprimer la catégorie ATA";
+}
+
+<div class="card card-outline card-danger">
+    <div class="card-header"><h3 class="card-title">Supprimer — @Model.Name</h3></div>
+    <div class="card-body">
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+        <p>Vous êtes sur le point de supprimer la catégorie <strong>@Model.Code — @Model.Name</strong>.</p>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card card-outline card-success h-100">
+                    <div class="card-header"><strong>Désactiver (recommandé)</strong></div>
+                    <div class="card-footer">
+                        <form asp-action="ToggleActive" asp-route-id="@Model.Id" method="post">
+                            <button type="submit" class="btn btn-success btn-block">Désactiver</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card card-outline card-danger h-100">
+                    <div class="card-header"><strong>Supprimer définitivement</strong></div>
+                    <div class="card-footer">
+                        <form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post"
+                              onsubmit="return confirm('Irréversible. Continuer ?');">
+                            <button type="submit" class="btn btn-danger btn-block">Supprimer définitivement</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer"><a asp-action="Index" class="btn btn-default">Retour</a></div>
+</div>

@@ -1,0 +1,23 @@
+﻿@model FRAProject.ViewModels.Settings.AtaCategoryFormViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Nouvelle catégorie ATA";
+}
+
+<div class="card card-outline card-primary">
+    <div class="card-header"><h3 class="card-title">Nouvelle catégorie ATA</h3></div>
+    <form asp-action="Create" method="post">
+        <div class="card-body">@await Html.PartialAsync("_Form", Model)</div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <a asp-action="Index" class="btn btn-default">Annuler</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+}

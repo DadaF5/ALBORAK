@@ -6,30 +6,37 @@
         border: 1px solid #454b54;
         color: #e9ecef;
     }
-    .jc-form .form-control:focus {
-        background-color: #2b2f36;
-        border-color: #0d6efd;
-        color: #fff;
-        box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
-    }
-    .jc-form .form-control::placeholder {
-        color: #8a9099;
-    }
+
+        .jc-form .form-control:focus {
+            background-color: #2b2f36;
+            border-color: #0d6efd;
+            color: #fff;
+            box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+        }
+
+        .jc-form .form-control::placeholder {
+            color: #8a9099;
+        }
+
     .jc-form label {
         color: #c9ccd1;
         font-weight: 600;
         font-size: 0.85rem;
     }
+
     .jc-form .required-mark {
         color: #ff6b6b;
         margin-left: 2px;
     }
+
     .jc-form .card-doc {
         border-left: 3px solid #0d6efd;
     }
+
     .jc-form .card-safety {
         border-left: 3px solid #ffc107;
     }
+
     .jc-form .advanced-toggle {
         cursor: pointer;
         color: #8ab4ff;
@@ -74,8 +81,10 @@
 
     <div class="row">
         <div class="col-md-2 form-group">
-            <label asp-for="AtaCode">Chapitre ATA</label>
-            <input asp-for="AtaCode" class="form-control" placeholder="ex : 27" />
+            <label asp-for="AtaId">Chapitre ATA</label>
+            <select asp-for="AtaId" class="form-control" asp-items="Model.AtaChapters.Select(a => new SelectListItem(a.DisplayLabel, a.Id.ToString()))">
+                <option value="">-- Aucun --</option>
+            </select>
         </div>
         <div class="col-md-3 form-group">
             <label asp-for="Specialty">Spécialité</label>
@@ -148,11 +157,11 @@
         </div>
     </div>
 
-    <p class="advanced-toggle mb-2" data-toggle="collapse" data-target="#advancedOptions" aria-expanded="false">
+    <p class="advanced-toggle mb-2" id="advancedToggle" aria-expanded="false">
         <i class="fas fa-chevron-right mr-1"></i> Options avancées (ordre d'affichage, statut)
     </p>
 
-    <div class="collapse" id="advancedOptions">
+    <div class="advanced-panel" id="advancedOptions" style="display:none;">
         <div class="row">
             <div class="col-md-4 form-group">
                 <label asp-for="SortOrder">Ordre d'affichage</label>
@@ -174,11 +183,20 @@
         document.getElementById('codeInput')?.addEventListener('input', function (e) {
             e.target.value = e.target.value.toUpperCase();
         });
-        var toggle = document.querySelector('.advanced-toggle');
+        var toggle = document.getElementById('advancedToggle');
         var panel = document.getElementById('advancedOptions');
         if (toggle && panel) {
-            panel.addEventListener('shown.bs.collapse', () => toggle.querySelector('i').classList.replace('fa-chevron-right', 'fa-chevron-down'));
-            panel.addEventListener('hidden.bs.collapse', () => toggle.querySelector('i').classList.replace('fa-chevron-down', 'fa-chevron-right'));
+            toggle.addEventListener('click', function () {
+                var isOpen = panel.style.display !== 'none';
+                panel.style.display = isOpen ? 'none' : 'block';
+                toggle.setAttribute('aria-expanded', (!isOpen).toString());
+                var icon = toggle.querySelector('i');
+                if (isOpen) {
+                    icon.classList.replace('fa-chevron-down', 'fa-chevron-right');
+                } else {
+                    icon.classList.replace('fa-chevron-right', 'fa-chevron-down');
+                }
+            });
         }
     </script>
 }

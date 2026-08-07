@@ -25,6 +25,8 @@ namespace FRAProject.Infrastructure
             InspectionTypes = new InspectionTypeRepository(_context);
             MaintenancePrograms = new MaintenanceProgramRepository(_context);
             JobCards = new JobCardRepository(_context);
+            AtaCategories = new AtaCategoryRepository(_context);
+            Ata = new AtaRepository(_context);
         }
 
         // ── Specialist repository ─────────────────────────────────────────
@@ -33,6 +35,10 @@ namespace FRAProject.Infrastructure
         public IMaintenanceProgramRepository MaintenancePrograms { get; private set; }
         public IJobCardRepository JobCards { get; private set; }           // ← ADD THIS LINE
         // ── Backing fields — null until first access ──────────────────────
+
+        // Ata
+        public IAtaCategoryRepository AtaCategories { get; private set; }
+        public IAtaRepository Ata { get; private set; }
 
         // Lookup tables
         private IGenericRepository<Country>? _countries;

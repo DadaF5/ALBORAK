@@ -174,6 +174,9 @@ using (var scope = app.Services.CreateScope())
         await AircraftVersionSeeder.SeedAsync(context);
         await AircraftSeeder.SeedAsync(context);
 
+        // Ata categories and ATA codes
+        await AtaSeeder.SeedAsync(context);
+
         // ── Inspection Process ───────────────────────────────────────
         await MaintenanceProgramSeeder.SeedAsync(context);
 

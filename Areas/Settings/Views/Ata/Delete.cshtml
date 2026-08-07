@@ -1,0 +1,65 @@
+﻿@model FRAProject.ViewModels.Settings.AtaListItemViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Supprimer le chapitre ATA";
+}
+
+<div class="card card-outline card-danger">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-1"></i> Supprimer — @Model.Code</h3>
+    </div>
+    <div class="card-body">
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+
+        <p>
+            Vous êtes sur le point de supprimer le chapitre ATA
+            <strong>@Model.Code — @Model.Name</strong>.
+        </p>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card card-outline card-success h-100">
+                    <div class="card-header"><strong>Désactiver (recommandé)</strong></div>
+                    <div class="card-body">
+                        <p>
+                            Le chapitre reste disponible pour les données existantes,
+                            mais n'apparaît plus comme actif.
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <form asp-action="ToggleActive" asp-route-id="@Model.Id" method="post">
+                            <button type="submit" class="btn btn-success btn-block">
+                                <i class="fas fa-ban"></i> Désactiver
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card card-outline card-danger h-100">
+                    <div class="card-header"><strong>Supprimer définitivement</strong></div>
+                    <div class="card-body">
+                        <p>
+                            Suppression permanente. Impossible si ce chapitre est référencé
+                            par des job cards.
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post"
+                              onsubmit="return confirm('Cette action est irréversible. Continuer ?');">
+                            <button type="submit" class="btn btn-danger btn-block">
+                                <i class="fas fa-trash"></i> Supprimer définitivement
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <a asp-action="Index" class="btn btn-default">Annuler / Retour</a>
+    </div>
+</div>

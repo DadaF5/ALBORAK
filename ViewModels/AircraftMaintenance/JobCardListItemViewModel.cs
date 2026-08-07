@@ -7,7 +7,9 @@
         public int AcTypeId { get; set; }
         public string AcTypeLabel { get; set; } = string.Empty;
 
-        public string? AtaCode { get; set; }
+        public int? AtaId { get; set; }
+        public string? AtaLabel { get; set; }
+
         public string CardCode { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string? Specialty { get; set; }

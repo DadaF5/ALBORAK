@@ -176,6 +176,7 @@ using (var scope = app.Services.CreateScope())
 
         // Ata categories and ATA codes
         await AtaSeeder.SeedAsync(context);
+        await InspectionTypeSeeder.SeedAsync(context);
 
         // ── Inspection Process ───────────────────────────────────────
         await MaintenanceProgramSeeder.SeedAsync(context);

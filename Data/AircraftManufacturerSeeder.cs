@@ -3,29 +3,31 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Data
 {
-    // ⚠ ASSUMED SHAPE — AircraftManufacturer.cs was not provided in this session.
-    // Assumed properties: Code, Name, Description, SortOrder, IsActive — confirmed
-    // to at least have a unique Code index (see FRAContext.OnModelCreating).
-    // Adjust if your real model has additional fields (e.g. CountryId per
-    // Country.cs comment: "AircraftManufacturer.CountryId — manufacturer country (future)").
     public class AircraftManufacturerSeeder
     {
         public static async Task SeedAsync(FRAContext context)
         {
-            if (await context.Set<AircraftManufacturer>().AnyAsync())
-                return;
-
-            var manufacturers = new List<AircraftManufacturer>
+            var wanted = new List<AircraftManufacturer>
             {
-                new() { Code = "LM",      Name = "Lockheed Martin",     SortOrder = 1, IsActive = true },
-                new() { Code = "BOEING",  Name = "Boeing",              SortOrder = 2, IsActive = true },
-                new() { Code = "AIRBUS",  Name = "Airbus",              SortOrder = 3, IsActive = true },
-                new() { Code = "NORTHR",  Name = "Northrop Grumman",    SortOrder = 4, IsActive = true },
-                new() { Code = "SUD",     Name = "Sud Aviation",        SortOrder = 5, IsActive = true },
+                new() { Code = "LM",       Name = "Lockheed Martin",     SortOrder = 1, IsActive = true },
+                new() { Code = "BOEING",   Name = "Boeing",              SortOrder = 2, IsActive = true },
+                new() { Code = "AIRBUS",   Name = "Airbus",              SortOrder = 3, IsActive = true },
+                new() { Code = "NORTHR",   Name = "Northrop Grumman",    SortOrder = 4, IsActive = true },
+                new() { Code = "SUD",      Name = "Sud Aviation",        SortOrder = 5, IsActive = true },
+                new() { Code = "DASSAULT", Name = "Dassault-Dornier",    SortOrder = 6, IsActive = true },
             };
 
-            await context.Set<AircraftManufacturer>().AddRangeAsync(manufacturers);
-            await context.SaveChangesAsync();
+            var existingCodes = await context.Set<AircraftManufacturer>()
+                .Select(m => m.Code)
+                .ToListAsync();
+
+            var missing = wanted.Where(m => !existingCodes.Contains(m.Code)).ToList();
+
+            if (missing.Any())
+            {
+                await context.Set<AircraftManufacturer>().AddRangeAsync(missing);
+                await context.SaveChangesAsync();
+            }
         }
     }
 }

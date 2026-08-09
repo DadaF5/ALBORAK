@@ -27,6 +27,11 @@ namespace FRAProject.Infrastructure
             JobCards = new JobCardRepository(_context);
             AtaCategories = new AtaCategoryRepository(_context);
             Ata = new AtaRepository(_context);
+            ProgramJobCards = new ProgramJobCardRepository(_context);
+            WorkOrders = new WorkOrderRepository(_context);
+            WorkOrderJobCards = new GenericRepository<WorkOrderJobCard>(_context);
+            InspectionStates = new InspectionStateRepository(_context);
+            InspectionTypePrograms = new InspectionTypeProgramRepository(_context);
         }
 
         // ── Specialist repository ─────────────────────────────────────────
@@ -34,6 +39,8 @@ namespace FRAProject.Infrastructure
         public IInspectionTypeRepository InspectionTypes { get; private set; }
         public IMaintenanceProgramRepository MaintenancePrograms { get; private set; }
         public IJobCardRepository JobCards { get; private set; }           // ← ADD THIS LINE
+        public IProgramJobCardRepository ProgramJobCards { get; private set; }
+
         // ── Backing fields — null until first access ──────────────────────
 
         // Ata
@@ -127,7 +134,10 @@ namespace FRAProject.Infrastructure
         public IGenericRepository<AircraftRestriction> AircraftRestrictions =>
             _aircraftRestrictions ??= new GenericRepository<AircraftRestriction>(_context);
 
-
+        public IWorkOrderRepository WorkOrders { get; private set; }
+        public IGenericRepository<WorkOrderJobCard> WorkOrderJobCards { get; private set; }
+        public IInspectionStateRepository InspectionStates { get; private set; }
+        public IInspectionTypeProgramRepository InspectionTypePrograms { get; private set; }
         // ── Commit ────────────────────────────────────────────────────────
         // Single method — CompleteAsync() — matches IUnitOfWork contract.
         public async Task<int> CompleteAsync() =>

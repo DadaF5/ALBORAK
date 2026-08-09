@@ -1,0 +1,195 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.WorkOrderDetailsViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Ordre de Travail — " + Model.WONumber;
+}
+
+<style>
+    .wo-details dt {
+        color: #8a9099;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+
+    .wo-details dd {
+        color: #e9ecef;
+        margin-bottom: 1rem;
+    }
+
+    .wo-jc table td, .wo-jc table th {
+        border-color: #363b44;
+    }
+
+    .wo-jc code {
+        color: #ff8fa3;
+        background: transparent;
+    }
+
+    .wo-jc select.form-control-sm {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+</style>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="wo-details card card-outline card-primary mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title"><i class="fas fa-tools mr-1"></i> @Model.WONumber</h3>
+        @{
+            var badgeClass = Model.Status switch
+            {
+                "DRAFT" => "badge-secondary",
+                "OPEN" => "badge-info",
+                "IN_PROGRESS" => "badge-warning",
+                "CLOSED" => "badge-success",
+                _ => "badge-secondary"
+            };
+        }
+        <span class="badge @badgeClass">@Model.Status</span>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Aéronef</dt>
+            <dd class="col-sm-9">@Model.AircraftLabel</dd>
+
+            <dt class="col-sm-3">Type / Nature</dt>
+            <dd class="col-sm-9">@Model.WOType / @Model.WOKind</dd>
+
+            @if (Model.InspectionTypeLabels.Any())
+            {
+                <dt class="col-sm-3">Types d'inspection</dt>
+                <dd class="col-sm-9">
+                    @foreach (var lbl in Model.InspectionTypeLabels)
+                    {
+                        <span class="badge badge-info mr-1">@lbl</span>
+                    }
+                </dd>
+            }
+
+            <dt class="col-sm-3">Ouverture</dt>
+            <dd class="col-sm-9">
+                @Model.OpenDate.ToString("dd/MM/yyyy") — @Model.OpenHours h / @Model.OpenCycles cycles
+                @if (!string.IsNullOrEmpty(Model.OpenedByUserName))
+                {
+                    <text> (par @Model.OpenedByUserName)</text>
+                }
+            </dd>
+
+            @if (Model.CloseDate.HasValue)
+            {
+                <dt class="col-sm-3">Clôture</dt>
+                <dd class="col-sm-9">
+                    @Model.CloseDate.Value.ToString("dd/MM/yyyy") — @Model.CloseHours h / @Model.CloseCycles cycles
+                    @if (!string.IsNullOrEmpty(Model.ClosedByUserName))
+                    {
+                        <text> (par @Model.ClosedByUserName)</text>
+                    }
+                </dd>
+            }
+
+            <dt class="col-sm-3">Remarques</dt>
+            <dd class="col-sm-9">@(Model.Remarks ?? "—")</dd>
+        </dl>
+    </div>
+    <div class="card-footer">
+        @if (Model.CanOpen)
+        {
+            <form asp-action="Open" asp-route-id="@Model.Id" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-info"><i class="fas fa-play"></i> Ouvrir</button>
+            </form>
+        }
+        @if (Model.CanPopulateJobCards)
+        {
+            <a asp-action="PopulateJobCards" asp-route-id="@Model.Id" class="btn btn-secondary">
+                <i class="fas fa-list"></i> Ajouter des job cards
+            </a>
+        }
+        @if (Model.CanClose)
+        {
+            <form asp-action="Close" asp-route-id="@Model.Id" method="post" class="d-inline"
+                  onsubmit="return confirm('Clôturer cet OT ?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success"
+                        disabled="@(!Model.AllMandatoryDone)"
+                        title="@(!Model.AllMandatoryDone ? "Job cards obligatoires non terminées" : null)">
+                    <i class="fas fa-check"></i> Clôturer
+                </button>
+            </form>
+        }
+        @if (Model.Status == "DRAFT")
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fas fa-edit"></i> Modifier</a>
+        }
+        @if (Model.CanDelete)
+        {
+            <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger"><i class="fas fa-trash"></i> Supprimer</a>
+        }
+        <a asp-action="Print" asp-route-id="@Model.Id" class="btn btn-secondary" target="_blank">
+            <i class="fas fa-print"></i> Imprimer
+        </a>
+        <a asp-action="Index" class="btn btn-default">Retour à la liste</a>
+    </div>
+</div>
+
+<div class="wo-jc card card-outline card-secondary">
+    <div class="card-header"><strong>Job Cards (@Model.JobCards.Count)</strong></div>
+    <div class="card-body p-0">
+        <table class="table table-striped table-sm mb-0">
+            <thead>
+                <tr>
+                    <th>Job Card</th>
+                    <th>Programme</th>
+                    <th>Obligatoire</th>
+                    <th>Statut</th>
+                    <th>Observations</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var jc in Model.JobCards)
+                {
+                    <tr>
+                        <td>@jc.JobCardLabel</td>
+                        <td>@jc.MaintenanceProgramLabel</td>
+                        <td>@(jc.IsMandatory ? "Oui" : "Non")</td>
+                        <td>
+                            <form asp-action="UpdateJobCardStatus" method="post" class="form-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="workOrderJobCardId" value="@jc.Id" />
+                                <select name="status" class="form-control form-control-sm mr-1" onchange="this.form.submit()">
+                                    @foreach (var opt in new[] { "PENDING", "IN_PROGRESS", "DONE", "N_A", "HOLD" })
+                                    {
+                                        if (opt == jc.Status)
+                                        {
+                                            <option value="@opt" selected>@opt</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@opt">@opt</option>
+                                        }
+                                    }
+                                </select>
+                                <input type="hidden" name="observations" value="@jc.Observations" />
+                            </form>
+                        </td>
+                        <td>@(jc.Observations ?? "—")</td>
+                    </tr>
+                }
+                @if (!Model.JobCards.Any())
+                {
+                    <tr><td colspan="5" class="text-center text-muted py-4">Aucune job card assignée. Utilisez "Ajouter des job cards".</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

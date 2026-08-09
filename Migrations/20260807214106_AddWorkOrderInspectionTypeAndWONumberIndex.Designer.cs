@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20260807214106_AddWorkOrderInspectionTypeAndWONumberIndex")]
+    partial class AddWorkOrderInspectionTypeAndWONumberIndex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -774,9 +777,6 @@ namespace FRAProject.Migrations
                     b.Property<int?>("CloseHours")
                         .HasColumnType("int");
 
-                    b.Property<int?>("CloseLandings")
-                        .HasColumnType("int");
-
                     b.Property<string>("ClosedByUserId")
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
@@ -794,9 +794,6 @@ namespace FRAProject.Migrations
                         .HasColumnType("date");
 
                     b.Property<int>("OpenHours")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OpenLandings")
                         .HasColumnType("int");
 
                     b.Property<string>("OpenedByUserId")

@@ -58,6 +58,11 @@ namespace FRAProject.Infrastructure.Interfaces
         IAtaCategoryRepository AtaCategories { get; }
         IAtaRepository Ata { get; }
         IJobCardRepository JobCards { get; }              // ← ADD THIS 
+        IProgramJobCardRepository ProgramJobCards { get; }
+        IWorkOrderRepository WorkOrders { get; }
+        IGenericRepository<WorkOrderJobCard> WorkOrderJobCards { get; }
+        IInspectionStateRepository InspectionStates { get; }
+        IInspectionTypeProgramRepository InspectionTypePrograms { get; }
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>
         /// Flush all staged changes to the database in one transaction.

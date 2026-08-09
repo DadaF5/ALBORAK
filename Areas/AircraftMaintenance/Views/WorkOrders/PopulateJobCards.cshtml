@@ -1,0 +1,124 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.PopulateJobCardsViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Ajouter des Job Cards";
+}
+
+<style>
+    .pjc-list {
+        border: 1px solid #454b54;
+        border-radius: 4px;
+        background: #2b2f36;
+        max-height: 420px;
+        overflow-y: auto;
+    }
+
+        .pjc-list table td, .pjc-list table th {
+            border-color: #454b54;
+        }
+
+        .pjc-list code {
+            color: #ff8fa3;
+            background: transparent;
+        }
+
+        .pjc-list .group-row td {
+            background-color: #23262d;
+            color: #c9ccd1;
+            border-top: 2px solid #363b44;
+            font-weight: bold;
+        }
+
+    .select-all-bar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+    }
+
+        .select-all-bar a {
+            cursor: pointer;
+        }
+</style>
+
+<div class="card card-outline card-primary">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-list mr-1"></i> Ajouter des job cards — @Model.WONumber</h3>
+    </div>
+    <form asp-action="PopulateJobCards" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="workOrderId" value="@Model.WorkOrderId" />
+        <div class="card-body">
+            <p><strong>Aéronef :</strong> @Model.AircraftLabel</p>
+
+            @if (Model.AvailableJobCards.Any())
+            {
+                <p class="text-muted small">
+                    Liste résolue automatiquement à partir des types d'inspection couverts
+                    par cet OT. Toutes les job cards sont pré-cochées — décochez celles à exclure.
+                </p>
+
+                <div class="select-all-bar">
+                    <a onclick="toggleAll(true)">Tout cocher</a>
+                    <a onclick="toggleAll(false)">Tout décocher</a>
+                </div>
+
+                <div class="pjc-list">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;"></th>
+                                <th>Code</th>
+                                <th>Titre</th>
+                                <th>Obligatoire</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var group in Model.AvailableJobCards.GroupBy(jc => jc.ProgramLabel))
+                            {
+                                <tr class="group-row">
+                                    <td colspan="4">@group.Key</td>
+                                </tr>
+                                @foreach (var jc in group)
+                                {
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="jc-checkbox"
+                                                   name="selectedJobCardIds" value="@jc.JobCardId" checked />
+                                        </td>
+                                        <td><code>@jc.CardCode</code></td>
+                                        <td>@jc.Title</td>
+                                        <td>@(jc.IsMandatory ? "Oui" : "Non")</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning">
+                    Aucune job card disponible — vérifiez que les types d'inspection couverts
+                    par cet OT sont bien liés à un programme d'entretien contenant des job cards
+                    (Programmes d'entretien → Gérer les Job Cards), ou que toutes les job cards
+                    pertinentes sont déjà assignées à cet OT.
+                </div>
+            }
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary" @(!Model.AvailableJobCards.Any() ? "disabled" : "")>
+                <i class="fas fa-plus"></i> Ajouter les job cards sélectionnées
+            </button>
+            <a asp-action="Details" asp-route-id="@Model.WorkOrderId" class="btn btn-default">Annuler</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleAll(checked) {
+            document.querySelectorAll('.jc-checkbox').forEach(cb => cb.checked = checked);
+        }
+    </script>
+}

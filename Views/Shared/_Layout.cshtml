@@ -49,11 +49,10 @@
     <link href="~/css/adminlte.min.css" rel="stylesheet" />
     <link href="~/css/custom.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/gmao_fra.css" asp-append-version="true" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
         /* =========================================
-                               ROOT VARIABLES
-                    ========================================= */
+                                       ROOT VARIABLES
+                            ========================================= */
         :root {
             --sidebar-width: 290px;
             --sidebar-collapsed-width: 58px;
@@ -69,8 +68,8 @@
         }
 
         /* =========================================
-                               PAGE LAYOUT
-                    ========================================= */
+                                       PAGE LAYOUT
+                            ========================================= */
 
         html,
         body {
@@ -108,8 +107,8 @@
         }
 
         /* =========================================
-                               SIDEBAR
-                    ========================================= */
+                                       SIDEBAR
+                            ========================================= */
 
         .sidebar {
             width: var(--sidebar-width);
@@ -264,8 +263,8 @@
         }
 
         /* =========================================
-                               TOPBAR
-                    ========================================= */
+                                       TOPBAR
+                            ========================================= */
 
         .topbar {
             min-height: var(--topbar-height);
@@ -425,8 +424,8 @@
             }
 
         /* =========================================
-                   COLLAPSED SIDEBAR
-                ========================================= */
+                           COLLAPSED SIDEBAR
+                        ========================================= */
 
         body.sidebar-collapsed .sidebar {
             width: var(--sidebar-collapsed-width);
@@ -563,8 +562,8 @@
         }
 
         /* =========================================
-                   RESPONSIVE
-                ========================================= */
+                           RESPONSIVE
+                        ========================================= */
 
         @@media (max-width: 991.98px) {
 
@@ -622,6 +621,17 @@
                 justify-content: flex-start;
                 flex-wrap: wrap;
             }
+        }
+        /* Fix: Bootstrap's default .table-hover sets hover text to a
+                   near-black color (#212529), meant for light backgrounds. Since
+                   every table in this app stays dark on hover, that made hover
+                   text invisible (black on dark background) across ALL tables
+                   site-wide. Applies globally — no per-page overrides needed. */
+        .table-hover tbody tr:hover,
+        .table-hover tbody tr:hover td,
+        .table-hover tbody tr:hover th {
+            color: #e9ecef !important;
+            background-color: rgba(255, 255, 255, 0.06) !important;
         }
     </style>
     <!-- HEAD END -->
@@ -706,14 +716,6 @@
                             <span class="nav-icon">🛩️</span>
                             <span class="nav-text">Aéronefs</span>
                         </a>
-                        <a class="nav-item @IsActive("Settings", "Ata")"
-                           asp-area="Settings"
-                           asp-controller="Ata"
-                           asp-action="Index"
-                           title="Chapitres ATA">
-                            <span class="nav-icon">🔢</span>
-                            <span class="nav-text">Chapitres ATA</span>
-                        </a>
 
                         <a class="nav-item @IsActive("Fleet", "Registration")"
                            asp-area="Fleet"
@@ -768,6 +770,15 @@
                             <span class="nav-text">Restrictions</span>
                         </a>
 
+                        <a class="nav-item @IsActive("AircraftMaintenance", "InspectionTypes")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="InspectionTypes"
+                           asp-action="Index"
+                           title="Types d'inspection">
+                            <span class="nav-icon">🗓</span>
+                            <span class="nav-text">Types d'inspection</span>
+                        </a>
+
                         <a class="nav-item @IsActive("AircraftMaintenance", "MaintenancePrograms")"
                            asp-area="AircraftMaintenance"
                            asp-controller="MaintenancePrograms"
@@ -803,6 +814,15 @@
                     </button>
 
                     <div class="submenu" data-group-menu style="display:block">
+                        <a class="nav-item @IsActive("AircraftMaintenance", "WorkOrders")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="WorkOrders"
+                           asp-action="Index"
+                           title="Ordres de Travail">
+                            <span class="nav-icon">🔧</span>
+                            <span class="nav-text">Ordres de Travail</span>
+                        </a>
+
                         <a class="nav-item @IsActive("PEA", "Home")"
                            asp-area="PEA"
                            asp-controller="Home"

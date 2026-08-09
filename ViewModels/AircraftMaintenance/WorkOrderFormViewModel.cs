@@ -14,9 +14,12 @@ namespace FRAProject.ViewModels.AircraftMaintenance
         [Display(Name = "Aircraft")]
         public int AircraftId { get; set; }
 
-        [Required]
-        [Display(Name = "Inspection Type")]
-        public int InspectionTypeId { get; set; }
+        // ── Replaces the old singular InspectionTypeId ──────────────────
+        // A single WorkOrder (one dock visit) can satisfy several
+        // coinciding periodic inspections at once (e.g. PE1+PE2+PE4 all
+        // due at 1200h — see WorkOrderInspectionType junction).
+        [Display(Name = "Inspection Types")]
+        public List<int> SelectedInspectionTypeIds { get; set; } = [];
 
         [Required]
         [StringLength(5)]
@@ -58,8 +61,17 @@ namespace FRAProject.ViewModels.AircraftMaintenance
         public List<AircraftLookupViewModel> Aircrafts { get; set; } = [];
         public List<LookupOptionViewModel> InspectionTypes { get; set; } = [];
 
+        // Used by the Create view's checkbox list + AcType filtering JS.
+        // Additive — InspectionTypes above is left populated too, unused
+        // by Create.cshtml now but kept in case anything else reads it.
+        public List<InspectionTypeCheckItemViewModel> InspectionTypeItems { get; set; } = [];
+
         public List<string> WOTypeOptions { get; set; } = ["F11", "F12"];
-        public List<string> WOKindOptions { get; set; } = ["PLANNED"];
+
+        // Extended to include CORRECTIVE — the original list only had
+        // PLANNED, but WOKind's own model comment already allowed both.
+        public List<string> WOKindOptions { get; set; } = ["PLANNED", "CORRECTIVE"];
+
         public List<string> StatusOptions { get; set; } = ["DRAFT", "OPEN", "IN_PROGRESS", "CLOSED"];
     }
 }

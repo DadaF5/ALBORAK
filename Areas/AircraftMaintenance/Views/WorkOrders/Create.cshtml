@@ -1,0 +1,158 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.WorkOrderFormViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Nouvel Ordre de Travail";
+}
+
+<style>
+    .wo-form .form-control {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+    .wo-form label { color: #c9ccd1; font-weight: 600; font-size: 0.85rem; }
+    .wo-form .required-mark { color: #ff6b6b; margin-left: 2px; }
+    .wo-inspection-list {
+        max-height: 220px;
+        overflow-y: auto;
+        border: 1px solid #454b54;
+        border-radius: 4px;
+        padding: 10px;
+        background-color: #2b2f36;
+    }
+    .wo-inspection-list .form-check { padding-left: 1.6rem; margin-bottom: 4px; }
+    .wo-inspection-list .form-check-label { color: #e9ecef; font-weight: 400; font-size: 0.9rem; }
+    .wo-inspection-hint {
+        color: #ffc107;
+        font-size: 0.8rem;
+        display: none;
+    }
+</style>
+
+<div class="card card-outline card-primary">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-plus mr-1"></i> Nouvel Ordre de Travail</h3>
+    </div>
+    <form asp-action="Create" method="post">
+        <div class="wo-form card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="row">
+                <div class="col-md-6 form-group">
+                    <label asp-for="AircraftId">Aéronef<span class="required-mark">*</span></label>
+                    <select asp-for="AircraftId" class="form-control" id="aircraftSelect">
+                        <option value="">-- Sélectionner --</option>
+                        @foreach (var group in Model.Aircrafts.GroupBy(a => a.AcTypeCode))
+                        {
+                            <optgroup label="@group.Key">
+                                @foreach (var a in group)
+                                {
+                                    <option value="@a.Id" data-actypeid="@a.AcTypeId">@a.Registration</option>
+                                }
+                            </optgroup>
+                        }
+                    </select>
+                    <span asp-validation-for="AircraftId" class="text-danger"></span>
+                </div>
+                <div class="col-md-3 form-group">
+                    <label asp-for="WOType">Type</label>
+                    <select asp-for="WOType" class="form-control">
+                        @foreach (var opt in Model.WOTypeOptions)
+                        {
+                            <option value="@opt">@opt</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 form-group">
+                    <label asp-for="WOKind">Nature</label>
+                    <select asp-for="WOKind" class="form-control" id="wokindSelect">
+                        @foreach (var opt in Model.WOKindOptions)
+                        {
+                            <option value="@opt">@opt</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" id="inspectionTypesGroup">
+                <label>Types d'inspection couverts (pour OT planifié)</label>
+                <p class="wo-inspection-hint" id="pickAircraftHint">
+                    Sélectionnez d'abord un aéronef pour voir ses types d'inspection.
+                </p>
+                <div class="wo-inspection-list" id="inspectionTypesList">
+                    @foreach (var it in Model.InspectionTypeItems)
+                    {
+                        <div class="form-check" data-actypeid="@it.AcTypeId">
+                            <input class="form-check-input" type="checkbox"
+                                   name="SelectedInspectionTypeIds" value="@it.Id"
+                                   id="itype-@it.Id"
+                                   checked="@(Model.SelectedInspectionTypeIds.Contains(it.Id))" />
+                            <label class="form-check-label" for="itype-@it.Id">@it.Label</label>
+                        </div>
+                    }
+                </div>
+                <span asp-validation-for="SelectedInspectionTypeIds" class="text-danger"></span>
+                @if (!Model.InspectionTypeItems.Any())
+                {
+                    <small class="text-muted">Aucun type d'inspection défini.</small>
+                }
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Remarks">Remarques</label>
+                <textarea asp-for="Remarks" class="form-control" rows="2"></textarea>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Créer (brouillon)</button>
+            <a asp-action="Index" class="btn btn-default">Annuler</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        function toggleInspectionTypes() {
+            var kind = document.getElementById('wokindSelect').value;
+            document.getElementById('inspectionTypesGroup').style.display = kind === 'PLANNED' ? '' : 'none';
+        }
+        document.getElementById('wokindSelect')?.addEventListener('change', toggleInspectionTypes);
+        toggleInspectionTypes();
+
+        // Filter the inspection-type checkbox list to only the selected
+        // aircraft's AcType. Non-matching items are hidden AND unchecked,
+        // so a stale selection from a previously-chosen aircraft can't
+        // silently ride along. Server-side validation in the controller
+        // is the real enforcement — this is just UX convenience.
+        function filterInspectionTypesByAircraft() {
+            var aircraftSelect = document.getElementById('aircraftSelect');
+            var selectedOption = aircraftSelect.options[aircraftSelect.selectedIndex];
+            var acTypeId = selectedOption ? selectedOption.getAttribute('data-actypeid') : null;
+            var hint = document.getElementById('pickAircraftHint');
+            var items = document.querySelectorAll('#inspectionTypesList .form-check');
+
+            if (!acTypeId) {
+                hint.style.display = 'block';
+                items.forEach(function (item) { item.style.display = 'none'; });
+                return;
+            }
+
+            hint.style.display = 'none';
+            items.forEach(function (item) {
+                var itemActypeId = item.getAttribute('data-actypeid');
+                var matches = itemActypeId === acTypeId;
+                item.style.display = matches ? '' : 'none';
+                if (!matches) {
+                    var checkbox = item.querySelector('input[type="checkbox"]');
+                    if (checkbox) checkbox.checked = false;
+                }
+            });
+        }
+
+        document.getElementById('aircraftSelect')?.addEventListener('change', filterInspectionTypesByAircraft);
+        filterInspectionTypesByAircraft();
+    </script>
+}

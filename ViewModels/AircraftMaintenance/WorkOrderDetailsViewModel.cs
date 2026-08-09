@@ -7,9 +7,18 @@
 
         public int AircraftId { get; set; }
         public string AircraftLabel { get; set; } = string.Empty;
+        public int AcTypeId { get; set; }
 
-        public int InspectionTypeId { get; set; }
-        public string InspectionTypeLabel { get; set; } = string.Empty;
+        // Additive — used by the Print view header (static aircraft data)
+        public string? AircraftSerialNumber { get; set; }
+        public string? AircraftIntCode { get; set; }
+        public int AircraftTailNo { get; set; }
+        public string AcTypeLabel { get; set; } = string.Empty;
+        public string? ManufacturerLabel { get; set; }
+        public int MaxEngines { get; set; }
+
+        // Replaces singular InspectionTypeId/InspectionTypeLabel
+        public List<string> InspectionTypeLabels { get; set; } = [];
 
         public string WOType { get; set; } = string.Empty;
         public string WOKind { get; set; } = string.Empty;
@@ -17,10 +26,12 @@
 
         public int OpenHours { get; set; }
         public int OpenCycles { get; set; }
+        public int OpenLandings { get; set; }
         public DateOnly OpenDate { get; set; }
 
         public int? CloseHours { get; set; }
         public int? CloseCycles { get; set; }
+        public int? CloseLandings { get; set; }
         public DateOnly? CloseDate { get; set; }
 
         public string? OpenedByUserName { get; set; }
@@ -32,5 +43,16 @@
         public DateTime? UpdatedAtUtc { get; set; }
 
         public List<WorkOrderJobCardItemViewModel> JobCards { get; set; } = [];
+
+        // ── Workflow helpers (additive — used by Details.cshtml to show/
+        // hide action buttons) ──────────────────────────────────────────
+        public bool CanOpen => Status == "DRAFT";
+        public bool CanPopulateJobCards => Status == "OPEN" || Status == "IN_PROGRESS";
+        public bool CanClose => Status == "OPEN" || Status == "IN_PROGRESS";
+        public bool CanDelete => Status == "DRAFT";
+
+        public bool AllMandatoryDone => JobCards
+            .Where(jc => jc.IsMandatory)
+            .All(jc => jc.Status == "DONE" || jc.Status == "N_A");
     }
 }

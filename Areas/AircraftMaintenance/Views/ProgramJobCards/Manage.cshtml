@@ -1,0 +1,165 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.ProgramJobCardManageViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Job Cards du programme";
+}
+
+<style>
+    .pjc-form .form-control {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+
+    .pjc-form label {
+        color: #c9ccd1;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .pjc-table code {
+        color: #ff8fa3;
+        background: transparent;
+    }
+
+    .pjc-table td, .pjc-table th {
+        border-color: #363b44;
+    }
+</style>
+
+<div class="card card-outline card-primary mb-3">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-clipboard-list mr-1"></i> @Model.ProgramCode — @Model.ProgramName
+        </h3>
+    </div>
+    <div class="card-body">
+        <p class="mb-0"><strong>Type d'aéronef :</strong> @Model.AcTypeLabel</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="pjc-form card card-outline card-info mb-3">
+            <div class="card-header"><strong>Assigner une plage de codes</strong></div>
+            <div class="card-body">
+                <p class="text-muted small">
+                    Assigne toutes les job cards du même type d'aéronef dont le code
+                    se situe entre les deux bornes (comparaison alphabétique).
+                    Ex : de <code>1-001</code> à <code>1-085</code> pour PE1.
+                </p>
+                <form asp-action="BulkAssign" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="maintenanceProgramId" value="@Model.MaintenanceProgramId" />
+                    <div class="form-row">
+                        <div class="col form-group">
+                            <label>Code de début</label>
+                            <input name="fromCode" class="form-control text-uppercase" placeholder="ex : 1-001" required />
+                        </div>
+                        <div class="col form-group">
+                            <label>Code de fin</label>
+                            <input name="toCode" class="form-control text-uppercase" placeholder="ex : 1-085" required />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-layer-group"></i> Assigner la plage
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="pjc-form card card-outline card-secondary mb-3">
+            <div class="card-header"><strong>Ajouter une job card individuelle</strong></div>
+            <div class="card-body">
+                @if (Model.AvailableCards.Any())
+                {
+                    <form asp-action="AddSingle" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="maintenanceProgramId" value="@Model.MaintenanceProgramId" />
+                        <div class="form-group">
+                            <select name="jobCardId" class="form-control" required>
+                                <option value="">-- Sélectionner --</option>
+                                @foreach (var jc in Model.AvailableCards)
+                                {
+                                    <option value="@jc.Id">@jc.DisplayLabel</option>
+                                }
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-secondary btn-block">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Toutes les job cards de ce type d'aéronef sont déjà assignées.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card card-outline card-primary">
+            <div class="card-header">
+                <strong>Job cards assignées (@Model.AssignedCards.Count)</strong>
+            </div>
+            <div class="card-body p-0">
+                <table class="pjc-table table table-striped table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Titre</th>
+                            <th>Obligatoire</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.AssignedCards)
+                        {
+                            <tr>
+                                <td><code>@item.CardCode</code></td>
+                                <td>@item.Title</td>
+                                <td>
+                                    <form asp-action="ToggleMandatory" asp-route-id="@item.Id" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm @(item.IsMandatory ? "btn-success" : "btn-secondary")" style="min-width:36px;">
+                                            @(item.IsMandatory ? "Oui" : "Non")
+                                        </button>
+                                    </form>
+                                </td>
+                                <td class="text-right">
+                                    <form asp-action="Remove" asp-route-id="@item.Id" method="post" class="d-inline"
+                                          onsubmit="return confirm('Retirer cette job card du programme ?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm" title="Retirer">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        @if (!Model.AssignedCards.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">Aucune job card assignée.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a asp-controller="MaintenancePrograms" asp-action="Details" asp-route-id="@Model.MaintenanceProgramId" class="btn btn-default mt-3">
+    <i class="fas fa-arrow-left"></i> Retour au programme
+</a>

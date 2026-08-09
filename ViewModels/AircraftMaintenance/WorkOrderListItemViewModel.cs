@@ -8,8 +8,8 @@
         public int AircraftId { get; set; }
         public string AircraftLabel { get; set; } = string.Empty;
 
-        public int InspectionTypeId { get; set; }
-        public string InspectionTypeLabel { get; set; } = string.Empty;
+        // Replaces singular InspectionTypeId/InspectionTypeLabel
+        public List<string> InspectionTypeLabels { get; set; } = [];
 
         public string WOType { get; set; } = string.Empty;
         public string WOKind { get; set; } = string.Empty;

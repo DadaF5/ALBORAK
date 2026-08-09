@@ -83,6 +83,7 @@ namespace FRAProject.Data
         public DbSet<AircraftDocument> AircraftDocuments { get; set; } = null!;
         public DbSet<AtaCategory> AtaCategories { get; set; } = null!;
         public DbSet<Ata> Ata { get; set; } = null!;
+        public DbSet<WorkOrderInspectionType> WorkOrderInspectionTypes { get; set; } = null!;
         // =====================================
         // Restrictions & Certificates
         // =====================================
@@ -268,6 +269,23 @@ namespace FRAProject.Data
                .WithMany()
                .HasForeignKey(j => j.AtaId)
                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<WorkOrderInspectionType>()
+                .HasOne(x => x.WorkOrder)
+                .WithMany(w => w.WorkOrderInspectionTypes)
+                .HasForeignKey(x => x.WorkOrderId)
+                .OnDelete(DeleteBehavior.Cascade);   // deleting a WO deletes its links
+
+            modelBuilder.Entity<WorkOrderInspectionType>()
+                .HasOne(x => x.InspectionType)
+                .WithMany()
+                .HasForeignKey(x => x.InspectionTypeId)
+                .OnDelete(DeleteBehavior.Restrict);  // don't let this delete cascade into InspectionType
+
+            modelBuilder.Entity<WorkOrderInspectionType>()
+               .HasIndex(x => new { x.WorkOrderId, x.InspectionTypeId })
+               .IsUnique();
+
+
             // ── AircraftDocumentType ───────────────────────────────────────
             modelBuilder.Entity<AircraftDocumentType>()
                 .HasIndex(x => x.Code)

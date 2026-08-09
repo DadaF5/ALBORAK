@@ -1,0 +1,25 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.WorkOrderEditViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Modifier l'Ordre de Travail";
+}
+
+<div class="card card-outline card-primary">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-edit mr-1"></i> Modifier — @Model.WONumber</h3>
+    </div>
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        <div class="card-body">
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <label asp-for="Remarks" style="color:#c9ccd1;font-weight:600;font-size:0.85rem;">Remarques</label>
+                <textarea asp-for="Remarks" class="form-control" rows="3"
+                          style="background-color:#2b2f36;border:1px solid #454b54;color:#e9ecef;"></textarea>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-default">Annuler</a>
+        </div>
+    </form>
+</div>

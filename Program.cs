@@ -180,6 +180,8 @@ using (var scope = app.Services.CreateScope())
 
         // ── Inspection Process ───────────────────────────────────────
         await MaintenanceProgramSeeder.SeedAsync(context);
+        await WorkSectionSeeder.SeedAsync(context);
+
 
         logger.LogInformation("Reference data seeded successfully.");
     }

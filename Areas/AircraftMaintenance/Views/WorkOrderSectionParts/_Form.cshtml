@@ -1,0 +1,118 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.WorkOrderSectionPartFormViewModel
+
+<style>
+    .wosp-form .form-control {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+
+    .wosp-form label {
+        color: #c9ccd1;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .wosp-form .card-old {
+        border-left: 3px solid #dc3545;
+    }
+
+    .wosp-form .card-new {
+        border-left: 3px solid #28a745;
+    }
+</style>
+
+<div class="wosp-form">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="WorkOrderSectionId" />
+
+    <div class="form-group">
+        <label asp-for="DesignationEtPosition">Désignation et position</label>
+        <input asp-for="DesignationEtPosition" class="form-control" placeholder="ex : AIR SPEED MACH IND" />
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card card-outline card-danger card-old mb-3">
+                <div class="card-header"><strong>Ancien (déposé)</strong></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label asp-for="OldNomenclature">Nomenclature</label>
+                        <input asp-for="OldNomenclature" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="OldNumero">Numéro</label>
+                        <input asp-for="OldNumero" class="form-control" />
+                    </div>
+                    <div class="form-group mb-0">
+                        <label asp-for="OldVieillissement">Vieillissement</label>
+                        <input asp-for="OldVieillissement" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card card-outline card-success card-new mb-3">
+                <div class="card-header"><strong>Nouveau (installé)</strong></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label asp-for="NewNomenclature">Nomenclature</label>
+                        <input asp-for="NewNomenclature" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="NewNumero">Numéro</label>
+                        <input asp-for="NewNumero" class="form-control" />
+                    </div>
+                    <div class="form-group mb-0">
+                        <label asp-for="NewVieillissement">Vieillissement</label>
+                        <input asp-for="NewVieillissement" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label asp-for="MotifDepose">Motif de la dépose</label>
+            <input asp-for="MotifDepose" class="form-control" placeholder="ex : BON ÉTAT FOURNI 943" />
+        </div>
+        <div class="col-md-2 form-group">
+            <label asp-for="Symbole">Symbole</label>
+            <select asp-for="Symbole" class="form-control">
+                <option value="">--</option>
+                <option value="S">S</option>
+                <option value="F">F</option>
+            </select>
+        </div>
+        <div class="col-md-2 form-group">
+            <label asp-for="Date">Date</label>
+            <input asp-for="Date" class="form-control" type="date" />
+        </div>
+        <div class="col-md-2 form-group">
+            <label asp-for="TempsAlloueMinutes">Alloué (min)</label>
+            <input asp-for="TempsAlloueMinutes" class="form-control" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 form-group">
+            <label asp-for="TempsPasseMinutes">Temps passé (min)</label>
+            <input asp-for="TempsPasseMinutes" class="form-control" />
+        </div>
+        <div class="col-md-3 form-group">
+            <label asp-for="ExecutantSpecial">Spécial (exécutant)</label>
+            <input asp-for="ExecutantSpecial" class="form-control" placeholder="ex : 156" />
+        </div>
+        <div class="col-md-4 form-group">
+            <label asp-for="ExecutantNom">Nom de l'exécutant</label>
+            <input asp-for="ExecutantNom" class="form-control" />
+            <small class="text-muted">Renseigner ce champ vaut attestation électronique (horodatée).</small>
+        </div>
+        <div class="col-md-2 form-group">
+            <label asp-for="SortOrder">Ordre</label>
+            <input asp-for="SortOrder" class="form-control" />
+        </div>
+    </div>
+</div>

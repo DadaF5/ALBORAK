@@ -34,6 +34,7 @@ namespace FRAProject.Infrastructure
             InspectionTypePrograms = new InspectionTypeProgramRepository(_context);
             WorkSections = new WorkSectionRepository(_context);
             WorkOrderSections = new WorkOrderSectionRepository(_context);
+            WorkOrderSectionParts = new WorkOrderSectionPartRepository(_context);
 
         }
 
@@ -143,6 +144,7 @@ namespace FRAProject.Infrastructure
         public IInspectionTypeProgramRepository InspectionTypePrograms { get; private set; }
         public IWorkSectionRepository WorkSections { get; private set; }
         public IWorkOrderSectionRepository WorkOrderSections { get; private set; }
+        public IWorkOrderSectionPartRepository WorkOrderSectionParts { get; private set; }
 
         // ── Commit ────────────────────────────────────────────────────────
         // Single method — CompleteAsync() — matches IUnitOfWork contract.

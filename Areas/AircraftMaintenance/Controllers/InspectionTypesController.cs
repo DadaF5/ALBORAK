@@ -23,6 +23,15 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         {
             var items = await _uow.InspectionTypes.GetAllWithDetailsAsync();
 
+            // Single batched query for all InspectionTypeProgram links,
+            // not one query per row (avoids N+1).
+            var allIds = items.Select(x => x.Id).ToList();
+            var allLinks = await _uow.InspectionTypePrograms.GetByInspectionTypeIdsAsync(allIds);
+            var codesByInspectionTypeId = allLinks
+                .Where(l => l.MaintenanceProgram != null)
+                .GroupBy(l => l.InspectionTypeId)
+                .ToDictionary(g => g.Key, g => g.Select(l => l.MaintenanceProgram!.Code).OrderBy(c => c).ToList());
+
             var vm = items.Select(x => new InspectionTypeListItemViewModel
             {
                 Id = x.Id,
@@ -35,9 +44,20 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 IntervalCycles = x.IntervalCycles,
                 CalendarValue = x.CalendarValue,
                 CalendarUnit = x.CalendarUnit,
+                ProgramCodes = codesByInspectionTypeId.GetValueOrDefault(x.Id, []),
                 IsActive = x.IsActive,
                 SortOrder = x.SortOrder
             }).ToList();
+
+            // Full AcType list (not just ones with InspectionType rows) —
+            // so the filter dropdown shows every valid aircraft type,
+            // including ones with zero InspectionTypes seeded yet.
+            var allAcTypes = await _uow.AcTypes.GetAllAsync();
+            ViewBag.AllAcTypeLabels = allAcTypes
+                .Where(t => t.IsActive)
+                .OrderBy(t => t.Code)
+                .Select(t => $"{t.Code} — {t.Name}")
+                .ToList();
 
             return View(vm);
         }
@@ -48,7 +68,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             var entity = await _uow.InspectionTypes.GetByIdWithDetailsAsync(id);
             if (entity == null) return NotFound();
 
-            var vm = MapToDetailsVm(entity);
+            var vm = await MapToDetailsVmAsync(entity);
             return View(vm);
         }
 
@@ -196,7 +216,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             var entity = await _uow.InspectionTypes.GetByIdWithDetailsAsync(id);
             if (entity == null) return NotFound();
 
-            var vm = MapToDetailsVm(entity);
+            var vm = await MapToDetailsVmAsync(entity);
             return View(vm);
         }
 
@@ -245,34 +265,148 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // GET: AircraftMaintenance/InspectionTypes/ManagePrograms/5
+        public async Task<IActionResult> ManagePrograms(int id)
+        {
+            var vm = await BuildManageProgramsVmAsync(id);
+            if (vm == null) return NotFound();
+            return View(vm);
+        }
+
+        // POST: AircraftMaintenance/InspectionTypes/AddProgram
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddProgram(int inspectionTypeId, int maintenanceProgramId)
+        {
+            var existingLinks = await _uow.InspectionTypePrograms.GetByInspectionTypeIdsAsync([inspectionTypeId]);
+
+            if (existingLinks.Any(l => l.MaintenanceProgramId == maintenanceProgramId))
+            {
+                TempData["Error"] = "Ce programme est déjà associé à ce type d'inspection.";
+            }
+            else
+            {
+                await _uow.InspectionTypePrograms.AddAsync(new InspectionTypeProgram
+                {
+                    InspectionTypeId = inspectionTypeId,
+                    MaintenanceProgramId = maintenanceProgramId,
+                    SortOrder = 100
+                });
+                await _uow.CompleteAsync();
+                TempData["Success"] = "Programme associé avec succès.";
+            }
+
+            return RedirectToAction(nameof(ManagePrograms), new { id = inspectionTypeId });
+        }
+
+        // POST: AircraftMaintenance/InspectionTypes/RemoveProgram/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveProgram(int id)
+        {
+            var link = await _uow.InspectionTypePrograms.GetByIdAsync(id);
+            if (link == null) return NotFound();
+
+            var inspectionTypeId = link.InspectionTypeId;
+
+            _uow.InspectionTypePrograms.Delete(link);
+            await _uow.CompleteAsync();
+
+            TempData["Success"] = "Programme retiré.";
+            return RedirectToAction(nameof(ManagePrograms), new { id = inspectionTypeId });
+        }
+
+        private async Task<InspectionTypeManageProgramsViewModel?> BuildManageProgramsVmAsync(int inspectionTypeId)
+        {
+            var inspectionType = await _uow.InspectionTypes.GetByIdWithDetailsAsync(inspectionTypeId);
+            if (inspectionType == null) return null;
+
+            var links = await _uow.InspectionTypePrograms.GetByInspectionTypeIdsAsync([inspectionTypeId]);
+            var linkedProgramIds = links.Select(l => l.MaintenanceProgramId).ToHashSet();
+
+            var allPrograms = await _uow.MaintenancePrograms.GetAllWithDetailsAsync();
+
+            return new InspectionTypeManageProgramsViewModel
+            {
+                InspectionTypeId = inspectionType.Id,
+                InspectionTypeCode = inspectionType.Code,
+                InspectionTypeName = inspectionType.Name,
+                LinkedPrograms = links
+                    .Where(l => l.MaintenanceProgram != null)
+                    .Select(l => new LinkedProgramItemViewModel
+                    {
+                        LinkId = l.Id,
+                        MaintenanceProgramId = l.MaintenanceProgramId,
+                        ProgramCode = l.MaintenanceProgram!.Code,
+                        ProgramName = l.MaintenanceProgram.Name
+                    })
+                    .OrderBy(p => p.ProgramCode)
+                    .ToList(),
+                AvailablePrograms = allPrograms
+                    .Where(p => p.AcTypeId == inspectionType.AcTypeId && p.IsActive)
+                    .Where(p => !linkedProgramIds.Contains(p.Id))
+                    .OrderBy(p => p.Code)
+                    .Select(p => new MaintenanceProgramLookupViewModel
+                    {
+                        Id = p.Id,
+                        Code = p.Code,
+                        Name = p.Name,
+                        AcTypeId = p.AcTypeId
+                    })
+                    .ToList()
+            };
+        }
+
         // ── Helpers ──────────────────────────────────────────────────────
 
-        private static InspectionTypeDetailsViewModel MapToDetailsVm(InspectionType x) => new()
+        // Now async (was a static sync helper) — needs to query the
+        // InspectionTypeProgram junction to populate Programs, which
+        // wasn't possible when this was first written (no repository
+        // existed for that junction yet).
+        private async Task<InspectionTypeDetailsViewModel> MapToDetailsVmAsync(InspectionType x)
         {
-            Id = x.Id,
-            Code = x.Code,
-            Name = x.Name,
-            Kind = x.Kind,
-            AcTypeId = x.AcTypeId,
-            AcTypeLabel = x.AcType != null ? $"{x.AcType.Code} — {x.AcType.Name}" : "—",
-            IntervalHours = x.IntervalHours,
-            IntervalCycles = x.IntervalCycles,
-            CalendarValue = x.CalendarValue,
-            CalendarUnit = x.CalendarUnit,
-            ToleranceHours = x.ToleranceHours,
-            ToleranceCycles = x.ToleranceCycles,
-            ToleranceCalendarValue = x.ToleranceCalendarValue,
-            ToleranceCalendarUnit = x.ToleranceCalendarUnit,
-            NextInspectionTypeId = x.NextInspectionTypeId,
-            NextInspectionTypeLabel = x.NextInspectionType?.Name,
-            SortOrder = x.SortOrder,
-            IsActive = x.IsActive,
-            CreatedAtUtc = x.CreatedAtUtc,
-            UpdatedAtUtc = x.UpdatedAtUtc
-            // Programs intentionally left empty here — MaintenanceProgram
-            // module isn't built yet (Phase 2 of the Inspection Guide).
-            // Wire this up once InspectionTypeProgram junction has a controller.
-        };
+            var vm = new InspectionTypeDetailsViewModel
+            {
+                Id = x.Id,
+                Code = x.Code,
+                Name = x.Name,
+                Kind = x.Kind,
+                AcTypeId = x.AcTypeId,
+                AcTypeLabel = x.AcType != null ? $"{x.AcType.Code} — {x.AcType.Name}" : "—",
+                IntervalHours = x.IntervalHours,
+                IntervalCycles = x.IntervalCycles,
+                CalendarValue = x.CalendarValue,
+                CalendarUnit = x.CalendarUnit,
+                ToleranceHours = x.ToleranceHours,
+                ToleranceCycles = x.ToleranceCycles,
+                ToleranceCalendarValue = x.ToleranceCalendarValue,
+                ToleranceCalendarUnit = x.ToleranceCalendarUnit,
+                NextInspectionTypeId = x.NextInspectionTypeId,
+                NextInspectionTypeLabel = x.NextInspectionType?.Name,
+                SortOrder = x.SortOrder,
+                IsActive = x.IsActive,
+                CreatedAtUtc = x.CreatedAtUtc,
+                UpdatedAtUtc = x.UpdatedAtUtc
+            };
+
+            var links = await _uow.InspectionTypePrograms.GetByInspectionTypeIdsAsync([x.Id]);
+            vm.Programs = links
+                .Where(l => l.MaintenanceProgram != null)
+                .Select(l => new MaintenanceProgramListItemViewModel
+                {
+                    Id = l.MaintenanceProgram!.Id,
+                    Code = l.MaintenanceProgram.Code,
+                    Name = l.MaintenanceProgram.Name,
+                    AcTypeId = l.MaintenanceProgram.AcTypeId,
+                    AcTypeLabel = vm.AcTypeLabel,
+                    IsActive = l.MaintenanceProgram.IsActive,
+                    SortOrder = l.MaintenanceProgram.SortOrder
+                })
+                .OrderBy(p => p.SortOrder)
+                .ToList();
+
+            return vm;
+        }
 
         private async Task PopulateDropdownsAsync(InspectionTypeFormViewModel vm, int? excludeId = null)
         {

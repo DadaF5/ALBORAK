@@ -6,35 +6,39 @@
         border: 1px solid #454b54;
         color: #e9ecef;
     }
-    .insp-form .form-control:focus {
-        background-color: #2b2f36;
-        border-color: #0d6efd;
-        color: #fff;
-        box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
-    }
-    .insp-form .form-control::placeholder {
-        color: #8a9099;
-    }
+
+        .insp-form .form-control:focus {
+            background-color: #2b2f36;
+            border-color: #0d6efd;
+            color: #fff;
+            box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+        }
+
+        .insp-form .form-control::placeholder {
+            color: #8a9099;
+        }
+
     .insp-form label {
         color: #c9ccd1;
         font-weight: 600;
         font-size: 0.85rem;
     }
+
     .insp-form .required-mark {
         color: #ff6b6b;
         margin-left: 2px;
     }
+
     .insp-form .card-interval {
         border-left: 3px solid #0d6efd;
     }
+
     .insp-form .card-tolerance {
         border-left: 3px solid #f0ad4e;
     }
-    .insp-form .advanced-toggle {
-        cursor: pointer;
-        color: #8ab4ff;
-        font-size: 0.85rem;
-        user-select: none;
+
+    .insp-form .card-advanced {
+        border-left: 3px solid #6c757d;
     }
 </style>
 
@@ -129,12 +133,9 @@
         </select>
     </div>
 
-    <p class="advanced-toggle mb-2" data-toggle="collapse" data-target="#advancedOptions" aria-expanded="false">
-        <i class="fas fa-chevron-right mr-1"></i> Options avancées (genre, ordre d'affichage, statut)
-    </p>
-
-    <div class="collapse" id="advancedOptions">
-        <div class="row">
+    <div class="card card-outline card-secondary card-advanced mb-3">
+        <div class="card-header"><strong>Genre, ordre d'affichage, statut</strong></div>
+        <div class="card-body row">
             <div class="col-md-4 form-group">
                 <label asp-for="Kind">Genre</label>
                 <select asp-for="Kind" class="form-control">
@@ -164,12 +165,5 @@
         document.getElementById('codeInput')?.addEventListener('input', function (e) {
             e.target.value = e.target.value.toUpperCase();
         });
-        // Flip the chevron when the advanced section opens/closes
-        var toggle = document.querySelector('.advanced-toggle');
-        var panel = document.getElementById('advancedOptions');
-        if (toggle && panel) {
-            panel.addEventListener('shown.bs.collapse', () => toggle.querySelector('i').classList.replace('fa-chevron-right', 'fa-chevron-down'));
-            panel.addEventListener('hidden.bs.collapse', () => toggle.querySelector('i').classList.replace('fa-chevron-down', 'fa-chevron-right'));
-        }
     </script>
 }

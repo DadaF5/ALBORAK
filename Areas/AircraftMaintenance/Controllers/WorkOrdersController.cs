@@ -60,6 +60,70 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             return View(vm);
         }
 
+        // GET: AircraftMaintenance/WorkOrders/GetSelectableInspectionTypes?aircraftId=5
+        // Called via AJAX when the aircraft dropdown changes on Create.
+        // Returns only InspectionTypes that are actually worth scheduling
+        // for THIS aircraft right now:
+        //   - matches the aircraft's AcType
+        //   - NOT already covered by another active (non-CLOSED) WorkOrder
+        //     for this aircraft (prevents double-scheduling, e.g. two WOs
+        //     both claiming PE4)
+        //   - status is OVERDUE, ALERT, or UNKNOWN (never done before) —
+        //     "OK" (comfortably not due yet, e.g. PE1/PE2/PE3 right after
+        //     a 900h inspection when next due is still far off) is excluded
+        [HttpGet]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        public async Task<IActionResult> GetSelectableInspectionTypes(int aircraftId)
+        {
+            var aircraft = await _uow.Aircraft.GetByIdAsync(aircraftId);
+            if (aircraft == null) return Json(new List<object>());
+
+            var allTypes = await _uow.InspectionTypes.GetAllWithDetailsAsync();
+            var relevant = allTypes.Where(it => it.AcTypeId == aircraft.AcTypeId && it.IsActive).ToList();
+
+            var activeTypeIds = await _uow.WorkOrders.GetActiveInspectionTypeIdsForAircraftAsync(aircraftId);
+
+            var allStates = await _uow.InspectionStates.GetAllWithDetailsAsync();
+            var statesByType = allStates
+                .Where(s => s.AircraftId == aircraftId)
+                .ToDictionary(s => s.InspectionTypeId);
+
+            var currentHours = aircraft.TotalFlightMinutes / 60;
+            var currentCycles = aircraft.TotalCycles;
+            var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            var result = new List<object>();
+
+            foreach (var it in relevant.OrderBy(t => t.SortOrder))
+            {
+                if (activeTypeIds.Contains(it.Id)) continue; // point 3 — already scheduled
+
+                string status;
+                if (statesByType.TryGetValue(it.Id, out var state))
+                {
+                    status = InspectionStatusCalculator.ComputeStatus(
+                        currentHours, currentCycles, currentDate,
+                        state.NextDueHours, state.NextDueCycles, state.NextDueDate, it);
+                }
+                else
+                {
+                    status = "UNKNOWN"; // never done on this aircraft — worth offering
+                }
+
+                if (status == "OK") continue; // point 2 — not due yet, don't clutter the list
+
+                result.Add(new
+                {
+                    id = it.Id,
+                    acTypeId = it.AcTypeId,
+                    label = $"{it.Code} — {it.Name} ({status})",
+                    status
+                });
+            }
+
+            return Json(result);
+        }
+
         // POST: AircraftMaintenance/WorkOrders/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -91,6 +155,25 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                         var names = string.Join(", ", mismatched.Select(it => it.Code));
                         ModelState.AddModelError(nameof(vm.SelectedInspectionTypeIds),
                             $"Ces types d'inspection ne correspondent pas au type d'aéronef sélectionné : {names}.");
+                    }
+
+                    // Prevent scheduling the same InspectionType twice for
+                    // the same aircraft while an earlier WorkOrder covering
+                    // it is still active (not yet CLOSED). Without this,
+                    // two separate WOs could both claim to cover "PE4",
+                    // and it becomes ambiguous which one actually updates
+                    // InspectionState at close time.
+                    var activeTypeIds = await _uow.WorkOrders.GetActiveInspectionTypeIdsForAircraftAsync(vm.AircraftId);
+                    var alreadyScheduled = selectedTypes
+                        .Where(it => vm.SelectedInspectionTypeIds.Contains(it.Id))
+                        .Where(it => activeTypeIds.Contains(it.Id))
+                        .ToList();
+
+                    if (alreadyScheduled.Any())
+                    {
+                        var names = string.Join(", ", alreadyScheduled.Select(it => it.Code));
+                        ModelState.AddModelError(nameof(vm.SelectedInspectionTypeIds),
+                            $"Ces types d'inspection sont déjà planifiés dans un OT actif pour cet aéronef : {names}.");
                     }
                 }
             }

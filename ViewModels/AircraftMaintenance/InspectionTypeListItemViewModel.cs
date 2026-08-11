@@ -15,6 +15,9 @@
         public int? CalendarValue { get; set; }
         public string? CalendarUnit { get; set; }
 
+        // Additive — shown as compact badges in the Index list
+        public List<string> ProgramCodes { get; set; } = [];
+
         public bool IsActive { get; set; }
         public int SortOrder { get; set; }
     }

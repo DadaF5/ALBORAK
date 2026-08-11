@@ -18,6 +18,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         }
 
         // GET: AircraftMaintenance/ProgramJobCards/Manage/5  (5 = MaintenanceProgramId)
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> Manage(int id)
         {
             var vm = await BuildManageVmAsync(id);

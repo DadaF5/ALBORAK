@@ -1,8 +1,7 @@
 @model List<FRAProject.ViewModels.AircraftMaintenance.InspectionTypeListItemViewModel>
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    // ViewData["Title"] = "Types d'inspection";
-    // Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+    ViewData["Title"] = "Types d'inspection";
 }
 
 <style>
@@ -18,6 +17,38 @@
         color: #ff8fa3;
         background: transparent;
     }
+    .insp-index .btn-actions .btn {
+        white-space: nowrap;
+    }
+    .insp-index .program-badge {
+        display: inline-block;
+        border: 1px solid #0d6efd;
+        color: #8ab4ff;
+        background: transparent;
+        padding: 1px 7px;
+        margin: 1px 2px 1px 0;
+        border-radius: 4px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+    .insp-filter-bar {
+        background-color: #2b2f36;
+        padding: 10px 16px;
+        border-bottom: 1px solid #363b44;
+    }
+    .insp-filter-bar select {
+        background-color: #23262d;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+        max-width: 280px;
+        display: inline-block;
+    }
+    .insp-filter-bar label {
+        color: #c9ccd1;
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-right: 8px;
+    }
 </style>
 
 <div class="insp-index card card-outline card-primary">
@@ -27,6 +58,18 @@
             <i class="fas fa-plus"></i> Nouveau type d'inspection
         </a>
     </div>
+
+    <div class="insp-filter-bar">
+        <label for="acTypeFilter">Filtrer par type d'aéronef :</label>
+        <select id="acTypeFilter" class="form-control form-control-sm">
+            <option value="">-- Tous --</option>
+            @foreach (var acType in (List<string>)ViewBag.AllAcTypeLabels)
+            {
+                <option value="@acType">@acType</option>
+            }
+        </select>
+    </div>
+
     <div class="card-body p-0">
         @if (TempData["Success"] != null)
         {
@@ -45,19 +88,20 @@
                     <th>Type d'aéronef</th>
                     <th>Genre</th>
                     <th>Intervalle</th>
+                    <th>Programmes</th>
                     <th>Statut</th>
                     <th class="text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="inspectionTypesBody">
                 @foreach (var group in Model.GroupBy(x => x.AcTypeLabel).OrderBy(g => g.Key))
                 {
-                    <tr class="group-row">
-                        <td colspan="7"><strong>@group.Key</strong></td>
+                    <tr class="group-row" data-actype="@group.Key">
+                        <td colspan="8"><strong>@group.Key</strong></td>
                     </tr>
                     @foreach (var item in group.OrderBy(x => x.SortOrder).ThenBy(x => x.Code))
                     {
-                        <tr>
+                        <tr data-actype="@item.AcTypeLabel">
                             <td><code>@item.Code</code></td>
                             <td>@item.Name</td>
                             <td>@item.AcTypeLabel</td>
@@ -66,6 +110,19 @@
                                 @if (item.IntervalHours.HasValue) { <span>@item.IntervalHours h</span> }
                                 @if (item.IntervalCycles.HasValue) { <span> · @item.IntervalCycles cy</span> }
                                 @if (item.CalendarValue.HasValue) { <span> · @item.CalendarValue @item.CalendarUnit</span> }
+                            </td>
+                            <td>
+                                @if (item.ProgramCodes.Any())
+                                {
+                                    @foreach (var code in item.ProgramCodes)
+                                    {
+                                        <span class="program-badge">@code</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
                             </td>
                             <td>
                                 @if (item.IsActive)
@@ -77,15 +134,18 @@
                                     <span class="badge badge-secondary">Inactif</span>
                                 }
                             </td>
-                            <td class="text-right">
-                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-secondary" title="Détails">
-                                    <i class="fas fa-eye"></i>
+                            <td class="text-right btn-actions">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-secondary btn-sm" title="Détails">
+                                    <i class="fas fa-eye"></i> Détails
                                 </a>
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary" title="Modifier">
-                                    <i class="fas fa-edit"></i>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary btn-sm" title="Modifier">
+                                    <i class="fas fa-edit"></i> Modifier
                                 </a>
-                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger" title="Supprimer">
-                                    <i class="fas fa-trash"></i>
+                                <a asp-action="ManagePrograms" asp-route-id="@item.Id" class="btn btn-info btn-sm" title="Gérer les programmes">
+                                    <i class="fas fa-link"></i> Programmes
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm" title="Supprimer">
+                                    <i class="fas fa-trash"></i> Supprimer
                                 </a>
                             </td>
                         </tr>
@@ -94,10 +154,36 @@
                 @if (!Model.Any())
                 {
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">Aucun type d'inspection défini.</td>
+                        <td colspan="8" class="text-center text-muted py-4">Aucun type d'inspection défini.</td>
                     </tr>
                 }
+                <tr id="noResultsRow" style="display:none;">
+                    <td colspan="8" class="text-center text-muted py-4">
+                        Aucun type d'inspection défini pour ce type d'aéronef.
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.getElementById('acTypeFilter')?.addEventListener('change', function (e) {
+            var selected = e.target.value;
+            var rows = document.querySelectorAll('#inspectionTypesBody tr[data-actype]');
+            var visibleDataRows = 0;
+
+            rows.forEach(function (row) {
+                var matches = !selected || row.getAttribute('data-actype') === selected;
+                row.style.display = matches ? '' : 'none';
+                if (matches && !row.classList.contains('group-row')) {
+                    visibleDataRows++;
+                }
+            });
+
+            document.getElementById('noResultsRow').style.display =
+                (selected && visibleDataRows === 0) ? '' : 'none';
+        });
+    </script>
+}

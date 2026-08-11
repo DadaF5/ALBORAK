@@ -1,0 +1,117 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.InspectionTypeManageProgramsViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Programmes associés";
+}
+
+<style>
+    .mp-list code {
+        color: #ff8fa3;
+        background: transparent;
+    }
+
+    .mp-list table td, .mp-list table th {
+        border-color: #454b54;
+    }
+
+    .mp-form .form-control {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+</style>
+
+<div class="card card-outline card-primary mb-3">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-link mr-1"></i> Programmes associés — @Model.InspectionTypeCode @Model.InspectionTypeName
+        </h3>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="mp-form card card-outline card-secondary mb-3">
+            <div class="card-header"><strong>Ajouter un programme</strong></div>
+            <div class="card-body">
+                @if (Model.AvailablePrograms.Any())
+                {
+                    <form asp-action="AddProgram" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="inspectionTypeId" value="@Model.InspectionTypeId" />
+                        <div class="form-group">
+                            <select name="maintenanceProgramId" class="form-control" required>
+                                <option value="">-- Sélectionner --</option>
+                                @foreach (var p in Model.AvailablePrograms)
+                                {
+                                    <option value="@p.Id">@p.DisplayLabel</option>
+                                }
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-plus"></i> Associer
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">
+                        Tous les programmes disponibles pour ce type d'aéronef sont déjà associés.
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="mp-list card card-outline card-primary">
+            <div class="card-header"><strong>Programmes associés (@Model.LinkedPrograms.Count)</strong></div>
+            <div class="card-body p-0">
+                <table class="table table-striped table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Nom</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.LinkedPrograms)
+                        {
+                            <tr>
+                                <td><code>@p.ProgramCode</code></td>
+                                <td>@p.ProgramName</td>
+                                <td class="text-right">
+                                    <form asp-action="RemoveProgram" asp-route-id="@p.LinkId" method="post" class="d-inline"
+                                          onsubmit="return confirm('Retirer ce programme ?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm" title="Retirer">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        @if (!Model.LinkedPrograms.Any())
+                        {
+                            <tr><td colspan="3" class="text-center text-muted py-4">Aucun programme associé.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a asp-action="Details" asp-route-id="@Model.InspectionTypeId" class="btn btn-default mt-2">
+    <i class="fas fa-arrow-left"></i> Retour aux détails
+</a>

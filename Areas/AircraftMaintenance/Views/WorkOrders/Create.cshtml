@@ -10,8 +10,18 @@
         border: 1px solid #454b54;
         color: #e9ecef;
     }
-    .wo-form label { color: #c9ccd1; font-weight: 600; font-size: 0.85rem; }
-    .wo-form .required-mark { color: #ff6b6b; margin-left: 2px; }
+
+    .wo-form label {
+        color: #c9ccd1;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .wo-form .required-mark {
+        color: #ff6b6b;
+        margin-left: 2px;
+    }
+
     .wo-inspection-list {
         max-height: 220px;
         overflow-y: auto;
@@ -20,12 +30,33 @@
         padding: 10px;
         background-color: #2b2f36;
     }
-    .wo-inspection-list .form-check { padding-left: 1.6rem; margin-bottom: 4px; }
-    .wo-inspection-list .form-check-label { color: #e9ecef; font-weight: 400; font-size: 0.9rem; }
+
+        .wo-inspection-list .form-check {
+            padding-left: 1.6rem;
+            margin-bottom: 4px;
+        }
+
+        .wo-inspection-list .form-check-label {
+            color: #e9ecef;
+            font-weight: 400;
+            font-size: 0.9rem;
+        }
+
     .wo-inspection-hint {
         color: #ffc107;
         font-size: 0.8rem;
-        display: none;
+    }
+
+    .wo-status-overdue {
+        color: #ff6b6b;
+    }
+
+    .wo-status-alert {
+        color: #ffc107;
+    }
+
+    .wo-status-unknown {
+        color: #8a9099;
     }
 </style>
 
@@ -47,7 +78,7 @@
                             <optgroup label="@group.Key">
                                 @foreach (var a in group)
                                 {
-                                    <option value="@a.Id" data-actypeid="@a.AcTypeId">@a.Registration</option>
+                                    <option value="@a.Id">@a.Registration</option>
                                 }
                             </optgroup>
                         }
@@ -77,25 +108,17 @@
             <div class="form-group" id="inspectionTypesGroup">
                 <label>Types d'inspection couverts (pour OT planifié)</label>
                 <p class="wo-inspection-hint" id="pickAircraftHint">
-                    Sélectionnez d'abord un aéronef pour voir ses types d'inspection.
+                    Sélectionnez d'abord un aéronef pour voir ses types d'inspection dus.
                 </p>
-                <div class="wo-inspection-list" id="inspectionTypesList">
-                    @foreach (var it in Model.InspectionTypeItems)
-                    {
-                        <div class="form-check" data-actypeid="@it.AcTypeId">
-                            <input class="form-check-input" type="checkbox"
-                                   name="SelectedInspectionTypeIds" value="@it.Id"
-                                   id="itype-@it.Id"
-                                   checked="@(Model.SelectedInspectionTypeIds.Contains(it.Id))" />
-                            <label class="form-check-label" for="itype-@it.Id">@it.Label</label>
-                        </div>
-                    }
-                </div>
+                <p class="wo-inspection-hint text-muted" id="loadingHint" style="display:none;">
+                    Chargement...
+                </p>
+                <p class="wo-inspection-hint text-muted" id="noneDueHint" style="display:none;">
+                    Aucun type d'inspection dû actuellement pour cet aéronef
+                    (déjà à jour, ou déjà planifié dans un autre OT actif).
+                </p>
+                <div class="wo-inspection-list" id="inspectionTypesList"></div>
                 <span asp-validation-for="SelectedInspectionTypeIds" class="text-danger"></span>
-                @if (!Model.InspectionTypeItems.Any())
-                {
-                    <small class="text-muted">Aucun type d'inspection défini.</small>
-                }
             </div>
 
             <div class="form-group">
@@ -122,37 +145,60 @@
         document.getElementById('wokindSelect')?.addEventListener('change', toggleInspectionTypes);
         toggleInspectionTypes();
 
-        // Filter the inspection-type checkbox list to only the selected
-        // aircraft's AcType. Non-matching items are hidden AND unchecked,
-        // so a stale selection from a previously-chosen aircraft can't
-        // silently ride along. Server-side validation in the controller
-        // is the real enforcement — this is just UX convenience.
-        function filterInspectionTypesByAircraft() {
+        // Fetches the due/selectable InspectionTypes for the chosen
+        // aircraft from the server (GetSelectableInspectionTypes), which
+        // already excludes: types not matching the aircraft's AcType,
+        // types already scheduled on another active WorkOrder for this
+        // aircraft, and types that aren't due yet (status "OK"). This
+        // replaces the old purely-client-side AcType-only filtering.
+        async function loadInspectionTypesForAircraft() {
             var aircraftSelect = document.getElementById('aircraftSelect');
-            var selectedOption = aircraftSelect.options[aircraftSelect.selectedIndex];
-            var acTypeId = selectedOption ? selectedOption.getAttribute('data-actypeid') : null;
-            var hint = document.getElementById('pickAircraftHint');
-            var items = document.querySelectorAll('#inspectionTypesList .form-check');
+            var aircraftId = aircraftSelect.value;
+            var list = document.getElementById('inspectionTypesList');
+            var pickHint = document.getElementById('pickAircraftHint');
+            var loadingHint = document.getElementById('loadingHint');
+            var noneDueHint = document.getElementById('noneDueHint');
 
-            if (!acTypeId) {
-                hint.style.display = 'block';
-                items.forEach(function (item) { item.style.display = 'none'; });
+            list.innerHTML = '';
+            noneDueHint.style.display = 'none';
+
+            if (!aircraftId) {
+                pickHint.style.display = 'block';
                 return;
             }
+            pickHint.style.display = 'none';
+            loadingHint.style.display = 'block';
 
-            hint.style.display = 'none';
-            items.forEach(function (item) {
-                var itemActypeId = item.getAttribute('data-actypeid');
-                var matches = itemActypeId === acTypeId;
-                item.style.display = matches ? '' : 'none';
-                if (!matches) {
-                    var checkbox = item.querySelector('input[type="checkbox"]');
-                    if (checkbox) checkbox.checked = false;
+            try {
+                var response = await fetch('@Url.Action("GetSelectableInspectionTypes", "WorkOrders")?aircraftId=' + aircraftId);
+                var items = await response.json();
+                loadingHint.style.display = 'none';
+
+                if (!items.length) {
+                    noneDueHint.style.display = 'block';
+                    return;
                 }
-            });
+
+                items.forEach(function (it) {
+                    var statusClass = it.status === 'OVERDUE' ? 'wo-status-overdue'
+                        : it.status === 'ALERT' ? 'wo-status-alert'
+                        : it.status === 'UNKNOWN' ? 'wo-status-unknown' : '';
+
+                    var wrapper = document.createElement('div');
+                    wrapper.className = 'form-check';
+                    wrapper.innerHTML =
+                        '<input class="form-check-input" type="checkbox" name="SelectedInspectionTypeIds" ' +
+                        'value="' + it.id + '" id="itype-' + it.id + '" checked />' +
+                        '<label class="form-check-label ' + statusClass + '" for="itype-' + it.id + '">' + it.label + '</label>';
+                    list.appendChild(wrapper);
+                });
+            } catch (e) {
+                loadingHint.style.display = 'none';
+                list.innerHTML = '<p class="text-danger small">Erreur de chargement des types d\'inspection.</p>';
+            }
         }
 
-        document.getElementById('aircraftSelect')?.addEventListener('change', filterInspectionTypesByAircraft);
-        filterInspectionTypesByAircraft();
+        document.getElementById('aircraftSelect')?.addEventListener('change', loadInspectionTypesForAircraft);
+        loadInspectionTypesForAircraft();
     </script>
 }

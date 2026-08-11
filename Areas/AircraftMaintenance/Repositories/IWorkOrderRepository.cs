@@ -8,5 +8,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Repositories
         Task<List<WorkOrder>> GetAllWithDetailsAsync();
         Task<WorkOrder?> GetByIdWithDetailsAsync(int id);
         Task<string> GenerateNextWONumberAsync(int year);
+        Task<HashSet<int>> GetActiveInspectionTypeIdsForAircraftAsync(int aircraftId);
+
     }
 }

@@ -14,11 +14,16 @@
         </div>
         <div class="card-footer">
             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
+            <a asp-action="ManagePrograms" asp-route-id="@Model.Id" class="btn btn-info">
+                <i class="fas fa-link"></i> Gérer les programmes
+            </a>
             <a asp-action="Index" class="btn btn-default">Annuler</a>
         </div>
     </form>
 </div>
 
 @section Scripts {
-    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

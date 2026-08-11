@@ -12,16 +12,31 @@
         text-transform: uppercase;
         letter-spacing: 0.03em;
     }
+
     .insp-details dd {
         color: #e9ecef;
         font-size: 1rem;
         margin-bottom: 1rem;
     }
+
     .insp-details .card-interval {
         border-left: 3px solid #0d6efd;
     }
+
     .insp-details .card-tolerance {
         border-left: 3px solid #f0ad4e;
+    }
+
+    .insp-details .program-badge {
+        display: inline-block;
+        border: 1px solid #0d6efd;
+        color: #8ab4ff;
+        background: transparent;
+        padding: 3px 10px;
+        margin: 2px 4px 2px 0;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 600;
     }
 </style>
 
@@ -41,52 +56,68 @@
             <dd class="col-sm-9"><span class="badge badge-info">@Model.Kind</span></dd>
         </dl>
 
-        <div class="card card-outline card-secondary card-interval mb-3">
-            <div class="card-header"><strong>Intervalle</strong></div>
-            <div class="card-body">
-                @(Model.IntervalHours.HasValue ? $"{Model.IntervalHours} h" : "—")
-                @(Model.IntervalCycles.HasValue ? $" · {Model.IntervalCycles} cycles" : "")
-                @(Model.CalendarValue.HasValue ? $" · {Model.CalendarValue} {Model.CalendarUnit}" : "")
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card card-outline card-secondary card-interval mb-3">
+                    <div class="card-header"><strong>Intervalle</strong></div>
+                    <div class="card-body">
+                        @(Model.IntervalHours.HasValue ? $"{Model.IntervalHours} h" : "—")
+                        @(Model.IntervalCycles.HasValue ? $" · {Model.IntervalCycles} cycles" : "")
+                        @(Model.CalendarValue.HasValue ? $" · {Model.CalendarValue} {Model.CalendarUnit}" : "")
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card card-outline card-secondary card-tolerance mb-3">
+                    <div class="card-header"><strong>Tolérance</strong></div>
+                    <div class="card-body">
+                        @(Model.ToleranceHours.HasValue ? $"{Model.ToleranceHours} h" : "—")
+                        @(Model.ToleranceCycles.HasValue ? $" · {Model.ToleranceCycles} cycles" : "")
+                        @(Model.ToleranceCalendarValue.HasValue ? $" · {Model.ToleranceCalendarValue} {Model.ToleranceCalendarUnit}" : "")
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="card card-outline card-secondary card-tolerance mb-3">
-            <div class="card-header"><strong>Tolérance</strong></div>
-            <div class="card-body">
-                @(Model.ToleranceHours.HasValue ? $"{Model.ToleranceHours} h" : "—")
-                @(Model.ToleranceCycles.HasValue ? $" · {Model.ToleranceCycles} cycles" : "")
-                @(Model.ToleranceCalendarValue.HasValue ? $" · {Model.ToleranceCalendarValue} {Model.ToleranceCalendarUnit}" : "")
+        <div class="row">
+            <div class="col-md-6">
+                <dl class="row">
+                    <dt class="col-sm-6">Type d'inspection suivant</dt>
+                    <dd class="col-sm-6">@(Model.NextInspectionTypeLabel ?? "—")</dd>
+
+                    <dt class="col-sm-6">Ordre d'affichage</dt>
+                    <dd class="col-sm-6">@Model.SortOrder</dd>
+
+                    <dt class="col-sm-6">Créé le (UTC)</dt>
+                    <dd class="col-sm-6">@Model.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                    <dt class="col-sm-6">Modifié le (UTC)</dt>
+                    <dd class="col-sm-6">@(Model.UpdatedAtUtc?.ToString("dd/MM/yyyy HH:mm") ?? "—")</dd>
+                </dl>
+            </div>
+            <div class="col-md-6">
+                <dt class="mb-2">Programmes de maintenance associés</dt>
+                <dd>
+                    @if (Model.Programs.Any())
+                    {
+                        @foreach (var p in Model.Programs)
+                        {
+                            <span class="program-badge" title="@p.Name">@p.Code</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </dd>
             </div>
         </div>
-
-        <dl class="row">
-            <dt class="col-sm-3">Type d'inspection suivant</dt>
-            <dd class="col-sm-9">@(Model.NextInspectionTypeLabel ?? "—")</dd>
-
-            <dt class="col-sm-3">Ordre d'affichage</dt>
-            <dd class="col-sm-9">@Model.SortOrder</dd>
-
-            <dt class="col-sm-3">Créé le (UTC)</dt>
-            <dd class="col-sm-9">@Model.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</dd>
-
-            <dt class="col-sm-3">Modifié le (UTC)</dt>
-            <dd class="col-sm-9">@(Model.UpdatedAtUtc?.ToString("dd/MM/yyyy HH:mm") ?? "—")</dd>
-        </dl>
-
-        @if (Model.Programs.Any())
-        {
-            <hr />
-            <h5>Programmes de maintenance associés</h5>
-            <ul>
-                @foreach (var p in Model.Programs)
-                {
-                    <li>@p.Name</li>
-                }
-            </ul>
-        }
     </div>
     <div class="card-footer">
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fas fa-edit"></i> Modifier</a>
+        <a asp-action="ManagePrograms" asp-route-id="@Model.Id" class="btn btn-info">
+            <i class="fas fa-link"></i> Gérer les programmes
+        </a>
         <a asp-action="Index" class="btn btn-default">Retour à la liste</a>
     </div>
 </div>

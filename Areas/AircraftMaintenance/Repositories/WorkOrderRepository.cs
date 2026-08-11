@@ -42,5 +42,15 @@ namespace FRAProject.Areas.AircraftMaintenance.Repositories
 
             return $"{prefix}{(count + 1):D4}";
         }
+        public async Task<HashSet<int>> GetActiveInspectionTypeIdsForAircraftAsync(int aircraftId)
+        {
+            var ids = await _context.Set<WorkOrder>()
+                .Where(w => w.AircraftId == aircraftId && w.Status != "CLOSED")
+                .SelectMany(w => w.WorkOrderInspectionTypes.Select(wit => wit.InspectionTypeId))
+                .ToListAsync();
+
+            return ids.ToHashSet();
+        }
+
     }
 }

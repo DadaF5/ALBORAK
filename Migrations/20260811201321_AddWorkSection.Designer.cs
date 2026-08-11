@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20260811201321_AddWorkSection")]
+    partial class AddWorkSection
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -987,121 +990,6 @@ namespace FRAProject.Migrations
                         .IsUnique();
 
                     b.ToTable("WorkOrderJobCardSignOffs", (string)null);
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.WorkOrderSection", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateOnly?>("DateDebut")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly?>("DateFin")
-                        .HasColumnType("date");
-
-                    b.Property<DateTime?>("DirectiveIssuedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DirectiveIssuedByName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Directives")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FormNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OpenedByUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("OrganismeResponsable")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TechnicalOrderReference")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("TempsAlloueMinutes")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("TempsPasseRetoucheMinutes")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("TempsPasseSystematiqueMinutes")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TypeTravail")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("VieillissementHours")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WorkOrderId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WorkSectionId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OpenedByUserId");
-
-                    b.HasIndex("WorkOrderId");
-
-                    b.HasIndex("WorkSectionId");
-
-                    b.ToTable("WorkOrderSections");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.WorkSection", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AcTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<byte>("SortOrder")
-                        .HasColumnType("tinyint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AcTypeId");
-
-                    b.ToTable("WorkSections");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.HR.Models.Department", b =>
@@ -5140,42 +5028,6 @@ namespace FRAProject.Migrations
                     b.Navigation("SignedByUser");
 
                     b.Navigation("WorkOrderJobCard");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.WorkOrderSection", b =>
-                {
-                    b.HasOne("FRAProject.Models.ApplicationUser", "OpenedByUser")
-                        .WithMany()
-                        .HasForeignKey("OpenedByUserId");
-
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.WorkOrder", "WorkOrder")
-                        .WithMany()
-                        .HasForeignKey("WorkOrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.WorkSection", "WorkSection")
-                        .WithMany()
-                        .HasForeignKey("WorkSectionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("OpenedByUser");
-
-                    b.Navigation("WorkOrder");
-
-                    b.Navigation("WorkSection");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.WorkSection", b =>
-                {
-                    b.HasOne("FRAProject.Areas.Settings.Models.AcType", "AcType")
-                        .WithMany()
-                        .HasForeignKey("AcTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AcType");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.HR.Models.Department", b =>

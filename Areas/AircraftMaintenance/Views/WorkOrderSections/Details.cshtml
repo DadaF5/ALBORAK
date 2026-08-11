@@ -1,0 +1,100 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.WorkOrderSectionDetailsViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Détails de la section";
+}
+
+<style>
+    .wos-details dt {
+        color: #8a9099;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+
+    .wos-details dd {
+        color: #e9ecef;
+        margin-bottom: 1rem;
+    }
+
+    .wos-details .card-directives {
+        border-left: 3px solid #f0ad4e;
+    }
+</style>
+
+<div class="wos-details card card-outline card-primary">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">
+            <i class="fas fa-layer-group mr-1"></i> @Model.SectionCode — @Model.SectionName
+        </h3>
+        @{
+            var badgeClass = Model.Status switch
+            {
+                "DONE" => "badge-success",
+                "IN_PROGRESS" => "badge-warning",
+                _ => "badge-secondary"
+            };
+        }
+        <span class="badge @badgeClass">@Model.Status</span>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Ordre de travail</dt>
+            <dd class="col-sm-9">@Model.WONumber — @Model.AircraftLabel</dd>
+
+            <dt class="col-sm-3">N° Formule 13</dt>
+            <dd class="col-sm-9">@(Model.FormNumber ?? "—")</dd>
+
+            <dt class="col-sm-3">Organisme responsable</dt>
+            <dd class="col-sm-9">@(Model.OrganismeResponsable ?? "—")</dd>
+
+            <dt class="col-sm-3">Type de travail</dt>
+            <dd class="col-sm-9">@(Model.TypeTravail ?? "—")</dd>
+
+            <dt class="col-sm-3">Période</dt>
+            <dd class="col-sm-9">
+                @(Model.DateDebut?.ToString("dd/MM/yyyy") ?? "—") → @(Model.DateFin?.ToString("dd/MM/yyyy") ?? "—")
+            </dd>
+
+            <dt class="col-sm-3">Temps</dt>
+            <dd class="col-sm-9">
+                Alloué : @(Model.TempsAlloueMinutes?.ToString() ?? "—") min ·
+                Systématique : @(Model.TempsPasseSystematiqueMinutes?.ToString() ?? "—") min ·
+                Retouche : @(Model.TempsPasseRetoucheMinutes?.ToString() ?? "—") min
+            </dd>
+
+            <dt class="col-sm-3">Vieillissement</dt>
+            <dd class="col-sm-9">@(Model.VieillissementHours.HasValue ? $"{Model.VieillissementHours} h" : "—")</dd>
+        </dl>
+
+        <div class="card card-outline card-warning card-directives mb-3">
+            <div class="card-header"><strong>Directives de l'autorité responsable</strong></div>
+            <div class="card-body">
+                <p>@(Model.Directives ?? "—")</p>
+                @if (!string.IsNullOrEmpty(Model.TechnicalOrderReference))
+                {
+                    <p class="mb-1"><strong>Référence T.O. :</strong> @Model.TechnicalOrderReference</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.DirectiveIssuedByName))
+                {
+                    <p class="mb-0">
+                        <strong>Émise par :</strong> @Model.DirectiveIssuedByName
+                        @if (Model.DirectiveIssuedAtUtc.HasValue)
+                        {
+                            <span> — @Model.DirectiveIssuedAtUtc.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                        }
+                    </p>
+                }
+            </div>
+        </div>
+
+        <div class="alert alert-info mb-0">
+            <i class="fas fa-info-circle"></i> Équipements changés (Tableau II), travaux effectués (Tableau III)
+            et visas finaux seront disponibles ici dans une prochaine étape.
+        </div>
+    </div>
+    <div class="card-footer">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fas fa-edit"></i> Modifier</a>
+        <a asp-action="Index" asp-route-id="@Model.WorkOrderId" class="btn btn-default">Retour à la liste</a>
+    </div>
+</div>

@@ -1,0 +1,125 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.WorkOrderSectionFormViewModel
+
+<style>
+    .wos-form .form-control {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+
+    .wos-form label {
+        color: #c9ccd1;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .wos-form .required-mark {
+        color: #ff6b6b;
+        margin-left: 2px;
+    }
+
+    .wos-form .card-directives {
+        border-left: 3px solid #f0ad4e;
+    }
+
+    .wos-form .card-time {
+        border-left: 3px solid #0d6efd;
+    }
+</style>
+
+<div class="wos-form">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="WorkOrderId" />
+
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <label asp-for="WorkSectionId">Section<span class="required-mark">*</span></label>
+            <select asp-for="WorkSectionId" class="form-control" asp-items="Model.AvailableSections.Select(s => new SelectListItem(s.DisplayLabel, s.Id.ToString()))">
+                <option value="">-- Sélectionner --</option>
+            </select>
+            <span asp-validation-for="WorkSectionId" class="text-danger"></span>
+        </div>
+        <div class="col-md-4 form-group">
+            <label asp-for="FormNumber">N° Formule 13</label>
+            <input asp-for="FormNumber" class="form-control" placeholder="ex : 25128/INST" />
+        </div>
+        <div class="col-md-4 form-group">
+            <label asp-for="OrganismeResponsable">Organisme responsable</label>
+            <input asp-for="OrganismeResponsable" class="form-control" placeholder="ex : SGMA1" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 form-group">
+            <label asp-for="TypeTravail">Type de travail</label>
+            <select asp-for="TypeTravail" class="form-control">
+                <option value="">-- Aucun --</option>
+                @foreach (var t in FRAProject.ViewModels.AircraftMaintenance.WorkOrderSectionFormViewModel.TypeTravailOptions)
+                {
+                    <option value="@t">@t</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3 form-group">
+            <label asp-for="DateDebut">Date début</label>
+            <input asp-for="DateDebut" class="form-control" type="date" />
+        </div>
+        <div class="col-md-3 form-group">
+            <label asp-for="DateFin">Date fin</label>
+            <input asp-for="DateFin" class="form-control" type="date" />
+        </div>
+        <div class="col-md-3 form-group">
+            <label asp-for="Status">Statut</label>
+            <select asp-for="Status" class="form-control">
+                @foreach (var s in FRAProject.ViewModels.AircraftMaintenance.WorkOrderSectionFormViewModel.StatusOptions)
+                {
+                    <option value="@s">@s</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="card card-outline card-secondary card-time mb-3">
+        <div class="card-header"><strong>Temps</strong></div>
+        <div class="card-body row">
+            <div class="col-md-4 form-group">
+                <label asp-for="TempsAlloueMinutes">Alloué (min)</label>
+                <input asp-for="TempsAlloueMinutes" class="form-control" />
+            </div>
+            <div class="col-md-4 form-group">
+                <label asp-for="TempsPasseSystematiqueMinutes">Passé — Systématique (min)</label>
+                <input asp-for="TempsPasseSystematiqueMinutes" class="form-control" />
+            </div>
+            <div class="col-md-4 form-group">
+                <label asp-for="TempsPasseRetoucheMinutes">Passé — Retouche (min)</label>
+                <input asp-for="TempsPasseRetoucheMinutes" class="form-control" />
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="VieillissementHours">Vieillissement (heures aéronef)</label>
+        <input asp-for="VieillissementHours" class="form-control" style="max-width:200px;" />
+    </div>
+
+    <div class="card card-outline card-warning card-directives mb-3">
+        <div class="card-header"><strong>Directives de l'autorité responsable</strong></div>
+        <div class="card-body">
+            <div class="form-group">
+                <label asp-for="Directives">Directives</label>
+                <textarea asp-for="Directives" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-6 form-group mb-0">
+                    <label asp-for="TechnicalOrderReference">Référence T.O.</label>
+                    <input asp-for="TechnicalOrderReference" class="form-control" placeholder="ex : IAW TO 1F-5F-2-8-1-1 ed: 30.3.2006" />
+                </div>
+                <div class="col-md-6 form-group mb-0">
+                    <label asp-for="DirectiveIssuedByName">Émise par</label>
+                    <input asp-for="DirectiveIssuedByName" class="form-control" placeholder="ex : Chef ST" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

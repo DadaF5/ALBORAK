@@ -1,0 +1,89 @@
+﻿@model List<FRAProject.ViewModels.AircraftMaintenance.WorkOrderSectionListItemViewModel>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Sections (Formule 13)";
+}
+
+<style>
+    .wos-index table td, .wos-index table th {
+        border-color: #363b44;
+    }
+
+    .wos-index code {
+        color: #ff8fa3;
+        background: transparent;
+    }
+</style>
+
+<div class="wos-index card card-outline card-primary">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">
+            <i class="fas fa-layer-group mr-1"></i> Sections (Formule 13) — @ViewBag.WONumber
+        </h3>
+        <a asp-action="Create" asp-route-id="@ViewBag.WorkOrderId" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> Nouvelle section
+        </a>
+    </div>
+    <div class="card-body p-0">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success m-3">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger m-3">@TempData["Error"]</div>
+        }
+
+        <table class="table table-striped table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Section</th>
+                    <th>N° Formule 13</th>
+                    <th>Type</th>
+                    <th>Date début</th>
+                    <th>Date fin</th>
+                    <th>Statut</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var badgeClass = item.Status switch
+                    {
+                        "DONE" => "badge-success",
+                        "IN_PROGRESS" => "badge-warning",
+                        _ => "badge-secondary"
+                    };
+                    <tr>
+                        <td><code>@item.SectionCode</code> — @item.SectionName</td>
+                        <td>@(item.FormNumber ?? "—")</td>
+                        <td>@(item.TypeTravail ?? "—")</td>
+                        <td>@(item.DateDebut?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td>@(item.DateFin?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td><span class="badge @badgeClass">@item.Status</span></td>
+                        <td class="text-right">
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-secondary btn-sm">
+                                <i class="fas fa-eye"></i> Détails
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary btn-sm">
+                                <i class="fas fa-edit"></i> Modifier
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </a>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4">Aucune section créée pour cet OT.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<a asp-controller="WorkOrders" asp-action="Details" asp-route-id="@ViewBag.WorkOrderId" class="btn btn-default mt-3">
+    <i class="fas fa-arrow-left"></i> Retour à l'ordre de travail
+</a>

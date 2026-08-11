@@ -1,0 +1,72 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.WorkSectionFormViewModel
+
+<style>
+    .ws-form .form-control {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+
+    .ws-form label {
+        color: #c9ccd1;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .ws-form .required-mark {
+        color: #ff6b6b;
+        margin-left: 2px;
+    }
+</style>
+
+<div class="ws-form">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <input type="hidden" asp-for="Id" />
+
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label asp-for="AcTypeId">Type d'aéronef<span class="required-mark">*</span></label>
+            <select asp-for="AcTypeId" class="form-control" asp-items="Model.AcTypes.Select(a => new SelectListItem(a.DisplayLabel, a.Id.ToString()))">
+                <option value="">-- Sélectionner --</option>
+            </select>
+            <span asp-validation-for="AcTypeId" class="text-danger"></span>
+        </div>
+        <div class="col-md-6 form-group">
+            <label asp-for="Code">Code<span class="required-mark">*</span></label>
+            <input asp-for="Code" class="form-control text-uppercase" id="codeInput" placeholder="ex : INST" />
+            <span asp-validation-for="Code" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Name">Nom<span class="required-mark">*</span></label>
+        <input asp-for="Name" class="form-control" placeholder="ex : Instruments" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Description">Description</label>
+        <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <label asp-for="SortOrder">Ordre d'affichage</label>
+            <input asp-for="SortOrder" class="form-control" />
+        </div>
+        <div class="col-md-4 form-group d-flex align-items-end">
+            <div class="custom-control custom-switch">
+                <input asp-for="IsActive" class="custom-control-input" />
+                <label class="custom-control-label" asp-for="IsActive">Actif</label>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('codeInput')?.addEventListener('input', function (e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    </script>
+}

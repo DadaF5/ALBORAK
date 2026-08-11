@@ -105,7 +105,7 @@ namespace FRAProject.Data
         public DbSet<WorkOrder> WorkOrders { get; set; } = null!;
         public DbSet<WorkOrderJobCard> WorkOrderJobCards { get; set; } = null!;
         public DbSet<WorkOrderJobCardSignOff> WorkOrderJobCardSignOffs { get; set; } = null!;
-
+        public DbSet<WorkOrderSection> WorkOrderSections { get; set; } = null!;
 
 
         // =====================================
@@ -379,6 +379,17 @@ namespace FRAProject.Data
                  .HasForeignKey(w => w.ComponentId)
                  .OnDelete(DeleteBehavior.Restrict);
             });
+            modelBuilder.Entity<WorkOrderSection>()
+                .HasOne(x => x.WorkOrder)
+                .WithMany()
+                .HasForeignKey(x => x.WorkOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<WorkOrderSection>()
+                .HasOne(x => x.WorkSection)
+                .WithMany()
+                .HasForeignKey(x => x.WorkSectionId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
         private void ConfigureDecimalPrecision(ModelBuilder modelBuilder)

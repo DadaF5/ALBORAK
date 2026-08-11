@@ -1,0 +1,194 @@
+﻿@model List<FRAProject.ViewModels.AircraftMaintenance.DueListItemViewModel>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Échéancier des inspections";
+}
+
+<style>
+    .dl-index table td, .dl-index table th { border-color: #363b44; }
+    .dl-index code { color: #ff8fa3; background: transparent; }
+    .dl-filter-bar {
+        background-color: #2b2f36;
+        padding: 10px 16px;
+        border-bottom: 1px solid #363b44;
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .dl-filter-bar select {
+        background-color: #23262d;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+        max-width: 280px;
+        display: inline-block;
+    }
+    .dl-filter-bar label {
+        color: #c9ccd1;
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-right: 8px;
+    }
+    .dl-remaining-negative { color: #ff6b6b; font-weight: 600; }
+    .dl-remaining-positive { color: #8a9099; }
+    .dl-summary-badges .badge { font-size: 0.85rem; padding: 6px 10px; margin-right: 6px; }
+</style>
+
+<div class="dl-index card card-outline card-primary">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title"><i class="fas fa-calendar-check mr-1"></i> Échéancier des inspections</h3>
+        <div class="dl-summary-badges">
+            <span class="badge badge-danger">@Model.Count(x => x.Status == "OVERDUE") dépassées</span>
+            <span class="badge badge-warning">@Model.Count(x => x.Status == "ALERT") proches</span>
+            <span class="badge badge-secondary">@Model.Count(x => x.Status == "UNKNOWN") jamais réalisées</span>
+            <span class="badge badge-success">@Model.Count(x => x.Status == "OK") à jour</span>
+        </div>
+    </div>
+
+    <div class="dl-filter-bar">
+        <div>
+            <label for="acTypeFilter">Type d'aéronef :</label>
+            <select id="acTypeFilter" class="form-control form-control-sm">
+                <option value="">-- Tous --</option>
+                @foreach (var acType in (List<string>)ViewBag.AllAcTypeLabels)
+                {
+                    <option value="@acType">@acType</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="statusFilter">Statut :</label>
+            <select id="statusFilter" class="form-control form-control-sm">
+                <option value="">-- Tous --</option>
+                <option value="OVERDUE">Dépassé</option>
+                <option value="ALERT">Proche</option>
+                <option value="UNKNOWN">Jamais réalisé</option>
+                <option value="OK">À jour</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <table class="table table-striped table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Aéronef</th>
+                    <th>Type d'aéronef</th>
+                    <th>Inspection</th>
+                    <th>Dernière réalisation</th>
+                    <th>Prochaine échéance</th>
+                    <th>Restant</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody id="dueListBody">
+                @foreach (var item in Model)
+                {
+                    var badgeClass = item.Status switch
+                    {
+                        "OVERDUE" => "badge-danger",
+                        "ALERT" => "badge-warning",
+                        "OK" => "badge-success",
+                        _ => "badge-secondary"
+                    };
+                    var statusLabelFr = item.Status switch
+                    {
+                        "OVERDUE" => "Dépassé",
+                        "ALERT" => "Proche",
+                        "OK" => "À jour",
+                        _ => "Jamais réalisé"
+                    };
+
+                    <tr data-actype="@item.AcTypeLabel" data-status="@item.Status">
+                        <td><strong>@item.AircraftLabel</strong></td>
+                        <td>@item.AcTypeLabel</td>
+                        <td><code>@item.InspectionTypeCode</code> — @item.InspectionTypeName</td>
+                        <td>
+                            @if (item.LastDoneHours.HasValue)
+                            {
+                                <span>@item.LastDoneHours h</span>
+                                @if (item.LastDoneDate.HasValue)
+                                {
+                                    <span> · @item.LastDoneDate.Value.ToString("dd/MM/yyyy")</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Jamais</span>
+                            }
+                        </td>
+                        <td>
+                            @if (item.NextDueHours.HasValue)
+                            {
+                                <span>@item.NextDueHours h</span>
+                            }
+                            @if (item.NextDueDate.HasValue)
+                            {
+                                <span> · @item.NextDueDate.Value.ToString("dd/MM/yyyy")</span>
+                            }
+                            @if (!item.NextDueHours.HasValue && !item.NextDueDate.HasValue)
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (item.RemainingHours.HasValue)
+                            {
+                                if (item.RemainingHours.Value < 0)
+                                {
+                                    <span class="dl-remaining-negative">@(-item.RemainingHours.Value) h dépassé</span>
+                                }
+                                else
+                                {
+                                    <span class="dl-remaining-positive">@item.RemainingHours.Value h restant</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td><span class="badge @badgeClass">@statusLabelFr</span></td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            Aucune combinaison aéronef / type d'inspection à afficher.
+                        </td>
+                    </tr>
+                }
+                <tr id="noResultsRow" style="display:none;">
+                    <td colspan="7" class="text-center text-muted py-4">
+                        Aucun résultat pour ce filtre.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function applyFilters() {
+            var acType = document.getElementById('acTypeFilter').value;
+            var status = document.getElementById('statusFilter').value;
+            var rows = document.querySelectorAll('#dueListBody tr[data-actype]');
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var matchesAcType = !acType || row.getAttribute('data-actype') === acType;
+                var matchesStatus = !status || row.getAttribute('data-status') === status;
+                var visible = matchesAcType && matchesStatus;
+                row.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
+            });
+
+            document.getElementById('noResultsRow').style.display = visibleCount === 0 ? '' : 'none';
+        }
+
+        document.getElementById('acTypeFilter')?.addEventListener('change', applyFilters);
+        document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+    </script>
+}

@@ -135,6 +135,9 @@
         {
             <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger"><i class="fas fa-trash"></i> Supprimer</a>
         }
+        <a asp-controller="WorkOrderSections" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-info">
+            <i class="fas fa-layer-group"></i> Sections (Formule 13)
+        </a>
         <a asp-action="Print" asp-route-id="@Model.Id" class="btn btn-secondary" target="_blank">
             <i class="fas fa-print"></i> Imprimer
         </a>

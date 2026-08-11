@@ -63,6 +63,8 @@ namespace FRAProject.Infrastructure.Interfaces
         IGenericRepository<WorkOrderJobCard> WorkOrderJobCards { get; }
         IInspectionStateRepository InspectionStates { get; }
         IInspectionTypeProgramRepository InspectionTypePrograms { get; }
+        IWorkSectionRepository WorkSections { get; }
+        IWorkOrderSectionRepository WorkOrderSections { get; }
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>
         /// Flush all staged changes to the database in one transaction.

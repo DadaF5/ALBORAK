@@ -230,16 +230,99 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         }
 
         // GET: AircraftMaintenance/WorkOrders/Print/5
-        // Standalone print-friendly layout (Layout = null in the view) —
-        // generic USAF-discrepancy-block / CAMO-work-order style, not tied
-        // to any single aircraft type's specific paperwork, since the
-        // fleet is mixed (jets, turboprops, helicopters, water bombers...).
+        // Now renders the REAL Formule 12/13 structure — one Formule 13
+        // block per WorkOrderSection, with its equipment-exchange table
+        // (Tableau II), travaux-effectués table (Tableau III), and the
+        // real 4-level visa chain. Matches the actual scanned forms, not
+        // a generic placeholder.
         public async Task<IActionResult> Print(int id)
         {
             var entity = await _uow.WorkOrders.GetByIdWithDetailsAsync(id);
             if (entity == null) return NotFound();
 
-            return View(await MapToDetailsVmAsync(entity));
+            var vm = await MapToDetailsVmAsync(entity);
+            vm.Sections = await BuildSectionsForPrintAsync(id);
+
+            return View(vm);
+        }
+
+        // Fetches every WorkOrderSection for this WorkOrder, plus each
+        // one's Parts (Tableau II), Tasks (Tableau III), and SignOffs
+        // (4-level chain — auto-created if not yet opened, so the print
+        // always shows all 4 visa slots, blank or filled, matching the
+        // real paper form).
+        private async Task<List<WorkOrderSectionPrintViewModel>> BuildSectionsForPrintAsync(int workOrderId)
+        {
+            var sections = await _uow.WorkOrderSections.GetByWorkOrderIdWithDetailsAsync(workOrderId);
+            var result = new List<WorkOrderSectionPrintViewModel>();
+
+            foreach (var s in sections)
+            {
+                var parts = await _uow.WorkOrderSectionParts.GetByWorkOrderSectionIdAsync(s.Id);
+                var tasks = await _uow.WorkOrderSectionTasks.GetByWorkOrderSectionIdAsync(s.Id);
+                var signOffs = await _uow.WorkOrderSectionSignOffs.GetOrCreateCanonicalAsync(s.Id);
+                var labelByLevel = WorkOrderSectionSignOff.CanonicalLevels
+                    .ToDictionary(l => l.Level, l => l.Label);
+
+                result.Add(new WorkOrderSectionPrintViewModel
+                {
+                    SectionCode = s.WorkSection?.Code ?? "—",
+                    SectionName = s.WorkSection?.Name ?? "—",
+                    FormNumber = s.FormNumber,
+                    OrganismeResponsable = s.OrganismeResponsable,
+                    TypeTravail = s.TypeTravail,
+                    DateDebut = s.DateDebut,
+                    DateFin = s.DateFin,
+                    TempsAlloueMinutes = s.TempsAlloueMinutes,
+                    TempsPasseSystematiqueMinutes = s.TempsPasseSystematiqueMinutes,
+                    TempsPasseRetoucheMinutes = s.TempsPasseRetoucheMinutes,
+                    VieillissementHours = s.VieillissementHours,
+                    Directives = s.Directives,
+                    TechnicalOrderReference = s.TechnicalOrderReference,
+                    DirectiveIssuedByName = s.DirectiveIssuedByName,
+                    DirectiveIssuedAtUtc = s.DirectiveIssuedAtUtc,
+                    Parts = parts.Select(p => new WorkOrderSectionPartPrintItemViewModel
+                    {
+                        OldNomenclature = p.OldNomenclature,
+                        OldNumero = p.OldNumero,
+                        OldVieillissement = p.OldVieillissement,
+                        NewNomenclature = p.NewNomenclature,
+                        NewNumero = p.NewNumero,
+                        NewVieillissement = p.NewVieillissement,
+                        DesignationEtPosition = p.DesignationEtPosition,
+                        MotifDepose = p.MotifDepose,
+                        Symbole = p.Symbole,
+                        TempsAlloueMinutes = p.TempsAlloueMinutes,
+                        Date = p.Date,
+                        TempsPasseMinutes = p.TempsPasseMinutes,
+                        ExecutantSpecial = p.ExecutantSpecial,
+                        ExecutantNom = p.ExecutantNom
+                    }).ToList(),
+                    Tasks = tasks.Select(t => new WorkOrderSectionTaskPrintItemViewModel
+                    {
+                        DesignationTravaux = t.DesignationTravaux,
+                        TempsAlloueMinutes = t.TempsAlloueMinutes,
+                        Date = t.Date,
+                        TempsPasseSystemeMinutes = t.TempsPasseSystemeMinutes,
+                        TempsPasseRetouchesMinutes = t.TempsPasseRetouchesMinutes,
+                        ExecutantSpecial = t.ExecutantSpecial,
+                        ExecutantNom = t.ExecutantNom
+                    }).ToList(),
+                    SignOffs = signOffs.OrderBy(so => so.SortOrder).Select(so => new WorkOrderSectionSignOffItemViewModel
+                    {
+                        Id = so.Id,
+                        Level = so.Level,
+                        LevelLabel = labelByLevel.GetValueOrDefault(so.Level, so.Level),
+                        SortOrder = so.SortOrder,
+                        SignedByName = so.SignedByName,
+                        StampReference = so.StampReference,
+                        SignedAtUtc = so.SignedAtUtc,
+                        Remarks = so.Remarks
+                    }).ToList()
+                });
+            }
+
+            return result;
         }
 
         // GET: AircraftMaintenance/WorkOrders/Edit/5  (Remarks only)

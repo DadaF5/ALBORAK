@@ -21,9 +21,6 @@
             padding: 20px;
         }
 
-        .no-print {
-        }
-
         @@media print {
             .no-print {
                 display: none !important;
@@ -104,7 +101,7 @@
             margin-bottom: 10px;
         }
 
-            .ref-table td, .info-table td {
+            .ref-table td, .info-table td, .info-table th {
                 border: 1px solid #000;
                 padding: 4px 6px;
                 vertical-align: top;
@@ -126,6 +123,16 @@
             color: #fff;
             padding: 3px 6px;
             margin: 12px 0 0 0;
+        }
+
+        .subsection-title {
+            font-weight: bold;
+            font-size: 10px;
+            text-transform: uppercase;
+            background: #666;
+            color: #fff;
+            padding: 3px 6px;
+            margin: 8px 0 0 0;
         }
 
         .badges span {
@@ -160,10 +167,6 @@
                 text-align: center;
             }
 
-            .jc-table .sign-col {
-                width: 90px;
-            }
-
         .remarks-box {
             border: 1px solid #000;
             min-height: 60px;
@@ -171,6 +174,15 @@
             font-size: 10px;
             margin-top: 4px;
             white-space: pre-wrap;
+        }
+
+        .directives-box {
+            border: 1px solid #000;
+            padding: 6px;
+            font-size: 10px;
+            margin-top: 4px;
+            white-space: pre-wrap;
+            background: #fafafa;
         }
 
         .signoff-table {
@@ -195,6 +207,11 @@
                 height: 32px;
             }
 
+            .signoff-table .signed {
+                color: #006400;
+                font-weight: bold;
+            }
+
         .cert-box {
             border: 1px solid #000;
             padding: 8px;
@@ -212,6 +229,34 @@
             border-top: 1px solid #999;
             padding-top: 4px;
         }
+
+        .section-block {
+            border: 2px solid #000;
+            padding: 10px;
+            margin-top: 16px;
+            page-break-inside: avoid;
+        }
+
+        .section-block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+        }
+
+            .section-block-header h2 {
+                font-size: 14px;
+                margin: 0;
+            }
+
+            .section-block-header .form13-badge {
+                border: 1px solid #000;
+                padding: 2px 8px;
+                font-weight: bold;
+                font-size: 11px;
+            }
     </style>
 </head>
 <body>
@@ -303,12 +348,7 @@
             }
             @for (int i = 1; i <= engineCount; i++)
             {
-                <tr>
-                    <td>Moteur @i</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
+                <tr><td>Moteur @i</td><td></td><td></td><td></td></tr>
             }
         </table>
         <p style="font-size:8.5px; color:#555; margin:2px 0 0 0;">
@@ -319,16 +359,13 @@
         {
             <div class="section-title">Référence Défaut / Snag Reference</div>
             <table class="info-table">
-                <tr>
-                    <td class="lbl">N° Snag / Ref.</td>
-                    <td style="height:20px;"></td>
-                </tr>
+                <tr><td class="lbl">N° Snag / Ref.</td><td style="height:20px;"></td></tr>
             </table>
         }
 
         @if (Model.InspectionTypeLabels.Any())
         {
-            <div class="section-title">Types d'Inspection Couverts / Inspection Types Covered</div>
+            <div class="section-title">Type de Travail Demandé / Work Requested</div>
             <div class="badges">
                 @foreach (var lbl in Model.InspectionTypeLabels)
                 {
@@ -337,60 +374,36 @@
             </div>
         }
 
-        <div class="section-title">Job Cards / Tâches</div>
-        <table class="jc-table">
-            <thead>
-                <tr>
-                    <th style="width:16%;">Job Card</th>
-                    <th style="width:12%;">Programme</th>
-                    <th class="center" style="width:8%;">Oblig.</th>
-                    <th class="center" style="width:10%;">Statut</th>
-                    <th class="sign-col center">Réalisé par</th>
-                    <th class="sign-col center">Date</th>
-                    <th>Observations</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var jc in Model.JobCards)
-                {
+        @if (Model.JobCards.Any())
+        {
+            <div class="section-title">Job Cards / Tâches (Programme d'Entretien)</div>
+            <table class="jc-table">
+                <thead>
                     <tr>
-                        <td>@jc.JobCardLabel</td>
-                        <td>@jc.MaintenanceProgramLabel</td>
-                        <td class="center">@(jc.IsMandatory ? "OUI" : "NON")</td>
-                        <td class="center">@jc.Status</td>
-                        <td></td>
-                        <td></td>
-                        <td>@(jc.Observations ?? "")</td>
+                        <th style="width:20%;">Job Card</th>
+                        <th style="width:14%;">Programme</th>
+                        <th class="center" style="width:8%;">Oblig.</th>
+                        <th class="center" style="width:10%;">Statut</th>
+                        <th>Observations</th>
                     </tr>
-                }
-                @if (!Model.JobCards.Any())
-                {
-                    <tr><td colspan="7" class="center">Aucune job card assignée</td></tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var jc in Model.JobCards)
+                    {
+                        <tr>
+                            <td>@jc.JobCardLabel</td>
+                            <td>@jc.MaintenanceProgramLabel</td>
+                            <td class="center">@(jc.IsMandatory ? "OUI" : "NON")</td>
+                            <td class="center">@jc.Status</td>
+                            <td>@(jc.Observations ?? "")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
 
         <div class="section-title">Remarques / Remarks</div>
         <div class="remarks-box">@(Model.Remarks ?? "")</div>
-
-        <div class="section-title">Visas / Sign-Off Chain</div>
-        <table class="signoff-table">
-            <thead>
-                <tr>
-                    <th style="width:20%;">Niveau / Level</th>
-                    <th style="width:25%;">Nom / Name</th>
-                    <th style="width:20%;">Signature</th>
-                    <th style="width:15%;">Date</th>
-                    <th style="width:20%;">Remarques</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td><strong>TECHNICIEN</strong></td><td></td><td class="sig-line"></td><td></td><td></td></tr>
-                <tr><td><strong>APRS</strong></td><td></td><td class="sig-line"></td><td></td><td></td></tr>
-                <tr><td><strong>NAVIGABILITÉ</strong></td><td></td><td class="sig-line"></td><td></td><td></td></tr>
-                <tr><td><strong>COMMANDANT</strong></td><td></td><td class="sig-line"></td><td></td><td></td></tr>
-            </tbody>
-        </table>
 
         @if (Model.Status == "CLOSED")
         {
@@ -431,6 +444,172 @@
         </div>
 
     </div>
+
+    @* ── One Formule 13 block per WorkOrderSection ─────────────────── *@
+    @foreach (var sec in Model.Sections)
+    {
+        <div class="page section-block">
+            <div class="section-block-header">
+                <h2>FORMULE DE CONTRÔLE DES OPÉRATIONS D'ENTRETIEN ET DE REMISE EN ÉTAT — Formule 13</h2>
+                <span class="form13-badge">@(sec.FormNumber ?? $"{sec.SectionCode}")</span>
+            </div>
+
+            <table class="ref-table">
+                <tr>
+                    <td class="lbl">Section responsable</td>
+                    <td><strong>@sec.SectionCode — @sec.SectionName</strong></td>
+                    <td class="lbl">Organisme responsable</td>
+                    <td>@(sec.OrganismeResponsable ?? "—")</td>
+                </tr>
+                <tr>
+                    <td class="lbl">Type de travail</td>
+                    <td>@(sec.TypeTravail ?? "—")</td>
+                    <td class="lbl">Vieillissement</td>
+                    <td>@(sec.VieillissementHours.HasValue ? $"{sec.VieillissementHours} h" : "—")</td>
+                </tr>
+                <tr>
+                    <td class="lbl">Date début</td>
+                    <td>@(sec.DateDebut?.ToString("dd/MM/yyyy") ?? "—")</td>
+                    <td class="lbl">Date fin</td>
+                    <td>@(sec.DateFin?.ToString("dd/MM/yyyy") ?? "—")</td>
+                </tr>
+                <tr>
+                    <td class="lbl">Temps alloué</td>
+                    <td>@(sec.TempsAlloueMinutes?.ToString() ?? "—") min</td>
+                    <td class="lbl">Temps passé (Systém. / Retouche)</td>
+                    <td>
+                        @(sec.TempsPasseSystematiqueMinutes?.ToString() ?? "—") min /
+                        @(sec.TempsPasseRetoucheMinutes?.ToString() ?? "—") min
+                    </td>
+                </tr>
+            </table>
+
+            <div class="subsection-title">Tableau I — Directives de l'Autorité Responsable</div>
+            <div class="directives-box">
+                @(sec.Directives ?? "—")
+                @if (!string.IsNullOrEmpty(sec.TechnicalOrderReference))
+                {
+                    <div><strong>Référence T.O. :</strong> @sec.TechnicalOrderReference</div>
+                }
+                @if (!string.IsNullOrEmpty(sec.DirectiveIssuedByName))
+                {
+                    <div>
+                        <strong>Émise par :</strong> @sec.DirectiveIssuedByName
+                        @if (sec.DirectiveIssuedAtUtc.HasValue)
+                        {
+                            <span> — @sec.DirectiveIssuedAtUtc.Value.ToString("dd/MM/yyyy")</span>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="subsection-title">Tableau II — Équipements Changés ou Remis en État</div>
+            <table class="jc-table">
+                <thead>
+                    <tr>
+                        <th>Désignation / Position</th>
+                        <th>Ancien</th>
+                        <th>Nouveau</th>
+                        <th>Motif dépose</th>
+                        <th class="center">Sym.</th>
+                        <th class="center">Date</th>
+                        <th class="center">Temps passé</th>
+                        <th>Exécutant</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in sec.Parts)
+                    {
+                        <tr>
+                            <td>@(p.DesignationEtPosition ?? "—")</td>
+                            <td>@(p.OldNomenclature) @(p.OldNumero)</td>
+                            <td>@(p.NewNomenclature) @(p.NewNumero)</td>
+                            <td>@(p.MotifDepose ?? "—")</td>
+                            <td class="center">@(p.Symbole ?? "—")</td>
+                            <td class="center">@(p.Date?.ToString("dd/MM/yy") ?? "—")</td>
+                            <td class="center">@(p.TempsPasseMinutes?.ToString() ?? "—")'</td>
+                            <td>@(p.ExecutantSpecial) @(p.ExecutantNom)</td>
+                        </tr>
+                    }
+                    @if (!sec.Parts.Any())
+                    {
+                        <tr><td colspan="8" class="center">Aucun équipement changé</td></tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="subsection-title">Tableau III — Travaux Effectués (Systématiques - Retouches - Modifications)</div>
+            <table class="jc-table">
+                <thead>
+                    <tr>
+                        <th style="width:40%;">Désignation des travaux</th>
+                        <th class="center">Date</th>
+                        <th class="center">Alloué</th>
+                        <th class="center">Système</th>
+                        <th class="center">Retouches</th>
+                        <th>Exécutant</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in sec.Tasks)
+                    {
+                        <tr>
+                            <td>@t.DesignationTravaux</td>
+                            <td class="center">@(t.Date?.ToString("dd/MM/yy") ?? "—")</td>
+                            <td class="center">@(t.TempsAlloueMinutes?.ToString() ?? "—")'</td>
+                            <td class="center">@(t.TempsPasseSystemeMinutes?.ToString() ?? "—")'</td>
+                            <td class="center">@(t.TempsPasseRetouchesMinutes?.ToString() ?? "—")'</td>
+                            <td>@(t.ExecutantSpecial) @(t.ExecutantNom)</td>
+                        </tr>
+                    }
+                    @if (!sec.Tasks.Any())
+                    {
+                        <tr><td colspan="6" class="center">Aucun travail enregistré</td></tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="subsection-title">Visas</div>
+            <table class="signoff-table">
+                <thead>
+                    <tr>
+                        <th style="width:20%;">Niveau</th>
+                        <th style="width:25%;">Nom</th>
+                        <th style="width:15%;">Cachet</th>
+                        <th style="width:20%;">Date</th>
+                        <th style="width:20%;">Remarques</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var so in sec.SignOffs)
+                    {
+                        <tr>
+                            <td><strong>@so.LevelLabel</strong></td>
+                            @if (so.IsSigned)
+                            {
+                                <td class="signed">@so.SignedByName</td>
+                                <td class="signed">@(so.StampReference ?? "—")</td>
+                                <td class="signed">@so.SignedAtUtc!.Value.ToString("dd/MM/yyyy")</td>
+                                <td>@(so.Remarks ?? "—")</td>
+                            }
+                            else
+                            {
+                                <td class="sig-line"></td>
+                                <td class="sig-line"></td>
+                                <td class="sig-line"></td>
+                                <td class="sig-line"></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="footer">
+                <span>OT @Model.WONumber — Section @sec.SectionCode</span>
+                <span>Généré le @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+        </div>
+    }
 
 </body>
 </html>

@@ -44,6 +44,10 @@
 
         public List<WorkOrderJobCardItemViewModel> JobCards { get; set; } = [];
 
+        // Additive — populated only for Print (Details/Delete don't need
+        // this, avoids unnecessary querying on every page load).
+        public List<WorkOrderSectionPrintViewModel> Sections { get; set; } = [];
+
         // ── Workflow helpers (additive — used by Details.cshtml to show/
         // hide action buttons) ──────────────────────────────────────────
         public bool CanOpen => Status == "DRAFT";

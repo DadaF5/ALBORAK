@@ -988,7 +988,7 @@
     </div>
     <!-- APP SHELL END -->
     <!-- In _Layout.cshtml, near the topbar -->
-    <a asp-controller="BugReports" asp-action="Create"
+    <a asp-area="" asp-controller="BugReports" asp-action="Create"
        asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString"
        class="btn btn-danger btn-sm position-fixed"
        style="bottom: 20px; right: 20px; z-index: 1050;">

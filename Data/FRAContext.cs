@@ -131,6 +131,11 @@ namespace FRAProject.Data
         public DbSet<DossierAirworthiness> DossierAirworthiness { get; set; } = null!;
         public DbSet<ImmatriculationDocument> ImmatriculationDocuments { get; set; } = null!;
 
+        // --===========================
+        // DOMAIN: Support
+        // --===========================
+        public DbSet<BugReport> BugReports { get; set; } = null!;
+
         // ════════════════════════════════════════════════════════════════
         //  OnModelCreating
         // ════════════════════════════════════════════════════════════════
@@ -191,6 +196,18 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new ModuleRoleConfiguration());
             //modelBuilder.ApplyConfiguration(new UserAssignmentConfiguration());
 
+            // Support for snags and bug reports
+            modelBuilder.Entity<BugReport>()
+                .HasOne(b => b.ReportedBy)
+                .WithMany()
+                .HasForeignKey(b => b.ReportedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<BugReport>()
+                .HasOne(b => b.ResolvedBy)
+                .WithMany()
+                .HasForeignKey(b => b.ResolvedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // ── Decimal precision ─────────────────────────────────────────
             ConfigureDecimalPrecision(modelBuilder);

@@ -1,0 +1,158 @@
+﻿@using FRAProject.Support.Dtos
+@model BugReportDetailsDto
+@{
+    ViewData["Title"] = $"Signalement {Model.ReportNumber}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var isAdmin = User.IsInRole("Admin");
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-8">
+                <h1><code>@Model.ReportNumber</code> — @Model.Title</h1>
+            </div>
+            <div class="col-sm-4 text-right">
+                <a asp-action="Index" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="container-fluid">
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                @TempData["Success"]
+            </div>
+        }
+
+        <div class="row">
+            <div class="col-md-8">
+
+                <div class="card card-outline card-danger">
+                    <div class="card-header">
+                        <h3 class="card-title">Description</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-3">Écran / Module</dt>
+                            <dd class="col-sm-9">@Model.ScreenOrModule</dd>
+
+                            <dt class="col-sm-3">Description</dt>
+                            <dd class="col-sm-9" style="white-space: pre-wrap;">@Model.Description</dd>
+
+                            @if (!string.IsNullOrEmpty(Model.ExpectedBehavior))
+                            {
+                                <dt class="col-sm-3">Attendu</dt>
+                                <dd class="col-sm-9">@Model.ExpectedBehavior</dd>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.ActualBehavior))
+                            {
+                                <dt class="col-sm-3">Observé</dt>
+                                <dd class="col-sm-9">@Model.ActualBehavior</dd>
+                            }
+                        </dl>
+
+                        @if (!string.IsNullOrEmpty(Model.ScreenshotPath))
+                        {
+                            <hr />
+                            <a href="@Model.ScreenshotPath" target="_blank">
+                                <img src="@Model.ScreenshotPath" class="img-fluid rounded" style="max-height:300px;" />
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <div class="card card-outline card-secondary">
+                    <div class="card-header">
+                        <h3 class="card-title">Informations techniques</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-3">Page</dt>
+                            <dd class="col-sm-9"><code>@Model.PageUrl</code></dd>
+
+                            <dt class="col-sm-3">Contrôleur / Action</dt>
+                            <dd class="col-sm-9">@Model.ControllerName / @Model.ActionName</dd>
+
+                            <dt class="col-sm-3">Adresse IP</dt>
+                            <dd class="col-sm-9">@Model.UserIpAddress</dd>
+
+                            <dt class="col-sm-3">Navigateur</dt>
+                            <dd class="col-sm-9"><small class="text-muted">@Model.UserAgent</small></dd>
+                        </dl>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <div class="card card-outline card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">Statut</h3>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Sévérité</dt>
+                            <dd class="col-sm-7">@Model.Severity</dd>
+
+                            <dt class="col-sm-5">Statut</dt>
+                            <dd class="col-sm-7">@Model.Status</dd>
+
+                            <dt class="col-sm-5">Signalé par</dt>
+                            <dd class="col-sm-7">@Model.ReportedByName</dd>
+
+                            <dt class="col-sm-5">Date</dt>
+                            <dd class="col-sm-7">@Model.ReportedAt.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                            @if (Model.ResolvedAt.HasValue)
+                            {
+                                <dt class="col-sm-5">Résolu par</dt>
+                                <dd class="col-sm-7">@Model.ResolvedByName</dd>
+                                <dt class="col-sm-5">Résolu le</dt>
+                                <dd class="col-sm-7">@Model.ResolvedAt.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                            }
+                        </dl>
+                    </div>
+                </div>
+
+                @if (isAdmin)
+                {
+                    <div class="card card-outline card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">Triage (Admin)</h3>
+                        </div>
+                        <div class="card-body">
+                            <form asp-action="Triage" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="Id" value="@Model.Id" />
+
+                                <div class="form-group">
+                                    <label>Nouveau statut</label>
+                                    <select name="Status" class="form-control" asp-items="Html.GetEnumSelectList<BugStatus>()">
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Notes internes</label>
+                                    <textarea name="AdminNotes" class="form-control" rows="3">@Model.AdminNotes</textarea>
+                                </div>
+
+                                <button type="submit" class="btn btn-warning btn-block">
+                                    <i class="fas fa-check"></i> Mettre à jour
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+
+            </div>
+        </div>
+
+    </div>
+</div>

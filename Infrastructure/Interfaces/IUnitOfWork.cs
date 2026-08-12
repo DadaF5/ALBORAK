@@ -6,6 +6,7 @@ using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.Settings.Repositories;
 using FRAProject.Data.Configurations;
 using FRAProject.Models;
+using FRAProject.Support.Repositories;
 
 namespace FRAProject.Infrastructure.Interfaces
 {
@@ -68,6 +69,12 @@ namespace FRAProject.Infrastructure.Interfaces
         IWorkOrderSectionPartRepository WorkOrderSectionParts { get; }
         IWorkOrderSectionTaskRepository WorkOrderSectionTasks { get; }
         IWorkOrderSectionSignOffRepository WorkOrderSectionSignOffs { get; }
+       
+
+
+
+        // Support
+        IBugReportRepository BugReports { get; }
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>
         /// Flush all staged changes to the database in one transaction.

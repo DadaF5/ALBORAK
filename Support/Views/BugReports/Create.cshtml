@@ -1,0 +1,117 @@
+﻿@using FRAProject.Support.Dtos
+@model BugReportCreateDto
+@{
+    ViewData["Title"] = "Signaler un problème";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <h1>Signaler un problème</h1>
+    </div>
+</div>
+
+<div class="content">
+    <div class="container-fluid">
+
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <!-- Hidden auto-captured fields -->
+            <input type="hidden" asp-for="PageUrl" />
+            <input type="hidden" asp-for="UserIpAddress" />
+            <input type="hidden" asp-for="ControllerName" />
+            <input type="hidden" asp-for="ActionName" />
+            <input type="hidden" asp-for="UserAgent" />
+            <input type="hidden" asp-for="HttpMethod" />
+
+            <div class="card card-outline card-danger">
+                <div class="card-header">
+                    <h3 class="card-title">Description du problème</h3>
+                </div>
+                <div class="card-body">
+
+                    <div class="form-group">
+                        <label asp-for="Title">Titre <span class="text-danger">*</span></label>
+                        <input asp-for="Title" class="form-control" placeholder="Résumé court du problème" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="ScreenOrModule">Écran / Module <span class="text-danger">*</span></label>
+                        <input asp-for="ScreenOrModule" class="form-control" placeholder="ex. Clôture d'un ordre de travail" />
+                        <span asp-validation-for="ScreenOrModule" class="text-danger"></span>
+                        @if (!string.IsNullOrEmpty(Model.ControllerName))
+                        {
+                            <small class="form-text text-muted">
+                                Détecté automatiquement : <code>@Model.ControllerName / @Model.ActionName</code>
+                            </small>
+                        }
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Description">Description / étapes pour reproduire <span class="text-danger">*</span></label>
+                        <textarea asp-for="Description" class="form-control" rows="4" placeholder="Décrivez ce que vous faisiez, étape par étape"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label asp-for="ExpectedBehavior">Comportement attendu</label>
+                            <textarea asp-for="ExpectedBehavior" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label asp-for="ActualBehavior">Comportement observé</label>
+                            <textarea asp-for="ActualBehavior" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Severity">Sévérité <span class="text-danger">*</span></label>
+                        <select asp-for="Severity" class="form-control" asp-items="Html.GetEnumSelectList<BugSeverity>()"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Screenshot">Capture d'écran (optionnel)</label>
+                        <div class="custom-file">
+                            <input asp-for="Screenshot" type="file" class="custom-file-input" accept="image/*" />
+                            <label class="custom-file-label">Choisir un fichier...</label>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Auto-captured info, shown read-only for transparency -->
+            <div class="card card-outline card-secondary">
+                <div class="card-header">
+                    <h3 class="card-title">Informations capturées automatiquement</h3>
+                </div>
+                <div class="card-body py-2">
+                    <small class="text-muted">
+                        Page : <code>@Model.PageUrl</code><br />
+                        Adresse IP : @Model.UserIpAddress
+                    </small>
+                </div>
+            </div>
+
+            <div class="form-group mt-3">
+                <button type="submit" class="btn btn-danger"><i class="fas fa-paper-plane"></i> Envoyer le signalement</button>
+                <a asp-action="Index" class="btn btn-secondary">Annuler</a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $('.custom-file-input').on('change', function () {
+            var fileName = $(this).val().split('\\').pop();
+            $(this).siblings('.custom-file-label').addClass("selected").html(fileName || "Choisir un fichier...");
+        });
+    </script>
+}

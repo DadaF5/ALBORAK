@@ -9,6 +9,7 @@ using FRAProject.Infrastructure.Repositories;
 using FRAProject.Models;
 using FRAProject.Services;
 using FRAProject.Services.Medical;
+using FRAProject.Support.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,9 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 
 // Custom claims factory for user identity customization
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppClaimsPrincipalFactory>();
+
+// support for snags , errors, bugs, issues
+builder.Services.AddScoped<IBugReportRepository, BugReportRepository>();
 
 
 // Authorization handlers & policies

@@ -8,6 +8,7 @@ using FRAProject.Data;
 using FRAProject.Infrastructure.Interfaces;
 using FRAProject.Infrastructure.Repositories;
 using FRAProject.Models;
+using FRAProject.Support.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Infrastructure
@@ -15,7 +16,7 @@ namespace FRAProject.Infrastructure
     public class UnitOfWork : IUnitOfWork
     {
         private readonly FRAContext _context;
-
+        
         public UnitOfWork(FRAContext context)
         {
             _context = context;
@@ -38,6 +39,9 @@ namespace FRAProject.Infrastructure
             WorkOrderSectionParts = new WorkOrderSectionPartRepository(_context);
             WorkOrderSectionTasks = new WorkOrderSectionTaskRepository(_context);
             WorkOrderSectionSignOffs = new WorkOrderSectionSignOffRepository(_context);
+
+            // Support snags, errors, bugs, issues
+            BugReports = new BugReportRepository(_context);
 
         }
 
@@ -150,6 +154,11 @@ namespace FRAProject.Infrastructure
         public IWorkOrderSectionPartRepository WorkOrderSectionParts { get; private set; }       
         public IWorkOrderSectionTaskRepository WorkOrderSectionTasks { get; private set; }
         public IWorkOrderSectionSignOffRepository WorkOrderSectionSignOffs { get; private set; }
+
+
+        //  Support :Snags, Errors , Bugs, Issues
+        public IBugReportRepository BugReports { get; }
+
         // ── Commit ────────────────────────────────────────────────────────
         // Single method — CompleteAsync() — matches IUnitOfWork contract.
         public async Task<int> CompleteAsync() =>

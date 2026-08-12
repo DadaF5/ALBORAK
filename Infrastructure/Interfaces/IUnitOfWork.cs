@@ -67,6 +67,7 @@ namespace FRAProject.Infrastructure.Interfaces
         IWorkOrderSectionRepository WorkOrderSections { get; }
         IWorkOrderSectionPartRepository WorkOrderSectionParts { get; }
         IWorkOrderSectionTaskRepository WorkOrderSectionTasks { get; }
+        IWorkOrderSectionSignOffRepository WorkOrderSectionSignOffs { get; }
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>
         /// Flush all staged changes to the database in one transaction.

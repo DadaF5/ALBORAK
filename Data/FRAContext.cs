@@ -108,6 +108,7 @@ namespace FRAProject.Data
         public DbSet<WorkOrderSection> WorkOrderSections { get; set; } = null!;
         public DbSet<WorkOrderSectionPart> WorkOrderSectionParts { get; set; } = null!;
         public DbSet<WorkOrderSectionTask> WorkOrderSectionTasks { get; set; } = null!;
+        public DbSet<WorkOrderSectionSignOff> WorkOrderSectionSignOffs { get; set; } = null!;
         // =====================================
         // Settings & Lookups
         // =====================================
@@ -398,6 +399,11 @@ namespace FRAProject.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<WorkOrderSectionTask>()
+                .HasOne(x => x.WorkOrderSection)
+                .WithMany()
+                .HasForeignKey(x => x.WorkOrderSectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<WorkOrderSectionSignOff>()
                 .HasOne(x => x.WorkOrderSection)
                 .WithMany()
                 .HasForeignKey(x => x.WorkOrderSectionId)

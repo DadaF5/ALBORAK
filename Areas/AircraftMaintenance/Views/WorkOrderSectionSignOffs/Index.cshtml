@@ -1,0 +1,126 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.WorkOrderSectionSignOffPageViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Visas";
+}
+
+<style>
+    .wosso-card { border: 1px solid #454b54; border-radius: 6px; margin-bottom: 14px; }
+    .wosso-card.signed { border-left: 4px solid #28a745; }
+    .wosso-card.pending { border-left: 4px solid #6c757d; }
+    .wosso-header {
+        background-color: #2b2f36;
+        padding: 10px 16px;
+        font-weight: 700;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .wosso-body { padding: 14px 16px; }
+    .wosso-body .form-control {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+    .wosso-body label { color: #c9ccd1; font-weight: 600; font-size: 0.8rem; }
+    .wosso-signed-info { color: #8fff9f; font-size: 0.85rem; }
+</style>
+
+<div class="card card-outline card-primary mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">
+            <i class="fas fa-stamp mr-1"></i> Visas — @Model.SectionLabel
+            @if (Model.FormNumber != null)
+            {
+                <small class="text-muted">(@Model.FormNumber)</small>
+            }
+        </h3>
+        @if (Model.AllSigned)
+        {
+            <span class="badge badge-success">Tous les visas complétés</span>
+        }
+        else
+        {
+            <span class="badge badge-secondary">@Model.SignOffs.Count(s => s.IsSigned) / @Model.SignOffs.Count visas</span>
+        }
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+@foreach (var s in Model.SignOffs.OrderBy(x => x.SortOrder))
+{
+    <div class="wosso-card @(s.IsSigned ? "signed" : "pending")">
+        <div class="wosso-header">
+            <span>@s.LevelLabel</span>
+            @if (s.IsSigned)
+            {
+                <span class="badge badge-success"><i class="fas fa-check"></i> Signé</span>
+            }
+            else
+            {
+                <span class="badge badge-secondary">En attente</span>
+            }
+        </div>
+        <div class="wosso-body">
+            @if (s.IsSigned)
+            {
+                <p class="wosso-signed-info mb-2">
+                    <strong>@s.SignedByName</strong>
+                    @if (!string.IsNullOrEmpty(s.StampReference))
+                    {
+                        <span> · Cachet : @s.StampReference</span>
+                    }
+                    · @s.SignedAtUtc!.Value.ToString("dd/MM/yyyy HH:mm")
+                </p>
+                @if (!string.IsNullOrEmpty(s.Remarks))
+                {
+                    <p class="mb-2">@s.Remarks</p>
+                }
+                <form asp-action="Unsign" method="post" class="d-inline"
+                      onsubmit="return confirm('Annuler ce visa ?');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="signOffId" value="@s.Id" />
+                    <button type="submit" class="btn btn-default btn-sm">
+                        <i class="fas fa-undo"></i> Annuler le visa
+                    </button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="Sign" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="signOffId" value="@s.Id" />
+                    <div class="row">
+                        <div class="col-md-4 form-group">
+                            <label>Nom du signataire<span style="color:#ff6b6b;">*</span></label>
+                            <input name="signedByName" class="form-control" required />
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Référence cachet</label>
+                            <input name="stampReference" class="form-control" placeholder="ex : SCA-36" />
+                        </div>
+                        <div class="col-md-5 form-group">
+                            <label>Remarques</label>
+                            <input name="remarks" class="form-control" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-check"></i> Signer
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+}
+
+<a asp-controller="WorkOrderSections" asp-action="Details" asp-route-id="@Model.WorkOrderSectionId" class="btn btn-default mt-2">
+    <i class="fas fa-arrow-left"></i> Retour à la section
+</a>

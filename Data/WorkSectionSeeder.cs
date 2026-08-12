@@ -7,12 +7,13 @@ namespace FRAProject.Data
     public class WorkSectionSeeder
     {
         // Starter set only — confirmed 4 sections (Electric, Electronic,
-        // Hydraulic, GTR), applied across every currently-seeded AcType.
-        // "C145" was requested but isn't seeded yet, so per fallback
-        // instruction it's skipped — falls back to the 5 AcTypes that do
-        // exist (F16C, C130H, F5E, F5F, AJET). This list is intentionally
-        // incomplete — add more via the WorkSections UI as they're
-        // identified from real Formule 13 scans.
+        // Hydraulic, GTR), applied across every currently-seeded AcType,
+        // INCLUDING shared-family sibling variants (F5E+F5F share the
+        // same sections; F16C+F16D share the same sections too). "C145"
+        // was requested but isn't seeded yet, so per fallback instruction
+        // it's skipped. This list is intentionally incomplete — add more
+        // via the WorkSections UI as they're identified from real
+        // Formule 13 scans.
         private static readonly (string Code, string Name)[] SectionData =
         {
             ("ELEC",    "Électrique"),
@@ -26,7 +27,7 @@ namespace FRAProject.Data
             await AcTypeSeeder.SeedAsync(context);
 
             var acTypeIds = await context.Set<AcType>()
-                .Where(t => new[] { "F16C", "C130H", "F5E", "F5F", "AJET" }.Contains(t.Code))
+                .Where(t => new[] { "F16C", "F16D", "C130H", "F5E", "F5F", "AJET" }.Contains(t.Code))
                 .Select(t => new { t.Id, t.Code })
                 .ToListAsync();
 

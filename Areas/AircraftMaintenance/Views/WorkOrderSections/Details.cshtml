@@ -89,13 +89,16 @@
         </div>
 
         <div class="alert alert-info mb-0">
-            <i class="fas fa-info-circle"></i> Travaux effectués (Tableau III) et visas finaux
+            <i class="fas fa-info-circle"></i> Les visas finaux (chaîne d'approbation à 4 niveaux)
             seront disponibles ici dans une prochaine étape.
         </div>
     </div>
     <div class="card-footer">
         <a asp-controller="WorkOrderSectionParts" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-info">
             <i class="fas fa-exchange-alt"></i> Équipements changés
+        </a>
+        <a asp-controller="WorkOrderSectionTasks" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-info">
+            <i class="fas fa-tasks"></i> Travaux effectués
         </a>
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fas fa-edit"></i> Modifier</a>
         <a asp-action="Index" asp-route-id="@Model.WorkOrderId" class="btn btn-default">Retour à la liste</a>

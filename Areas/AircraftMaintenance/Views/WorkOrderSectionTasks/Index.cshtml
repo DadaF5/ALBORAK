@@ -1,0 +1,89 @@
+﻿@model List<FRAProject.ViewModels.AircraftMaintenance.WorkOrderSectionTaskListItemViewModel>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Travaux effectués";
+}
+
+<style>
+    .wost-index table td, .wost-index table th {
+        border-color: #363b44;
+        font-size: 0.9rem;
+    }
+
+    .wost-index .designation {
+        white-space: pre-wrap;
+        max-width: 350px;
+    }
+</style>
+
+<div class="wost-index card card-outline card-primary">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">
+            <i class="fas fa-tasks mr-1"></i> Travaux effectués — @ViewBag.SectionLabel
+            @if (ViewBag.FormNumber != null)
+            {
+                <small class="text-muted">(@ViewBag.FormNumber)</small>
+            }
+        </h3>
+        <a asp-action="Create" asp-route-id="@ViewBag.WorkOrderSectionId" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> Ajouter un travail
+        </a>
+    </div>
+    <div class="card-body p-0">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success m-3">@TempData["Success"]</div>
+        }
+
+        <table class="table table-striped table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Désignation des travaux</th>
+                    <th>Date</th>
+                    <th>Alloué</th>
+                    <th>Système</th>
+                    <th>Retouches</th>
+                    <th>Exécutant</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="designation">@item.DesignationTravaux</td>
+                        <td>@(item.Date?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td>@(item.TempsAlloueMinutes?.ToString() ?? "—") min</td>
+                        <td>@(item.TempsPasseSystemeMinutes?.ToString() ?? "—") min</td>
+                        <td>@(item.TempsPasseRetouchesMinutes?.ToString() ?? "—") min</td>
+                        <td>
+                            @(item.ExecutantNom ?? "—")
+                            @if (item.IsSigned)
+                            {
+                                <i class="fas fa-check-circle text-success" title="Attesté"></i>
+                            }
+                        </td>
+                        <td class="text-right">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary btn-sm">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline"
+                                  onsubmit="return confirm('Supprimer ce travail ?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4">Aucun travail enregistré.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<a asp-controller="WorkOrderSections" asp-action="Details" asp-route-id="@ViewBag.WorkOrderSectionId" class="btn btn-default mt-3">
+    <i class="fas fa-arrow-left"></i> Retour à la section
+</a>

@@ -19,6 +19,27 @@
         color: #ff8fa3;
         background: transparent;
     }
+
+    .ws-filter-bar {
+        background-color: #2b2f36;
+        padding: 10px 16px;
+        border-bottom: 1px solid #363b44;
+    }
+
+        .ws-filter-bar select {
+            background-color: #23262d;
+            border: 1px solid #454b54;
+            color: #e9ecef;
+            max-width: 280px;
+            display: inline-block;
+        }
+
+        .ws-filter-bar label {
+            color: #c9ccd1;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-right: 8px;
+        }
 </style>
 
 <div class="ws-index card card-outline card-primary">
@@ -28,6 +49,18 @@
             <i class="fas fa-plus"></i> Nouvelle section
         </a>
     </div>
+
+    <div class="ws-filter-bar">
+        <label for="acTypeFilter">Filtrer par type d'aéronef :</label>
+        <select id="acTypeFilter" class="form-control form-control-sm">
+            <option value="">-- Tous --</option>
+            @foreach (var acType in (List<string>)ViewBag.AllAcTypeLabels)
+            {
+                <option value="@acType">@acType</option>
+            }
+        </select>
+    </div>
+
     <div class="card-body p-0">
         @if (TempData["Success"] != null)
         {
@@ -48,15 +81,15 @@
                     <th class="text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="workSectionsBody">
                 @foreach (var group in Model.GroupBy(x => x.AcTypeLabel).OrderBy(g => g.Key))
                 {
-                    <tr class="group-row">
+                    <tr class="group-row" data-actype="@group.Key">
                         <td colspan="5"><strong>@group.Key</strong></td>
                     </tr>
                     @foreach (var item in group.OrderBy(x => x.SortOrder).ThenBy(x => x.Code))
                     {
-                        <tr>
+                        <tr data-actype="@item.AcTypeLabel">
                             <td><code>@item.Code</code></td>
                             <td>@item.Name</td>
                             <td>@item.AcTypeLabel</td>
@@ -86,7 +119,33 @@
                 {
                     <tr><td colspan="5" class="text-center text-muted py-4">Aucune section définie.</td></tr>
                 }
+                <tr id="noResultsRow" style="display:none;">
+                    <td colspan="5" class="text-center text-muted py-4">
+                        Aucune section définie pour ce type d'aéronef.
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.getElementById('acTypeFilter')?.addEventListener('change', function (e) {
+            var selected = e.target.value;
+            var rows = document.querySelectorAll('#workSectionsBody tr[data-actype]');
+            var visibleDataRows = 0;
+
+            rows.forEach(function (row) {
+                var matches = !selected || row.getAttribute('data-actype') === selected;
+                row.style.display = matches ? '' : 'none';
+                if (matches && !row.classList.contains('group-row')) {
+                    visibleDataRows++;
+                }
+            });
+
+            document.getElementById('noResultsRow').style.display =
+                (selected && visibleDataRows === 0) ? '' : 'none';
+        });
+    </script>
+}

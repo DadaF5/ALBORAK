@@ -8,6 +8,7 @@ using FRAProject.Data;
 using FRAProject.Infrastructure.Interfaces;
 using FRAProject.Infrastructure.Repositories;
 using FRAProject.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Infrastructure
 {
@@ -35,6 +36,7 @@ namespace FRAProject.Infrastructure
             WorkSections = new WorkSectionRepository(_context);
             WorkOrderSections = new WorkOrderSectionRepository(_context);
             WorkOrderSectionParts = new WorkOrderSectionPartRepository(_context);
+            WorkOrderSectionTasks = new WorkOrderSectionTaskRepository(_context);
 
         }
 
@@ -144,8 +146,8 @@ namespace FRAProject.Infrastructure
         public IInspectionTypeProgramRepository InspectionTypePrograms { get; private set; }
         public IWorkSectionRepository WorkSections { get; private set; }
         public IWorkOrderSectionRepository WorkOrderSections { get; private set; }
-        public IWorkOrderSectionPartRepository WorkOrderSectionParts { get; private set; }
-
+        public IWorkOrderSectionPartRepository WorkOrderSectionParts { get; private set; }       
+        public IWorkOrderSectionTaskRepository WorkOrderSectionTasks { get; private set; }
         // ── Commit ────────────────────────────────────────────────────────
         // Single method — CompleteAsync() — matches IUnitOfWork contract.
         public async Task<int> CompleteAsync() =>

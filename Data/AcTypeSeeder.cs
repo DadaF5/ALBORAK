@@ -1,4 +1,4 @@
-﻿using FRAProject.Areas.Settings.Models;
+using FRAProject.Areas.Settings.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Data
@@ -38,6 +38,14 @@ namespace FRAProject.Data
                     AcMainGroupId = chasseGroupId, AircraftManufacturerId = lmId,
                     MaxGrossWeight = 19187, MaxEngines = 1, SeatCount = 1, MaxPassengers = 0,
                     SortOrder = 1, IsActive = true
+                },
+                new()
+                {
+                    Code = "F16D", Name = "F-16D Fighting Falcon",
+                    Description = "Chasseur biplace (entraînement) — même famille que F16C",
+                    AcMainGroupId = chasseGroupId, AircraftManufacturerId = lmId,
+                    MaxGrossWeight = 19200, MaxEngines = 1, SeatCount = 2, MaxPassengers = 0,
+                    SortOrder = 2, IsActive = true
                 },
                 new()
                 {

@@ -1,0 +1,69 @@
+﻿@model FRAProject.ViewModels.AircraftMaintenance.WorkOrderSectionTaskFormViewModel
+
+<style>
+    .wost-form .form-control {
+        background-color: #2b2f36;
+        border: 1px solid #454b54;
+        color: #e9ecef;
+    }
+
+    .wost-form label {
+        color: #c9ccd1;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .wost-form .required-mark {
+        color: #ff6b6b;
+        margin-left: 2px;
+    }
+</style>
+
+<div class="wost-form">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="WorkOrderSectionId" />
+
+    <div class="form-group">
+        <label asp-for="DesignationTravaux">Désignation des travaux<span class="required-mark">*</span></label>
+        <textarea asp-for="DesignationTravaux" class="form-control" rows="4"
+                  placeholder="ex : 1F.SF.2.8.1.1 AIR SPEED MACH INDICATOR INSTALLED"></textarea>
+        <span asp-validation-for="DesignationTravaux" class="text-danger"></span>
+        <small class="text-muted">Inclure la référence T.O. ou de message directement dans le texte, comme sur la formule papier.</small>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 form-group">
+            <label asp-for="Date">Date</label>
+            <input asp-for="Date" class="form-control" type="date" />
+        </div>
+        <div class="col-md-3 form-group">
+            <label asp-for="TempsAlloueMinutes">Alloué (min)</label>
+            <input asp-for="TempsAlloueMinutes" class="form-control" />
+        </div>
+        <div class="col-md-3 form-group">
+            <label asp-for="TempsPasseSystemeMinutes">Passé — Système (min)</label>
+            <input asp-for="TempsPasseSystemeMinutes" class="form-control" />
+        </div>
+        <div class="col-md-3 form-group">
+            <label asp-for="TempsPasseRetouchesMinutes">Passé — Retouches (min)</label>
+            <input asp-for="TempsPasseRetouchesMinutes" class="form-control" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 form-group">
+            <label asp-for="ExecutantSpecial">Spécial (exécutant)</label>
+            <input asp-for="ExecutantSpecial" class="form-control" placeholder="ex : 166" />
+        </div>
+        <div class="col-md-5 form-group">
+            <label asp-for="ExecutantNom">Nom de l'exécutant</label>
+            <input asp-for="ExecutantNom" class="form-control" />
+            <small class="text-muted">Renseigner ce champ vaut attestation électronique (horodatée).</small>
+        </div>
+        <div class="col-md-4 form-group">
+            <label asp-for="SortOrder">Ordre d'affichage</label>
+            <input asp-for="SortOrder" class="form-control" />
+        </div>
+    </div>
+</div>

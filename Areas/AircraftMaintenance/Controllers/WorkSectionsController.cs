@@ -34,6 +34,16 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 SortOrder = x.SortOrder
             }).ToList();
 
+            // Full AcType list (not just ones with WorkSection rows) — same
+            // fix applied to InspectionTypes earlier, so the filter shows
+            // every valid aircraft type, not just ones with existing data.
+            var allAcTypes = await _uow.AcTypes.GetAllAsync();
+            ViewBag.AllAcTypeLabels = allAcTypes
+                .Where(t => t.IsActive)
+                .OrderBy(t => t.Code)
+                .Select(t => $"{t.Code} — {t.Name}")
+                .ToList();
+
             return View(vm);
         }
 

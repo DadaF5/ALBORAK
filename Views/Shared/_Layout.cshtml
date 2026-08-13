@@ -841,7 +841,7 @@
                             <span class="nav-text">Programme PEA</span>
                         </a>
 
-                        <a class="nav-item @IsActive("CRM", "Defauts")"
+                        @* <a class="nav-item @IsActive("CRM", "Defauts")"
                            asp-area="CRM"
                            asp-controller="Defauts"
                            asp-action="Index"
@@ -849,8 +849,33 @@
                             <span class="nav-icon">🧰</span>
                             <span class="nav-text">CRM / Défauts</span>
                             <span class="nav-badge badge-red">12</span>
+                        </a> *@
+                        <a class="nav-item @IsActive("AircraftMaintenance", "Snags", "Index")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="Snags"
+                           asp-action="Index"
+                           title="Liste des Snags">
+                            <span class="nav-icon">🧰</span>
+                            <span class="nav-text">Liste des Snags</span>
                         </a>
 
+                        <a class="nav-item @IsActive("AircraftMaintenance", "Snags", "Report")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="Snags"
+                           asp-action="Report"
+                           title="Signaler un Snag">
+                            <span class="nav-icon">⚠️</span>
+                            <span class="nav-text">Signaler un Snag</span>
+                        </a>
+
+                        <a class="nav-item @IsActive("AircraftMaintenance", "Snags", "Statistics")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="Snags"
+                           asp-action="Statistics"
+                           title="Statistiques (MTBF)">
+                            <span class="nav-icon">📈</span>
+                            <span class="nav-text">Statistiques (MTBF)</span>
+                        </a>
                         <a class="nav-item @IsActive("Reporting", "Home")"
                            asp-area="Reporting"
                            asp-controller="Home"

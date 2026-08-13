@@ -176,10 +176,24 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         }
 
         // SnagsController.cs — PopulateDropdowns(), corrected
+        // SnagsController.cs — PopulateDropdowns(), corrected
         private async Task PopulateDropdowns()
         {
-            ViewBag.Aircrafts = (await _uow.Aircraft.GetAllAsync())
-                .Select(a => new SelectListItem($"{a.Registration} ({a.AcType?.Code})", a.Id.ToString()));
+            var aircraft = await _uow.Aircraft.GetAllAsync();
+            var acTypes = (await _uow.AcTypes.GetAllAsync()).ToDictionary(t => t.Id);
+
+            ViewBag.Aircrafts = aircraft
+                .OrderBy(a => acTypes.TryGetValue(a.AcTypeId, out var t) ? t.Code : "")
+                .ThenBy(a => a.Registration)
+                .Select(a => new SelectListItem
+                {
+                    Value = a.Id.ToString(),
+                    Text = $"{a.Registration} — TailNo {a.TailNo}",
+                    Group = new SelectListGroup
+                    {
+                        Name = acTypes.TryGetValue(a.AcTypeId, out var t) ? t.Code : "?"
+                    }
+                }).ToList();
 
             ViewBag.AtaChapters = (await _uow.Ata.GetAllAsync())
                 .Select(a => new SelectListItem($"{a.Code} — {a.Name}", a.Id.ToString()));

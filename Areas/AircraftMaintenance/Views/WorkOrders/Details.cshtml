@@ -31,6 +31,50 @@
         border: 1px solid #454b54;
         color: #e9ecef;
     }
+
+    /* Footer — spread across full width instead of clustering/wrapping,
+           with the primary workflow actions on the left and a visually
+           promoted Print action set apart on the right. */
+    .wo-actions-footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+    }
+
+    .wo-actions-left {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .wo-actions-right {
+        display: flex;
+        gap: 10px;
+    }
+
+    .wo-print-btn {
+        font-size: 1.05rem;
+        font-weight: 700;
+        padding: 10px 22px;
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: #fff;
+        box-shadow: 0 2px 6px rgba(13,110,253,0.4);
+    }
+
+        .wo-print-btn:hover {
+            background-color: #0b5ed7;
+            border-color: #0b5ed7;
+            color: #fff;
+        }
+
+        .wo-print-btn i {
+            font-size: 1.15rem;
+            margin-right: 6px;
+        }
 </style>
 
 @if (TempData["Success"] != null)
@@ -101,47 +145,55 @@
             <dd class="col-sm-9">@(Model.Remarks ?? "—")</dd>
         </dl>
     </div>
-    <div class="card-footer">
-        @if (Model.CanOpen)
-        {
-            <form asp-action="Open" asp-route-id="@Model.Id" method="post" class="d-inline">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-info"><i class="fas fa-play"></i> Ouvrir</button>
-            </form>
-        }
-        @if (Model.CanPopulateJobCards)
-        {
-            <a asp-action="PopulateJobCards" asp-route-id="@Model.Id" class="btn btn-secondary">
-                <i class="fas fa-list"></i> Ajouter des job cards
+
+    <div class="card-footer wo-actions-footer">
+        <div class="wo-actions-left">
+            @if (Model.CanOpen)
+            {
+                <form asp-action="Open" asp-route-id="@Model.Id" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-info"><i class="fas fa-play"></i> Ouvrir</button>
+                </form>
+            }
+            @if (Model.CanPopulateJobCards)
+            {
+                <a asp-action="PopulateJobCards" asp-route-id="@Model.Id" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> Ajouter des job cards
+                </a>
+            }
+            @if (Model.CanClose)
+            {
+                <form asp-action="Close" asp-route-id="@Model.Id" method="post" class="d-inline"
+                      onsubmit="return confirm('Clôturer cet OT ?');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-success"
+                            disabled="@(!Model.AllMandatoryDone)"
+                            title="@(!Model.AllMandatoryDone ? "Job cards obligatoires non terminées" : null)">
+                        <i class="fas fa-check"></i> Clôturer
+                    </button>
+                </form>
+            }
+            @if (Model.Status == "DRAFT")
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fas fa-edit"></i> Modifier</a>
+            }
+            @if (Model.CanDelete)
+            {
+                <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger"><i class="fas fa-trash"></i> Supprimer</a>
+            }
+            <a asp-controller="WorkOrderSections" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-info">
+                <i class="fas fa-layer-group"></i> Sections (Formule 13)
             </a>
-        }
-        @if (Model.CanClose)
-        {
-            <form asp-action="Close" asp-route-id="@Model.Id" method="post" class="d-inline"
-                  onsubmit="return confirm('Clôturer cet OT ?');">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-success"
-                        disabled="@(!Model.AllMandatoryDone)"
-                        title="@(!Model.AllMandatoryDone ? "Job cards obligatoires non terminées" : null)">
-                    <i class="fas fa-check"></i> Clôturer
-                </button>
-            </form>
-        }
-        @if (Model.Status == "DRAFT")
-        {
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fas fa-edit"></i> Modifier</a>
-        }
-        @if (Model.CanDelete)
-        {
-            <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger"><i class="fas fa-trash"></i> Supprimer</a>
-        }
-        <a asp-controller="WorkOrderSections" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-info">
-            <i class="fas fa-layer-group"></i> Sections (Formule 13)
-        </a>
-        <a asp-action="Print" asp-route-id="@Model.Id" class="btn btn-secondary" target="_blank">
-            <i class="fas fa-print"></i> Imprimer
-        </a>
-        <a asp-action="Index" class="btn btn-default">Retour à la liste</a>
+            <a asp-action="Index" class="btn btn-default">
+                <i class="fas fa-arrow-left"></i> Retour à la liste
+            </a>
+        </div>
+
+        <div class="wo-actions-right">
+            <a asp-action="Print" asp-route-id="@Model.Id" class="btn wo-print-btn" target="_blank" title="Imprimer l'Ordre de Travail">
+                <i class="fas fa-print"></i> Imprimer
+            </a>
+        </div>
     </div>
 </div>
 

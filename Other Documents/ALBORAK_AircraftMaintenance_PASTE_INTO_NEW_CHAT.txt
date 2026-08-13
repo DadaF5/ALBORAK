@@ -1,0 +1,46 @@
+Continuing ALBORAK (ASP.NET Core MVC / EF Core GMAO project). Previous
+session built the full AircraftMaintenance execution pipeline. Full
+handoff doc attached: Session_Summary_WorkOrder_Formule1213.md — please
+read it fully before we start.
+
+QUICK RECAP — fully built & migrated last session:
+- InspectionType (extended: ManagePrograms, AcType filter, fixed toggle)
+- MaintenanceProgram, JobCard (extended w/ real fields + Ata FK),
+  Ata/AtaCategory, ProgramJobCard (bulk range-assign)
+- WorkOrder — full lifecycle (Create→Open→auto-resolved JobCards→
+  Execute→Close→Print), multi-InspectionType via WorkOrderInspectionType
+  junction, AcType-mismatch + duplicate-scheduling validation,
+  due-status-aware AJAX filtering
+- InspectionStatusCalculator (shared service — OVERDUE/ALERT/OK/UNKNOWN)
+  + InspectionState auto-update at Close()
+- DueList view, DamDashboard.TotalDueSoon wired
+- Fleet: F16C/F16D, C130H, F5E/F5F, AJET — AcTypeSeeder refactored to
+  per-code idempotent (NOT table-wide AnyAsync guard — that pattern
+  silently blocks adding new rows, hit this bug twice)
+- FULL Formule 12/13 subsystem, built from REAL scanned forms (2ème
+  BAFRA/SGMA1/F5F "944"): WorkSection (AcType-scoped lookup) →
+  WorkOrderSection (Formule 13 header) → WorkOrderSectionPart (Tableau
+  II) + WorkOrderSectionTask (Tableau III) + WorkOrderSectionSignOff
+  (REAL chain: Chef AT/SEP→SCQ→ST→SGMA1, kept SEPARATE from the older
+  WorkOrderJobCardSignOff which serves the PE/JobCard workflow — both
+  intentionally coexist)
+- Print.cshtml fully rebuilt to render real Formule 12 + one Formule 13
+  page per section
+- French user guide (.md) + full 10-page Word manual (.docx) with 2 real
+  embedded print figures
+
+OPEN ITEMS (see handoff doc §2 for full detail), roughly priority order:
+1. Snag + WorkOrderSnag — DESIGN ALREADY AGREED, not yet built (see
+   handoff doc for the exact junction-not-FK reasoning, corrective-WO
+   execution via WorkOrderSection not JobCards)
+2. AircraftVersion (Serie 74/78/XI split) — waiting on me to specify
+   which goes to F5E vs F5F
+3. Real screenshots for the user manual (interactive screens)
+4. DamDashboardVm.cs → finish DueSoon list (need to send you that file)
+5. Role-based authorization (currently Admin-only everywhere)
+
+Known assumptions to verify if something doesn't compile: _uow.Aircraft
+property name, ApplicationUser in FRAProject.Models with a FullLabel
+property — both used but never 100% confirmed against live IUnitOfWork.
+
+Let's pick up with Snag unless you'd rather start elsewhere.

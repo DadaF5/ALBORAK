@@ -1,3 +1,6 @@
+using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.AircraftMaintenance.Repositories;
+using FRAProject.Areas.AircraftMaintenance.Services;
 using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Repositories;
 using FRAProject.Data;
@@ -54,6 +57,14 @@ builder.Services.AddScoped<IAcMainGroupRepository, AcMainGroupRepository>();
 builder.Services.AddScoped<IValidationService, ValidationService>();
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddScoped<IDossierService, DossierService>();
+
+
+// Program.cs DI — add alongside existing Maintenance Phase 2 registrations
+builder.Services.AddScoped<ISnagService, SnagService>();
+builder.Services.AddScoped<ISnagStatisticsService, SnagStatisticsService>();
+
+
+
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("SameSquadron", p => p.Requirements.Add(new SameSquadronRequirement()));

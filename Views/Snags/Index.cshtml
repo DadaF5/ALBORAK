@@ -1,0 +1,61 @@
+﻿@using FRAProject.Areas.AircraftMaintenance.Models
+@* Views/Snags/Index.cshtml *@
+@model IEnumerable<Snag>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Snags";
+
+    string BorderClass(Snag s) => s.Impact switch
+    {
+        AirworthinessImpact.GROUNDING => "border-left-danger",
+        AirworthinessImpact.RESTRICTED => "border-left-warning",
+        AirworthinessImpact.IN_WORK => "border-left-info",
+        _ => "border-left-success"
+    };
+    string ImpactBadge(AirworthinessImpact i) => i switch
+    {
+        AirworthinessImpact.GROUNDING => "<span class='badge badge-danger'>🔴 Red X</span>",
+        AirworthinessImpact.RESTRICTED => "<span class='badge badge-warning'>➖ Red Dash</span>",
+        AirworthinessImpact.IN_WORK => "<span class='badge badge-info'>◹ Red Diagonal</span>",
+        _ => "<span class='badge badge-success'>OK</span>"
+    };
+}
+
+<div class="content-header d-flex justify-content-between align-items-center">
+    <h1>🛠 Snags</h1>
+    <a asp-action="Report" class="btn btn-danger">+ Signaler un Snag</a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>N° Snag</th>
+                    <th>Aéronef</th>
+                    <th>ATA</th>
+                    <th>Gravité</th>
+                    <th>Impact</th>
+                    <th>Statut</th>
+                    <th>Découverte</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr class="@BorderClass(s)" style="border-left-width:4px;">
+                        <td>@s.SnagNumber</td>
+                        <td>@s.Aircraft?.Registration</td>
+                        <td>@s.Ata?.Code</td>
+                        <td>@s.Severity</td>
+                        <td>@Html.Raw(ImpactBadge(s.Impact))</td>
+                        <td>@s.Status</td>
+                        <td>@s.DiscoveryDate</td>
+                        <td><a asp-action="Details" asp-route-id="@s.Id" class="btn btn-sm btn-primary">Détails</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -70,8 +70,11 @@ namespace FRAProject.Infrastructure.Interfaces
         IWorkOrderSectionTaskRepository WorkOrderSectionTasks { get; }
         IWorkOrderSectionSignOffRepository WorkOrderSectionSignOffs { get; }
        
-
-
+        // Aircraft Snags       
+        // IUnitOfWork.cs — add alongside existing Maintenance Phase 2 entries
+        ISnagRepository Snags { get; }
+        IWorkOrderSnagRepository WorkOrderSnags { get; }
+        ISortieRepository Sorties { get; }
 
         // Support
         IBugReportRepository BugReports { get; }

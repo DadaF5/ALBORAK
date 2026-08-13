@@ -40,8 +40,16 @@ namespace FRAProject.Infrastructure
             WorkOrderSectionTasks = new WorkOrderSectionTaskRepository(_context);
             WorkOrderSectionSignOffs = new WorkOrderSectionSignOffRepository(_context);
 
-            // Support snags, errors, bugs, issues
+            // Aircraft snags and malfunctions
+            Snags = new SnagRepository(context);
+            WorkOrderSnags = new WorkOrderSnagRepository(context);
+            Sorties = new SortieRepository(context);
+
+
+            // Application Support snags, errors, bugs, issues
             BugReports = new BugReportRepository(_context);
+
+
 
         }
 
@@ -155,8 +163,12 @@ namespace FRAProject.Infrastructure
         public IWorkOrderSectionTaskRepository WorkOrderSectionTasks { get; private set; }
         public IWorkOrderSectionSignOffRepository WorkOrderSectionSignOffs { get; private set; }
 
+        // Aircraft snags management
+        public ISnagRepository Snags { get; }
+        public IWorkOrderSnagRepository WorkOrderSnags { get; }
+        public ISortieRepository Sorties { get; }
 
-        //  Support :Snags, Errors , Bugs, Issues
+        //  Application Support :Snags, Errors , Bugs, Issues
         public IBugReportRepository BugReports { get; }
 
         // ── Commit ────────────────────────────────────────────────────────

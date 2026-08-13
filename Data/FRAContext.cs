@@ -109,6 +109,11 @@ namespace FRAProject.Data
         public DbSet<WorkOrderSectionPart> WorkOrderSectionParts { get; set; } = null!;
         public DbSet<WorkOrderSectionTask> WorkOrderSectionTasks { get; set; } = null!;
         public DbSet<WorkOrderSectionSignOff> WorkOrderSectionSignOffs { get; set; } = null!;
+
+        // Aircraft snags and malfunctions
+        public DbSet<Snag> Snags { get; set; } = null!;
+        public DbSet<WorkOrderSnag> WorkOrderSnags { get; set; } = null!;
+
         // =====================================
         // Settings & Lookups
         // =====================================

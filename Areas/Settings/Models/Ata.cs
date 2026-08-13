@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using FRAProject.Areas.AircraftMaintenance.Models;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Areas.Settings.Models
 {
@@ -7,5 +8,9 @@ namespace FRAProject.Areas.Settings.Models
     {
         public int? AtaCategoryId { get; set; }
         public AtaCategory? AtaCategory { get; set; }
+
+        // Aircraft snags and malfunctions
+        // Ata.cs — add (single FK, same reasoning)
+        public ICollection<Snag> Snags { get; set; } = new HashSet<Snag>();
     }
 }

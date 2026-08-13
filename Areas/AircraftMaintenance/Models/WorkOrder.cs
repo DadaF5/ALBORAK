@@ -56,5 +56,11 @@ namespace FRAProject.Areas.AircraftMaintenance.Models
         // loop over this collection and update InspectionState for each
         // one independently (each has its own IntervalFH/Cycles/Days).
         public ICollection<WorkOrderInspectionType> WorkOrderInspectionTypes { get; set; } = [];
+
+        // ── Snag relationships (many-to-many via junction table) ─────────
+        // WorkOrder.cs — add all three (CRITICAL — this is the one that will actually break)
+        public virtual ICollection<Snag> DiscoveredSnags { get; set; } = new HashSet<Snag>();   // via Snag.DiscoveredDuringWorkOrderId
+        public virtual ICollection<Snag> LinkedSnags { get; set; } = new HashSet<Snag>();       // via Snag.LinkedWorkOrderId
+        public virtual ICollection<WorkOrderSnag> WorkOrderSnags { get; set; } = new HashSet<WorkOrderSnag>(); // via junction
     }
 }

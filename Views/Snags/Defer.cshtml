@@ -1,0 +1,42 @@
+﻿@* @using FRAProject.Areas.AircraftMaintenance.Services *@
+@* Views/Snags/Defer.cshtml *@
+@model SnagDeferralDto
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Reporter un Snag";
+}
+
+<div class="content-header"><h1>➖ Reporter (Différer) le Snag @ViewBag.SnagNumber</h1></div>
+
+<div class="card card-warning card-outline">
+    <div class="card-header"><h3 class="card-title">Autorisation de Report — Red Dash</h3></div>
+    <div class="card-body">
+        @* Defer.cshtml — form tag corrected *@
+        <form asp-action="Defer" asp-route-id="@ViewContext.RouteData.Values["id"]" method="post">
+            <div asp-validation-summary="All" class="text-danger"></div>
+
+            <div class="form-group">
+                <label>Référence (MEL / Paragraphe T.O.) <span class="text-danger">*</span></label>
+                <input asp-for="DeferralReference" class="form-control" placeholder="Texte exact du manuel / MEL" />
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 form-group">
+                    <label>Limite Heures de Vol (min)</label>
+                    <input asp-for="DeferralLimitFH" class="form-control" />
+                </div>
+                <div class="col-md-4 form-group">
+                    <label>Limite Cycles</label>
+                    <input asp-for="DeferralLimitCycles" class="form-control" />
+                </div>
+                <div class="col-md-4 form-group">
+                    <label>Limite Date</label>
+                    <input asp-for="DeferralLimitDate" class="form-control" type="date" />
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-warning">Autoriser le Report</button>
+            <a asp-action="Details" asp-route-id="@ViewContext.RouteData.Values["id"]" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+</div>

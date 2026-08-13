@@ -1,4 +1,5 @@
 ﻿
+using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Models;
 using System.ComponentModel.DataAnnotations;
@@ -109,6 +110,10 @@ namespace FRAProject.Areas.Settings.Models
         public MissionRole? MissionRole { get; set; }
         public Country? OriginCountry { get; set; }
         public ImmatriculationDossier? Dossier { get; set; }
+
+        // Aircraft snags and work orders (many-to-many via junction table)
+        // Aircraft.cs — add (single FK, lower risk, but keep the pattern consistent)
+        public virtual ICollection<Snag> Snags { get; set; } = new HashSet<Snag>();
 
         // ── Computed aliases [NotMapped] ─────────────────────────────────────
         // ⚠ DO NOT use in LINQ Where/OrderBy — EF cannot translate [NotMapped].

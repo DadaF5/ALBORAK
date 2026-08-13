@@ -430,6 +430,47 @@ namespace FRAProject.Data
                 .WithMany()
                 .HasForeignKey(x => x.WorkOrderSectionId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // FRAContext.cs — OnModelCreating, add this block
+            modelBuilder.Entity<Snag>(entity =>
+            {
+                entity.HasOne(s => s.Aircraft)
+                    .WithMany(a => a.Snags)
+                    .HasForeignKey(s => s.AircraftId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(s => s.Ata)
+                    .WithMany(a => a.Snags)
+                    .HasForeignKey(s => s.AtaId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(s => s.DiscoveryBase)
+                    .WithMany(b => b.Snags)
+                    .HasForeignKey(s => s.DiscoveryBaseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(s => s.DiscoveredDuringWorkOrder)
+                    .WithMany(w => w.DiscoveredSnags)
+                    .HasForeignKey(s => s.DiscoveredDuringWorkOrderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(s => s.LinkedWorkOrder)
+                    .WithMany(w => w.LinkedSnags)
+                    .HasForeignKey(s => s.LinkedWorkOrderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<WorkOrderSnag>(entity =>
+            {
+                entity.HasOne(ws => ws.WorkOrder)
+                    .WithMany(w => w.WorkOrderSnags)
+                    .HasForeignKey(ws => ws.WorkOrderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(ws => ws.Snag)
+                    .WithMany(s => s.WorkOrderSnags)
+                    .HasForeignKey(ws => ws.SnagId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
         }
 
 

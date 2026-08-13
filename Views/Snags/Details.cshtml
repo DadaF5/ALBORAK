@@ -1,0 +1,84 @@
+﻿@* @using FRAProject.Areas.AircraftMaintenance.Models *@
+@* Views/Snags/Details.cshtml *@
+@model Snag
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = $"Snag {Model.SnagNumber}";
+
+    string ImpactBadge(AirworthinessImpact i) => i switch
+    {
+        AirworthinessImpact.GROUNDING => "<span class='badge badge-danger'>🔴 Red X — Non Navigable</span>",
+        AirworthinessImpact.RESTRICTED => "<span class='badge badge-warning'>➖ Red Dash — Reporté</span>",
+        AirworthinessImpact.IN_WORK => "<span class='badge badge-info'>◹ Red Diagonal — En Cours</span>",
+        _ => "<span class='badge badge-success'>OK</span>"
+    };
+}
+
+<div class="content-header d-flex justify-content-between align-items-center">
+    <h1>@Model.SnagNumber</h1>
+    @Html.Raw(ImpactBadge(Model.Impact))
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="card border-left-danger" style="border-left-width:4px;">
+    <div class="card-header"><h3 class="card-title">Détails</h3></div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Aéronef</dt>
+            <dd class="col-sm-9">@Model.Aircraft?.Registration (@Model.Aircraft?.AcType?.Code)</dd>
+            <dt class="col-sm-3">Chapitre ATA</dt>
+            <dd class="col-sm-9">@Model.Ata?.Code — @Model.Ata?.Name</dd>
+            <dt class="col-sm-3">Gravité</dt>
+            <dd class="col-sm-9">@Model.Severity</dd>
+            <dt class="col-sm-3">Statut</dt>
+            <dd class="col-sm-9">@Model.Status</dd>
+            <dt class="col-sm-3">Signalé par</dt>
+            <dd class="col-sm-9">@Model.ReportedBy</dd>
+            <dt class="col-sm-3">Phase de Découverte</dt>
+            <dd class="col-sm-9">@Model.DiscoveryPhase</dd>
+            <dt class="col-sm-3">Position à la Découverte</dt>
+            <dd class="col-sm-9">@(Model.DiscoveryFH / 60)h · @Model.DiscoveryCycles cycles · @Model.DiscoveryDate · @Model.DiscoveryBase?.BaseName</dd>
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">@Model.Description</dd>
+
+            @if (Model.IsDeferred)
+            {
+                <dt class="col-sm-3">Report (Red Dash)</dt>
+                <dd class="col-sm-9">
+                    @Model.DeferralReference<br />
+                    Limites : @(Model.DeferralLimitFH.HasValue ? $"{Model.DeferralLimitFH / 60}h " : "")
+                    @(Model.DeferralLimitCycles.HasValue ? $"{Model.DeferralLimitCycles} cycles " : "")
+                    @(Model.DeferralLimitDate?.ToString() ?? "")
+                </dd>
+            }
+
+            @if (Model.Status == SnagStatus.CLOSED)
+            {
+                <dt class="col-sm-3">Clôturé le</dt>
+                <dd class="col-sm-9">@Model.ClosedAt</dd>
+            }
+        </dl>
+    </div>
+    <div class="card-footer">
+        @if (Model.Status != SnagStatus.CLOSED)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-info">Suivi</a>
+            <a asp-action="Defer" asp-route-id="@Model.Id" class="btn btn-warning">Reporter</a>
+            <form asp-action="Close" asp-route-id="@Model.Id" method="post" class="d-inline">
+                <button type="submit" class="btn btn-success"
+                        onclick="return confirm('Confirmer la clôture de ce snag ?');">
+                    Clôturer
+                </button>
+            </form>
+        }
+        <a asp-action="Index" class="btn btn-secondary">Retour à la liste</a>
+    </div>
+</div>

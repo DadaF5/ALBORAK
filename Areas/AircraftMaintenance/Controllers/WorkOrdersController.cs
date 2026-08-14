@@ -16,11 +16,13 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
     {
         private readonly IUnitOfWork _uow;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ISnagService _snagService;
 
-        public WorkOrdersController(IUnitOfWork uow, UserManager<ApplicationUser> userManager)
+        public WorkOrdersController(IUnitOfWork uow, UserManager<ApplicationUser> userManager, ISnagService snagService)
         {
             _uow = uow;
             _userManager = userManager;
+            _snagService = snagService;
         }
 
         // GET: AircraftMaintenance/WorkOrders
@@ -599,6 +601,15 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             }
 
             await _uow.CompleteAsync();
+
+            // ── Auto-close linked Snags (corrective WOs only) ───────────
+            // A corrective WO that closes is assumed to have resolved the
+            // defect(s) it was opened for. Every Snag linked via
+            // WorkOrderSnag gets closed and flagged ResolvedOnClose.
+            if (entity.WOKind == "CORRECTIVE")
+            {
+                await _snagService.CloseLinkedSnagsAsync(entity.Id, entity.ClosedByUserId!);
+            }
 
             TempData["Success"] = "Ordre de travail clôturé avec succès.";
             return RedirectToAction(nameof(Details), new { id });

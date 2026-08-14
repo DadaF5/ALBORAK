@@ -49,6 +49,18 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         {
             var snag = await _uow.Snags.GetWithDetailsAsync(id);
             if (snag == null) return NotFound();
+
+            if (snag.Status != SnagStatus.CLOSED && snag.LinkedWorkOrderId == null)
+            {
+                var allWOs = await _uow.WorkOrders.GetAllWithDetailsAsync();
+                ViewBag.CorrectiveWorkOrders = allWOs
+                    .Where(w => w.AircraftId == snag.AircraftId
+                             && w.WOKind == "CORRECTIVE"
+                             && (w.Status == "OPEN" || w.Status == "IN_PROGRESS"))
+                    .Select(w => new SelectListItem($"{w.WONumber} ({w.Status})", w.Id.ToString()))
+                    .ToList();
+            }
+
             return View(snag);
         }
 
@@ -141,8 +153,8 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         public async Task<IActionResult> LinkToWorkOrder(int snagId, int workOrderId)
         {
             var result = await _snagService.LinkToWorkOrderAsync(snagId, workOrderId);
-            if (!result.Success) return BadRequest(result.Message);
-            return Ok(result.Message);
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Details), new { id = snagId });
         }
 
         // --- CLOSE ---
@@ -175,12 +187,19 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             return View(mtbf);
         }
 
-        // SnagsController.cs — PopulateDropdowns(), corrected
-        // SnagsController.cs — PopulateDropdowns(), corrected
+        // SnagsController.cs — PopulateDropdowns(), final version with scoping
         private async Task PopulateDropdowns()
         {
+            var currentUser = await _userManager.GetUserAsync(User);
             var aircraft = await _uow.Aircraft.GetAllAsync();
             var acTypes = (await _uow.AcTypes.GetAllAsync()).ToDictionary(t => t.Id);
+
+            // Scope: null AcMainGroupId = unrestricted (sees every type)
+            if (currentUser?.AcMainGroupId is int scopedGroupId)
+            {
+                aircraft = aircraft.Where(a =>
+                    acTypes.TryGetValue(a.AcTypeId, out var t) && t.AcMainGroupId == scopedGroupId);
+            }
 
             ViewBag.Aircrafts = aircraft
                 .OrderBy(a => acTypes.TryGetValue(a.AcTypeId, out var t) ? t.Code : "")

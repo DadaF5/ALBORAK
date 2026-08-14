@@ -79,6 +79,30 @@
                 </button>
             </form>
         }
+
+        @if (Model.Status != SnagStatus.CLOSED && Model.LinkedWorkOrderId == null)
+        {
+            var correctiveWOs = ViewBag.CorrectiveWorkOrders as List<SelectListItem> ?? new();
+            if (correctiveWOs.Any())
+            {
+                <form asp-action="LinkToWorkOrder" method="post" class="form-inline d-inline ml-2">
+                    <input type="hidden" name="snagId" value="@Model.Id" />
+                    <select name="workOrderId" class="form-control mr-2" required>
+                        <option value="">-- Lier à un OT correctif --</option>
+                        @foreach (var wo in correctiveWOs)
+                        {
+                            <option value="@wo.Value">@wo.Text</option>
+                        }
+                    </select>
+                    <button type="submit" class="btn btn-secondary">Lier</button>
+                </form>
+            }
+            else
+            {
+                <span class="text-muted ml-2">Aucun OT correctif ouvert pour cet aéronef.</span>
+            }
+        }
+
         <a asp-action="Index" class="btn btn-secondary">Retour à la liste</a>
     </div>
 </div>

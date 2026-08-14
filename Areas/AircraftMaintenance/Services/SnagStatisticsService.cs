@@ -34,7 +34,11 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
                     AcTypeLabel = acTypes.TryGetValue(acTypeId, out var t) ? t.Name : "?",
                     SnagCount = snagCount,
                     AccumulatedFH = accumulatedFHMinutes,
-                    MtbfHours = snagCount == 0 ? null : (double?)(accumulatedFHMinutes / 60.0 / snagCount)
+                    //MtbfHours = snagCount == 0 ? null : (double?)(accumulatedFHMinutes / 60.0 / snagCount)
+                    // SnagStatisticsService.cs — GetMtbfByAtaAsync(), one-line fix
+                    MtbfHours = (snagCount == 0 || accumulatedFHMinutes == 0)
+                        ? null
+                        : (double?)(accumulatedFHMinutes / 60.0 / snagCount)
                 });
             }
 

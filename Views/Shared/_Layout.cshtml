@@ -272,8 +272,7 @@
             align-items: center;
             gap: 14px;
             padding: 10px 16px;
-            border-bottom: 1px solid var(--panel-border);
-            overflow: hidden;
+            border-bottom: 1px solid var(--panel-border);           
         }
 
         .topbar-left {
@@ -888,32 +887,57 @@
                 </div>
                 <!-- GROUP: OPERATIONS END -->
                 <!-- GROUP: ADMINISTRATION START -->
-                <div class="menu-group @(administrationOpen ? "open" : "")" data-group>
-                    <button type="button"
-                            class="menu-group-toggle"
-                            data-group-toggle
-                            aria-expanded="@(administrationOpen.ToString().ToLower())"
-                            title="Administration">
-                        <span class="menu-group-title">
-                            <span class="nav-icon">⚙</span>
-                            <span class="menu-group-label">Administration</span>
-                        </span>
-                        <span class="menu-group-arrow">›</span>
-                    </button>
+                <!-- Wrap the entire Administration group, from its opening <div class="menu-group ...>
+                     down to the "GROUP: ADMINISTRATION END" comment -->
+                @if (User.IsInRole("Admin"))
+                {
+                    <div class="menu-group @(administrationOpen ? "open" : "")" data-group>
+                        <button type="button"
+                                class="menu-group-toggle"
+                                data-group-toggle
+                                aria-expanded="@(administrationOpen.ToString().ToLower())"
+                                title="Administration">
+                            <span class="menu-group-title">
+                                <span class="nav-icon">⚙</span>
+                                <span class="menu-group-label">Administration</span>
+                            </span>
+                            <span class="menu-group-arrow">›</span>
+                        </button>
 
-                    <div class="submenu" data-group-menu style="display:block">
-                        <a class="nav-item @IsActive("Settings", "Home")"
-                           asp-area="Settings"
-                           asp-controller="Home"
-                           asp-action="Index"
-                           title="Paramètres système">
-                            <span class="nav-icon">🛠</span>
-                            <span class="nav-text">Paramètres système</span>
-                        </a>
+                        <div class="submenu" data-group-menu style="display:block">
+                            <a class="nav-item @IsActive("Settings", "Home")"
+                               asp-area="Settings"
+                               asp-controller="Home"
+                               asp-action="Index"
+                               title="Paramètres système">
+                                <span class="nav-icon">🛠</span>
+                                <span class="nav-text">Paramètres système</span>
+                            </a>
+
+                            <a class="nav-item @(currentArea == "" && currentController == "Users" ? "active" : "")"
+                               asp-area=""
+                               asp-controller="Users"
+                               asp-action="Index"
+                               title="Gestion des utilisateurs">
+                                <span class="nav-icon">👤</span>
+                                <span class="nav-text">Utilisateurs</span>
+                            </a>
+
+                            <a class="nav-item @(currentController == "Roles" ? "active" : "")"
+                               asp-area="" asp-controller="Roles" asp-action="Index" title="Rôles">
+                                <span class="nav-icon">🔑</span>
+                                <span class="nav-text">Rôles</span>
+                            </a>
+
+                            <a class="nav-item @IsActive("Settings", "ModuleRoles")"
+                               asp-area="Settings" asp-controller="ModuleRoles" asp-action="Index" title="Rôles de Module">
+                                <span class="nav-icon">🧩</span>
+                                <span class="nav-text">Rôles de Module</span>
+                            </a>
+                        </div>
                     </div>
-                </div>
-                <!-- GROUP: ADMINISTRATION END -->
-
+                    <!-- GROUP: ADMINISTRATION END -->
+                }
             </div>
             <!-- SIDEBAR MENU END -->
 

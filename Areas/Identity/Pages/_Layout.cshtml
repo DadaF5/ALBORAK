@@ -1,0 +1,242 @@
+@using System.Security.Claims
+@{
+    var displayName =
+        User.FindFirst("full_name")?.Value ??
+        User.FindFirst("name")?.Value ??
+        User.FindFirst(ClaimTypes.GivenName)?.Value ??
+        User.Identity?.Name ??
+        "Utilisateur";
+}
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AL-BORAK</title>
+
+    <!-- Plain Bootstrap only — matches Login.cshtml's working pattern.
+         Deliberately NOT loading adminlte.min.css / custom.min.css /
+         gmao_fra.css here: those are built for the main app's
+         .app-shell/.sidebar/.topbar structure and were overriding body
+         layout (flex/column-reverse) on this completely different,
+         simple page — that's what caused the topbar/footer swap. -->
+    <link href="/lib/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/lib/plugins/fontawesome-free/css/all.min.css" />
+
+    <style>
+        :root {
+            --panel-bg: #121826;
+            --panel-border: rgba(255,255,255,0.08);
+            --text-muted: rgba(255,255,255,0.65);
+            --flyout-bg: #182131;
+            --menu-hover: rgba(255,255,255,0.08);
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #0b0f17;
+            color: #e8ebf1;
+        }
+
+        .identity-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .identity-topbar-brand {
+            font-weight: 700;
+            letter-spacing: .02em;
+        }
+
+        .identity-topbar-user {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-muted);
+            font-size: .9rem;
+        }
+
+        .identity-topbar-user a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .identity-topbar-user a:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+        .identity-content {
+            max-width: 1000px;
+            margin: 32px auto;
+            padding: 0 24px;
+        }
+
+        .identity-content h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #fff;
+        }
+
+        .identity-content h2,
+        .identity-content h3 {
+            color: #fff;
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .identity-content h1 + p {
+            color: var(--text-muted);
+        }
+
+        .identity-content hr {
+            border-color: var(--panel-border);
+            opacity: 1;
+            margin: 16px 0 24px;
+        }
+
+        /* Real structure per the page's own markup: a plain Bootstrap
+           row/col-lg-3/col-lg-9 split, NOT a custom wrapper. Wrap it in
+           a card look via the row's own padding, so nothing needs a
+           wrapper class that isn't actually in the framework's HTML. */
+        .identity-content > div > .row {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .identity-content .nav-pills .nav-link {
+            color: var(--text-muted);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 4px;
+            text-align: left;
+        }
+
+        .identity-content .nav-pills .nav-link:hover {
+            background: var(--menu-hover);
+            color: #fff;
+        }
+
+        .identity-content .nav-pills .nav-link.active {
+            background: var(--flyout-bg);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Forms — form-floating inputs used by Profile/Email/Password pages */
+        .identity-content .form-control,
+        .identity-content input[type="text"],
+        .identity-content input[type="email"],
+        .identity-content input[type="password"],
+        .identity-content input[type="tel"] {
+            background: var(--flyout-bg);
+            border: 1px solid var(--panel-border);
+            color: #e8ebf1;
+        }
+
+        .identity-content .form-control:focus {
+            background: var(--flyout-bg);
+            color: #fff;
+            border-color: rgba(255,255,255,0.3);
+            box-shadow: none;
+        }
+
+        .identity-content .form-control:disabled {
+            background: rgba(255,255,255,0.03);
+            color: var(--text-muted);
+        }
+
+        .identity-content .form-floating > label {
+            color: var(--text-muted);
+        }
+
+        .identity-content .form-control::placeholder {
+            color: rgba(255,255,255,0.35);
+        }
+
+        .identity-content label,
+        .identity-content .form-label {
+            color: var(--text-muted);
+        }
+
+        .identity-content .btn-primary {
+            background: #2f6fed;
+            border: none;
+        }
+
+        .identity-content .text-danger {
+            color: #ff7a7a !important;
+        }
+
+        /* Generic Bootstrap components the other Manage pages (Two-factor,
+           Personal data) commonly use — pre-styled since those pages
+           weren't inspected directly, safer than leaving them unstyled */
+        .identity-content .alert {
+            background: var(--flyout-bg);
+            border: 1px solid var(--panel-border);
+            color: #e8ebf1;
+        }
+
+        .identity-content .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            color: #e8ebf1;
+        }
+
+        .identity-content .list-group-item {
+            background: var(--flyout-bg);
+            border-color: var(--panel-border);
+            color: #e8ebf1;
+        }
+
+        .identity-content table {
+            color: #e8ebf1;
+        }
+
+        .identity-content .badge.bg-secondary {
+            background: var(--menu-hover) !important;
+        }
+
+        .identity-footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: .85rem;
+            padding: 24px;
+        }
+
+        .identity-footer a {
+            color: inherit;
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="identity-topbar">
+        <div class="identity-topbar-brand">AL-BORAK <span style="color:var(--text-muted); font-weight:400;">· GMAO FRA</span></div>
+        <div class="identity-topbar-user">
+            <span>@displayName</span>
+            <a href="~/">← Retour à l'application</a>
+        </div>
+    </div>
+
+    <div class="identity-content">
+        @RenderBody()
+    </div>
+
+    <div class="identity-footer">
+        &copy; @DateTime.Now.Year - AL-BORAK GMAO FRA
+    </div>
+
+    <script src="/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

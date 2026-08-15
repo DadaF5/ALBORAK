@@ -214,7 +214,132 @@ namespace FRAProject.Controllers
 
             return View(vm);
         }
+        // UsersController.cs — add this block right after Index(), before Edit()
+        // Moved from Controllers/AccountController.cs — that controller had no
+        // other real purpose (Login/Logout live entirely in Identity's Razor
+        // Pages, never implemented here despite the trailing comment claiming
+        // otherwise). [Authorize(Roles="Admin")] dropped per-action since the
+        // class already carries it.
 
+        // GET: Users/Create
+        public async Task<IActionResult> Create()
+        {
+            var vm = new RegisterUserViewModel();
+
+            vm.AvailableRoles = await _roleManager.Roles
+                .OrderBy(r => r.Name)
+                .Select(r => new SelectListItem(r.Name, r.Name))
+                .ToListAsync();
+
+            vm.BaseList = await _context.Set<Base>()
+                .OrderBy(b => b.BaseName)
+                .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
+                .ToListAsync();
+
+            vm.WingList = await _context.Set<Wing>()
+                .OrderBy(w => w.Name)
+                .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
+                .ToListAsync();
+
+            vm.DepartmentList = await _context.Set<Department>()
+                .OrderBy(d => d.Name)
+                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
+                .ToListAsync();
+
+            vm.SquadronList = await _context.Set<Squadron>()
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+                .ToListAsync();
+
+            vm.AcMainGroupList = await _context.Set<AcMainGroup>()
+                .OrderBy(a => a.Name)
+                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
+                .ToListAsync();
+
+            return View(vm);
+        }
+
+        // POST: Users/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(RegisterUserViewModel model)
+        {
+            model.AvailableRoles = await _roleManager.Roles
+                .OrderBy(r => r.Name)
+                .Select(r => new SelectListItem(r.Name, r.Name))
+                .ToListAsync();
+
+            model.BaseList = await _context.Set<Base>()
+                .OrderBy(b => b.BaseName)
+                .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
+                .ToListAsync();
+
+            model.WingList = await _context.Set<Wing>()
+                .OrderBy(w => w.Name)
+                .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
+                .ToListAsync();
+
+            model.DepartmentList = await _context.Set<Department>()
+                .OrderBy(d => d.Name)
+                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
+                .ToListAsync();
+
+            model.SquadronList = await _context.Set<Squadron>()
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+                .ToListAsync();
+
+            model.AcMainGroupList = await _context.Set<AcMainGroup>()
+                .OrderBy(a => a.Name)
+                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
+                .ToListAsync();
+
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var user = new ApplicationUser
+            {
+                UserName = model.Email,
+                Email = model.Email,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                PhoneNumber = model.PhoneNumber,
+                BaseId = model.BaseId,
+                WingId = model.WingId,
+                DepartmentId = model.DepartmentId,
+                SquadronId = model.SquadronId,
+                AcMainGroupId = model.AcMainGroupId,
+                EmailConfirmed = true,
+                IsActive = true
+            };
+
+            var createResult = await _userManager.CreateAsync(user, model.Password);
+            if (!createResult.Succeeded)
+            {
+                foreach (var err in createResult.Errors)
+                    ModelState.AddModelError(string.Empty, err.Description);
+                return View(model);
+            }
+
+            if (model.SelectedRoles?.Any() == true)
+            {
+                foreach (var role in model.SelectedRoles.Distinct())
+                {
+                    if (await _roleManager.RoleExistsAsync(role))
+                        await _userManager.AddToRoleAsync(user, role);
+                }
+            }
+
+            await AddOrReplaceClaimAsync(user, "BaseId", model.BaseId?.ToString());
+            await AddOrReplaceClaimAsync(user, "WingId", model.WingId?.ToString());
+            await AddOrReplaceClaimAsync(user, "DepartmentId", model.DepartmentId?.ToString());
+            await AddOrReplaceClaimAsync(user, "SquadronId", model.SquadronId?.ToString());
+            await AddOrReplaceClaimAsync(user, "AcMainGroupId", model.AcMainGroupId?.ToString());
+
+            _logger?.LogInformation("Admin {Admin} created user {User}.", User.Identity?.Name, user.UserName);
+
+            return RedirectToAction(nameof(Index));
+        }
         // GET: Users/Edit/5       
         public async Task<IActionResult> Edit(string id)
         {

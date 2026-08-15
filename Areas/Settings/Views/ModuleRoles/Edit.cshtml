@@ -1,0 +1,78 @@
+﻿@* Areas/Settings/Views/ModuleRoles/Edit.cshtml — identical form, different action target *@
+@model ModuleRoleFormDto
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Modifier le Rôle de Module";
+}
+
+<div class="content-header"><h1>🧩 Modifier le Rôle de Module</h1></div>
+
+<div class="card card-info card-outline">
+    <div class="card-header"><h3 class="card-title">@Model.ModuleCode — @Model.RoleCode</h3></div>
+    <div class="card-body">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="All" class="text-danger"></div>
+
+            <div class="form-group">
+                <label>Module <span class="text-danger">*</span></label>
+                <select asp-for="ModuleCode" asp-items="Model.ModuleOptions" class="form-control"></select>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 form-group">
+                    <label>Code Rôle <span class="text-danger">*</span></label>
+                    <input asp-for="RoleCode" class="form-control" style="text-transform:uppercase;" />
+                </div>
+                <div class="col-md-6 form-group">
+                    <label>Nom du Rôle <span class="text-danger">*</span></label>
+                    <input asp-for="RoleName" class="form-control" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Description</label>
+                <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="CanWrite" class="form-check-input" />
+                <label asp-for="CanWrite" class="form-check-label">Peut écrire (décocher pour lecture seule)</label>
+            </div>
+
+            <div class="form-group">
+                <label>Niveau de Signature (WorkOrder)</label>
+                <input asp-for="SignOffLevel" class="form-control" />
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 form-check">
+                    <input asp-for="ShowBaseScope" class="form-check-input" />
+                    <label asp-for="ShowBaseScope" class="form-check-label">Filtrer par Base</label>
+                </div>
+                <div class="col-md-4 form-check">
+                    <input asp-for="ShowGroupScope" class="form-check-input" />
+                    <label asp-for="ShowGroupScope" class="form-check-label">Filtrer par Groupe d'Aéronefs</label>
+                </div>
+                <div class="col-md-4 form-check">
+                    <input asp-for="ShowWingScope" class="form-check-input" />
+                    <label asp-for="ShowWingScope" class="form-check-label">Filtrer par Escadre</label>
+                </div>
+            </div>
+
+            <div class="row mt-2">
+                <div class="col-md-6 form-group">
+                    <label>Ordre d'affichage</label>
+                    <input asp-for="SortOrder" class="form-control" />
+                </div>
+                <div class="col-md-6 form-check align-self-center">
+                    <input asp-for="IsActive" class="form-check-input" />
+                    <label asp-for="IsActive" class="form-check-label">Actif</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-info mt-3">Enregistrer</button>
+            <a asp-action="Index" class="btn btn-secondary mt-3">Annuler</a>
+        </form>
+    </div>
+</div>

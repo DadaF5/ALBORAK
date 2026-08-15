@@ -1,0 +1,39 @@
+﻿@* Areas/Settings/Views/ModuleRoles/Delete.cshtml — soft/hard choice, matching AcTypes pattern *@
+@model ModuleRole
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Supprimer le Rôle de Module";
+}
+
+<div class="content-header"><h1>🗑 Supprimer le Rôle de Module</h1></div>
+
+<div class="card card-danger card-outline">
+    <div class="card-body">
+        <p>Rôle : <strong>@Model.ModuleCode / @Model.RoleCode</strong> — @Model.RoleName</p>
+
+        <div class="alert alert-info">
+            <strong>Désactiver (recommandé)</strong> — préserve l'historique et les affectations existantes
+            (<code>UserAssignment</code>), le rôle disparaît simplement des listes de sélection actives.
+        </div>
+        <form asp-action="ToggleActive" asp-route-id="@Model.Id" method="post" class="d-inline">
+            <button type="submit" class="btn btn-warning">
+                @(Model.IsActive ? "Désactiver" : "Réactiver")
+            </button>
+        </form>
+
+        <hr />
+
+        <div class="alert alert-danger">
+            <strong>Supprimer Définitivement</strong> — échouera si des affectations utilisateur (<code>UserAssignment</code>)
+            référencent encore ce rôle. Désactivez-le plutôt dans ce cas.
+        </div>
+        <form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post" class="d-inline">
+            <button type="submit" class="btn btn-danger"
+                    onclick="return confirm('Confirmer la suppression définitive ?');">
+                Supprimer Définitivement
+            </button>
+        </form>
+
+        <a asp-action="Index" class="btn btn-secondary d-block mt-3" style="width:fit-content;">Retour</a>
+    </div>
+</div>

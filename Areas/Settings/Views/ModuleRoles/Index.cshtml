@@ -1,0 +1,73 @@
+﻿@* Areas/Settings/Views/ModuleRoles/Index.cshtml *@
+@model List<ModuleRole>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Rôles de Module";
+}
+
+<div class="content-header d-flex justify-content-between align-items-center">
+    <h1>🧩 Rôles de Module</h1>
+    <a asp-action="Create" class="btn btn-primary">+ Nouveau Rôle de Module</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+@foreach (var moduleGroup in Model.GroupBy(r => r.ModuleCode))
+{
+    <div class="card mb-3">
+        <div class="card-header"><h3 class="card-title">@moduleGroup.Key</h3></div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Nom</th>
+                        <th>Écriture</th>
+                        <th>Signature</th>
+                        <th>Base</th>
+                        <th>Groupe</th>
+                        <th>Escadre</th>
+                        <th>Statut</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in moduleGroup.OrderBy(r => r.SortOrder))
+                    {
+                        <tr class="@(r.IsActive ? "" : "border-left-secondary")" style="border-left-width:4px;">
+                            <td>@r.RoleCode</td>
+                            <td>@r.RoleName</td>
+                            <td>@(r.CanWrite ? "✅" : "🔒 Lecture seule")</td>
+                            <td>@(r.SignOffLevel ?? "—")</td>
+                            <td>@(r.ShowBaseScope ? "✅" : "—")</td>
+                            <td>@(r.ShowGroupScope ? "✅" : "—")</td>
+                            <td>@(r.ShowWingScope ? "✅" : "—")</td>
+                            <td>
+                                @if (r.IsActive)
+                                {
+                                    <span class="badge badge-success">Actif</span>
+                                }
+                                else
+                                {
+
+                                    <span class="badge badge-secondary">Inactif</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@r.Id" class="btn btn-sm btn-info">Modifier</a>
+                                <a asp-action="Delete" asp-route-id="@r.Id" class="btn btn-sm btn-danger">Supprimer</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

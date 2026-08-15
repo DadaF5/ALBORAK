@@ -97,7 +97,7 @@ namespace FRAProject.Areas.Settings.Models
         public int TotalFlightMinutes { get; set; } = 0;
         public int TotalCycles { get; set; } = 0;
         public int TotalLandings { get; set; } = 0;
-
+        public bool IsCloudSeedingEquipped { get; set; } = false;
         public byte SortOrder { get; set; } = 99;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string? CreatedByUserId { get; set; }

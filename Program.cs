@@ -3,6 +3,7 @@ using FRAProject.Areas.AircraftMaintenance.Repositories;
 using FRAProject.Areas.AircraftMaintenance.Services;
 using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Repositories;
+using FRAProject.Authorization;
 using FRAProject.Data;
 using FRAProject.Infrastructure;
 using FRAProject.Infrastructure.Authorization;
@@ -40,6 +41,33 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 
 // Custom claims factory for user identity customization
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppClaimsPrincipalFactory>();
+builder.Services.AddScoped<IUserAssignmentService, UserAssignmentService>();
+
+// Program.cs
+builder.Services.AddScoped<IUserScopeService, UserScopeService>();
+
+// registration
+builder.Services.AddScoped<IAuthorizationHandler, ModuleAccessHandler>();
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("MaintenanceRead", p => p.Requirements.Add(new ModuleAccessRequirement("MAINTENANCE")));
+    options.AddPolicy("MaintenanceWrite", p => p.Requirements.Add(new ModuleAccessRequirement("MAINTENANCE", requireWrite: true)));
+
+    options.AddPolicy("SquadronOpsRead", p => p.Requirements.Add(new ModuleAccessRequirement("SQUADRONOPS")));
+    options.AddPolicy("SquadronOpsWrite", p => p.Requirements.Add(new ModuleAccessRequirement("SQUADRONOPS", requireWrite: true)));
+
+    options.AddPolicy("HRRead", p => p.Requirements.Add(new ModuleAccessRequirement("HR")));
+    options.AddPolicy("HRWrite", p => p.Requirements.Add(new ModuleAccessRequirement("HR", requireWrite: true)));
+
+    options.AddPolicy("HealthcareRead", p => p.Requirements.Add(new ModuleAccessRequirement("HEALTHCARE")));
+    options.AddPolicy("HealthcareWrite", p => p.Requirements.Add(new ModuleAccessRequirement("HEALTHCARE", requireWrite: true)));
+
+    // SETTINGS deliberately has no policy here — per Module.cs's own doc
+    // comment ("← admin only"), it stays [Authorize(Roles = "Admin")].
+});
+
+
 
 // support for snags , errors, bugs, issues
 builder.Services.AddScoped<IBugReportRepository, BugReportRepository>();

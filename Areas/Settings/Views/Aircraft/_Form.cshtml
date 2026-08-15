@@ -88,7 +88,19 @@
                         class="form-select bg-dark text-white border-secondary">
                 </select>
             </div>
-
+            <div class="col-md-3 d-none" id="cloudSeedingWrapper">
+                <label class="form-label text-muted small">Configuration spéciale</label>
+                <div class="form-check form-switch mt-2">
+                    <input asp-for="IsCloudSeedingEquipped"
+                           class="form-check-input"
+                           type="checkbox" role="switch" />
+                    <label asp-for="IsCloudSeedingEquipped"
+                           class="form-check-label text-muted"
+                           style="padding-left:20px;">
+                        Équipé ensemencement des nuages
+                    </label>
+                </div>
+            </div>
             <div class="col-md-2">
                 <label asp-for="ManufactureDate" class="form-label text-muted small">
                     Date de fabrication

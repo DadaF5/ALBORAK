@@ -485,7 +485,8 @@ namespace FRAProject.Areas.Settings.Controllers
                 TotalFlightMinutes = entity.TotalFlightMinutes,
                 TotalCycles = entity.TotalCycles,
                 TotalLandings = entity.TotalLandings,
-                DossierId = entity.DossierId
+                DossierId = entity.DossierId,
+                IsCloudSeedingEquipped = entity.IsCloudSeedingEquipped
             };
 
         // ── DTO → Entity ──────────────────────────────────────────────────
@@ -512,6 +513,7 @@ namespace FRAProject.Areas.Settings.Controllers
             entity.TotalCycles = dto.TotalCycles;
             entity.TotalLandings = dto.TotalLandings;
             entity.DossierId = dto.DossierId;
+            entity.IsCloudSeedingEquipped = dto.IsCloudSeedingEquipped;
 
             return entity;
         }

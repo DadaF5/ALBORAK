@@ -53,6 +53,9 @@ namespace FRAProject.Areas.Settings.ViewModels
 
         [Display(Name = "Actif")]
         public bool IsActive { get; set; } = true;
+        
+        [Display(Name = "Équipé ensemencement des nuages")]
+        public bool IsCloudSeedingEquipped { get; set; } = false;
 
         [Required(ErrorMessage = "Le statut est obligatoire.")]
         [Display(Name = "Statut opérationnel")]

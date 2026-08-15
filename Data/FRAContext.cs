@@ -65,7 +65,8 @@ namespace FRAProject.Data
         public DbSet<Module> Modules { get; set; } = null!;
         public DbSet<ModuleRole> ModuleRoles { get; set; } = null!;
         //public DbSet<UserAssignment> UserAssignments { get; set; } = null!;
-
+        // FRAContext.cs — add DbSet
+        public DbSet<UserAssignment> UserAssignments { get; set; } = null!;
 
         // =====================================
         // DOMAIN: Aircraft Maintenance
@@ -200,7 +201,38 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new ModuleConfiguration());
             modelBuilder.ApplyConfiguration(new ModuleRoleConfiguration());
             //modelBuilder.ApplyConfiguration(new UserAssignmentConfiguration());
+            // FRAContext.cs — OnModelCreating, add this block.
+            // No double-FK-into-same-parent risk here (every FK points to a
+            // DIFFERENT parent type), so plain WithMany() with no navigation
+            // collection needed on any of the five parent classes — unlike the
+            // Snag/WorkOrder situation.
+            modelBuilder.Entity<UserAssignment>(entity =>
+            {
+                entity.HasOne(ua => ua.User)
+                    .WithMany()
+                    .HasForeignKey(ua => ua.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
+                entity.HasOne(ua => ua.ModuleRole)
+                    .WithMany()
+                    .HasForeignKey(ua => ua.ModuleRoleId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(ua => ua.Base)
+                    .WithMany()
+                    .HasForeignKey(ua => ua.BaseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(ua => ua.AcMainGroup)
+                    .WithMany()
+                    .HasForeignKey(ua => ua.AcMainGroupId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(ua => ua.Wing)
+                    .WithMany()
+                    .HasForeignKey(ua => ua.WingId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
             // Support for snags and bug reports
             modelBuilder.Entity<BugReport>()
                 .HasOne(b => b.ReportedBy)

@@ -49,6 +49,8 @@ namespace FRAProject.Infrastructure
             // Application Support snags, errors, bugs, issues
             BugReports = new BugReportRepository(_context);
 
+            UserAssignments = new UserAssignmentRepository(context);
+            
 
 
         }
@@ -96,8 +98,16 @@ namespace FRAProject.Infrastructure
         private IGenericRepository<DossierAirworthiness>? _dossierAirworthiness;
         private IGenericRepository<ImmatriculationDocument>? _immatriculationDocuments;
 
-        // ── Repository accessors (lazy init) ──────────────────────────────
 
+        // UnitOfWork.cs — add a backing field near the other lookup private fields
+        private IGenericRepository<ModuleRole>? _moduleRoles;
+        private IGenericRepository<Module>? _modules;
+        // ── Repository accessors (lazy init) ──────────────────────────────
+        // UnitOfWork.cs — add the lazy accessor near the other lookup accessors
+        public IGenericRepository<ModuleRole> ModuleRoles =>
+            _moduleRoles ??= new GenericRepository<ModuleRole>(_context);
+        public IGenericRepository<Module> Modules =>
+            _modules ??= new GenericRepository<Module>(_context);
         // Lookup tables
         public IGenericRepository<Country> Countries =>
             _countries ??= new GenericRepository<Country>(_context);
@@ -170,6 +180,9 @@ namespace FRAProject.Infrastructure
 
         //  Application Support :Snags, Errors , Bugs, Issues
         public IBugReportRepository BugReports { get; }
+       
+        // User assignments and access control
+        public IUserAssignmentRepository UserAssignments { get; private set; }
 
         // ── Commit ────────────────────────────────────────────────────────
         // Single method — CompleteAsync() — matches IUnitOfWork contract.

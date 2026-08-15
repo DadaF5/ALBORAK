@@ -5,6 +5,7 @@ using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.Settings.Repositories;
 using FRAProject.Data.Configurations;
+using FRAProject.Infrastructure.Repositories;
 using FRAProject.Models;
 using FRAProject.Support.Repositories;
 
@@ -40,6 +41,9 @@ namespace FRAProject.Infrastructure.Interfaces
         IGenericRepository<AircraftVersion> AircraftVersions { get; }
         IGenericRepository<AircraftManufacturer> AircraftManufacturers { get; }
         IGenericRepository<Base> Bases { get; }
+        // IUnitOfWork.cs — add alongside the other lookup entries
+        IGenericRepository<ModuleRole> ModuleRoles { get; }
+        IGenericRepository<Module> Modules { get; }
 
         // ── Immatriculation dossier ───────────────────────────────────────
         IGenericRepository<ImmatriculationDossier> Dossiers { get; }
@@ -78,6 +82,9 @@ namespace FRAProject.Infrastructure.Interfaces
 
         // Support
         IBugReportRepository BugReports { get; }
+
+        IUserAssignmentRepository UserAssignments { get; }
+
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>
         /// Flush all staged changes to the database in one transaction.

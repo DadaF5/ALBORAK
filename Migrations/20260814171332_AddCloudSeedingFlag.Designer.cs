@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20260814171332_AddCloudSeedingFlag")]
+    partial class AddCloudSeedingFlag
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4963,66 +4966,6 @@ namespace FRAProject.Migrations
                     b.ToTable("Odvs", (string)null);
                 });
 
-            modelBuilder.Entity("FRAProject.Models.UserAssignment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("AcMainGroupId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("BaseId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("GrantedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("GrantedByUserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsBaseAdmin")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("ModuleRoleId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RevokeReason")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("RevokedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("RevokedByUserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int?>("WingId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AcMainGroupId");
-
-                    b.HasIndex("BaseId");
-
-                    b.HasIndex("ModuleRoleId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("WingId");
-
-                    b.ToTable("UserAssignments", "dbo");
-                });
-
             modelBuilder.Entity("FRAProject.Models.UserDocument", b =>
                 {
                     b.Property<int>("Id")
@@ -6385,46 +6328,6 @@ namespace FRAProject.Migrations
                     b.Navigation("Mission");
 
                     b.Navigation("Squadron");
-                });
-
-            modelBuilder.Entity("FRAProject.Models.UserAssignment", b =>
-                {
-                    b.HasOne("FRAProject.Areas.Settings.Models.AcMainGroup", "AcMainGroup")
-                        .WithMany()
-                        .HasForeignKey("AcMainGroupId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("FRAProject.Areas.Settings.Models.Base", "Base")
-                        .WithMany()
-                        .HasForeignKey("BaseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Models.ModuleRole", "ModuleRole")
-                        .WithMany()
-                        .HasForeignKey("ModuleRoleId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("FRAProject.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Areas.HR.Models.Wing", "Wing")
-                        .WithMany()
-                        .HasForeignKey("WingId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("AcMainGroup");
-
-                    b.Navigation("Base");
-
-                    b.Navigation("ModuleRole");
-
-                    b.Navigation("User");
-
-                    b.Navigation("Wing");
                 });
 
             modelBuilder.Entity("FRAProject.Models.UserProfile", b =>

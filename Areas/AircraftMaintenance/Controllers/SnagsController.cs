@@ -3,6 +3,7 @@ using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.AircraftMaintenance.Services;
 using FRAProject.Infrastructure.Interfaces;
 using FRAProject.Models;
+using FRAProject.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,32 +12,63 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace FRAProject.Areas.AircraftMaintenance.Controllers
 {
     [Area("AircraftMaintenance")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "MaintenanceRead")]
     public class SnagsController : Controller
     {
+        private const string ModuleCode = "MAINTENANCE";
+
         private readonly ISnagService _snagService;
         private readonly ISnagStatisticsService _statsService;
         private readonly IUnitOfWork _uow;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IUserScopeService _userScopeService;
 
         public SnagsController(ISnagService snagService, ISnagStatisticsService statsService,
-            IUnitOfWork uow, UserManager<ApplicationUser> userManager)
+            IUnitOfWork uow, UserManager<ApplicationUser> userManager, IUserScopeService userScopeService)
         {
             _snagService = snagService;
             _statsService = statsService;
             _uow = uow;
             _userManager = userManager;
+            _userScopeService = userScopeService;
         }
 
         // GET /AircraftMaintenance/Snags?status=&aircraftId=
         public async Task<IActionResult> Index(SnagStatus? status, int? aircraftId)
         {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
             var snags = await _uow.Snags.GetAllAsync(includeClosed: status == SnagStatus.CLOSED || status == null);
+
+            if (!scope.IsUnrestricted)
+            {
+                // NOTE: resolved via an AcType dictionary, not s.Aircraft.AcType —
+                // SnagRepository.GetAllAsync() only .Include()s Aircraft, not
+                // Aircraft.AcType, and this project doesn't use lazy-loading
+                // proxies. Relying on the navigation property here would
+                // NullReferenceException for every scoped (non-Admin) user.
+                var acTypesForScope = (await _uow.AcTypes.GetAllAsync()).ToDictionary(t => t.Id);
+
+                snags = snags.Where(s =>
+                    s.Aircraft != null
+                    && s.Aircraft.BaseId.HasValue
+                    && scope.AllowedBaseIds.Contains(s.Aircraft.BaseId.Value)
+                    && (!scope.AllowedAcMainGroupIds.Any()
+                        || (acTypesForScope.TryGetValue(s.Aircraft.AcTypeId, out var t)
+                            && scope.AllowedAcMainGroupIds.Contains(t.AcMainGroupId))));
+            }
 
             if (status.HasValue) snags = snags.Where(s => s.Status == status.Value);
             if (aircraftId.HasValue) snags = snags.Where(s => s.AircraftId == aircraftId.Value);
 
-            ViewBag.Aircrafts = (await _uow.Aircraft.GetAllAsync())
+            var aircraftList = await _uow.Aircraft.GetAllAsync();
+            if (!scope.IsUnrestricted)
+            {
+                aircraftList = aircraftList.Where(a =>
+                    a.BaseId.HasValue && scope.AllowedBaseIds.Contains(a.BaseId.Value));
+            }
+
+            ViewBag.Aircrafts = aircraftList
                 .Select(a => new SelectListItem(a.Registration, a.Id.ToString()));
             ViewBag.SelectedStatus = status;
             ViewBag.SelectedAircraftId = aircraftId;
@@ -75,6 +107,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
 
         // POST /AircraftMaintenance/Snags/Report
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Report(SnagCreateDto dto)
         {
             if (!ModelState.IsValid)
@@ -114,6 +147,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
 
         // POST /AircraftMaintenance/Snags/Edit/5
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Edit(int id, SnagUpdateDto dto)
         {
             if (!ModelState.IsValid) return View(dto);
@@ -136,6 +170,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
 
         // POST /AircraftMaintenance/Snags/Defer/5
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Defer(int id, SnagDeferralDto dto)
         {
             if (!ModelState.IsValid) return View(dto);
@@ -150,6 +185,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
 
         // POST /AircraftMaintenance/Snags/LinkToWorkOrder — called from WorkOrder Create screen (AJAX or redirect)
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> LinkToWorkOrder(int snagId, int workOrderId)
         {
             var result = await _snagService.LinkToWorkOrderAsync(snagId, workOrderId);
@@ -161,6 +197,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
 
         // POST /AircraftMaintenance/Snags/Close/5
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Close(int id)
         {
             var userId = _userManager.GetUserId(User)!;
@@ -187,18 +224,24 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             return View(mtbf);
         }
 
-        // SnagsController.cs — PopulateDropdowns(), final version with scoping
+        // SnagsController.cs — PopulateDropdowns(), rebuilt on the real
+        // UserAssignment-backed IUserScopeService. Replaces the earlier
+        // ad-hoc ApplicationUser.AcMainGroupId check, which was always
+        // meant to be a stopgap until this system existed.
         private async Task PopulateDropdowns()
         {
-            var currentUser = await _userManager.GetUserAsync(User);
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
             var aircraft = await _uow.Aircraft.GetAllAsync();
             var acTypes = (await _uow.AcTypes.GetAllAsync()).ToDictionary(t => t.Id);
 
-            // Scope: null AcMainGroupId = unrestricted (sees every type)
-            if (currentUser?.AcMainGroupId is int scopedGroupId)
+            if (!scope.IsUnrestricted)
             {
                 aircraft = aircraft.Where(a =>
-                    acTypes.TryGetValue(a.AcTypeId, out var t) && t.AcMainGroupId == scopedGroupId);
+                    a.BaseId.HasValue && scope.AllowedBaseIds.Contains(a.BaseId.Value)
+                    && (!scope.AllowedAcMainGroupIds.Any()
+                        || (acTypes.TryGetValue(a.AcTypeId, out var t)
+                            && scope.AllowedAcMainGroupIds.Contains(t.AcMainGroupId))));
             }
 
             ViewBag.Aircrafts = aircraft

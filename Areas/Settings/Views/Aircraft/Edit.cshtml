@@ -206,7 +206,21 @@
             loadMissionRoles(this.value);
             buildObs();
         });
+         // Edit.cshtml — same function, added right after the acTypeSelect
+        // 'change' listener (after line 208's closing });), and called
+        // alongside the existing syncMinutes()/updateStatusPreview() at the bottom
+        function toggleCloudSeeding() {
+            const opt = document.getElementById('acTypeSelect')?.selectedOptions[0];
+            const code = opt?.text?.split('—')[0]?.trim();
+            const wrapper = document.getElementById('cloudSeedingWrapper');
+            if (wrapper) wrapper.classList.toggle('d-none', code !== 'AJET');
+        }
+        document.getElementById('acTypeSelect')?.addEventListener('change', toggleCloudSeeding);
 
+        // ...further down, alongside the existing calls:
+        syncMinutes();
+        updateStatusPreview();
+        toggleCloudSeeding();
         document.querySelector('[name="Registration"]')?.addEventListener('input', buildObs);
         document.getElementById('statusSelect')?.addEventListener('change', updateStatusPreview);
 

@@ -98,7 +98,8 @@ namespace FRAProject.Areas.Settings.ViewModels
         public string  StatusLabel   { get; set; } = string.Empty;
 
         // Counters — displayed as hours (minutes/60)
-        public int     FlightHours   { get; set; }
+        //public int     FlightHours   { get; set; }
+        public int TotalFlightMinutes { get; set; }
         public int     Cycles        { get; set; }
         public int     Landings      { get; set; }
 
@@ -106,7 +107,15 @@ namespace FRAProject.Areas.Settings.ViewModels
         public AircraftCertificateVm? CdN { get; set; }
         public AircraftCertificateVm? CEN { get; set; }
         public AircraftCertificateVm? PEA { get; set; }
-
+        public string FlightHoursDisplay
+        {
+            get
+            {
+                var h = TotalFlightMinutes / 60;
+                var m = TotalFlightMinutes % 60;
+                return $"{h}:{m:D2}";
+            }
+        }
         // Computed badge
         public string StatusBadgeClass => StatusCode switch
         {

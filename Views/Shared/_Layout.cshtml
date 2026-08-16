@@ -671,16 +671,17 @@
                     </button>
 
                     <div class="submenu" data-group-menu style="display:block">
-                        <a class="nav-item @IsActive("Dashboard", "Home")"
-                           asp-area="Dashboard"
-                           asp-controller="Home"
+                        <!-- _Layout.cshtml — "Tableau de bord" under Vue d'ensemble, now pointing at the real page -->
+                        <a class="nav-item @IsActive("AircraftMaintenance", "DamDashboard")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="DamDashboard"
                            asp-action="Index"
                            title="Tableau de bord">
                             <span class="nav-icon">📊</span>
                             <span class="nav-text">Tableau de bord</span>
                         </a>
 
-                        <a class="nav-item @IsActive("Alerts", "Home")"
+                        @* <a class="nav-item @IsActive("Alerts", "Home")"
                            asp-area="Alerts"
                            asp-controller="Home"
                            asp-action="Index"
@@ -688,7 +689,7 @@
                             <span class="nav-icon">🔔</span>
                             <span class="nav-text">Alertes</span>
                             <span class="nav-badge badge-red">7</span>
-                        </a>
+                        </a> *@
                     </div>
                 </div>
                 <!-- GROUP: VUE D'ENSEMBLE END -->
@@ -707,23 +708,24 @@
                     </button>
 
                     <div class="submenu" data-group-menu style="display:block">
-                        <a class="nav-item @IsActive("Settings", "Aircraft")"
-                           asp-area="Settings"
-                           asp-controller="Aircraft"
+                        <!-- _Layout.cshtml — "Aéronefs" under Flotte, now pointing at this new view instead of Settings/Aircraft -->
+                        <a class="nav-item @IsActive("AircraftMaintenance", "FleetStatus")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="FleetStatus"
                            asp-action="Index"
                            title="Aéronefs">
                             <span class="nav-icon">🛩️</span>
                             <span class="nav-text">Aéronefs</span>
                         </a>
 
-                        <a class="nav-item @IsActive("Fleet", "Registration")"
+                        @* <a class="nav-item @IsActive("Fleet", "Registration")"
                            asp-area="Fleet"
                            asp-controller="Registration"
                            asp-action="Index"
                            title="Flotte & immatriculation">
                             <span class="nav-icon">📌</span>
                             <span class="nav-text">Flotte & immatriculation</span>
-                        </a>
+                        </a> *@
                     </div>
                 </div>
                 <!-- GROUP: FLOTTE END -->
@@ -742,14 +744,14 @@
                     </button>
 
                     <div class="submenu" data-group-menu style="display:block">
-                        <a class="nav-item @IsActive("AircraftMaintenance", "DamDashboard")"
+                        @* <a class="nav-item @IsActive("AircraftMaintenance", "DamDashboard")"
                            asp-area="AircraftMaintenance"
                            asp-controller="DamDashboard"
                            asp-action="Index"
                            title="Dashboard DAM">
                             <span class="nav-icon">📈</span>
                             <span class="nav-text">Dashboard DAM</span>
-                        </a>
+                        </a> *@
 
                         <a class="nav-item @IsActive("AircraftMaintenance", "AircraftCertificates")"
                            asp-area="AircraftMaintenance"
@@ -831,14 +833,14 @@
                             <span class="nav-text">Ordres de Travail</span>
                         </a>
 
-                        <a class="nav-item @IsActive("PEA", "Home")"
+                        @* <a class="nav-item @IsActive("PEA", "Home")"
                            asp-area="PEA"
                            asp-controller="Home"
                            asp-action="Index"
                            title="Programme PEA">
                             <span class="nav-icon">📋</span>
                             <span class="nav-text">Programme PEA</span>
-                        </a>
+                        </a> *@
 
                         @* <a class="nav-item @IsActive("CRM", "Defauts")"
                            asp-area="CRM"
@@ -875,14 +877,14 @@
                             <span class="nav-icon">📈</span>
                             <span class="nav-text">Statistiques (MTBF)</span>
                         </a>
-                        <a class="nav-item @IsActive("Reporting", "Home")"
+                       @*  <a class="nav-item @IsActive("Reporting", "Home")"
                            asp-area="Reporting"
                            asp-controller="Home"
                            asp-action="Index"
                            title="Reporting & KPI">
                             <span class="nav-icon">📊</span>
                             <span class="nav-text">Reporting & KPI</span>
-                        </a>
+                        </a> *@
                     </div>
                 </div>
                 <!-- GROUP: OPERATIONS END -->

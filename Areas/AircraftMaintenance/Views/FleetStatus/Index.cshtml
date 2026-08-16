@@ -1,0 +1,32 @@
+﻿@using FRAProject.Areas.AircraftMaintenance.ViewModels
+@* Areas/AircraftMaintenance/Views/FleetStatus/Index.cshtml *@
+@model List<FleetStatusRowVm>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Aéronefs";
+}
+
+<div class="content-header d-flex justify-content-between align-items-center">
+    <h1>🛩️ Aéronefs — Situation Flotte</h1>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr><th>Registration</th><th>Type</th><th>Statut</th><th>Serviceable</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model)
+                {
+                    <tr>
+                        <td>@a.Registration <small class="text-muted">(@a.TailNo)</small></td>
+                        <td>@a.AcTypeCode — @a.AcTypeName</td>
+                        <td>@a.StatusName</td>
+                        <td><span class="badge @a.ServiceableBadgeClass">@a.ServiceableLabel</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

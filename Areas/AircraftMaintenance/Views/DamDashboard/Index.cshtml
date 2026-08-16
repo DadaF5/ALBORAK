@@ -19,31 +19,54 @@
     .badge-inactive { background-color: #6c757d; color:#fff; }
     .card-dam       { border-top: 3px solid #2563eb; }
     .card-navigabilite { border-left: 4px solid #06b6d4; }
+
+    /* Fix: light pastel backgrounds with no explicit text color were
+       inheriting this app's dark-theme ambient text color and going
+       near-invisible — same root cause as the KPI-box and table-text
+       bugs below. These boxes were empty ("Module à venir" stub) until
+       DueSoon/Restrictions were wired to real data — fixing before they
+       render real content for the first time, not after. */
     .alert-critical {
         background-color: #fee2e2;
         border-left: 4px solid var(--dam-danger);
         padding: .85rem 1rem; margin-bottom: .5rem;
+        color: #7f1d1d;
     }
     .alert-high {
         background-color: #fed7aa;
         border-left: 4px solid var(--dam-warning);
         padding: .85rem 1rem; margin-bottom: .5rem;
+        color: #7c2d12;
     }
     .counter-display { font-size:1.2rem; font-weight:600; color:#2563eb; }
     .due-alert {
         background-color: #fef3c7;
         border-left: 4px solid var(--dam-warning);
         padding: .75rem; margin-bottom: .5rem;
+        color: #78350f;
     }
     .overdue-alert {
         background-color: #fee2e2;
         border-left: 4px solid var(--dam-danger);
         padding: .75rem; margin-bottom: .5rem;
+        color: #7f1d1d;
     }
     .table-dam thead {
         background-color: var(--dam-dark); color: white;
     }
-    .table-dam tbody tr:hover { background-color: #f1f5f9; }
+    /* Fix: Queue/Type columns had no explicit color and were inheriting
+       this app's ambient (light) text color against the table's light
+       row background — same white-on-white pattern as .table-hover
+       elsewhere in the app, just not caught by that earlier global fix
+       since this table uses its own .table-dam class. */
+    .table-dam tbody td {
+        color: #e8ebf1;
+    }
+
+    .table-dam tbody tr:hover {
+        background-color: #1c2536;
+        color: #e8ebf1;
+    }
     .cert-valid::before {
         content: "\f058"; font-family:"Font Awesome 5 Free";
         font-weight:900; color:var(--dam-success); margin-right:4px;
@@ -109,7 +132,9 @@
             <span class="info-box-icon bg-warning elevation-1">
                 <i class="fas fa-exclamation-triangle"></i>
             </span>
-            <div class="info-box-content">
+            <!-- Fix: was missing text-warning — number/label were
+                 invisible against the white card background -->
+            <div class="info-box-content text-warning">
                 <span class="info-box-text">Échéances Proches</span>
                 <span class="info-box-number">
                     @(Model.Kpi.TotalDueSoon > 0
@@ -124,7 +149,8 @@
             <span class="info-box-icon bg-danger elevation-1">
                 <i class="fas fa-times-circle"></i>
             </span>
-            <div class="info-box-content">
+            <!-- Fix: was missing text-danger — same bug as above -->
+            <div class="info-box-content text-danger">
                 <span class="info-box-text">Restrictions Actives</span>
                 <span class="info-box-number">
                     @(Model.Kpi.TotalRestrictions > 0
@@ -338,7 +364,7 @@
                                     </td>
 
                                     <td class="text-center counter-display">
-                                        @row.FlightHours.ToString("N0")
+                                        @row.FlightHoursDisplay
                                     </td>
                                     <td class="text-center counter-display">
                                         @row.Cycles.ToString("N0")

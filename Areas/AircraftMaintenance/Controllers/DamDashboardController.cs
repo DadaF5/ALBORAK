@@ -1,26 +1,43 @@
 using FRAProject.Areas.AircraftMaintenance.Services;
 using FRAProject.Areas.Settings.ViewModels;
 using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Services;
+using FRAProject.Areas.Settings.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FRAProject.Areas.AircraftMaintenance.Controllers
 {
     [Area("AircraftMaintenance")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "MaintenanceRead")]
     public class DamDashboardController : Controller
     {
-        private readonly IUnitOfWork _uow;
+        private const string ModuleCode = "MAINTENANCE";
 
-        public DamDashboardController(IUnitOfWork uow)
+        private readonly IUnitOfWork _uow;
+        private readonly IUserScopeService _userScopeService;
+
+        public DamDashboardController(IUnitOfWork uow, IUserScopeService userScopeService)
         {
             _uow = uow;
+            _userScopeService = userScopeService;
         }
 
         public async Task<IActionResult> Index()
         {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
             // ── Aircraft + lookups ────────────────────────────────────────
             var aircraft = await _uow.Aircraft.GetWhereAsync(a => a.IsActive);
+
+            // BGNT: base-scoped, NOT AcMainGroup-restricted — a BGNT
+            // supervises every aircraft type at their base, unlike a
+            // TECHNICIAN role. Only AllowedBaseIds applies here.
+            if (!scope.IsUnrestricted)
+            {
+                aircraft = aircraft.Where(a => a.BaseId.HasValue && scope.AllowedBaseIds.Contains(a.BaseId.Value));
+            }
+
             var acTypes = await _uow.AcTypes.GetWhereAsync(t => t.IsActive);
             var statuses = await _uow.AcStatusTypes.GetWhereAsync(s => s.IsActive);
 
@@ -33,25 +50,23 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             var certs = await _uow.AircraftCertificates
                 .GetWhereAsync(c => c.IsActive);
             var certLookup = certs
+                .Where(c => aircraftById.ContainsKey(c.AircraftId)) // scope-consistent
                 .GroupBy(c => c.AircraftId)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             // ── Restrictions ──────────────────────────────────────────────
-            var activeRestrictions = await _uow.AircraftRestrictions
-                .GetWhereAsync(r => r.IsActive);
+            // Filtered to the same scoped aircraft set as everything else,
+            // for consistency — a BGNT sees restrictions for their base only,
+            // not the whole fleet. Revisit if situational fleet-wide
+            // awareness turns out to matter more than base consistency.
+            var activeRestrictions = (await _uow.AircraftRestrictions
+                .GetWhereAsync(r => r.IsActive))
+                .Where(r => aircraftById.ContainsKey(r.AircraftId))
+                .ToList();
 
-            // ── Due items ─────────────────────────────────────────────────
-            // Now wired using the same InspectionStatusCalculator logic as
-            // the DueList view — counts every Aircraft x InspectionType
-            // combination currently OVERDUE or ALERT.
-            //
-            // NOTE: DueSoon (the list, not just the count) is left as [] —
-            // I don't have DamDashboardVm's declared type for that property
-            // in this session, and guessing its shape risks a compile
-            // error. Send DamDashboardVm.cs (and FleetStatusRowVm/
-            // AircraftCertificateVm/RestrictionVm if they're in the same
-            // file) and I'll populate the actual list in a quick follow-up.
-            var totalDueSoon = await ComputeDueSoonCountAsync(aircraft.Select(a => a.Id).ToHashSet());
+            // ── Due items — list AND count computed together, single pass,
+            //    so they can never drift apart ──────────────────────────
+            var dueSoon = await ComputeDueSoonListAsync(aircraft.Select(a => a.Id).ToHashSet(), typeMap, aircraftById);
 
             // ── Fleet rows ────────────────────────────────────────────────
             var fleet = aircraft
@@ -82,7 +97,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                                           ? tn : "—",
                         StatusCode = st?.Code ?? "—",
                         StatusLabel = st?.Name ?? "—",
-                        FlightHours = a.TotalFlightMinutes / 60,
+                        TotalFlightMinutes = a.TotalFlightMinutes / 60,
                         Cycles = a.TotalCycles,
                         Landings = a.TotalLandings,
                         CdN = MapCert("CdN"),
@@ -118,22 +133,27 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                     TotalNavigable = aircraft.Count(a =>
                         statusMap.TryGetValue(a.AcStatusTypeId, out var s) &&
                         s.Code == "OPR"),
-                    TotalDueSoon = totalDueSoon,
-                    TotalRestrictions = activeRestrictions.Count()
+                    TotalDueSoon = dueSoon.Count,       // derived from the same list — can't drift
+                    TotalRestrictions = activeRestrictions.Count
                 },
                 Fleet = fleet,
-                DueSoon = [],   // TODO: populate once DamDashboardVm's DueSoon item type is confirmed
+                DueSoon = dueSoon,
                 Restrictions = restrictionVms
             };
 
             return View(vm);
         }
 
-        // Counts Aircraft x InspectionType combinations currently OVERDUE
-        // or ALERT, across the given set of active aircraft. Same
-        // calculation as DueListController.Index(), summarized to a count
-        // for the dashboard KPI card.
-        private async Task<int> ComputeDueSoonCountAsync(HashSet<int> activeAircraftIds)
+        // Builds the actual Échéances Proches list — every Aircraft x
+        // InspectionType combination currently OVERDUE or ALERT, across
+        // the given (already scope-filtered) set of aircraft. Replaces
+        // the old count-only ComputeDueSoonCountAsync — the count is now
+        // just this list's length, computed once, so the KPI card and the
+        // detail list can never disagree.
+        private async Task<List<DueSoonVm>> ComputeDueSoonListAsync(
+            HashSet<int> activeAircraftIds,
+            Dictionary<int, string> typeMap,
+            Dictionary<int, Aircraft> aircraftById)   // was Dictionary<int, Models.Aircraft>
         {
             var aircrafts = (await _uow.Aircraft.GetAllAsync())
                 .Where(a => activeAircraftIds.Contains(a.Id))
@@ -148,7 +168,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 .ToDictionary(s => (s.AircraftId, s.InspectionTypeId));
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            var count = 0;
+            var result = new List<DueSoonVm>();
 
             foreach (var aircraft in aircrafts)
             {
@@ -163,12 +183,23 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                         currentHours, currentCycles, today,
                         state?.NextDueHours, state?.NextDueCycles, state?.NextDueDate, it);
 
-                    if (status == "OVERDUE" || status == "ALERT")
-                        count++;
+                    if (status != "OVERDUE" && status != "ALERT") continue;
+
+                    result.Add(new DueSoonVm
+                    {
+                        AircraftCode = aircraft.Registration,
+                        AcTypeName = typeMap.TryGetValue(aircraft.AcTypeId, out var tn) ? tn : "—",
+                        TaskName = $"{it.Code} — {it.Name}",
+                        DueFh = state?.NextDueHours,
+                        CurrentFh = currentHours,
+                        DueDate = state?.NextDueDate
+                    });
                 }
             }
 
-            return count;
+            // Worst-first: overdue (>=95% compliance per DueSoonVm's own
+            // AlertClass logic) before merely "approaching" items
+            return result.OrderByDescending(d => d.CompliancePct).ToList();
         }
     }
 }

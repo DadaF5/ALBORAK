@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FRAProject.Data;
+using FRAProject.Services;
 using FRAProject.ViewModels;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
@@ -15,46 +16,52 @@ using FRAProject.Areas.Settings.Models;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {
-    // Allow any authenticated user to access read-only actions (Index, Details).
-    [Authorize]
     [Area("SquadronOps")]
+    [Authorize(Policy = "SquadronOpsRead")]
     public class CallSignsController : Controller
     {
+        private const string ModuleCode = "SQUADRONOPS";
+
         private readonly FRAContext _context;
         private readonly ILogger<CallSignsController> _logger;
+        private readonly IUserScopeService _userScopeService;
 
-        public CallSignsController(FRAContext context, ILogger<CallSignsController> logger)
+        public CallSignsController(FRAContext context, ILogger<CallSignsController> logger, IUserScopeService userScopeService)
         {
             _context = context;
             _logger = logger;
+            _userScopeService = userScopeService;
         }
 
         // GET: CallSigns
+        // Replaces the old raw "BaseId" claim check with real UserAssignment
+        // scope. A CallSign with BaseId==null is a global entry (visible to
+        // everyone in-module); a squadron-linked one is additionally
+        // filtered by Wing for roles that carry ShowWingScope=true.
         public async Task<IActionResult> Index()
         {
-            var user = User;
-            var query = _context.CallSigns.AsQueryable();
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
 
-            // Non-admins see a filtered list according to their BaseId claim
-            if (!user.IsInRole("Admin"))
+            var query = _context.CallSigns
+                .Include(c => c.Base)
+                .Include(c => c.Squadron)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!scope.IsUnrestricted)
             {
-                var baseClaim = user.FindFirst("BaseId")?.Value;
-                if (!string.IsNullOrEmpty(baseClaim) && int.TryParse(baseClaim, out var baseId))
-                {
-                    query = query.Where(c => c.BaseId == null || c.BaseId == baseId);
-                }
-                else
-                {
-                    query = query.Where(c => c.BaseId == null);
-                }
+                query = query.Where(c => c.BaseId == null || scope.AllowedBaseIds.Contains(c.BaseId.Value));
             }
 
-            var list = await query
-                .Include(c => c.Base)       // <-- eager load Base
-                .Include(c => c.Squadron)   // <-- eager load Squadron
-                .AsNoTracking()
-                .OrderBy(c => c.Code)
-                .ToListAsync();
+            var list = await query.OrderBy(c => c.Code).ToListAsync();
+
+            if (!scope.IsUnrestricted && scope.AllowedWingIds.Any())
+            {
+                list = list
+                    .Where(c => !c.SquadronId.HasValue || scope.AllowedWingIds.Contains(c.Squadron!.WingId))
+                    .ToList();
+            }
+
             return View(list);
         }
 
@@ -63,30 +70,19 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         {
             if (id == null) return NotFound();
 
-            var cs = await _context.CallSigns.FindAsync(id.Value);
+            var cs = await _context.CallSigns
+                .Include(c => c.Squadron)
+                .FirstOrDefaultAsync(c => c.Id == id.Value);
             if (cs == null) return NotFound();
 
-            // Non-admins should only see items allowed by the same filter used in Index
-            if (!User.IsInRole("Admin"))
-            {
-                var baseClaim = User.FindFirst("BaseId")?.Value;
-                if (!string.IsNullOrEmpty(baseClaim) && int.TryParse(baseClaim, out var baseId))
-                {
-                    if (cs.BaseId.HasValue && cs.BaseId.Value != baseId)
-                        return Forbid();
-                }
-                else
-                {
-                    if (cs.BaseId.HasValue)
-                        return Forbid();
-                }
-            }
+            if (!await IsCallSignScopeOkAsync(cs.BaseId, cs.Squadron?.WingId))
+                return Forbid();
 
             return View(cs);
         }
 
         // GET: CallSigns/Create
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create()
         {
             var vm = new CallSignViewModel();
@@ -97,7 +93,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: CallSigns/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create(CallSignViewModel model)
         {
             model.Code = (model.Code ?? string.Empty).Trim();
@@ -106,6 +102,14 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             {
                 ModelState.AddModelError(nameof(model.BaseId), "Please select a Base when selecting a Squadron.");
             }
+
+            // Defense in depth — the dropdown only offers in-scope Base/
+            // Squadron options, but these are still posted values and can
+            // be tampered with. A scoped user also can't create a global
+            // (BaseId == null) call sign — that's an unrestricted-only action.
+            var wingId = await GetWingIdForSquadronAsync(model.SquadronId);
+            if (!await IsCallSignScopeOkAsync(model.BaseId, wingId, requireBase: true))
+                return Forbid();
 
             if (await DuplicateCallSignExistsSimpleAsync(model.Code, model.BaseId, model.SquadronId, null))
             {
@@ -135,13 +139,18 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: CallSigns/Edit/5
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
 
-            var cs = await _context.CallSigns.FindAsync(id.Value);
+            var cs = await _context.CallSigns
+                .Include(c => c.Squadron)
+                .FirstOrDefaultAsync(c => c.Id == id.Value);
             if (cs == null) return NotFound();
+
+            if (!await IsCallSignScopeOkAsync(cs.BaseId, cs.Squadron?.WingId))
+                return Forbid();
 
             var vm = new CallSignViewModel
             {
@@ -160,7 +169,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: CallSigns/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int id, CallSignViewModel model)
         {
             if (id != model.Id) return BadRequest();
@@ -171,6 +180,10 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             {
                 ModelState.AddModelError(nameof(model.BaseId), "Please select a Base when selecting a Squadron.");
             }
+
+            var wingId = await GetWingIdForSquadronAsync(model.SquadronId);
+            if (!await IsCallSignScopeOkAsync(model.BaseId, wingId, requireBase: true))
+                return Forbid();
 
             if (await DuplicateCallSignExistsSimpleAsync(model.Code, model.BaseId, model.SquadronId, model.Id))
             {
@@ -185,6 +198,13 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             var cs = await _context.CallSigns.FindAsync(id);
             if (cs == null) return NotFound();
+
+            // Re-check the ORIGINAL record's scope too — a scoped user
+            // shouldn't be able to reach into another base's call sign via
+            // a tampered id even if the new BaseId they posted is in-scope.
+            var originalWingId = await GetWingIdForSquadronAsync(cs.SquadronId);
+            if (!await IsCallSignScopeOkAsync(cs.BaseId, originalWingId))
+                return Forbid();
 
             cs.Code = model.Code;
             cs.Description = model.Description;
@@ -201,13 +221,18 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: CallSigns/Delete/5
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
 
-            var cs = await _context.CallSigns.FindAsync(id.Value);
+            var cs = await _context.CallSigns
+                .Include(c => c.Squadron)
+                .FirstOrDefaultAsync(c => c.Id == id.Value);
             if (cs == null) return NotFound();
+
+            if (!await IsCallSignScopeOkAsync(cs.BaseId, cs.Squadron?.WingId))
+                return Forbid();
 
             return View(cs);
         }
@@ -215,15 +240,20 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: CallSigns/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var cs = await _context.CallSigns.FindAsync(id);
-            if (cs != null)
-            {
-                _context.CallSigns.Remove(cs);
-                await _context.SaveChangesAsync();
-            }
+            var cs = await _context.CallSigns
+                .Include(c => c.Squadron)
+                .FirstOrDefaultAsync(c => c.Id == id);
+            if (cs == null) return NotFound();
+
+            if (!await IsCallSignScopeOkAsync(cs.BaseId, cs.Squadron?.WingId))
+                return Forbid();
+
+            _context.CallSigns.Remove(cs);
+            await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -237,10 +267,15 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             if (baseId <= 0)
                 return Json(Array.Empty<object>());
 
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (!scope.IsUnrestricted && !scope.AllowedBaseIds.Contains(baseId))
+                return Json(Array.Empty<object>());
+
             var squadrons = await (from s in _context.Set<Squadron>()
                                    join w in _context.Set<Wing>() on s.WingId equals w.Id
                                    join d in _context.Set<Department>() on w.DepartmentId equals d.Id
                                    where d.BaseId == baseId
+                                   where scope.IsUnrestricted || !scope.AllowedWingIds.Any() || scope.AllowedWingIds.Contains(w.Id)
                                    orderby s.Name
                                    select new { id = s.Id, text = s.Name })
                                   .ToListAsync();
@@ -251,13 +286,25 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // Helper: populate select lists for Create/Edit views
         private async Task PopulateSelectsAsync(CallSignViewModel vm)
         {
-            var bases = await _context.Set<Base>()
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
+            var basesQuery = _context.Set<Base>().AsQueryable();
+            if (!scope.IsUnrestricted)
+            {
+                basesQuery = basesQuery.Where(b => scope.AllowedBaseIds.Contains(b.Id));
+            }
+
+            var bases = await basesQuery
                 .OrderBy(b => b.BaseName)
                 .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
                 .ToListAsync();
 
-            var baseList = (new[] { new SelectListItem { Value = "", Text = "-- Global --" } }).Concat(bases);
-            vm.BaseList = baseList;
+            // "Global" (no base) call signs are visible to everyone but only
+            // creatable by unrestricted (Admin) users — a scoped user
+            // shouldn't be able to publish a fleet-wide call sign.
+            vm.BaseList = scope.IsUnrestricted
+                ? (new[] { new SelectListItem { Value = "", Text = "-- Global --" } }).Concat(bases)
+                : bases;
 
             // Populate Squadron list according to selected Base (server-side initial population for Edit)
             await PopulateSquadronsForBaseAsync(vm);
@@ -268,10 +315,13 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         {
             if (vm.BaseId.HasValue && vm.BaseId.Value > 0)
             {
+                var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
                 var squadrons = await (from s in _context.Set<Squadron>()
                                        join w in _context.Set<Wing>() on s.WingId equals w.Id
                                        join d in _context.Set<Department>() on w.DepartmentId equals d.Id
                                        where d.BaseId == vm.BaseId.Value
+                                       where scope.IsUnrestricted || !scope.AllowedWingIds.Any() || scope.AllowedWingIds.Contains(w.Id)
                                        orderby s.Name
                                        select new SelectListItem
                                        {
@@ -286,6 +336,34 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             {
                 vm.SquadronList = new[] { new SelectListItem { Value = "", Text = "-- Select Base first --" } };
             }
+        }
+
+        // ── Scope helpers ────────────────────────────────────────────────
+
+        private async Task<int?> GetWingIdForSquadronAsync(int? squadronId)
+        {
+            if (!squadronId.HasValue) return null;
+            var squadron = await _context.Set<Squadron>().FirstOrDefaultAsync(s => s.Id == squadronId.Value);
+            return squadron?.WingId;
+        }
+
+        // requireBase: true for Create/Edit POST, where a scoped (non-Admin)
+        // user must supply a real Base — they can't post a global call sign.
+        private async Task<bool> IsCallSignScopeOkAsync(int? baseId, int? wingId, bool requireBase = false)
+        {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (scope.IsUnrestricted) return true;
+
+            if (!baseId.HasValue)
+                return !requireBase; // global entries: viewable by all, creatable by Admin only
+
+            if (!scope.AllowedBaseIds.Contains(baseId.Value))
+                return false;
+
+            if (wingId.HasValue && scope.AllowedWingIds.Any() && !scope.AllowedWingIds.Contains(wingId.Value))
+                return false;
+
+            return true;
         }
 
         // Simple duplicate check: same Code (case-insensitive, trimmed) within the selected scope.

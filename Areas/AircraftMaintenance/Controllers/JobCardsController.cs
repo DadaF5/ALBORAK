@@ -1,5 +1,6 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Services;
 using FRAProject.ViewModels.AircraftMaintenance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,20 +9,37 @@ using Microsoft.EntityFrameworkCore;
 namespace FRAProject.Areas.AircraftMaintenance.Controllers
 {
     [Area("AircraftMaintenance")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "MaintenanceRead")]
     public class JobCardsController : Controller
     {
-        private readonly IUnitOfWork _uow;
+        private const string ModuleCode = "MAINTENANCE";
 
-        public JobCardsController(IUnitOfWork uow)
+        private readonly IUnitOfWork _uow;
+        private readonly IUserScopeService _userScopeService;
+
+        public JobCardsController(IUnitOfWork uow, IUserScopeService userScopeService)
         {
             _uow = uow;
+            _userScopeService = userScopeService;
         }
 
         // GET: AircraftMaintenance/JobCards
+        // NOTE: JobCard is AcType-level setup data (no Aircraft/Base of its
+        // own), so scoping here is by AcMainGroup only — unlike
+        // AircraftCertificates/AircraftRestrictions/Snags, there's no Base
+        // dimension to filter on for this entity.
         public async Task<IActionResult> Index()
         {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
             var items = await _uow.JobCards.GetAllWithDetailsAsync();
+
+            if (!scope.IsUnrestricted && scope.AllowedAcMainGroupIds.Any())
+            {
+                items = items.Where(x =>
+                    x.AcType != null &&
+                    scope.AllowedAcMainGroupIds.Contains(x.AcType.AcMainGroupId)).ToList();
+            }
 
             var vm = items.Select(x => new JobCardListItemViewModel
             {
@@ -52,6 +70,9 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             var entity = await _uow.JobCards.GetByIdWithDetailsAsync(id);
             if (entity == null) return NotFound();
 
+            if (!await IsAcTypeInScopeAsync(entity.AcTypeId))
+                return Forbid();
+
             var vm = MapToDetailsVm(entity);
             return View(vm);
         }
@@ -67,8 +88,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/JobCards/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Create(JobCardFormViewModel vm)
         {
+            // Defense in depth — dropdown only offers in-scope AcTypes, but
+            // AcTypeId is still a posted value and can be tampered with.
+            if (!await IsAcTypeInScopeAsync(vm.AcTypeId))
+                return Forbid();
+
             if (await _uow.JobCards.ExistsByCodeAsync(vm.AcTypeId, vm.CardCode))
             {
                 ModelState.AddModelError(nameof(vm.CardCode),
@@ -117,6 +144,9 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             var entity = await _uow.JobCards.GetByIdWithDetailsAsync(id);
             if (entity == null) return NotFound();
 
+            if (!await IsAcTypeInScopeAsync(entity.AcTypeId))
+                return Forbid();
+
             var vm = new JobCardFormViewModel
             {
                 Id = entity.Id,
@@ -147,12 +177,16 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/JobCards/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Edit(int id, JobCardFormViewModel vm)
         {
             if (id != vm.Id)
             {
                 return BadRequest();
             }
+
+            if (!await IsAcTypeInScopeAsync(vm.AcTypeId))
+                return Forbid();
 
             if (await _uow.JobCards.ExistsByCodeAsync(vm.AcTypeId, vm.CardCode, excludeId: id))
             {
@@ -202,6 +236,9 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             var entity = await _uow.JobCards.GetByIdWithDetailsAsync(id);
             if (entity == null) return NotFound();
 
+            if (!await IsAcTypeInScopeAsync(entity.AcTypeId))
+                return Forbid();
+
             var vm = MapToDetailsVm(entity);
             return View(vm);
         }
@@ -209,10 +246,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/JobCards/DeleteConfirmed/5
         [HttpPost, ActionName("DeleteConfirmed")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var entity = await _uow.JobCards.GetByIdAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsAcTypeInScopeAsync(entity.AcTypeId))
+                return Forbid();
 
             try
             {
@@ -233,10 +274,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/JobCards/ToggleActive/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> ToggleActive(int id)
         {
             var entity = await _uow.JobCards.GetByIdAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsAcTypeInScopeAsync(entity.AcTypeId))
+                return Forbid();
 
             entity.IsActive = !entity.IsActive;
             entity.UpdatedAtUtc = DateTime.UtcNow;
@@ -252,6 +297,16 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         }
 
         // ── Helpers ──────────────────────────────────────────────────────
+
+        private async Task<bool> IsAcTypeInScopeAsync(int acTypeId)
+        {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (scope.IsUnrestricted || !scope.AllowedAcMainGroupIds.Any()) return true;
+
+            var acType = await _uow.AcTypes.GetByIdAsync(acTypeId);
+            return acType != null &&
+                   scope.AllowedAcMainGroupIds.Contains(acType.AcMainGroupId);
+        }
 
         private static JobCardDetailsViewModel MapToDetailsVm(JobCard x) => new()
         {
@@ -282,7 +337,16 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
 
         private async Task PopulateDropdownsAsync(JobCardFormViewModel vm)
         {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
             var acTypes = await _uow.AcTypes.GetAllAsync();
+
+            if (!scope.IsUnrestricted && scope.AllowedAcMainGroupIds.Any())
+            {
+                acTypes = acTypes.Where(a =>
+                    scope.AllowedAcMainGroupIds.Contains(a.AcMainGroupId));
+            }
+
             vm.AcTypes = acTypes
                 .OrderBy(a => a.Code)
                 .Select(a => new AcTypeLookupViewModel

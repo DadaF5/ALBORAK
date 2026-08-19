@@ -51,12 +51,12 @@
     </div>
 
     <div class="ws-filter-bar">
-        <label for="acTypeFilter">Filtrer par type d'aéronef :</label>
-        <select id="acTypeFilter" class="form-control form-control-sm">
-            <option value="">-- Tous --</option>
-            @foreach (var acType in (List<string>)ViewBag.AllAcTypeLabels)
+        <label for="acMainGroupFilter">Filtrer par famille d'aéronefs :</label>
+        <select id="acMainGroupFilter" class="form-control form-control-sm">
+            <option value="">-- Toutes --</option>
+            @foreach (var acMainGroup in (List<string>)ViewBag.AllAcMainGroupLabels)
             {
-                <option value="@acType">@acType</option>
+                <option value="@acMainGroup">@acMainGroup</option>
             }
         </select>
     </div>
@@ -76,23 +76,23 @@
                 <tr>
                     <th>Code</th>
                     <th>Nom</th>
-                    <th>Type d'aéronef</th>
+                    <th>Famille d'aéronefs</th>
                     <th>Statut</th>
                     <th class="text-right">Actions</th>
                 </tr>
             </thead>
             <tbody id="workSectionsBody">
-                @foreach (var group in Model.GroupBy(x => x.AcTypeLabel).OrderBy(g => g.Key))
+                @foreach (var group in Model.GroupBy(x => x.AcMainGroupLabel).OrderBy(g => g.Key))
                 {
-                    <tr class="group-row" data-actype="@group.Key">
+                    <tr class="group-row" data-acmaingroup="@group.Key">
                         <td colspan="5"><strong>@group.Key</strong></td>
                     </tr>
                     @foreach (var item in group.OrderBy(x => x.SortOrder).ThenBy(x => x.Code))
                     {
-                        <tr data-actype="@item.AcTypeLabel">
+                        <tr data-acmaingroup="@item.AcMainGroupLabel">
                             <td><code>@item.Code</code></td>
                             <td>@item.Name</td>
-                            <td>@item.AcTypeLabel</td>
+                            <td>@item.AcMainGroupLabel</td>
                             <td>
                                 @if (item.IsActive)
                                 {
@@ -121,7 +121,7 @@
                 }
                 <tr id="noResultsRow" style="display:none;">
                     <td colspan="5" class="text-center text-muted py-4">
-                        Aucune section définie pour ce type d'aéronef.
+                        Aucune section définie pour cette famille d'aéronefs.
                     </td>
                 </tr>
             </tbody>
@@ -131,13 +131,13 @@
 
 @section Scripts {
     <script>
-        document.getElementById('acTypeFilter')?.addEventListener('change', function (e) {
+        document.getElementById('acMainGroupFilter')?.addEventListener('change', function (e) {
             var selected = e.target.value;
-            var rows = document.querySelectorAll('#workSectionsBody tr[data-actype]');
+            var rows = document.querySelectorAll('#workSectionsBody tr[data-acmaingroup]');
             var visibleDataRows = 0;
 
             rows.forEach(function (row) {
-                var matches = !selected || row.getAttribute('data-actype') === selected;
+                var matches = !selected || row.getAttribute('data-acmaingroup') === selected;
                 row.style.display = matches ? '' : 'none';
                 if (matches && !row.classList.contains('group-row')) {
                     visibleDataRows++;

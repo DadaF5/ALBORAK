@@ -1,6 +1,8 @@
-﻿using FRAProject.Areas.SquadronOps.Models;
+﻿using FRAProject.Areas.HR.Models;
+using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Data;
 using FRAProject.Enums;
+using FRAProject.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -16,12 +18,21 @@ using System.Threading.Tasks;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {
+    // ⚠ This controller previously had NO class-level [Authorize] at all —
+    // Index/Details/Print were reachable by ANY authenticated user
+    // regardless of module (only Create/Edit/Delete had Roles="Admin").
+    // Only the global FallbackPolicy from the RBAC session kept it behind
+    // login at all.
     [Area("SquadronOps")]
+    [Authorize(Policy = "SquadronOpsRead")]
     public class CrewMembersController : Controller
     {
+        private const string ModuleCode = "SQUADRONOPS";
+
         private readonly FRAContext _context;
         private readonly ILogger<CrewMembersController> _logger;
         private readonly IWebHostEnvironment _env;
+        private readonly IUserScopeService _userScopeService;
 
         // Max upload size in bytes (2 MB)
         private const long MaxUploadBytes = 2 * 1024 * 1024;
@@ -29,11 +40,14 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // Allowed file extensions
         private static readonly string[] AllowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
 
-        public CrewMembersController(FRAContext context, ILogger<CrewMembersController> logger, IWebHostEnvironment env)
+        public CrewMembersController(
+            FRAContext context, ILogger<CrewMembersController> logger,
+            IWebHostEnvironment env, IUserScopeService userScopeService)
         {
             _context = context;
             _logger = logger;
             _env = env;
+            _userScopeService = userScopeService;
         }
 
         // GET: CrewMembers
@@ -47,11 +61,19 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             ViewData["CurrentFilter"] = searchString;
             ViewData["PageSize"] = pageSize;
 
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
             IQueryable<CrewMember> query = _context.CrewMembers
                 .Include(cm => cm.Person)
                 .Include(cm => cm.Squadron)
                 .Include(cm => cm.PrimaryQualification)
                 .AsNoTracking();
+
+            if (!scope.IsUnrestricted)
+            {
+                var allowedSquadronIds = await GetInScopeSquadronIdsAsync(scope);
+                query = query.Where(cm => allowedSquadronIds.Contains(cm.SquadronId));
+            }
 
             if (!string.IsNullOrWhiteSpace(searchString))
             {
@@ -92,7 +114,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // To Here ============================
 
         // GET: CrewMembers/Create
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create()
         {
             await PopulateSelectListsAsync();
@@ -102,7 +124,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: CrewMembers/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create(
             [Bind("SequenceNo,Captain,NickName,Role,Active,Mobile,Status,AllowedToSign,CrewMemberType,SquadronId,PersonId,PrimaryQualificationId")] CrewMember crewMember,
             IFormFile PhotoFile,
@@ -116,6 +138,11 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 await PopulateSelectListsAsync();
                 return View(crewMember);
             }
+
+            // Defense in depth — the dropdown only offers in-scope squadrons,
+            // but SquadronId is still a posted value and can be tampered with.
+            if (!await IsSquadronInScopeAsync(crewMember.SquadronId))
+                return Forbid();
 
             // Require either an uploaded file or a URL for Create
             if ((PhotoFile == null || PhotoFile.Length == 0) && string.IsNullOrWhiteSpace(Photo))
@@ -142,7 +169,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             {
                 if (!TryValidateUpload(PhotoFile, out var validationError))
                 {
-                    ModelState.AddModelError("PhotoFile", validationError);
+                    ModelState.AddModelError("PhotoFile", validationError ?? "Invalid file.");
                     await PopulateSelectListsAsync();
                     return View(crewMember);
                 }
@@ -171,13 +198,16 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: CrewMembers/Edit/5
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
 
             var crewMember = await _context.CrewMembers.FindAsync(id);
             if (crewMember == null) return NotFound();
+
+            if (!await IsSquadronInScopeAsync(crewMember.SquadronId))
+                return Forbid();
 
             await PopulateSelectListsAsync(crewMember);
             return View(crewMember);
@@ -186,7 +216,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: CrewMembers/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(
             int id,
             [Bind("Id,SequenceNo,Captain,NickName,Role,Active,Mobile,Status,AllowedToSign,CrewMemberType,SquadronId,PersonId,PrimaryQualificationId")] CrewMember model,
@@ -204,6 +234,9 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 return View(model);
             }
 
+            if (!await IsSquadronInScopeAsync(model.SquadronId))
+                return Forbid();
+
             // Prevent duplicate PersonId (exclude current record)
             if (model.PersonId != 0)
             {
@@ -219,12 +252,19 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             var existing = await _context.CrewMembers.FindAsync(id);
             if (existing == null) return NotFound();
 
+            // Re-check the ORIGINAL record's scope too — a scoped user
+            // shouldn't be able to reach into another squadron's crew member
+            // via a tampered id even if the new SquadronId they posted is
+            // in-scope.
+            if (!await IsSquadronInScopeAsync(existing.SquadronId))
+                return Forbid();
+
             // If a new file was uploaded, validate and save it
             if (PhotoFile != null && PhotoFile.Length > 0)
             {
                 if (!TryValidateUpload(PhotoFile, out var validationError))
                 {
-                    ModelState.AddModelError("PhotoFile", validationError);
+                    ModelState.AddModelError("PhotoFile", validationError ?? "Invalid file.");
                     await PopulateSelectListsAsync(model);
                     return View(model);
                 }
@@ -287,7 +327,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
 
         // GET: CrewMembers/Delete/5
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -301,18 +341,24 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             if (crewMember == null) return NotFound();
 
+            if (!await IsSquadronInScopeAsync(crewMember.SquadronId))
+                return Forbid();
+
             return View(crewMember);
         }
 
         // POST: CrewMembers/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var crewMember = await _context.CrewMembers.FindAsync(id);
             if (crewMember != null)
             {
+                if (!await IsSquadronInScopeAsync(crewMember.SquadronId))
+                    return Forbid();
+
                 // delete uploaded photo file if applicable
                 if (!string.IsNullOrWhiteSpace(crewMember.Photo) && crewMember.Photo.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
                 {
@@ -324,6 +370,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
@@ -340,6 +387,9 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 .FirstOrDefaultAsync(cm => cm.Id == id);
 
             if (crewMember == null) return NotFound();
+
+            if (!await IsSquadronInScopeAsync(crewMember.SquadronId))
+                return Forbid();
 
             // Just return the regular view (not modal partial)
             return View(crewMember);
@@ -517,8 +567,16 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 .Select(p => new { p.Id, FullName = (p.FirstName ?? "") + " " + (p.LastName ?? "") })
                 .ToListAsync();
 
-            var squadrons = await _context.Squadrons
-                .AsNoTracking()
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            var squadronsQuery = _context.Squadrons.AsNoTracking().AsQueryable();
+
+            if (!scope.IsUnrestricted)
+            {
+                var allowedSquadronIds = await GetInScopeSquadronIdsAsync(scope);
+                squadronsQuery = squadronsQuery.Where(s => allowedSquadronIds.Contains(s.Id));
+            }
+
+            var squadrons = await squadronsQuery
                 .OrderBy(s => s.Name)
                 .Select(s => new { s.Id, s.Name })
                 .ToListAsync();
@@ -567,8 +625,44 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             if (crewMember == null) return NotFound();
 
+            if (!await IsSquadronInScopeAsync(crewMember.SquadronId))
+                return Forbid();
+
             // Return a dedicated Print view (no layout) that is formatted for printing.
             return View("Print", crewMember);
+        }
+
+        // ── Scope helpers ────────────────────────────────────────────────
+
+        private async Task<bool> IsSquadronInScopeAsync(int squadronId)
+        {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (scope.IsUnrestricted) return true;
+
+            var info = await (from s in _context.Set<Squadron>()
+                               join w in _context.Set<Wing>() on s.WingId equals w.Id
+                               join d in _context.Set<Department>() on w.DepartmentId equals d.Id
+                               where s.Id == squadronId
+                               select new { WingId = w.Id, d.BaseId })
+                              .FirstOrDefaultAsync();
+
+            if (info == null) return false;
+            if (!scope.AllowedBaseIds.Contains(info.BaseId)) return false;
+            if (scope.AllowedWingIds.Any() && !scope.AllowedWingIds.Contains(info.WingId)) return false;
+
+            return true;
+        }
+
+        private async Task<HashSet<int>> GetInScopeSquadronIdsAsync(UserScope scope)
+        {
+            var query = from s in _context.Set<Squadron>()
+                        join w in _context.Set<Wing>() on s.WingId equals w.Id
+                        join d in _context.Set<Department>() on w.DepartmentId equals d.Id
+                        where scope.AllowedBaseIds.Contains(d.BaseId)
+                        where !scope.AllowedWingIds.Any() || scope.AllowedWingIds.Contains(w.Id)
+                        select s.Id;
+
+            return (await query.ToListAsync()).ToHashSet();
         }
     }
 }

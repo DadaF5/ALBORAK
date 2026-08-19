@@ -1,8 +1,10 @@
-﻿using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Data;
 using FRAProject.Enums;
 using FRAProject.Models;
+using FRAProject.Services;
 using FRAProject.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -11,16 +13,29 @@ using System.Threading.Tasks;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {
+    // ⚠ Previously had NO [Authorize] at all, and scoped crew-member
+    // dropdowns via raw User.FindFirst("SquadronId")/("AcMainGroupId")
+    // claims (a fourth, ad-hoc scoping mechanism, distinct from both the
+    // legacy ApplicationUser fields and the real UserAssignment system).
+    // SortieCrew has no Squadron/AcMainGroup of its own — it belongs to a
+    // Sortie, which belongs to an Odv, which carries both — so scope is
+    // resolved by walking up that chain, same pattern used throughout the
+    // AircraftMaintenance conversion.
     [Area("SquadronOps")]
+    [Authorize(Policy = "SquadronOpsRead")]
     public class SortieCrewsController : Controller
     {
+        private const string ModuleCode = "SQUADRONOPS";
+
         private readonly FRAContext _context;
         private readonly ILogger<SortieCrewsController> _logger;
+        private readonly IUserScopeService _userScopeService;
 
-        public SortieCrewsController(FRAContext context, ILogger<SortieCrewsController> logger)
+        public SortieCrewsController(FRAContext context, ILogger<SortieCrewsController> logger, IUserScopeService userScopeService)
         {
             _context = context;
             _logger = logger;
+            _userScopeService = userScopeService;
         }
 
         // GET: SortieCrews/Index?sortieId=123
@@ -36,6 +51,10 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             {
                 return NotFound($"Sortie with ID {sortieId} not found.");
             }
+
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (sortie.Odv == null || !await IsOdvInScopeAsync(sortie.Odv.SquadronId, sortie.Odv.AcMainGroupId, scope))
+                return Forbid();
 
             // Get all crew assignments for this sortie
             var crewAssignments = await _context.SortieCrews
@@ -57,6 +76,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
         // GET: SortieCrews/Create?sortieId=123
         [HttpGet]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create(int sortieId)
         {
             var sortie = await _context.Sorties
@@ -69,9 +89,13 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 return NotFound($"Sortie with ID {sortieId} not found.");
             }
 
-            // Get user's squadron/AcMainGroup for filtering
-            var userSquadronId = await GetUserSquadronId();
-            var userAcMainGroupId = await GetUserAcMainGroupId();
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (sortie.Odv == null || !await IsOdvInScopeAsync(sortie.Odv.SquadronId, sortie.Odv.AcMainGroupId, scope))
+                return Forbid();
+
+            // Crew members are drawn from the Sortie's own ODV squadron —
+            // replaces the old raw-claim single-squadron filter.
+            var odvSquadronId = sortie.Odv.SquadronId;
 
             // Get already assigned crew members to exclude them
             var assignedCrewIds = await _context.SortieCrews
@@ -85,7 +109,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 .Include(cm => cm.Squadron)
                 .Where(cm => cm.Active &&
                        !assignedCrewIds.Contains(cm.Id) &&
-                       (userSquadronId == null || cm.SquadronId == userSquadronId))
+                       cm.SquadronId == odvSquadronId)
                 .OrderBy(cm => cm.Captain)
                 .Select(cm => new SelectListItem
                 {
@@ -110,11 +134,29 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: SortieCrews/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create(SortieCrewCreateVm model)
         {
+            var sortie = await _context.Sorties
+                .Include(s => s.Odv)
+                .FirstOrDefaultAsync(s => s.Id == model.SortieId);
+            if (sortie == null) return NotFound();
+
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (sortie.Odv == null || !await IsOdvInScopeAsync(sortie.Odv.SquadronId, sortie.Odv.AcMainGroupId, scope))
+                return Forbid();
+
+            // Defense in depth — the dropdown only offers crew from the
+            // Odv's own squadron, but CrewMemberId is still a posted value.
+            var crewMember = await _context.CrewMembers.FindAsync(model.CrewMemberId);
+            if (crewMember == null || crewMember.SquadronId != sortie.Odv.SquadronId)
+            {
+                ModelState.AddModelError("CrewMemberId", "Selected crew member does not belong to this ODV's squadron.");
+            }
+
             if (!ModelState.IsValid)
             {
-                await PopulateDropdowns(model.SortieId);
+                await PopulateDropdowns(model.SortieId, sortie.Odv.SquadronId);
                 return View(model);
             }
 
@@ -125,7 +167,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             if (existingAssignment != null)
             {
                 ModelState.AddModelError("CrewMemberId", "This crew member is already assigned to this sortie.");
-                await PopulateDropdowns(model.SortieId);
+                await PopulateDropdowns(model.SortieId, sortie.Odv.SquadronId);
                 return View(model);
             }
 
@@ -149,12 +191,14 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
         // GET: SortieCrews/Edit/5
         [HttpGet]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int id)
         {
             var sortieCrew = await _context.SortieCrews
                 .Include(sc => sc.CrewMember)
                 .ThenInclude(cm => cm.Person)
                 .Include(sc => sc.Sortie)
+                    .ThenInclude(s => s.Odv)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(sc => sc.Id == id);
 
@@ -162,6 +206,11 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             {
                 return NotFound();
             }
+
+            var odv = sortieCrew.Sortie?.Odv;
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (odv == null || !await IsOdvInScopeAsync(odv.SquadronId, odv.AcMainGroupId, scope))
+                return Forbid();
 
             var vm = new SortieCrewCreateVm
             {
@@ -177,13 +226,10 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 SortieCode = sortieCrew.Sortie?.SortieCode
             };
 
-            // Get all crew members (including current one)
-            var userSquadronId = await GetUserSquadronId();
             var crewMembers = await _context.CrewMembers
                 .Include(cm => cm.Person)
                 .Include(cm => cm.Squadron)
-                .Where(cm => cm.Active &&
-                       (userSquadronId == null || cm.SquadronId == userSquadronId))
+                .Where(cm => cm.Active && cm.SquadronId == odv.SquadronId)
                 .OrderBy(cm => cm.Captain)
                 .Select(cm => new SelectListItem
                 {
@@ -203,6 +249,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: SortieCrews/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int id, SortieCrewCreateVm model)
         {
             if (id != model.Id)
@@ -210,18 +257,25 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 return BadRequest();
             }
 
-            if (!ModelState.IsValid)
-            {
-                await PopulateDropdowns(model.SortieId, model.CrewMemberId);
-                return View(model);
-            }
-
             var sortieCrew = await _context.SortieCrews
+                .Include(sc => sc.Sortie)
+                    .ThenInclude(s => s.Odv)
                 .FirstOrDefaultAsync(sc => sc.Id == id);
 
             if (sortieCrew == null)
             {
                 return NotFound();
+            }
+
+            var odv = sortieCrew.Sortie?.Odv;
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (odv == null || !await IsOdvInScopeAsync(odv.SquadronId, odv.AcMainGroupId, scope))
+                return Forbid();
+
+            if (!ModelState.IsValid)
+            {
+                await PopulateDropdowns(model.SortieId, odv.SquadronId, model.CrewMemberId);
+                return View(model);
             }
 
             // Check for duplicate assignment (if crew member changed)
@@ -235,7 +289,15 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 if (existingAssignment != null)
                 {
                     ModelState.AddModelError("CrewMemberId", "This crew member is already assigned to this sortie.");
-                    await PopulateDropdowns(model.SortieId, model.CrewMemberId);
+                    await PopulateDropdowns(model.SortieId, odv.SquadronId, model.CrewMemberId);
+                    return View(model);
+                }
+
+                var crewMember = await _context.CrewMembers.FindAsync(model.CrewMemberId);
+                if (crewMember == null || crewMember.SquadronId != odv.SquadronId)
+                {
+                    ModelState.AddModelError("CrewMemberId", "Selected crew member does not belong to this ODV's squadron.");
+                    await PopulateDropdowns(model.SortieId, odv.SquadronId, model.CrewMemberId);
                     return View(model);
                 }
             }
@@ -256,16 +318,23 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: SortieCrews/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Delete(int id)
         {
             var sortieCrew = await _context.SortieCrews
                 .Include(sc => sc.Sortie)
+                    .ThenInclude(s => s.Odv)
                 .FirstOrDefaultAsync(sc => sc.Id == id);
 
             if (sortieCrew == null)
             {
                 return NotFound();
             }
+
+            var odv = sortieCrew.Sortie?.Odv;
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (odv == null || !await IsOdvInScopeAsync(odv.SquadronId, odv.AcMainGroupId, scope))
+                return Forbid();
 
             var sortieId = sortieCrew.SortieId;
 
@@ -276,28 +345,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             return RedirectToAction("Index", new { sortieId });
         }
 
-        // Helper Methods
-        private async Task<int?> GetUserSquadronId()
-        {
-            // Implement based on your user authentication
-            // Example: Get from claims or user profile
-            var squadronClaim = User.FindFirst("SquadronId");
-            if (squadronClaim != null && int.TryParse(squadronClaim.Value, out int squadronId))
-            {
-                return squadronId;
-            }
-            return null;
-        }
-
-        private async Task<int?> GetUserAcMainGroupId()
-        {
-            var acMainGroupClaim = User.FindFirst("AcMainGroupId");
-            if (acMainGroupClaim != null && int.TryParse(acMainGroupClaim.Value, out int acMainGroupId))
-            {
-                return acMainGroupId;
-            }
-            return null;
-        }
+        // ── Helpers ──────────────────────────────────────────────────────
 
         private List<SelectListItem> GetSeatOptions()
         {
@@ -313,7 +361,6 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
         private List<SelectListItem> GetAircraftRoleOptions()
         {
-            // Assuming AircraftRole is an enum
             return Enum.GetValues(typeof(AircraftRole))
                 .Cast<AircraftRole>()
                 .Select(r => new SelectListItem
@@ -324,15 +371,12 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 .ToList();
         }
 
-        private async Task PopulateDropdowns(int sortieId, int? currentCrewMemberId = null)
+        private async Task PopulateDropdowns(int sortieId, int odvSquadronId, int? currentCrewMemberId = null)
         {
-            var userSquadronId = await GetUserSquadronId();
-
             var crewMembers = await _context.CrewMembers
                 .Include(cm => cm.Person)
                 .Include(cm => cm.Squadron)
-                .Where(cm => cm.Active &&
-                       (userSquadronId == null || cm.SquadronId == userSquadronId))
+                .Where(cm => cm.Active && cm.SquadronId == odvSquadronId)
                 .OrderBy(cm => cm.Captain)
                 .Select(cm => new SelectListItem
                 {
@@ -345,6 +389,27 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             ViewBag.CrewMembers = crewMembers;
             ViewBag.Seats = GetSeatOptions();
             ViewBag.AircraftRoles = GetAircraftRoleOptions();
+        }
+
+        // ── Scope helpers ────────────────────────────────────────────────
+
+        private async Task<bool> IsOdvInScopeAsync(int squadronId, int acMainGroupId, UserScope scope)
+        {
+            if (scope.IsUnrestricted) return true;
+
+            if (scope.AllowedAcMainGroupIds.Any() && !scope.AllowedAcMainGroupIds.Contains(acMainGroupId))
+                return false;
+
+            var info = await _context.Squadrons
+                .Where(s => s.Id == squadronId)
+                .Select(s => new { s.WingId, WingBaseId = s.Wing!.BaseId })
+                .FirstOrDefaultAsync();
+
+            if (info == null) return false;
+            if (info.WingBaseId == null || !scope.AllowedBaseIds.Contains(info.WingBaseId.Value)) return false;
+            if (scope.AllowedWingIds.Any() && !scope.AllowedWingIds.Contains(info.WingId)) return false;
+
+            return true;
         }
     }
 }

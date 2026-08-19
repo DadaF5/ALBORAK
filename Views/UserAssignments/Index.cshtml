@@ -1,0 +1,67 @@
+﻿@* Views/UserAssignments/Index.cshtml *@
+@model List<UserAssignmentListItemVm>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Affectations";
+}
+
+<div class="content-header d-flex justify-content-between align-items-center">
+    <h1>🔐 Affectations — @ViewBag.UserLabel</h1>
+    <a asp-action="Create" asp-route-userId="@ViewBag.UserId" class="btn btn-primary">+ Nouvelle Affectation</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Rôle</th>
+                    <th>Base</th>
+                    <th>Groupe</th>
+                    <th>Escadre</th>
+                    <th>Accordée le</th>
+                    <th>Par</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4">Aucune affectation active.</td></tr>
+                }
+                @foreach (var a in Model)
+                {
+                    <tr>
+                        <td>@a.RoleLabel</td>
+                        <td>@a.BaseName</td>
+                        <td>@(a.AcMainGroupLabel ?? "—")</td>
+                        <td>@(a.WingName ?? "—")</td>
+                        <td>@a.GrantedAtUtc.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@(a.GrantedByLabel ?? "—")</td>
+                        <td>
+                            <form asp-action="Revoke" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@a.Id" />
+                                <input type="hidden" name="userId" value="@ViewBag.UserId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Révoquer cette affectation ?');">
+                                    Révoquer
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<a asp-controller="Users" asp-action="Index" class="btn btn-secondary mt-3">Retour à la liste des utilisateurs</a>

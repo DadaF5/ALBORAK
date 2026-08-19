@@ -1,5 +1,6 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Services;
+using FRAProject.Areas.AircraftMaintenance.Services;
 using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Services;
 using FRAProject.ViewModels.AircraftMaintenance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,24 +8,46 @@ using Microsoft.AspNetCore.Mvc;
 namespace FRAProject.Areas.AircraftMaintenance.Controllers
 {
     [Area("AircraftMaintenance")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "MaintenanceRead")]
     public class DueListController : Controller
     {
-        private readonly IUnitOfWork _uow;
+        private const string ModuleCode = "MAINTENANCE";
 
-        public DueListController(IUnitOfWork uow)
+        private readonly IUnitOfWork _uow;
+        private readonly IUserScopeService _userScopeService;
+
+        public DueListController(IUnitOfWork uow, IUserScopeService userScopeService)
         {
             _uow = uow;
+            _userScopeService = userScopeService;
         }
 
         // GET: AircraftMaintenance/DueList
+        // Read-only report — no write actions, so the controller-level
+        // MaintenanceRead policy is the only auth check needed here. Scope
+        // is applied to the underlying aircraft list, same Base+AcMainGroup
+        // pattern as Snags/AircraftCertificates/AircraftRestrictions.
         public async Task<IActionResult> Index()
         {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
+            var acTypes = await _uow.AcTypes.GetAllAsync();
+            var acTypesById = acTypes.ToDictionary(t => t.Id);
+
             var aircrafts = (await _uow.Aircraft.GetAllAsync())
                 .Where(a => a.IsActive)
                 .ToList();
 
-            var acTypes = await _uow.AcTypes.GetAllAsync();
+            if (!scope.IsUnrestricted)
+            {
+                aircrafts = aircrafts.Where(a =>
+                    a.BaseId.HasValue && scope.AllowedBaseIds.Contains(a.BaseId.Value)
+                    && (!scope.AllowedAcMainGroupIds.Any()
+                        || (acTypesById.TryGetValue(a.AcTypeId, out var t)
+                            && scope.AllowedAcMainGroupIds.Contains(t.AcMainGroupId))))
+                    .ToList();
+            }
+
             var acTypeLabelById = acTypes.ToDictionary(t => t.Id, t => $"{t.Code} — {t.Name}");
 
             var inspectionTypes = (await _uow.InspectionTypes.GetAllWithDetailsAsync())
@@ -84,8 +107,15 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 .ThenBy(x => x.InspectionTypeCode)
                 .ToList();
 
-            ViewBag.AllAcTypeLabels = acTypes
-                .Where(t => t.IsActive)
+            // Filter dropdown — scoped the same way as the aircraft list
+            // above, so a scoped user isn't offered AcTypes they can't see
+            // any due-list rows for.
+            var visibleAcTypes = acTypes.Where(t => t.IsActive);
+            if (!scope.IsUnrestricted && scope.AllowedAcMainGroupIds.Any())
+            {
+                visibleAcTypes = visibleAcTypes.Where(t => scope.AllowedAcMainGroupIds.Contains(t.AcMainGroupId));
+            }
+            ViewBag.AllAcTypeLabels = visibleAcTypes
                 .OrderBy(t => t.Code)
                 .Select(t => $"{t.Code} — {t.Name}")
                 .ToList();

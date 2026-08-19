@@ -134,7 +134,16 @@
 
                                 <div class="form-group">
                                     <label>Nouveau statut</label>
-                                    <select name="Status" class="form-control" asp-items="Html.GetEnumSelectList<BugStatus>()">
+                                    @{
+                                        // ⚠ Html.GetEnumSelectList<BugStatus>() alone marks nothing as
+                                        // selected — this isn't asp-for-bound (plain name="Status" select),
+                                        // so it always silently defaulted to whichever enum value comes
+                                        // first, not the bug's actual current status. Explicitly flag the
+                                        // matching item as selected instead.
+                                        var statusItems = Html.GetEnumSelectList<BugStatus>()
+                                        .Select(i => new SelectListItem(i.Text, i.Value, i.Value == Model.Status.ToString()));
+                                    }
+                                    <select name="Status" class="form-control" asp-items="statusItems">
                                     </select>
                                 </div>
 

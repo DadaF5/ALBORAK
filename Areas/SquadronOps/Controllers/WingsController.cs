@@ -1,33 +1,58 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using FRAProject.Data;
 using FRAProject.Models;
+using FRAProject.Services;
 using FRAProject.ViewModels;
 using FRAProject.Areas.HR.Models;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {
+    // ⚠ Previously had NO [Authorize] at all. Also: the RBAC session
+    // handoff flagged "Wing has no CRUD" as a known gap — that's incorrect,
+    // this controller already exists with a full Index/Create/Edit. Worth
+    // correcting that note; the real gap was just the missing auth here.
+    // Wing carries BaseId directly (not just via Department), so scoping
+    // uses that field straight, same as SquadronController.
     [Area("SquadronOps")]
+    [Authorize(Policy = "SquadronOpsRead")]
     public class WingsController : Controller
     {
-        private readonly FRAContext _context;
+        private const string ModuleCode = "SQUADRONOPS";
 
-        public WingsController(FRAContext context)
+        private readonly FRAContext _context;
+        private readonly IUserScopeService _userScopeService;
+
+        public WingsController(FRAContext context, IUserScopeService userScopeService)
         {
             _context = context;
+            _userScopeService = userScopeService;
         }
 
         // GET: /Wing
         public async Task<IActionResult> Index(int? departmentId, int? baseId, int? acMainGroupId, bool includeInactive = false)
         {
-            var departments = await _context.Departments.AsNoTracking().OrderBy(d => d.Name).ToListAsync();
-            var bases = await _context.Bases.AsNoTracking().OrderBy(b => b.BaseName).ToListAsync();
-            var acMainGroups = await _context.AcMainGroups.AsNoTracking().OrderBy(a => a.Name).ToListAsync();
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
 
-            // These ViewData keys are used by the Index view DropDownList helpers
+            var departmentsQuery = _context.Departments.AsNoTracking().AsQueryable();
+            var basesQuery = _context.Bases.AsNoTracking().AsQueryable();
+            var acMainGroupsQuery = _context.AcMainGroups.AsNoTracking().AsQueryable();
+
+            if (!scope.IsUnrestricted)
+            {
+                basesQuery = basesQuery.Where(b => scope.AllowedBaseIds.Contains(b.Id));
+                if (scope.AllowedAcMainGroupIds.Any())
+                    acMainGroupsQuery = acMainGroupsQuery.Where(a => scope.AllowedAcMainGroupIds.Contains(a.Id));
+            }
+
+            var departments = await departmentsQuery.OrderBy(d => d.Name).ToListAsync();
+            var bases = await basesQuery.OrderBy(b => b.BaseName).ToListAsync();
+            var acMainGroups = await acMainGroupsQuery.OrderBy(a => a.Name).ToListAsync();
+
             ViewData["Departments"] = new SelectList(departments, "Id", "Name", departmentId);
             ViewData["Bases"] = new SelectList(bases, "Id", "BaseName", baseId);
             ViewData["AcMainGroups"] = new SelectList(acMainGroups, "Id", "Name", acMainGroupId);
@@ -41,6 +66,13 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             if (!includeInactive)
                 q = q.Where(w => w.Active);
+
+            if (!scope.IsUnrestricted)
+            {
+                q = q.Where(w =>
+                    w.BaseId.HasValue && scope.AllowedBaseIds.Contains(w.BaseId.Value)
+                    && (!scope.AllowedWingIds.Any() || scope.AllowedWingIds.Contains(w.Id)));
+            }
 
             if (departmentId.HasValue)
                 q = q.Where(w => w.DepartmentId == departmentId.Value);
@@ -61,8 +93,6 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 DepartmentId = w.DepartmentId,
                 DepartmentName = w.Department?.Name ?? "",
                 AcMainGroupId = w.AcMainGroupId,
-                // populate the VM property that your view expects (AcMainGroupName or AcMainGroup)
-                
                 AcMainGroupName = w.AcMainGroup?.Name ?? "",
                 BaseId = w.BaseId,
                 BaseName = w.Base?.BaseName ?? "",
@@ -73,6 +103,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: /Wing/Create
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create()
         {
             var vm = new WingViewModel();
@@ -83,8 +114,18 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: /Wing/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create(WingViewModel vm)
         {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
+            // Defense in depth — the dropdown only offers in-scope bases,
+            // but BaseId is still a posted value and can be tampered with.
+            // (A brand-new Wing has no Id yet, so AllowedWingIds can't be
+            // checked here — only the Base boundary applies at creation.)
+            if (!scope.IsUnrestricted && (!vm.BaseId.HasValue || !scope.AllowedBaseIds.Contains(vm.BaseId.Value)))
+                return Forbid();
+
             if (!ModelState.IsValid)
             {
                 await PopulateSelects(vm);
@@ -115,6 +156,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: /Wing/Edit/5
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int id)
         {
             var w = await _context.Wings
@@ -126,6 +168,10 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             if (w == null) return NotFound();
 
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (!IsWingInScope(w, scope))
+                return Forbid();
+
             var vm = new WingViewModel
             {
                 Id = w.Id,
@@ -133,7 +179,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 WingLong = w.WingLong,
                 DepartmentId = w.DepartmentId,
                 DepartmentName = w.Department?.Name ?? "",
-                AcMainGroupId = w.AcMainGroupId,               
+                AcMainGroupId = w.AcMainGroupId,
                 AcMainGroupName = w.AcMainGroup?.Name ?? "",
                 BaseId = w.BaseId,
                 BaseName = w.Base?.BaseName ?? "",
@@ -147,16 +193,26 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: /Wing/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(WingViewModel vm)
         {
+            var w = await _context.Wings.FindAsync(vm.Id);
+            if (w == null) return NotFound();
+
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
+            // Re-check the ORIGINAL record's scope, and the NEW BaseId being
+            // posted — a scoped user shouldn't be able to move a wing into
+            // or out of a base they don't control.
+            if (!IsWingInScope(w, scope) ||
+                (!scope.IsUnrestricted && (!vm.BaseId.HasValue || !scope.AllowedBaseIds.Contains(vm.BaseId.Value))))
+                return Forbid();
+
             if (!ModelState.IsValid)
             {
                 await PopulateSelects(vm);
                 return View(vm);
             }
-
-            var w = await _context.Wings.FindAsync(vm.Id);
-            if (w == null) return NotFound();
 
             var dup = await _context.Wings.AnyAsync(x => x.Id != vm.Id && x.Name == vm.Name && x.DepartmentId == vm.DepartmentId);
             if (dup)
@@ -178,19 +234,26 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: /Wing/GetDepartmentsByBase?baseId=3
-        // Returns JSON array: [{ id = 1, name = "Dept A" }, ...]
         [HttpGet]
         public async Task<IActionResult> GetDepartmentsByBase(int? baseId)
         {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
             if (!baseId.HasValue)
             {
-                var allDeps = await _context.Departments
-                    .AsNoTracking()
+                var allDepsQuery = _context.Departments.AsNoTracking().AsQueryable();
+                if (!scope.IsUnrestricted)
+                    allDepsQuery = allDepsQuery.Where(d => scope.AllowedBaseIds.Contains(d.BaseId));
+
+                var allDeps = await allDepsQuery
                     .OrderBy(d => d.Name)
                     .Select(d => new { id = d.Id, name = d.Name })
                     .ToListAsync();
                 return Json(allDeps);
             }
+
+            if (!scope.IsUnrestricted && !scope.AllowedBaseIds.Contains(baseId.Value))
+                return Json(Array.Empty<object>());
 
             var deps = await _context.Departments
                 .AsNoTracking()
@@ -202,14 +265,37 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             return Json(deps);
         }
 
+        // ── Scope helpers ────────────────────────────────────────────────
+
+        private static bool IsWingInScope(Wing w, UserScope scope)
+        {
+            if (scope.IsUnrestricted) return true;
+            if (!w.BaseId.HasValue || !scope.AllowedBaseIds.Contains(w.BaseId.Value)) return false;
+            if (scope.AllowedWingIds.Any() && !scope.AllowedWingIds.Contains(w.Id)) return false;
+            return true;
+        }
+
         // Populate select lists for Create/Edit
         private async Task PopulateSelects(WingViewModel vm)
         {
-            var departments = await _context.Departments.AsNoTracking().OrderBy(d => d.Name).ToListAsync();
-            var bases = await _context.Bases.AsNoTracking().OrderBy(b => b.BaseName).ToListAsync();
-            var acMainGroups = await _context.AcMainGroups.AsNoTracking().OrderBy(a => a.Name).ToListAsync();
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
 
-            // Use these ViewData keys in the view: "Departments", "Bases", "AcMainGroups"
+            var departmentsQuery = _context.Departments.AsNoTracking().AsQueryable();
+            var basesQuery = _context.Bases.AsNoTracking().AsQueryable();
+            var acMainGroupsQuery = _context.AcMainGroups.AsNoTracking().AsQueryable();
+
+            if (!scope.IsUnrestricted)
+            {
+                basesQuery = basesQuery.Where(b => scope.AllowedBaseIds.Contains(b.Id));
+                departmentsQuery = departmentsQuery.Where(d => scope.AllowedBaseIds.Contains(d.BaseId));
+                if (scope.AllowedAcMainGroupIds.Any())
+                    acMainGroupsQuery = acMainGroupsQuery.Where(a => scope.AllowedAcMainGroupIds.Contains(a.Id));
+            }
+
+            var departments = await departmentsQuery.OrderBy(d => d.Name).ToListAsync();
+            var bases = await basesQuery.OrderBy(b => b.BaseName).ToListAsync();
+            var acMainGroups = await acMainGroupsQuery.OrderBy(a => a.Name).ToListAsync();
+
             vm.Departments = departments.Select(d => new SelectListItem(d.Name, d.Id.ToString(), d.Id == vm.DepartmentId)).ToList();
             vm.Bases = bases.Select(b => new SelectListItem(b.BaseName, b.Id.ToString(), b.Id == vm.BaseId)).ToList();
             vm.AcMainGroups = acMainGroups.Select(a => new SelectListItem(a.Name, a.Id.ToString(), a.Id == vm.AcMainGroupId)).ToList();

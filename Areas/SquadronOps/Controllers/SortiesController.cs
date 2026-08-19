@@ -1,9 +1,11 @@
-﻿using FRAProject.Areas.Settings.Models;
+using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Data;
 using FRAProject.Mapping;
 using FRAProject.Models;
+using FRAProject.Services;
 using FRAProject.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -12,23 +14,37 @@ using System.Threading.Tasks;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {
+    // ⚠ Previously had NO [Authorize] at all. Also used a dead role-based
+    // bypass (UserCanSeeAllAircraftTypes checked "Administrator",
+    // "SuperAdmin", "MaintenanceSupervisor", "FlightOpsManager" — none of
+    // which are real seeded AspNetRoles) plus the legacy
+    // ApplicationUser.AcMainGroupId field directly. Sortie has no Squadron/
+    // AcMainGroup of its own — it belongs to an Odv, which carries both —
+    // so scope is resolved via the parent Odv, same pattern as
+    // WorkOrderSection resolving via its parent WorkOrder in the
+    // AircraftMaintenance conversion.
     [Area("SquadronOps")]
+    [Authorize(Policy = "SquadronOpsRead")]
     public class SortiesController : Controller
     {
+        private const string ModuleCode = "SQUADRONOPS";
+
         private readonly FRAContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-
+        private readonly IUserScopeService _userScopeService;
 
         public SortiesController(FRAContext context,
-                                 UserManager<ApplicationUser> userManager)
+                                 UserManager<ApplicationUser> userManager,
+                                 IUserScopeService userScopeService)
         {
             _context = context;
             _userManager = userManager;
-
+            _userScopeService = userScopeService;
         }
 
-        // GET: Sorties/Create?odvId=123&acMainGroupId=5
+        // GET: Sorties/Create?odvId=123
         [HttpGet]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create(int odvId)
         {
             var odv = await _context.Odvs
@@ -38,6 +54,10 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             if (odv == null)
                 return NotFound();
+
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (!await IsOdvInScopeAsync(odv.SquadronId, odv.AcMainGroupId, scope))
+                return Forbid();
 
             var acMainGroupId = odv.AcMainGroupId;
 
@@ -66,7 +86,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                     Value = t.Id.ToString(),
                     Text = t.Name
                 }).ToList();
-            }            
+            }
 
             var vm = new SortieCreateVm
             {
@@ -81,8 +101,24 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: Sorties/Create?odvId=123
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create(SortieCreateVm model, int? acMainGroupId)
         {
+            var odv = await _context.Odvs.AsNoTracking().FirstOrDefaultAsync(o => o.Id == model.OdvId);
+            if (odv == null) return NotFound();
+
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (!await IsOdvInScopeAsync(odv.SquadronId, odv.AcMainGroupId, scope))
+                return Forbid();
+
+            // Server-side guard — the dropdown only offers AcTypes within the
+            // Odv's own AcMainGroup, but AcTypeId is still a posted value.
+            var chosenAcType = await _context.AcTypes.FirstOrDefaultAsync(t => t.Id == model.AcTypeId);
+            if (chosenAcType == null || chosenAcType.AcMainGroupId != odv.AcMainGroupId)
+            {
+                ModelState.AddModelError(nameof(model.AcTypeId), "Selected aircraft type does not match this ODV's aircraft group.");
+            }
+
             if (!ModelState.IsValid)
             {
                 if (acMainGroupId.HasValue)
@@ -114,10 +150,9 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             );
         }
 
-
-
         // GET: Sorties/Edit/5
         [HttpGet]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int id)
         {
             var sortie = await _context.Sorties
@@ -127,6 +162,10 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             if (sortie == null)
                 return NotFound();
+
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (sortie.Odv == null || !await IsOdvInScopeAsync(sortie.Odv.SquadronId, sortie.Odv.AcMainGroupId, scope))
+                return Forbid();
 
             var vm = new SortieCreateVm
             {
@@ -140,7 +179,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             };
 
             // Pass the current AcTypeId to ensure it appears in dropdown
-            await PopulateAcTypesForCurrentUser(sortie.AcTypeId);
+            await PopulateAcTypesForOdv(sortie.Odv.AcMainGroupId, sortie.AcTypeId, scope);
 
             return View(vm);
         }
@@ -148,50 +187,42 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: Sorties/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int id, SortieCreateVm model)
         {
             if (id != model.Id)
                 return BadRequest();
 
-            if (!ModelState.IsValid)
-            {
-                // Pass current AcTypeId to populate dropdown
-                await PopulateAcTypesForCurrentUser(model.AcTypeId);
-                return View(model);
-            }
-
             var sortie = await _context.Sorties
+                .Include(s => s.Odv)
                 .FirstOrDefaultAsync(s => s.Id == model.Id);
 
             if (sortie == null)
                 return NotFound();
 
-            // IMPORTANT: Check if user is allowed to change to this aircraft type
-            var userAcMainGroupId = await GetUserAcMainGroupId();
-            var canChangeAircraftType = true;
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (sortie.Odv == null || !await IsOdvInScopeAsync(sortie.Odv.SquadronId, sortie.Odv.AcMainGroupId, scope))
+                return Forbid();
 
-            if (userAcMainGroupId.HasValue && userAcMainGroupId.Value > 0)
+            if (!ModelState.IsValid)
             {
-                // Check if the new aircraft type is in user's group
-                var newAcType = await _context.AcTypes
-                    .FirstOrDefaultAsync(t => t.Id == model.AcTypeId);
-
-                if (newAcType != null && newAcType.AcMainGroupId != userAcMainGroupId.Value)
-                {
-                    // User is trying to select an aircraft type not in their group
-                    // Only allow if they're keeping their current type
-                    if (model.AcTypeId != sortie.AcTypeId)
-                    {
-                        ModelState.AddModelError("AcTypeId", "You cannot select an aircraft type outside your assigned group.");
-                        canChangeAircraftType = false;
-                    }
-                }
+                await PopulateAcTypesForOdv(sortie.Odv.AcMainGroupId, model.AcTypeId, scope);
+                return View(model);
             }
 
-            if (!canChangeAircraftType)
+            // The new aircraft type must stay within the Odv's own
+            // AcMainGroup — replaces the old per-user AcMainGroupId check,
+            // which was really guarding the wrong boundary (Odv's group,
+            // not the editing user's group).
+            if (model.AcTypeId != sortie.AcTypeId)
             {
-                await PopulateAcTypesForCurrentUser(model.AcTypeId);
-                return View(model);
+                var newAcType = await _context.AcTypes.FirstOrDefaultAsync(t => t.Id == model.AcTypeId);
+                if (newAcType == null || newAcType.AcMainGroupId != sortie.Odv.AcMainGroupId)
+                {
+                    ModelState.AddModelError("AcTypeId", "You cannot select an aircraft type outside this ODV's assigned group.");
+                    await PopulateAcTypesForOdv(sortie.Odv.AcMainGroupId, model.AcTypeId, scope);
+                    return View(model);
+                }
             }
 
             // Update sortie properties
@@ -206,118 +237,58 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             return RedirectToAction("Index", "OdvPlanning");
         }
 
-        // Get the current user's AcMainGroup and populate AcTypes accordingly
-        private async Task<int?> GetUserAcMainGroupId()
+        // ── Scope helpers ────────────────────────────────────────────────
+
+        private async Task<bool> IsOdvInScopeAsync(int squadronId, int acMainGroupId, UserScope scope)
         {
-            var user = await _userManager.GetUserAsync(User);
-            return user?.AcMainGroupId; // this should match the ApplicationUser property type
+            if (scope.IsUnrestricted) return true;
+
+            if (scope.AllowedAcMainGroupIds.Any() && !scope.AllowedAcMainGroupIds.Contains(acMainGroupId))
+                return false;
+
+            var info = await _context.Squadrons
+                .Where(s => s.Id == squadronId)
+                .Select(s => new { s.WingId, WingBaseId = s.Wing!.BaseId })
+                .FirstOrDefaultAsync();
+
+            if (info == null) return false;
+            if (info.WingBaseId == null || !scope.AllowedBaseIds.Contains(info.WingBaseId.Value)) return false;
+            if (scope.AllowedWingIds.Any() && !scope.AllowedWingIds.Contains(info.WingId)) return false;
+
+            return true;
         }
 
-
-        // Populate aircraft types filter for current user 
-        private bool UserCanSeeAllAircraftTypes()
+        // Populates AcTypes strictly within the Odv's own AcMainGroup —
+        // scope only decides WHETHER the user can edit this Sortie at all
+        // (already checked by IsOdvInScopeAsync above), not which AcTypes
+        // show once they're in.
+        private async Task PopulateAcTypesForOdv(int odvAcMainGroupId, int? currentAcTypeId, UserScope scope)
         {
-            // Users with these roles can see all aircraft types
-            var allowedRoles = new[] { "Administrator", "SuperAdmin", "MaintenanceSupervisor", "FlightOpsManager" };
+            var acTypes = await _context.AcTypes
+                .Where(t => t.AcMainGroupId == odvAcMainGroupId)
+                .OrderBy(t => t.Name)
+                .ToListAsync();
 
-            return allowedRoles.Any(role => User.IsInRole(role));
+            ViewBag.AcTypes = acTypes.Select(t => new SelectListItem
+            {
+                Value = t.Id.ToString(),
+                Text = t.Name,
+                Selected = t.Id == currentAcTypeId
+            }).ToList();
+
+            if (!acTypes.Any())
+            {
+                TempData["Warning"] = "No aircraft types available for this ODV's aircraft group.";
+            }
         }
-
-        private async Task PopulateAcTypesForCurrentUser(int? currentAcTypeId = null)
-        {
-            // Always start with an empty list
-            var selectList = new List<SelectListItem>();
-
-            // Get the current aircraft type if we have an ID
-            AcType? currentAcType = null;
-            if (currentAcTypeId.HasValue && currentAcTypeId.Value > 0)
-            {
-                currentAcType = await _context.AcTypes
-                    .FirstOrDefaultAsync(t => t.Id == currentAcTypeId.Value);
-            }
-
-            // Get user's AcMainGroupId
-            var userAcMainGroupId = await GetUserAcMainGroupId();
-
-            if (userAcMainGroupId.HasValue && userAcMainGroupId.Value > 0)
-            {
-                // User has an AcMainGroup - get types from their group
-                var userGroupTypes = await _context.AcTypes
-                    .Where(t => t.AcMainGroupId == userAcMainGroupId.Value)
-                    .OrderBy(t => t.Name)
-                    .ToListAsync();
-
-                // Add types from user's group
-                foreach (var type in userGroupTypes)
-                {
-                    selectList.Add(new SelectListItem
-                    {
-                        Value = type.Id.ToString(),
-                        Text = type.Name,
-                        Selected = type.Id == currentAcTypeId
-                    });
-                }
-
-                // If current type exists but is NOT in user's group, add it with special marking
-                if (currentAcType != null && !userGroupTypes.Any(t => t.Id == currentAcTypeId.Value))
-                {
-                    selectList.Insert(0, new SelectListItem
-                    {
-                        Value = currentAcType.Id.ToString(),
-                        Text = $"{currentAcType.Name} (Currently Assigned)",
-                        Selected = true
-                    });
-                }
-            }
-            else if (UserCanSeeAllAircraftTypes())
-            {
-                // Admin/Supervisor - show ALL aircraft types
-                var allTypes = await _context.AcTypes
-                    .OrderBy(t => t.Name)
-                    .ToListAsync();
-
-                selectList = allTypes.Select(t => new SelectListItem
-                {
-                    Value = t.Id.ToString(),
-                    Text = t.Name,
-                    Selected = t.Id == currentAcTypeId
-                }).ToList();
-            }
-            else
-            {
-                // Regular user without AcMainGroup
-                // If they have a current type assigned, show ONLY that type
-                if (currentAcType != null)
-                {
-                    selectList.Add(new SelectListItem
-                    {
-                        Value = currentAcType.Id.ToString(),
-                        Text = $"{currentAcType.Name} (Currently Assigned)",
-                        Selected = true
-                    });
-
-                    TempData["Warning"] = "You can only keep the currently assigned aircraft type. Contact an administrator to change it.";
-                }
-                else
-                {
-                    // No current type and no AcMainGroup
-                    TempData["Warning"] = "No aircraft group assigned to your account. Please contact an administrator.";
-                }
-            }
-
-            ViewBag.AcTypes = selectList;
-        }
-
 
         private async Task PopulateAcTypesByMainGroup(int acMainGroupId)
         {
-            // Fetch AcTypes corresponding to the provided acMainGroupId
             var acTypes = await _context.AcTypes
                 .Where(t => t.AcMainGroupId == acMainGroupId)
                 .OrderBy(t => t.Name)
                 .ToListAsync();
 
-            // Create SelectList items from the fetched AcTypes
             var selectList = acTypes.Select(t => new SelectListItem
             {
                 Value = t.Id.ToString(),
@@ -329,7 +300,6 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 TempData["Warning"] = "No aircraft types available for the selected Aircraft Maintenance Group.";
             }
 
-            // Pass the select list to the view
             ViewBag.AcTypes = selectList;
         }
     }

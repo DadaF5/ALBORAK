@@ -20,13 +20,49 @@ public class BugReportsController : Controller
     }
 
     // GET: /BugReports  — list, visible to all, but only Admin sees triage controls
-    public async Task<IActionResult> Index(BugStatus? status)
+    //
+    // Defaults to OPEN bugs only (NEW/CONFIRMED/IN_PROGRESS) so the list
+    // doesn't fill up with resolved history over time. includeClosed
+    // brings FIXED/WONT_FIX/DUPLICATE back into the unfiltered view —
+    // explicitly picking a specific status (e.g. "Corrigé") always shows
+    // that status regardless of the checkbox, since that's an explicit
+    // ask, not the default "what needs attention" view.
+    //
+    // reportedBy is a free-text match against the reporter's display name
+    // — deliberately not a user-picker dropdown, since the point is
+    // catching things like "maybe this person is reporting normal
+    // behavior as a bug", not precise identity lookup.
+    private static readonly BugStatus[] ClosedStatuses =
+    {
+        BugStatus.FIXED, BugStatus.WONT_FIX, BugStatus.DUPLICATE
+    };
+
+    public async Task<IActionResult> Index(
+        BugStatus? status,
+        bool includeClosed = false,
+        string? reportedBy = null,
+        string? sortOrder = null)
     {
         var bugs = status.HasValue
             ? await _unitOfWork.BugReports.GetByStatusAsync(status.Value)
             : await _unitOfWork.BugReports.GetAllAsync();
 
-        var dtos = bugs.Select(b => new BugReportDto
+        IEnumerable<BugReport> query = bugs;
+
+        if (!status.HasValue && !includeClosed)
+        {
+            query = query.Where(b => !ClosedStatuses.Contains(b.Status));
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportedBy))
+        {
+            var term = reportedBy.Trim();
+            query = query.Where(b =>
+                !string.IsNullOrEmpty(b.ReportedBy?.FullLabel) &&
+                b.ReportedBy.FullLabel.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var dtos = query.Select(b => new BugReportDto
         {
             Id = b.Id,
             ReportNumber = b.ReportNumber,
@@ -36,10 +72,25 @@ public class BugReportsController : Controller
             Status = b.Status,
             ReportedByName = b.ReportedBy?.FullLabel ?? "—",
             ReportedAt = b.ReportedAt
-        }).OrderByDescending(b => b.ReportedAt).ToList();
+        });
+
+        dtos = sortOrder switch
+        {
+            "date_asc" => dtos.OrderBy(b => b.ReportedAt),
+            "severity_asc" => dtos.OrderBy(b => b.Severity),
+            "severity_desc" => dtos.OrderByDescending(b => b.Severity),
+            "status_asc" => dtos.OrderBy(b => b.Status),
+            "status_desc" => dtos.OrderByDescending(b => b.Status),
+            "reportedby_asc" => dtos.OrderBy(b => b.ReportedByName),
+            "reportedby_desc" => dtos.OrderByDescending(b => b.ReportedByName),
+            _ => dtos.OrderByDescending(b => b.ReportedAt) // "date_desc" and default
+        };
 
         ViewBag.StatusFilter = status;
-        return View(dtos);
+        ViewBag.IncludeClosed = includeClosed;
+        ViewBag.ReportedBy = reportedBy;
+        ViewBag.SortOrder = sortOrder;
+        return View(dtos.ToList());
     }
 
     // GET: /BugReports/Create?returnUrl=...

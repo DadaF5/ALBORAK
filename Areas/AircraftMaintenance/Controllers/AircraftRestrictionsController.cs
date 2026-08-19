@@ -11,18 +11,22 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace FRAProject.Areas.Settings.Controllers
 {
     [Area("AircraftMaintenance")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "MaintenanceRead")]
     public class AircraftRestrictionsController : Controller
     {
+        private const string ModuleCode = "MAINTENANCE";
+
         private readonly IUnitOfWork        _uow;
         private readonly IValidationService _validator;
+        private readonly IUserScopeService  _userScopeService;
         private const int DefaultPageSize = 15;
 
         public AircraftRestrictionsController(
-            IUnitOfWork uow, IValidationService validator)
+            IUnitOfWork uow, IValidationService validator, IUserScopeService userScopeService)
         {
-            _uow       = uow;
-            _validator = validator;
+            _uow              = uow;
+            _validator        = validator;
+            _userScopeService = userScopeService;
         }
 
         // ── INDEX ────────────────────────────────────────────────────────
@@ -37,9 +41,30 @@ namespace FRAProject.Areas.Settings.Controllers
             int     pageNumber       = 1,
             int     pageSize         = DefaultPageSize)
         {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
+            var aircraft  = await _uow.Aircraft.GetWhereAsync(a => a.IsActive);
+            var acTypes   = await _uow.AcTypes.GetWhereAsync(t => t.IsActive);
+            var acTypesById = acTypes.ToDictionary(t => t.Id);
+
+            if (!scope.IsUnrestricted)
+            {
+                aircraft = aircraft.Where(a =>
+                    a.BaseId.HasValue && scope.AllowedBaseIds.Contains(a.BaseId.Value)
+                    && (!scope.AllowedAcMainGroupIds.Any()
+                        || (acTypesById.TryGetValue(a.AcTypeId, out var t)
+                            && scope.AllowedAcMainGroupIds.Contains(t.AcMainGroupId))));
+            }
+
+            // null = unrestricted (no extra filter applied below)
+            var allowedAircraftIds = scope.IsUnrestricted
+                ? null
+                : aircraft.Select(a => a.Id).ToHashSet();
+
             var result = await _uow.AircraftRestrictions.GetPagedAsync(
 
                 filter: r =>
+                    (allowedAircraftIds == null || allowedAircraftIds.Contains(r.AircraftId)) &&
                     (searchAircraftId == null || r.AircraftId == searchAircraftId) &&
                     (string.IsNullOrEmpty(searchType)     || r.RestrictionType == searchType) &&
                     (string.IsNullOrEmpty(searchSeverity) || r.Severity == searchSeverity) &&
@@ -62,8 +87,6 @@ namespace FRAProject.Areas.Settings.Controllers
                 pageSize:   pageSize
             );
 
-            var aircraft  = await _uow.Aircraft.GetWhereAsync(a => a.IsActive);
-            var acTypes   = await _uow.AcTypes.GetWhereAsync(t => t.IsActive);
             var typeMap   = acTypes.ToDictionary(t => t.Id, t => t.Name);
             var acMap     = aircraft.ToDictionary(a => a.Id,
                 a => (dynamic)new
@@ -77,7 +100,8 @@ namespace FRAProject.Areas.Settings.Controllers
             var certMap = certs.ToDictionary(c => c.Id, c => c.Reference);
 
             var allActive = await _uow.AircraftRestrictions
-                .GetWhereAsync(r => r.IsActive);
+                .GetWhereAsync(r => r.IsActive &&
+                    (allowedAircraftIds == null || allowedAircraftIds.Contains(r.AircraftId)));
 
             var vm = new AircraftRestrictionIndexVm
             {
@@ -128,6 +152,9 @@ namespace FRAProject.Areas.Settings.Controllers
         // ── CREATE GET ───────────────────────────────────────────────────
         public async Task<IActionResult> Create(int? aircraftId = null)
         {
+            if (aircraftId.HasValue && !await IsAircraftInScopeAsync(aircraftId.Value))
+                return Forbid();
+
             var dto = new AircraftRestrictionFormDto
             {
                 AircraftId = aircraftId ?? 0,
@@ -142,8 +169,14 @@ namespace FRAProject.Areas.Settings.Controllers
         // ── CREATE POST ──────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Create(AircraftRestrictionFormDto dto)
         {
+            // Defense in depth — dropdown only offers in-scope aircraft, but
+            // AircraftId is still a posted value and can be tampered with.
+            if (!await IsAircraftInScopeAsync(dto.AircraftId))
+                return Forbid();
+
             if (!ModelState.IsValid)
             {
                 await FillContext(dto, dto.AircraftId);
@@ -170,6 +203,9 @@ namespace FRAProject.Areas.Settings.Controllers
             var entity = await _uow.AircraftRestrictions.GetByIdAsync(id.Value);
             if (entity == null) return NotFound();
 
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
+
             var dto = MapToDto(entity);
             await FillContext(dto, entity.AircraftId);
             return View(dto);
@@ -178,9 +214,14 @@ namespace FRAProject.Areas.Settings.Controllers
         // ── EDIT POST ────────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Edit(int id, AircraftRestrictionFormDto dto)
         {
             if (id != dto.Id) return BadRequest();
+
+            if (!await IsAircraftInScopeAsync(dto.AircraftId))
+                return Forbid();
+
             if (!ModelState.IsValid)
             {
                 await FillContext(dto, dto.AircraftId);
@@ -203,11 +244,15 @@ namespace FRAProject.Areas.Settings.Controllers
 
         // ── DELETE — soft ────────────────────────────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Delete(int id)
         {
             var entity = await _uow.AircraftRestrictions.GetByIdAsync(id);
             if (entity == null)
                 return Json(new { success = false, message = "Introuvable." });
+
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
 
             entity.IsActive       = false;
             entity.LastModifiedAt = DateTime.UtcNow;
@@ -219,11 +264,15 @@ namespace FRAProject.Areas.Settings.Controllers
 
         // ── ACTIVATE ─────────────────────────────────────────────────────
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Activate(int id)
         {
             var entity = await _uow.AircraftRestrictions.GetByIdAsync(id);
             if (entity == null)
                 return Json(new { success = false, message = "Introuvable." });
+
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
 
             entity.IsActive       = true;
             entity.LastModifiedAt = DateTime.UtcNow;
@@ -236,6 +285,28 @@ namespace FRAProject.Areas.Settings.Controllers
         // ══════════════════════════════════════════════════════════════════
         //  PRIVATE HELPERS
         // ══════════════════════════════════════════════════════════════════
+
+        // Mirrors the Base+AcMainGroup check used inline in SnagsController,
+        // but for a single already-known AircraftId (form posts, entity
+        // lookups) rather than a list being built for a dropdown.
+        private async Task<bool> IsAircraftInScopeAsync(int aircraftId)
+        {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (scope.IsUnrestricted) return true;
+
+            var aircraft = await _uow.Aircraft.GetByIdAsync(aircraftId);
+            if (aircraft == null || !aircraft.BaseId.HasValue ||
+                !scope.AllowedBaseIds.Contains(aircraft.BaseId.Value))
+                return false;
+
+            if (!scope.AllowedAcMainGroupIds.Any())
+                return true;
+
+            var acType = await _uow.AcTypes.GetByIdAsync(aircraft.AcTypeId);
+            return acType != null &&
+                   scope.AllowedAcMainGroupIds.Contains(acType.AcMainGroupId);
+        }
+
         private static AircraftRestrictionFormDto MapToDto(AircraftRestriction e) =>
             new()
             {

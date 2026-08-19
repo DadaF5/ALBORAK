@@ -2,6 +2,7 @@
 using FRAProject.Areas.AircraftMaintenance.Services;
 using FRAProject.Infrastructure.Interfaces;
 using FRAProject.Models;
+using FRAProject.Services;
 using FRAProject.ViewModels.AircraftMaintenance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -11,24 +12,46 @@ using Microsoft.EntityFrameworkCore;
 namespace FRAProject.Areas.AircraftMaintenance.Controllers
 {
     [Area("AircraftMaintenance")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "MaintenanceRead")]
     public class WorkOrdersController : Controller
     {
+        private const string ModuleCode = "MAINTENANCE";
+
         private readonly IUnitOfWork _uow;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISnagService _snagService;
+        private readonly IUserScopeService _userScopeService;
 
-        public WorkOrdersController(IUnitOfWork uow, UserManager<ApplicationUser> userManager, ISnagService snagService)
+        public WorkOrdersController(
+            IUnitOfWork uow, UserManager<ApplicationUser> userManager,
+            ISnagService snagService, IUserScopeService userScopeService)
         {
             _uow = uow;
             _userManager = userManager;
             _snagService = snagService;
+            _userScopeService = userScopeService;
         }
 
         // GET: AircraftMaintenance/WorkOrders
+        // WorkOrder is aircraft-instance data — scoped by Base+AcMainGroup,
+        // same pattern as Snags/AircraftCertificates/AircraftRestrictions.
         public async Task<IActionResult> Index()
         {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
             var items = await _uow.WorkOrders.GetAllWithDetailsAsync();
+
+            if (!scope.IsUnrestricted)
+            {
+                var acTypesById = (await _uow.AcTypes.GetAllAsync()).ToDictionary(t => t.Id);
+                items = items.Where(w =>
+                    w.Aircraft != null
+                    && w.Aircraft.BaseId.HasValue
+                    && scope.AllowedBaseIds.Contains(w.Aircraft.BaseId.Value)
+                    && (!scope.AllowedAcMainGroupIds.Any()
+                        || (acTypesById.TryGetValue(w.Aircraft.AcTypeId, out var t)
+                            && scope.AllowedAcMainGroupIds.Contains(t.AcMainGroupId)))).ToList();
+            }
 
             var vm = items.Select(w => new WorkOrderListItemViewModel
             {
@@ -77,6 +100,12 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> GetSelectableInspectionTypes(int aircraftId)
         {
+            // The dropdown only offers in-scope aircraft, but this is a
+            // directly-callable AJAX endpoint — a tampered aircraftId
+            // could otherwise be used to probe another base/group's data.
+            if (!await IsAircraftInScopeAsync(aircraftId))
+                return Forbid();
+
             var aircraft = await _uow.Aircraft.GetByIdAsync(aircraftId);
             if (aircraft == null) return Json(new List<object>());
 
@@ -129,8 +158,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/WorkOrders/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Create(WorkOrderFormViewModel vm)
         {
+            // Defense in depth — dropdown only offers in-scope aircraft, but
+            // AircraftId is still a posted value and can be tampered with.
+            if (!await IsAircraftInScopeAsync(vm.AircraftId))
+                return Forbid();
+
             if (vm.WOKind == "PLANNED" && !vm.SelectedInspectionTypeIds.Any())
             {
                 ModelState.AddModelError(nameof(vm.SelectedInspectionTypeIds),
@@ -228,6 +263,9 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             var entity = await _uow.WorkOrders.GetByIdWithDetailsAsync(id);
             if (entity == null) return NotFound();
 
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
+
             return View(await MapToDetailsVmAsync(entity));
         }
 
@@ -241,6 +279,9 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         {
             var entity = await _uow.WorkOrders.GetByIdWithDetailsAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
 
             var vm = await MapToDetailsVmAsync(entity);
             vm.Sections = await BuildSectionsForPrintAsync(id);
@@ -333,19 +374,27 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             var entity = await _uow.WorkOrders.GetByIdAsync(id);
             if (entity == null) return NotFound();
 
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
+
             return View(new WorkOrderEditViewModel { Id = entity.Id, WONumber = entity.WONumber, Remarks = entity.Remarks });
         }
 
         // POST: AircraftMaintenance/WorkOrders/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Edit(int id, WorkOrderEditViewModel vm)
         {
             if (id != vm.Id) return BadRequest();
-            if (!ModelState.IsValid) return View(vm);
 
             var entity = await _uow.WorkOrders.GetByIdAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
+
+            if (!ModelState.IsValid) return View(vm);
 
             entity.Remarks = vm.Remarks;
             entity.UpdatedAtUtc = DateTime.UtcNow;
@@ -362,6 +411,10 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         {
             var entity = await _uow.WorkOrders.GetByIdWithDetailsAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
+
             if (entity.Status != "DRAFT")
             {
                 TempData["Error"] = "Seuls les OT en brouillon peuvent être supprimés.";
@@ -374,10 +427,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/WorkOrders/DeleteConfirmed/5
         [HttpPost, ActionName("DeleteConfirmed")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var entity = await _uow.WorkOrders.GetByIdAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
 
             if (entity.Status != "DRAFT")
             {
@@ -395,10 +452,15 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/WorkOrders/Open/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Open(int id)
         {
             var entity = await _uow.WorkOrders.GetByIdAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
+
             if (entity.Status != "DRAFT")
             {
                 TempData["Error"] = "Cet OT n'est plus en brouillon.";
@@ -428,6 +490,12 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // GET: AircraftMaintenance/WorkOrders/PopulateJobCards/5
         public async Task<IActionResult> PopulateJobCards(int id)
         {
+            var workOrder = await _uow.WorkOrders.GetByIdAsync(id);
+            if (workOrder == null) return NotFound();
+
+            if (!await IsAircraftInScopeAsync(workOrder.AircraftId))
+                return Forbid();
+
             var vm = await BuildPopulateVmAsync(id);
             if (vm == null) return NotFound();
             return View(vm);
@@ -441,10 +509,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // form can't inject an unrelated JobCardId.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> PopulateJobCards(int workOrderId, List<int> selectedJobCardIds)
         {
             var workOrder = await _uow.WorkOrders.GetByIdWithDetailsAsync(workOrderId);
             if (workOrder == null) return NotFound();
+
+            if (!await IsAircraftInScopeAsync(workOrder.AircraftId))
+                return Forbid();
 
             if (!selectedJobCardIds.Any())
             {
@@ -500,10 +572,17 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/WorkOrders/UpdateJobCardStatus
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> UpdateJobCardStatus(int workOrderJobCardId, string status, string? naJustification, string? observations)
         {
             var line = await _uow.WorkOrderJobCards.GetByIdAsync(workOrderJobCardId);
             if (line == null) return NotFound();
+
+            var workOrder = await _uow.WorkOrders.GetByIdAsync(line.WorkOrderId);
+            if (workOrder == null) return NotFound();
+
+            if (!await IsAircraftInScopeAsync(workOrder.AircraftId))
+                return Forbid();
 
             line.Status = status;
             line.NAJustification = status == "N_A" ? naJustification : null;
@@ -524,10 +603,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/WorkOrders/Close/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Close(int id)
         {
             var entity = await _uow.WorkOrders.GetByIdWithDetailsAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
 
             if (entity.Status != "OPEN" && entity.Status != "IN_PROGRESS")
             {
@@ -617,6 +700,27 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
 
         // ── Helpers ──────────────────────────────────────────────────────
 
+        // Mirrors the Base+AcMainGroup check used inline in SnagsController,
+        // but for a single already-known AircraftId (form posts, entity
+        // lookups) rather than a list being built for a dropdown.
+        private async Task<bool> IsAircraftInScopeAsync(int aircraftId)
+        {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (scope.IsUnrestricted) return true;
+
+            var aircraft = await _uow.Aircraft.GetByIdAsync(aircraftId);
+            if (aircraft == null || !aircraft.BaseId.HasValue ||
+                !scope.AllowedBaseIds.Contains(aircraft.BaseId.Value))
+                return false;
+
+            if (!scope.AllowedAcMainGroupIds.Any())
+                return true;
+
+            var acType = await _uow.AcTypes.GetByIdAsync(aircraft.AcTypeId);
+            return acType != null &&
+                   scope.AllowedAcMainGroupIds.Contains(acType.AcMainGroupId);
+        }
+
         private async Task<WorkOrderDetailsViewModel> MapToDetailsVmAsync(WorkOrder w)
         {
             string? openedByName = null;
@@ -691,12 +795,24 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
 
         private async Task PopulateDropdownsAsync(WorkOrderFormViewModel vm)
         {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
             var aircrafts = await _uow.Aircraft.GetAllAsync();
             var acTypes = await _uow.AcTypes.GetAllAsync();
             var acTypeCodeById = acTypes.ToDictionary(t => t.Id, t => t.Code ?? "—");
+            var acTypesById = acTypes.ToDictionary(t => t.Id);
 
-            vm.Aircrafts = aircrafts
-                .Where(a => a.IsActive)
+            var visibleAircrafts = aircrafts.Where(a => a.IsActive);
+            if (!scope.IsUnrestricted)
+            {
+                visibleAircrafts = visibleAircrafts.Where(a =>
+                    a.BaseId.HasValue && scope.AllowedBaseIds.Contains(a.BaseId.Value)
+                    && (!scope.AllowedAcMainGroupIds.Any()
+                        || (acTypesById.TryGetValue(a.AcTypeId, out var t)
+                            && scope.AllowedAcMainGroupIds.Contains(t.AcMainGroupId))));
+            }
+
+            vm.Aircrafts = visibleAircrafts
                 .OrderBy(a => acTypeCodeById.GetValueOrDefault(a.AcTypeId, "—"))
                 .ThenBy(a => a.Registration)
                 .Select(a => new AircraftLookupViewModel
@@ -708,9 +824,20 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                     DisplayName = $"{acTypeCodeById.GetValueOrDefault(a.AcTypeId, "—")} — {a.Registration}"
                 }).ToList();
 
+            // InspectionType checklist is scoped by the same AcMainGroup
+            // restriction — a scoped user shouldn't see, e.g., F16
+            // InspectionTypes in the checkbox list even before picking an
+            // aircraft, since GetSelectableInspectionTypes further narrows
+            // by the chosen aircraft's exact AcType anyway.
             var inspectionTypes = await _uow.InspectionTypes.GetAllWithDetailsAsync();
-            vm.InspectionTypes = inspectionTypes
-                .Where(it => it.IsActive)
+            var visibleInspectionTypes = inspectionTypes.Where(it => it.IsActive);
+            if (!scope.IsUnrestricted && scope.AllowedAcMainGroupIds.Any())
+            {
+                visibleInspectionTypes = visibleInspectionTypes.Where(it =>
+                    it.AcType != null && scope.AllowedAcMainGroupIds.Contains(it.AcType.AcMainGroupId));
+            }
+
+            vm.InspectionTypes = visibleInspectionTypes
                 .Select(it => new LookupOptionViewModel
                 {
                     Id = it.Id,
@@ -718,8 +845,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 }).ToList();
 
             // Used by the checkbox list + AcType filtering JS in Create.cshtml
-            vm.InspectionTypeItems = inspectionTypes
-                .Where(it => it.IsActive)
+            vm.InspectionTypeItems = visibleInspectionTypes
                 .OrderBy(it => it.AcType?.Code)
                 .ThenBy(it => it.SortOrder)
                 .Select(it => new InspectionTypeCheckItemViewModel

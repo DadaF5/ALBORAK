@@ -3,13 +3,8 @@
 @{
     ViewData["Title"] = "Edit User";
     var userId = ViewBag.UserId as string ?? Model.Id ?? "";
-    // Get current values from viewBag for javascript
-    var currentBaseId = ViewBag.CurrentBaseId as int ? ;
-    var currentWingId = ViewBag.CurrentWingId as int?;
-    var currentDepartmentId = ViewBag.CurrentDepartmentId as int?;
-    var currentSquadronId = ViewBag.CurrentSquadronId as int?;
+    var currentBaseId = ViewBag.CurrentBaseId as int?;
     var currentAcMainGroupId = ViewBag.CurrentAcMainGroupId as int?;
-
 }
 
 <style>
@@ -112,17 +107,6 @@
             padding: 10px;
         }
 
-    .checkbox-group {
-        background-color: #4a5568;
-        border-radius: 8px;
-        padding: 20px;
-        margin-top: 5px;
-    }
-
-    .form-check {
-        margin-bottom: 10px;
-    }
-
     .form-check-input {
         background-color: #718096;
         border-color: #a0aec0;
@@ -150,6 +134,19 @@
         align-items: center;
         gap: 10px;
     }
+
+        .section-title .legacy-tag {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: #a0aec0;
+            background-color: rgba(160, 174, 192, 0.12);
+            border: 1px solid rgba(160, 174, 192, 0.3);
+            border-radius: 12px;
+            padding: 2px 10px;
+            margin-left: auto;
+        }
 
     .btn-primary {
         background-color: #4299e1;
@@ -210,25 +207,51 @@
             padding-left: 20px;
         }
 
-    .user-info-badge {
-        background-color: #4a5568;
-        color: #cbd5e0;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.875rem;
-        display: inline-flex;
+    /* Real-access banner — points at UserAssignments, the only screen
+       that actually grants module access. */
+    .assignments-banner {
+        background-color: rgba(66, 153, 225, 0.1);
+        border: 1px solid rgba(66, 153, 225, 0.4);
+        border-radius: 10px;
+        padding: 14px 20px;
+        margin-bottom: 24px;
+        display: flex;
+        gap: 14px;
         align-items: center;
-        gap: 5px;
+        justify-content: space-between;
+        flex-wrap: wrap;
     }
 
-    @@keyframes fadeIn {
-        from {
-            opacity: 0;
+        .assignments-banner p {
+            color: #cbd5e0;
+            margin: 0;
+            font-size: 0.9rem;
         }
 
-        to {
-            opacity: 1;
+        .assignments-banner .btn-assignments {
+            background-color: #4299e1;
+            border-color: #4299e1;
+            color: #fff;
+            font-weight: 600;
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: all 0.2s;
+            white-space: nowrap;
         }
+
+            .assignments-banner .btn-assignments:hover {
+                background-color: #3182ce;
+                color: #fff;
+            }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
 
     @@keyframes slideIn {
@@ -267,41 +290,10 @@
                 width: 100%;
                 margin-bottom: 15px;
             }
-        /* Fix checkbox spacing */
-        .form-check-input {
-            margin-right: 12px; /* Add space between checkbox and label */
-            margin-top: 0.3rem; /* Align vertically with text */
-        }
-
-        .form-check-label {
-            padding-left: 0; /* Remove default padding if any */
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            min-height: 1.5rem; /* Ensure consistent height */
-        }
-        /* If you're using form-switch for the active status, keep its specific styling */
-        .form-check.form-switch .form-check-input {
-            margin-right: 0; /* Don't add margin to switch */
-        }
-        /* Optional: Make checkboxes larger and more touch-friendly */
-        @* .form-check-input {
-            width: 1.2em;
-            height: 1.2em;
-        } *@
-
-           @*  .form-check-input:checked {
-                background-color: #4299e1;
-                border-color: #4299e1;
-            } *@
 
         .form-check-input {
             margin-right: 10px !important;
         }
-    }
-    /* Hidden inputs to store initial values */
-    .initial-value {
-        display: none;
     }
 </style>
 
@@ -312,25 +304,33 @@
                 <i class="fas fa-user-edit"></i>
                 Edit User: @Model.FirstName @Model.LastName
             </h4>
-            @*  <div class="user-info-badge">
-                <i class="fas fa-id-card"></i>
-                ID: @Model.Id
-            </div> *@
         </div>
 
         <div class="popup-body">
             <form asp-action="Edit" asp-route-id="@userId" method="post" id="editForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="Id" />
-
-                <!-- Hidden inputs to store initial values for JavaScript -->
                 <input type="hidden" id="initialBaseId" value="@currentBaseId" />
-                <input type="hidden" id="initialDepartmentId" value="@currentDepartmentId" />
-                <input type="hidden" id="initialWingId" value="@currentWingId" />
-                <input type="hidden" id="initialSquadronId" value="@currentSquadronId" />
                 <input type="hidden" id="initialAcMainGroupId" value="@currentAcMainGroupId" />
 
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <!--
+                    Real access for Maintenance/SquadronOps/etc. is granted
+                    via UserAssignment, not on this form. Department and
+                    Wing (dead everywhere — no code ever read them) and the
+                    old 7-checkbox role list (only "Admin" ever did
+                    anything) have been removed. What's left below is
+                    either informational (Base) or a Create-time SquadronOps
+                    default only (Squadron/AcMainGroup) — see each field's
+                    label.
+                -->
+                <div class="assignments-banner">
+                    <p>L'accès réel aux modules (Maintenance, SquadronOps…) se gère via les attributions utilisateur.</p>
+                    <a href="@Url.Action("Index", "UserAssignments", new { userId })" class="btn-assignments">
+                        <i class="fas fa-user-shield"></i> Gérer les accès réels
+                    </a>
+                </div>
 
                 <!-- Personal Information Section -->
                 <h5 class="section-title" style="padding-top:0px;">
@@ -374,20 +374,21 @@
                     </div>
                 </div>
 
-                <!-- Organization Structure Section -->
+                <!-- Defaults Section -->
                 <h5 class="section-title">
                     <i class="fas fa-sitemap"></i>
-                    Organization Structure
+                    Defaults
+                    <span class="legacy-tag">Not access control</span>
                 </h5>
 
                 <div class="form-row">
                     <div class="form-group col-md-4">
                         <label asp-for="BaseId" class="form-label">
-                            <i class="fas fa-building"></i>Base
+                            <i class="fas fa-building"></i>@Html.DisplayNameFor(m => m.BaseId)
                         </label>
                         <select asp-for="BaseId" class="form-select" id="baseSelect">
-                            <option value="">-- Select Base --</option>
-                            @foreach (var item in Model.BaseList)
+                            <option value="">-- None --</option>
+                            @foreach (var item in Model.BaseList ?? new())
                             {
                                 <option value="@item.Value" selected="@(item.Value == Model.BaseId?.ToString())">@item.Text</option>
                             }
@@ -395,73 +396,29 @@
                         <span asp-validation-for="BaseId" class="text-danger"></span>
                     </div>
 
-                    <!-- Department (depends on Base) -->
                     <div class="form-group col-md-4">
-                        <label asp-for="DepartmentId" class="form-label">
-                            <i class="fas fa-layer-group"></i>Department
+                        <label asp-for="SquadronId" class="form-label">
+                            <i class="fas fa-fighter-jet"></i>@Html.DisplayNameFor(m => m.SquadronId)
                         </label>
-                        <select asp-for="DepartmentId" class="form-select" id="departmentSelect"
-                                disabled="@(Model.BaseId == null && Model.DepartmentId == null)">
-                            <option value="">-- Select Department --</option>
-                            @foreach (var item in Model.DepartmentList)
+                        <select asp-for="SquadronId" class="form-select" id="squadronSelect">
+                            <option value="">-- None --</option>
+                            @foreach (var item in Model.SquadronList ?? new())
                             {
-                                var isSelected = item.Value == Model.DepartmentId?.ToString();
+                                var isSelected = item.Value == Model.SquadronId?.ToString();
                                 <option value="@item.Value" selected="@isSelected">@item.Text</option>
                             }
                         </select>
-                        <span asp-validation-for="DepartmentId" class="text-danger"></span>
+                        <span asp-validation-for="SquadronId" class="text-danger"></span>
                     </div>
-                    <!-- Wing (depends on Department) -->
+
                     <div class="form-group col-md-4">
-                        <label asp-for="WingId" class="form-label">
-                            <i class="fas fa-flag"></i>Wing
-                        </label>
-                        <select asp-for="WingId" class="form-select" id="wingSelect"
-                                disabled="@(Model.DepartmentId == null && Model.WingId == null)">
-                            <option value="">-- Select Wing --</option>
-                            @foreach (var item in Model.WingList)
-                            {
-                                var isSelected = item.Value == Model.WingId?.ToString();
-                                <option value="@item.Value" selected="@isSelected">@item.Text</option>
-                            }
-                        </select>
-                        <span asp-validation-for="WingId" class="text-danger"></span>
-                    </div>
-
-
-
-                </div>
-
-              
-                    
-                    <div class="form-row">
-                        
-
-                        <!-- Squadron (depends on Wing) -->
-                        <div class="form-group col-md-4">
-                            <label asp-for="SquadronId" class="form-label">
-                                <i class="fas fa-fighter-jet"></i>Squadron
-                            </label>
-                            <select asp-for="SquadronId" class="form-select" id="squadronSelect"
-                                    disabled="@(Model.WingId == null && Model.SquadronId == null)">
-                                <option value="">-- Select Squadron --</option>
-                                @foreach (var item in Model.SquadronList)
-                                {
-                                    var isSelected = item.Value == Model.SquadronId?.ToString();
-                                    <option value="@item.Value" selected="@isSelected">@item.Text</option>
-                                }
-                            </select>
-                            <span asp-validation-for="SquadronId" class="text-danger"></span>
-                        </div>
-                    <!-- AC Main Group (depends on Base) --> 
-                    <div class="form-group col-md-6">
                         <label asp-for="AcMainGroupId" class="form-label">
-                            <i class="fas fa-plane"></i>Aircraft Main Group
+                            <i class="fas fa-plane"></i>@Html.DisplayNameFor(m => m.AcMainGroupId)
                         </label>
                         <select asp-for="AcMainGroupId" class="form-select" id="acMainGroupSelect"
                                 disabled="@(Model.BaseId == null && Model.AcMainGroupId == null)">
-                            <option value="">-- Select AC Group --</option>
-                            @foreach (var item in Model.AcMainGroupList)
+                            <option value="">-- None --</option>
+                            @foreach (var item in Model.AcMainGroupList ?? new())
                             {
                                 var isSelected = item.Value == Model.AcMainGroupId?.ToString();
                                 <option value="@item.Value" selected="@isSelected">@item.Text</option>
@@ -469,38 +426,23 @@
                         </select>
                         <span asp-validation-for="AcMainGroupId" class="text-danger"></span>
                     </div>
+                </div>
 
-                    </div>
-
-                <!-- Roles Section -->
+                <!-- Administrator Section -->
                 <h5 class="section-title">
                     <i class="fas fa-user-shield"></i>
-                    User Roles & Status
+                    Administrator
                 </h5>
 
                 <div class="form-group">
-                   @*  <label class="form-label">
-                        <i class="fas fa-user-tag"></i>Assign Roles
-                    </label> *@
-                    <div class="checkbox-group">
-                        <div class="row">
-                            @foreach (var r in Model.AvailableRoles ?? Enumerable.Empty<SelectListItem>())
-                            {
-                                var id = "role_" + r.Value;
-                                var isChecked = Model.SelectedRoles?.Contains(r.Value) == true;
-                                <div class="col-md-4 col-sm-6 mb-2">
-                                    <div class="form-check" style="padding-left: 2em;">
-                                        <input class="form-check-input position-absolute" type="checkbox" id="@id" 
-                                        name="SelectedRoles" value="@r.Value" @(isChecked ? "checked" : "")
-                                               style="margin-left: -2em;" />
-                                        <label class="form-check-label" for="@id">
-                                            @r.Text
-                                        </label>
-                                    </div>
-                                </div>
-                            }
-                        </div>
+                    <div class="form-check" style="padding-left: 2em;">
+                        <input asp-for="IsAdmin" class="form-check-input position-absolute" style="margin-left: -2em;" />
+                        <label asp-for="IsAdmin" class="form-check-label"></label>
                     </div>
+                    <small class="text-muted d-block mt-1" style="color:#a0aec0 !important;">
+                        Full access, bypasses all module scoping. For Maintenance/SquadronOps/etc. access, use
+                        <a href="@Url.Action("Index", "UserAssignments", new { userId })">Affectations</a> instead.
+                    </small>
                 </div>
 
                 <!-- Status Section -->
@@ -510,7 +452,7 @@
                             <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch"
                                    id="isActiveSwitch" style="margin-left: -2em;" />
                             <label asp-for="IsActive" class="form-check-label" for="isActiveSwitch">
-                                <i class="fas fa-user-check"></i> User is Active   - - -> 
+                                <i class="fas fa-user-check"></i> User is Active
                             </label>
                         </div>
                     </div>
@@ -520,7 +462,6 @@
                             <i class="fas fa-info-circle"></i> Inactive users cannot log into the system.
                         </small>
                     </div>
-               
                 </div>
             </form>
         </div>
@@ -546,305 +487,45 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="~/plugins/fontawesome-free/css/all.min.css" />
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Cache elements
+        document.addEventListener('DOMContentLoaded', function () {
+            // Only remaining cascade: Base -> AcMainGroup (AcMainGroup.BaseId
+            // is a real FK). Squadron is now a flat list with no dependency.
             const baseSelect = document.getElementById('baseSelect');
-            const departmentSelect = document.getElementById('departmentSelect');
-            const wingSelect = document.getElementById('wingSelect');
-            const squadronSelect = document.getElementById('squadronSelect');
             const acMainGroupSelect = document.getElementById('acMainGroupSelect');
-
-            // Get initial values from hidden inputs
-            const initialBaseId = document.getElementById('initialBaseId')?.value || null;
-            const initialDepartmentId = document.getElementById('initialDepartmentId')?.value || null;
-            const initialWingId = document.getElementById('initialWingId')?.value || null;
-            const initialSquadronId = document.getElementById('initialSquadronId')?.value || null;
             const initialAcMainGroupId = document.getElementById('initialAcMainGroupId')?.value || null;
 
-            // Store original options for each dropdown
-            const originalDepartments = Array.from(departmentSelect.options);
-            const originalWings = Array.from(wingSelect.options);
-            const originalSquadrons = Array.from(squadronSelect.options);
-            const originalAcGroups = Array.from(acMainGroupSelect.options);
-
-            // Function to filter options based on parent
-            function filterOptions(selectElement, originalOptions, parentId, parentField) {
-                // Clear current options except placeholder
-                while (selectElement.options.length > 1) {
-                    selectElement.remove(1);
-                }
-
-                if (parentId) {
-                    // If parent is selected, only show filtered options
-                    // In real implementation, this would be an AJAX call
-                    // For now, we'll keep all options but mark invalid ones
-                    originalOptions.forEach(option => {
-                        if (option.value !== "") {
-                            // This is where you would check if the option belongs to the parent
-                            // For now, we add all options but could mark them differently
-                            selectElement.add(option.cloneNode(true));
-                        }
-                    });
-
-                    // Re-select the initial value if it exists
-                    const initialValue = selectElement.id === 'departmentSelect' ? initialDepartmentId :
-                                       selectElement.id === 'wingSelect' ? initialWingId :
-                                       selectElement.id === 'squadronSelect' ? initialSquadronId :
-                                       selectElement.id === 'acMainGroupSelect' ? initialAcMainGroupId : null;
-
-                    if (initialValue && Array.from(selectElement.options).some(o => o.value === initialValue)) {
-                        selectElement.value = initialValue;
-                    }
-                } else {
-                    // If no parent selected, show all options
-                    originalOptions.forEach(option => {
-                        selectElement.add(option.cloneNode(true));
-                    });
-                }
-            }
-
-            // Base changed
-            baseSelect.addEventListener('change', function() {
+            baseSelect.addEventListener('change', function () {
                 const baseId = this.value;
-
-                // Enable/disable dependent dropdowns
-                departmentSelect.disabled = !baseId;
                 acMainGroupSelect.disabled = !baseId;
-                wingSelect.disabled = true;
-                squadronSelect.disabled = true;
 
-                if (baseId) {
-                    // Load departments and AC groups for this base via AJAX
-                    loadDepartmentsByBase(baseId);
-                    loadAcMainGroupsByBase(baseId);
-
-                    // If base changed, reset department and its children
-                    if (baseId !== initialBaseId) {
-                        departmentSelect.value = '';
-                        wingSelect.value = '';
-                        squadronSelect.value = '';
-                    }
-                } else {
-                    // Reset all dependent dropdowns
-                    resetDropdown(departmentSelect, originalDepartments);
-                    resetDropdown(wingSelect, originalWings);
-                    resetDropdown(squadronSelect, originalSquadrons);
-                    resetDropdown(acMainGroupSelect, originalAcGroups);
+                if (!baseId) {
+                    acMainGroupSelect.innerHTML = '<option value="">-- None --</option>';
+                    return;
                 }
-            });
-
-            // Department changed
-            departmentSelect.addEventListener('change', function() {
-                const departmentId = this.value;
-                wingSelect.disabled = !departmentId;
-                squadronSelect.disabled = true;
-
-                if (departmentId) {
-                    loadWingsByDepartment(departmentId);
-
-                    // If department changed, reset wing and squadron
-                    if (departmentId !== initialDepartmentId) {
-                        wingSelect.value = '';
-                        squadronSelect.value = '';
-                    }
-                } else {
-                    resetDropdown(wingSelect, originalWings);
-                    resetDropdown(squadronSelect, originalSquadrons);
-                }
-            });
-
-            // Wing changed
-            wingSelect.addEventListener('change', function() {
-                const wingId = this.value;
-                squadronSelect.disabled = !wingId;
-
-                if (wingId) {
-                    loadSquadronsByWing(wingId);
-
-                    // If wing changed, reset squadron
-                    if (wingId !== initialWingId) {
-                        squadronSelect.value = '';
-                    }
-                } else {
-                    resetDropdown(squadronSelect, originalSquadrons);
-                }
-            });
-
-            // AJAX functions (same as before but with better handling)
-            function loadDepartmentsByBase(baseId) {
-                showLoading(departmentSelect);
-
-                fetch(`/Users/GetDepartmentsByBase?baseId=${baseId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        populateDropdown(departmentSelect, data, initialDepartmentId);
-                        hideLoading(departmentSelect);
-
-                        // If user had a department selected and it belongs to this base, keep it
-                        if (initialDepartmentId && data.some(d => d.value === initialDepartmentId)) {
-                            departmentSelect.value = initialDepartmentId;
-                            // Trigger change to load wings
-                            departmentSelect.dispatchEvent(new Event('change'));
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading departments:', error);
-                        hideLoading(departmentSelect);
-                    });
-            }
-
-            function loadWingsByDepartment(departmentId) {
-                showLoading(wingSelect);
-
-                fetch(`/Users/GetWingsByDepartment?departmentId=${departmentId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        populateDropdown(wingSelect, data, initialWingId);
-                        hideLoading(wingSelect);
-
-                        // If user had a wing selected and it belongs to this department, keep it
-                        if (initialWingId && data.some(w => w.value === initialWingId)) {
-                            wingSelect.value = initialWingId;
-                            // Trigger change to load squadrons
-                            wingSelect.dispatchEvent(new Event('change'));
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading wings:', error);
-                        hideLoading(wingSelect);
-                    });
-            }
-
-            function loadSquadronsByWing(wingId) {
-                showLoading(squadronSelect);
-
-                fetch(`/Users/GetSquadronsByWing?wingId=${wingId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        populateDropdown(squadronSelect, data, initialSquadronId);
-                        hideLoading(squadronSelect);
-
-                        // If user had a squadron selected and it belongs to this wing, keep it
-                        if (initialSquadronId && data.some(s => s.value === initialSquadronId)) {
-                            squadronSelect.value = initialSquadronId;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading squadrons:', error);
-                        hideLoading(squadronSelect);
-                    });
-            }
-
-            function loadAcMainGroupsByBase(baseId) {
-                showLoading(acMainGroupSelect);
 
                 fetch(`/Users/GetAcMainGroupsByBase?baseId=${baseId}`)
-                    .then(response => response.json())
+                    .then(r => r.json())
                     .then(data => {
-                        populateDropdown(acMainGroupSelect, data, initialAcMainGroupId);
-                        hideLoading(acMainGroupSelect);
-
-                        // If user had an AC group selected and it belongs to this base, keep it
+                        acMainGroupSelect.innerHTML = '<option value="">-- None --</option>';
+                        data.forEach(item => acMainGroupSelect.add(new Option(item.text, item.value)));
                         if (initialAcMainGroupId && data.some(a => a.value === initialAcMainGroupId)) {
                             acMainGroupSelect.value = initialAcMainGroupId;
                         }
                     })
-                    .catch(error => {
-                        console.error('Error loading AC main groups:', error);
-                        hideLoading(acMainGroupSelect);
-                    });
-            }
-
-            // Helper functions
-            function populateDropdown(selectElement, items, initialValue) {
-                // Clear existing options except first one
-                while (selectElement.options.length > 1) {
-                    selectElement.remove(1);
-                }
-
-                // Add new options
-                items.forEach(item => {
-                    const option = new Option(item.text, item.value);
-                    selectElement.add(option);
-                });
-
-                // Try to select the initial value if it exists in the new list
-                if (initialValue && items.some(item => item.value === initialValue)) {
-                    selectElement.value = initialValue;
-                }
-            }
-
-            function resetDropdown(selectElement, originalOptions) {
-                // Clear current options
-                while (selectElement.options.length > 0) {
-                    selectElement.remove(0);
-                }
-
-                // Restore original options
-                originalOptions.forEach(option => {
-                    selectElement.add(option.cloneNode(true));
-                });
-
-                // Try to select the initial value
-                const initialValue = selectElement.id === 'departmentSelect' ? initialDepartmentId :
-                                   selectElement.id === 'wingSelect' ? initialWingId :
-                                   selectElement.id === 'squadronSelect' ? initialSquadronId :
-                                   selectElement.id === 'acMainGroupSelect' ? initialAcMainGroupId : null;
-
-                if (initialValue) {
-                    selectElement.value = initialValue;
-                }
-            }
-
-            function showLoading(element) {
-                element.classList.add('dropdown-loading');
-            }
-
-            function hideLoading(element) {
-                element.classList.remove('dropdown-loading');
-            }
-
-            // Initialize on page load
-            initializeCascade();
-
-            function initializeCascade() {
-                // If base is already selected, load its departments and AC groups
-                if (initialBaseId) {
-                    baseSelect.value = initialBaseId;
-                    baseSelect.dispatchEvent(new Event('change'));
-                }
-
-                // Enable dropdowns that have initial values
-                if (initialDepartmentId) {
-                    departmentSelect.disabled = false;
-                }
-                if (initialWingId) {
-                    wingSelect.disabled = false;
-                }
-                if (initialSquadronId) {
-                    squadronSelect.disabled = false;
-                }
-                if (initialAcMainGroupId) {
-                    acMainGroupSelect.disabled = false;
-                }
-            }
-
-            // Popup handling (keep existing)
-            const overlay = document.querySelector('.popup-overlay');
-            overlay.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    window.history.back();
-                }
+                    .catch(err => console.error('Error loading AC main groups:', err));
             });
 
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    window.history.back();
-                }
+            // Popup handling
+            const overlay = document.querySelector('.popup-overlay');
+            overlay.addEventListener('click', function (e) {
+                if (e.target === this) window.history.back();
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') window.history.back();
             });
         });
     </script>

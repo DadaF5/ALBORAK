@@ -105,8 +105,6 @@
                 </th>
                 <th>Name</th>
                 <th>Base</th>
-                <th>Wing</th>
-                <th>Department</th>
                 <th>Squadron</th>
                 <th>AC Group</th>
                 <th>Active</th>
@@ -118,7 +116,7 @@
             @if (Model.Users == null || !Model.Users.Any())
             {
                 <tr>
-                    <td colspan="11" class="text-center">No users found</td>
+                    <td colspan="9" class="text-center">No users found</td>
                 </tr>
             }
             else
@@ -130,8 +128,6 @@
                         <td>@u.CreatedAtUtc?.ToString("yyyy-MM-dd HH:mm")</td>
                         <td>@(string.IsNullOrWhiteSpace(u.FirstName) && string.IsNullOrWhiteSpace(u.LastName) ? u.UserName : $"{u.FirstName} {u.LastName}")</td>
                         <td>@(u.BaseName ?? u.BaseId?.ToString() ?? "")</td>
-                        <td>@(u.WingName ?? u.WingId?.ToString() ?? "")</td>
-                        <td>@(u.DepartmentName ?? u.DepartmentId?.ToString() ?? "")</td>
                         <td>@(u.SquadronName ?? u.SquadronId?.ToString() ?? "")</td>
                         <td>@(u.AcMainGroupName ?? u.AcMainGroupId?.ToString() ?? "")</td>
                         <td>
@@ -154,9 +150,11 @@
                             <div class="btn-group" role="group">
                                 <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-outline-primary">Edit</a>
                                 <a asp-action="Details" asp-route-id="@u.Id" class="btn btn-sm btn-outline-info">Details</a>
+                                <a asp-controller="UserAssignments" asp-action="Index" asp-route-userId="@u.Id" class="btn btn-sm btn-outline-warning">Affectations</a>
                                 <a asp-action="Delete" asp-route-id="@u.Id" class="btn btn-sm btn-outline-danger">Delete</a>
                             </div>
                         </td>
+
                     </tr>
                 }
             }

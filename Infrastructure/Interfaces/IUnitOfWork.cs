@@ -1,6 +1,7 @@
 ﻿
 using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.AircraftMaintenance.Repositories;
+using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.Settings.Repositories;
@@ -41,6 +42,7 @@ namespace FRAProject.Infrastructure.Interfaces
         IGenericRepository<AircraftVersion> AircraftVersions { get; }
         IGenericRepository<AircraftManufacturer> AircraftManufacturers { get; }
         IGenericRepository<Base> Bases { get; }
+        IGenericRepository<Wing> Wings { get; }
         // IUnitOfWork.cs — add alongside the other lookup entries
         IGenericRepository<ModuleRole> ModuleRoles { get; }
         IGenericRepository<Module> Modules { get; }

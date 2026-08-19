@@ -1,24 +1,35 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using FRAProject.Data;
+using FRAProject.Services;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.HR.Models;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {
-    [Authorize]
+    // ⚠ Write actions (Create/Edit/Delete/SetAsPrimary) previously had NO
+    // role or policy restriction at all beyond "any authenticated user" —
+    // real gap, not just wrong-system scoping. Now gated by
+    // SquadronOpsRead/Write, and scoped by the parent CrewMember's Squadron.
     [Area("SquadronOps")]
+    [Authorize(Policy = "SquadronOpsRead")]
     public class CrewMemberQualificationsController : Controller
     {
-        private readonly FRAContext _context;
+        private const string ModuleCode = "SQUADRONOPS";
 
-        public CrewMemberQualificationsController(FRAContext context)
+        private readonly FRAContext _context;
+        private readonly IUserScopeService _userScopeService;
+
+        public CrewMemberQualificationsController(FRAContext context, IUserScopeService userScopeService)
         {
             _context = context;
+            _userScopeService = userScopeService;
         }
 
         // GET: CrewMemberQualifications/Index/5?crewMemberId=5
@@ -41,6 +52,9 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 return NotFound();
             }
 
+            if (!await IsSquadronInScopeAsync(crewMember.SquadronId))
+                return Forbid();
+
             ViewData["CrewMemberId"] = crewMemberId;
             ViewData["CrewMemberName"] = $"{crewMember.Captain} ({crewMember.NickName})";
             ViewData["Squadron"] = crewMember.Squadron?.Name;
@@ -49,6 +63,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: CrewMemberQualifications/Create/5?crewMemberId=5
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create(int? crewMemberId)
         {
             if (crewMemberId == null)
@@ -64,6 +79,9 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             {
                 return NotFound();
             }
+
+            if (!await IsSquadronInScopeAsync(crewMember.SquadronId))
+                return Forbid();
 
             ViewData["CrewMemberId"] = crewMemberId;
             ViewData["CrewMemberName"] = $"{crewMember.Captain} ({crewMember.NickName})";
@@ -105,8 +123,15 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: CrewMemberQualifications/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create([Bind("CrewMemberId,QualificationId,ValidFrom,ValidUntil,IssuedBy,Remarks,Status")] CrewMemberQualification crewMemberQualification)
         {
+            var crewMemberForScope = await _context.CrewMembers.FindAsync(crewMemberQualification.CrewMemberId);
+            if (crewMemberForScope == null) return NotFound();
+
+            if (!await IsSquadronInScopeAsync(crewMemberForScope.SquadronId))
+                return Forbid();
+
             if (ModelState.IsValid)
             {
                 // Check if qualification already exists for this crew member
@@ -163,6 +188,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: CrewMemberQualifications/Edit/5
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -179,6 +205,10 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             {
                 return NotFound();
             }
+
+            if (crewMemberQualification.CrewMember == null ||
+                !await IsSquadronInScopeAsync(crewMemberQualification.CrewMember.SquadronId))
+                return Forbid();
 
             ViewData["CrewMemberName"] = $"{crewMemberQualification.CrewMember?.Captain} ({crewMemberQualification.CrewMember?.NickName})";
             ViewData["QualificationName"] = crewMemberQualification.Qualification?.Name;
@@ -200,12 +230,19 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: CrewMemberQualifications/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int id, [Bind("Id,CrewMemberId,QualificationId,ValidFrom,ValidUntil,IssuedBy,Remarks,Status")] CrewMemberQualification crewMemberQualification)
         {
             if (id != crewMemberQualification.Id)
             {
                 return NotFound();
             }
+
+            var crewMemberForScope = await _context.CrewMembers.FindAsync(crewMemberQualification.CrewMemberId);
+            if (crewMemberForScope == null) return NotFound();
+
+            if (!await IsSquadronInScopeAsync(crewMemberForScope.SquadronId))
+                return Forbid();
 
             if (ModelState.IsValid)
             {
@@ -252,6 +289,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: CrewMemberQualifications/Delete/5
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -269,12 +307,17 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 return NotFound();
             }
 
+            if (crewMemberQualification.CrewMember == null ||
+                !await IsSquadronInScopeAsync(crewMemberQualification.CrewMember.SquadronId))
+                return Forbid();
+
             return View(crewMemberQualification);
         }
 
         // POST: CrewMemberQualifications/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var crewMemberQualification = await _context.CrewMemberQualifications
@@ -285,6 +328,10 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             {
                 return NotFound();
             }
+
+            if (crewMemberQualification.CrewMember == null ||
+                !await IsSquadronInScopeAsync(crewMemberQualification.CrewMember.SquadronId))
+                return Forbid();
 
             var crewMemberId = crewMemberQualification.CrewMemberId;
 
@@ -304,6 +351,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // Helper method to set as primary qualification
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> SetAsPrimary(int id)
         {
             var crewMemberQualification = await _context.CrewMemberQualifications
@@ -314,6 +362,10 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             {
                 return NotFound();
             }
+
+            if (crewMemberQualification.CrewMember == null ||
+                !await IsSquadronInScopeAsync(crewMemberQualification.CrewMember.SquadronId))
+                return Forbid();
 
             var crewMember = await _context.CrewMembers.FindAsync(crewMemberQualification.CrewMemberId);
             if (crewMember != null)
@@ -330,6 +382,27 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         private bool CrewMemberQualificationExists(int id)
         {
             return _context.CrewMemberQualifications.Any(e => e.Id == id);
+        }
+
+        // ── Scope helpers ────────────────────────────────────────────────
+
+        private async Task<bool> IsSquadronInScopeAsync(int squadronId)
+        {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (scope.IsUnrestricted) return true;
+
+            var info = await (from s in _context.Set<Squadron>()
+                               join w in _context.Set<Wing>() on s.WingId equals w.Id
+                               join d in _context.Set<Department>() on w.DepartmentId equals d.Id
+                               where s.Id == squadronId
+                               select new { WingId = w.Id, d.BaseId })
+                              .FirstOrDefaultAsync();
+
+            if (info == null) return false;
+            if (!scope.AllowedBaseIds.Contains(info.BaseId)) return false;
+            if (scope.AllowedWingIds.Any() && !scope.AllowedWingIds.Contains(info.WingId)) return false;
+
+            return true;
         }
     }
 }

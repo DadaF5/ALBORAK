@@ -1,4 +1,4 @@
-﻿// Areas/AircraftMaintenance/Services/SnagService.cs
+// Areas/AircraftMaintenance/Services/SnagService.cs
 using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Infrastructure.Interfaces;
 
@@ -75,6 +75,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
         {
             var snag = await _uow.Snags.GetByIdAsync(snagId);
             if (snag == null) return (false, "Snag introuvable.");
+
+            // ⚠ Previously missing — LinkToWorkOrderAsync and DeferAsync both
+            // guard against acting on an already-closed snag, but CloseAsync
+            // didn't. Re-closing an already-closed snag silently "succeeded"
+            // and overwrote ClosedAt/ClosedByUserId with the new call's
+            // values, destroying the original closure record (who actually
+            // closed it, and when) with no trace it had happened.
+            if (snag.Status == SnagStatus.CLOSED) return (false, "Snag déjà clôturé.");
 
             snag.Status = SnagStatus.CLOSED;
             snag.Impact = AirworthinessImpact.NONE;

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace FRAProject.ViewModels.AircraftMaintenance
 {
@@ -7,8 +7,8 @@ namespace FRAProject.ViewModels.AircraftMaintenance
         public int? Id { get; set; }
 
         [Required]
-        [Display(Name = "Type d'aéronef")]
-        public int AcTypeId { get; set; }
+        [Display(Name = "Famille d'aéronefs")]
+        public int AcMainGroupId { get; set; }
 
         [Required]
         [StringLength(30)]
@@ -30,7 +30,7 @@ namespace FRAProject.ViewModels.AircraftMaintenance
         [Display(Name = "Actif")]
         public bool IsActive { get; set; } = true;
 
-        public List<AcTypeLookupViewModel> AcTypes { get; set; } = [];
+        public List<AcMainGroupLookupViewModel> AcMainGroups { get; set; } = [];
     }
 
     public class WorkSectionListItemViewModel
@@ -39,8 +39,8 @@ namespace FRAProject.ViewModels.AircraftMaintenance
         public string Code { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
 
-        public int AcTypeId { get; set; }
-        public string AcTypeLabel { get; set; } = string.Empty;
+        public int AcMainGroupId { get; set; }
+        public string AcMainGroupLabel { get; set; } = string.Empty;
 
         public bool IsActive { get; set; }
         public int SortOrder { get; set; }

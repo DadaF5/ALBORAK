@@ -1,11 +1,9 @@
-﻿using FRAProject.Areas.HR.Models;
-using FRAProject.Areas.Settings.Models;
+﻿using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Data;
 using FRAProject.Helpers;
 using FRAProject.Models;
 using FRAProject.ViewModels;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -19,9 +17,20 @@ using System.Threading.Tasks;
 
 namespace FRAProject.Controllers
 {
+    // ⚠ Simplified after live testing (test.f5tech@example.com) showed this
+    // controller's Create/Edit forms had Department/Wing fields and a
+    // 7-checkbox Roles list that LOOKED like real access control but
+    // weren't — nothing reads ApplicationUser.DepartmentId/WingId anywhere
+    // in the app, and ModuleAccessHandler only checks IsInRole("Admin"),
+    // not any of the other six role names. Real module access is granted
+    // separately via UserAssignment (see UserAssignmentsController).
+    // Department/Wing removed entirely; the role checklist collapsed to a
+    // single IsAdmin toggle, the only one that ever did anything.
     [Authorize(Roles = "Admin")]
     public class UsersController : Controller
     {
+        private const string AdminRole = "Admin";
+
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
@@ -151,18 +160,11 @@ namespace FRAProject.Controllers
 
             // Map to UserListViewModel (fetch roles per-page and friendly names to avoid ViewBag lookups)
             var vmList = new List<UserListViewModel>();
-            // gather the BaseIds/WingIds/etc that we need to resolve names for in batch
-            // batch load ids (adapted from your code)
             var baseIds = pagedUsers.Where(u => u.BaseId.HasValue).Select(u => u.BaseId!.Value).Distinct().ToList();
-            var wingIds = pagedUsers.Where(u => u.WingId.HasValue).Select(u => u.WingId!.Value).Distinct().ToList();
-            var deptIds = pagedUsers.Where(u => u.DepartmentId.HasValue).Select(u => u.DepartmentId!.Value).Distinct().ToList();
             var squadIds = pagedUsers.Where(u => u.SquadronId.HasValue).Select(u => u.SquadronId!.Value).Distinct().ToList();
             var acGroupIds = pagedUsers.Where(u => u.AcMainGroupId.HasValue).Select(u => u.AcMainGroupId!.Value).Distinct().ToList();
 
-            // batch load maps
             var baseMap = await _context.Set<Base>().Where(b => baseIds.Contains(b.Id)).ToDictionaryAsync(b => b.Id, b => b.BaseName);
-            var wingMap = await _context.Set<Wing>().Where(w => wingIds.Contains(w.Id)).ToDictionaryAsync(w => w.Id, w => w.Name);
-            var deptMap = await _context.Set<Department>().Where(d => deptIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => d.Name);
             var squadMap = await _context.Set<Squadron>().Where(s => squadIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.Name);
             var acMap = await _context.Set<AcMainGroup>().Where(a => acGroupIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Name);
 
@@ -182,10 +184,6 @@ namespace FRAProject.Controllers
                     LastLoginUtc = u.LastLoginUtc,
                     BaseId = u.BaseId,
                     BaseName = u.BaseId.HasValue && baseMap.TryGetValue(u.BaseId.Value, out var bname) ? bname : null,
-                    WingId = u.WingId,
-                    WingName = u.WingId.HasValue && wingMap.TryGetValue(u.WingId.Value, out var wname) ? wname : null,
-                    DepartmentId = u.DepartmentId,
-                    DepartmentName = u.DepartmentId.HasValue && deptMap.TryGetValue(u.DepartmentId.Value, out var dname) ? dname : null,
                     SquadronId = u.SquadronId,
                     SquadronName = u.SquadronId.HasValue && squadMap.TryGetValue(u.SquadronId.Value, out var sname) ? sname : null,
                     AcMainGroupId = u.AcMainGroupId,
@@ -195,7 +193,6 @@ namespace FRAProject.Controllers
                 });
             }
 
-            // Create paginated view model for UserListViewModel (preserve paging metadata)
             var usersPage = new PaginatedList<UserListViewModel>(vmList, pagedUsers.TotalCount, pagedUsers.PageIndex, pagedUsers.PageSize);
 
             var vm = new UsersIndexViewModel
@@ -214,48 +211,12 @@ namespace FRAProject.Controllers
 
             return View(vm);
         }
-        // UsersController.cs — add this block right after Index(), before Edit()
-        // Moved from Controllers/AccountController.cs — that controller had no
-        // other real purpose (Login/Logout live entirely in Identity's Razor
-        // Pages, never implemented here despite the trailing comment claiming
-        // otherwise). [Authorize(Roles="Admin")] dropped per-action since the
-        // class already carries it.
 
         // GET: Users/Create
         public async Task<IActionResult> Create()
         {
             var vm = new RegisterUserViewModel();
-
-            vm.AvailableRoles = await _roleManager.Roles
-                .OrderBy(r => r.Name)
-                .Select(r => new SelectListItem(r.Name, r.Name))
-                .ToListAsync();
-
-            vm.BaseList = await _context.Set<Base>()
-                .OrderBy(b => b.BaseName)
-                .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
-                .ToListAsync();
-
-            vm.WingList = await _context.Set<Wing>()
-                .OrderBy(w => w.Name)
-                .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
-                .ToListAsync();
-
-            vm.DepartmentList = await _context.Set<Department>()
-                .OrderBy(d => d.Name)
-                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
-                .ToListAsync();
-
-            vm.SquadronList = await _context.Set<Squadron>()
-                .OrderBy(s => s.Name)
-                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
-                .ToListAsync();
-
-            vm.AcMainGroupList = await _context.Set<AcMainGroup>()
-                .OrderBy(a => a.Name)
-                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
-                .ToListAsync();
-
+            await PopulateDropdownsAsync(vm);
             return View(vm);
         }
 
@@ -264,38 +225,11 @@ namespace FRAProject.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(RegisterUserViewModel model)
         {
-            model.AvailableRoles = await _roleManager.Roles
-                .OrderBy(r => r.Name)
-                .Select(r => new SelectListItem(r.Name, r.Name))
-                .ToListAsync();
-
-            model.BaseList = await _context.Set<Base>()
-                .OrderBy(b => b.BaseName)
-                .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
-                .ToListAsync();
-
-            model.WingList = await _context.Set<Wing>()
-                .OrderBy(w => w.Name)
-                .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
-                .ToListAsync();
-
-            model.DepartmentList = await _context.Set<Department>()
-                .OrderBy(d => d.Name)
-                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
-                .ToListAsync();
-
-            model.SquadronList = await _context.Set<Squadron>()
-                .OrderBy(s => s.Name)
-                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
-                .ToListAsync();
-
-            model.AcMainGroupList = await _context.Set<AcMainGroup>()
-                .OrderBy(a => a.Name)
-                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
-                .ToListAsync();
-
             if (!ModelState.IsValid)
+            {
+                await PopulateDropdownsAsync(model);
                 return View(model);
+            }
 
             var user = new ApplicationUser
             {
@@ -305,12 +239,10 @@ namespace FRAProject.Controllers
                 LastName = model.LastName,
                 PhoneNumber = model.PhoneNumber,
                 BaseId = model.BaseId,
-                WingId = model.WingId,
-                DepartmentId = model.DepartmentId,
                 SquadronId = model.SquadronId,
                 AcMainGroupId = model.AcMainGroupId,
                 EmailConfirmed = true,
-                IsActive = true
+                IsActive = model.IsActive
             };
 
             var createResult = await _userManager.CreateAsync(user, model.Password);
@@ -318,29 +250,22 @@ namespace FRAProject.Controllers
             {
                 foreach (var err in createResult.Errors)
                     ModelState.AddModelError(string.Empty, err.Description);
+                await PopulateDropdownsAsync(model);
                 return View(model);
             }
 
-            if (model.SelectedRoles?.Any() == true)
+            if (model.IsAdmin)
             {
-                foreach (var role in model.SelectedRoles.Distinct())
-                {
-                    if (await _roleManager.RoleExistsAsync(role))
-                        await _userManager.AddToRoleAsync(user, role);
-                }
+                if (await _roleManager.RoleExistsAsync(AdminRole))
+                    await _userManager.AddToRoleAsync(user, AdminRole);
             }
-
-            await AddOrReplaceClaimAsync(user, "BaseId", model.BaseId?.ToString());
-            await AddOrReplaceClaimAsync(user, "WingId", model.WingId?.ToString());
-            await AddOrReplaceClaimAsync(user, "DepartmentId", model.DepartmentId?.ToString());
-            await AddOrReplaceClaimAsync(user, "SquadronId", model.SquadronId?.ToString());
-            await AddOrReplaceClaimAsync(user, "AcMainGroupId", model.AcMainGroupId?.ToString());
 
             _logger?.LogInformation("Admin {Admin} created user {User}.", User.Identity?.Name, user.UserName);
 
             return RedirectToAction(nameof(Index));
         }
-        // GET: Users/Edit/5       
+
+        // GET: Users/Edit/5
         public async Task<IActionResult> Edit(string id)
         {
             if (string.IsNullOrEmpty(id)) return NotFound();
@@ -348,7 +273,7 @@ namespace FRAProject.Controllers
             var user = await _userManager.FindByIdAsync(id);
             if (user == null) return NotFound();
 
-            var roles = await _userManager.GetRolesAsync(user);
+            var isAdmin = await _userManager.IsInRoleAsync(user, AdminRole);
 
             var vm = new EditUserViewModel
             {
@@ -358,51 +283,16 @@ namespace FRAProject.Controllers
                 LastName = user.LastName,
                 PhoneNumber = user.PhoneNumber,
                 BaseId = user.BaseId,
-                WingId = user.WingId,
-                DepartmentId = user.DepartmentId,
                 SquadronId = user.SquadronId,
                 AcMainGroupId = user.AcMainGroupId,
-                SelectedRoles = roles.ToList(),
+                IsAdmin = isAdmin,
                 IsActive = user.IsActive
             };
 
-            vm.AvailableRoles = await _roleManager.Roles
-                .OrderBy(r => r.Name)
-                .Select(r => new SelectListItem(r.Name, r.Name))
-                .ToListAsync();
-
-            vm.BaseList = await _context.Set<Base>()
-                .OrderBy(b => b.BaseName)
-                .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
-                .ToListAsync();
-
-            vm.WingList = await _context.Set<Wing>()
-                .OrderBy(w => w.Name)
-                .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
-                .ToListAsync();
-
-            vm.DepartmentList = await _context.Set<Department>()
-                .OrderBy(d => d.Name)
-                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
-                .ToListAsync();
-
-            vm.SquadronList = await _context.Set<Squadron>()
-                .OrderBy(s => s.Name)
-                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
-                .ToListAsync();
-
-            vm.AcMainGroupList = await _context.Set<AcMainGroup>()
-                .OrderBy(a => a.Name)
-                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
-                .ToListAsync();
+            await PopulateDropdownsAsync(vm);
 
             ViewBag.UserId = id;
-
-            // Store current values in ViewBag for JavaScript
             ViewBag.CurrentBaseId = user.BaseId;
-            ViewBag.CurrentDepartmentId = user.DepartmentId;
-            ViewBag.CurrentWingId = user.WingId;
-            ViewBag.CurrentSquadronId = user.SquadronId;
             ViewBag.CurrentAcMainGroupId = user.AcMainGroupId;
 
             return View(vm);
@@ -413,39 +303,9 @@ namespace FRAProject.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(string id, EditUserViewModel model)
         {
-            // repopulate lists for redisplay
-            model.AvailableRoles = await _roleManager.Roles
-                .OrderBy(r => r.Name)
-                .Select(r => new SelectListItem(r.Name, r.Name))
-                .ToListAsync();
-
-            model.BaseList = await _context.Set<Base>()
-                .OrderBy(b => b.BaseName)
-                .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
-                .ToListAsync();
-
-            model.WingList = await _context.Set<Wing>()
-                .OrderBy(w => w.Name)
-                .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
-                .ToListAsync();
-
-            model.DepartmentList = await _context.Set<Department>()
-                .OrderBy(d => d.Name)
-                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
-                .ToListAsync();
-
-            model.SquadronList = await _context.Set<Squadron>()
-                .OrderBy(s => s.Name)
-                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
-                .ToListAsync();
-
-            model.AcMainGroupList = await _context.Set<AcMainGroup>()
-                .OrderBy(a => a.Name)
-                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
-                .ToListAsync();
-
             if (!ModelState.IsValid)
             {
+                await PopulateDropdownsAsync(model);
                 _logger?.LogWarning("ModelState invalid for Users/Edit: {@Errors}", ModelState
                     .Where(kv => kv.Value.Errors.Count > 0)
                     .ToDictionary(kv => kv.Key, kv => kv.Value.Errors.Select(e => e.ErrorMessage).ToArray()));
@@ -461,19 +321,36 @@ namespace FRAProject.Controllers
             if (existingByEmail != null && existingByEmail.Id != user.Id)
             {
                 ModelState.AddModelError(nameof(model.Email), "Email is already used by another account.");
+                await PopulateDropdownsAsync(model);
                 ViewBag.UserId = id;
                 return View(model);
             }
 
-            // map editable properties (only those coming from the edit form)
+            var wasAdmin = await _userManager.IsInRoleAsync(user, AdminRole);
+
+            // ⚠ Previously nothing guarded against removing the last Admin
+            // via role edits (only self-delete was blocked, on Delete —
+            // deactivating or demoting the last Admin here was completely
+            // unguarded, despite that being one of the "4 guard rules"
+            // documented back in Phase 1). Added here since collapsing the
+            // role checklist to a single toggle makes this a one-click
+            // mistake instead of an obscure one.
+            if (wasAdmin && (!model.IsAdmin || !model.IsActive) && await IsLastAdminAsync(user))
+            {
+                ModelState.AddModelError(string.Empty,
+                    "Impossible de retirer le rôle Admin ou de désactiver ce compte — c'est le dernier administrateur du système.");
+                await PopulateDropdownsAsync(model);
+                ViewBag.UserId = id;
+                return View(model);
+            }
+
+            // map editable properties
             user.Email = model.Email;
             user.UserName = model.Email;
             user.FirstName = model.FirstName;
             user.LastName = model.LastName;
             user.PhoneNumber = model.PhoneNumber;
             user.BaseId = model.BaseId;
-            user.WingId = model.WingId;
-            user.DepartmentId = model.DepartmentId;
             user.SquadronId = model.SquadronId;
             user.AcMainGroupId = model.AcMainGroupId;
             user.IsActive = model.IsActive;
@@ -486,29 +363,22 @@ namespace FRAProject.Controllers
                     ModelState.AddModelError(string.Empty, err.Description);
                     _logger?.LogWarning("User update failed: {Code} - {Desc}", err.Code, err.Description);
                 }
+                await PopulateDropdownsAsync(model);
                 ViewBag.UserId = id;
                 return View(model);
             }
 
-            var currentRoles = await _userManager.GetRolesAsync(user);
-            var toRemove = currentRoles.Except(model.SelectedRoles ?? Enumerable.Empty<string>()).ToArray();
-            var toAdd = (model.SelectedRoles ?? Enumerable.Empty<string>()).Except(currentRoles).Distinct().ToArray();
-
-            if (toRemove.Any())
-                await _userManager.RemoveFromRolesAsync(user, toRemove);
-
-            foreach (var role in toAdd)
+            // single Admin toggle replaces the old multi-role checklist —
+            // "Admin" is the only role ModuleAccessHandler ever checks
+            if (model.IsAdmin && !wasAdmin)
             {
-                if (await _roleManager.RoleExistsAsync(role))
-                    await _userManager.AddToRoleAsync(user, role);
+                if (await _roleManager.RoleExistsAsync(AdminRole))
+                    await _userManager.AddToRoleAsync(user, AdminRole);
             }
-
-            // update stored claims so the persisted claims match the user's profile
-            await AddOrReplaceClaimAsync(user, "BaseId", model.BaseId?.ToString());
-            await AddOrReplaceClaimAsync(user, "WingId", model.WingId?.ToString());
-            await AddOrReplaceClaimAsync(user, "DepartmentId", model.DepartmentId?.ToString());
-            await AddOrReplaceClaimAsync(user, "SquadronId", model.SquadronId?.ToString());
-            await AddOrReplaceClaimAsync(user, "AcMainGroupId", model.AcMainGroupId?.ToString());
+            else if (!model.IsAdmin && wasAdmin)
+            {
+                await _userManager.RemoveFromRoleAsync(user, AdminRole);
+            }
 
             // if the edited user is the current user, refresh their cookie so claims update immediately
             var currentUserId = _userManager.GetUserId(User);
@@ -585,21 +455,15 @@ namespace FRAProject.Controllers
             if (user.Id == currentUserId)
             {
                 ModelState.AddModelError(string.Empty, "You cannot delete your own account while signed in.");
-                var rolesSelf = await _userManager.GetRolesAsync(user);
-                var vmSelf = new UserListViewModel
-                {
-                    Id = user.Id,
-                    UserName = user.UserName ?? "",
-                    Email = user.Email ?? "",
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Roles = rolesSelf.Any() ? rolesSelf.ToArray() : Array.Empty<string>(),
-                    BaseName = user.BaseId.HasValue ? (await _context.Set<Base>().FindAsync(user.BaseId.Value))?.BaseName : null,
-                    IsActive = user.IsActive,
-                    LastLoginUtc = user.LastLoginUtc,
-                    CreatedAtUtc = user.CreatedAtUtc
-                };
-                return View("Delete", vmSelf);
+                return await ReturnDeleteViewWithErrors(user);
+            }
+
+            // ⚠ Previously unguarded — see the same note in Edit POST.
+            if (await IsLastAdminAsync(user))
+            {
+                ModelState.AddModelError(string.Empty,
+                    "Impossible de supprimer ce compte — c'est le dernier administrateur du système.");
+                return await ReturnDeleteViewWithErrors(user);
             }
 
             try
@@ -607,110 +471,26 @@ namespace FRAProject.Controllers
                 var result = await _userManager.DeleteAsync(user);
                 if (!result.Succeeded)
                 {
-                    // add Identity errors to ModelState so the Delete view can show them
                     foreach (var err in result.Errors)
                         ModelState.AddModelError(string.Empty, err.Description);
 
-                    var roles = await _userManager.GetRolesAsync(user);
-                    var vm = new UserListViewModel
-                    {
-                        Id = user.Id,
-                        UserName = user.UserName ?? "",
-                        Email = user.Email ?? "",
-                        FirstName = user.FirstName,
-                        LastName = user.LastName,
-                        Roles = roles.Any() ? roles.ToArray() : Array.Empty<string>(),
-                        BaseName = user.BaseId.HasValue ? (await _context.Set<Base>().FindAsync(user.BaseId.Value))?.BaseName : null,
-                        IsActive = user.IsActive,
-                        LastLoginUtc = user.LastLoginUtc,
-                        CreatedAtUtc = user.CreatedAtUtc
-                    };
-
-                    return View("Delete", vm);
+                    return await ReturnDeleteViewWithErrors(user);
                 }
 
-                // success - optionally log
                 _logger?.LogInformation("Admin {Admin} deleted user {User}.", User?.Identity?.Name, user.UserName);
 
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                // unexpected error - log and show friendly message
                 _logger?.LogError(ex, "Error deleting user {UserId}", id);
                 ModelState.AddModelError(string.Empty, "An unexpected error occurred while deleting the user. See server logs for details.");
 
-                var roles = await _userManager.GetRolesAsync(user);
-                var vm = new UserListViewModel
-                {
-                    Id = user.Id,
-                    UserName = user.UserName ?? "",
-                    Email = user.Email ?? "",
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Roles = roles.Any() ? roles.ToArray() : Array.Empty<string>(),
-                    BaseName = user.BaseId.HasValue ? (await _context.Set<Base>().FindAsync(user.BaseId.Value))?.BaseName : null,
-                    IsActive = user.IsActive,
-                    LastLoginUtc = user.LastLoginUtc,
-                    CreatedAtUtc = user.CreatedAtUtc
-                };
-
-                return View("Delete", vm);
+                return await ReturnDeleteViewWithErrors(user);
             }
         }
 
-        // helper to add or replace a claim on a user (removes any existing claim of the same type)
-        private async Task AddOrReplaceClaimAsync(ApplicationUser user, string claimType, string? value)
-        {
-            var existing = (await _userManager.GetClaimsAsync(user)).Where(c => c.Type == claimType).ToList();
-            if (existing.Any())
-            {
-                foreach (var e in existing) await _userManager.RemoveClaimAsync(user, e);
-            }
-
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim(claimType, value));
-            }
-        }
-
-        // JSON: Get Department by Base
-        [HttpGet]
-        public async Task<JsonResult> GetDepartmentsByBase(int baseId)
-        {
-            var departments = await _context.Set<Department>()
-                .Where(d => d.BaseId == baseId)
-                .OrderBy(d => d.Name)
-                .Select(d => new { value = d.Id.ToString(), text = d.Name })
-                .ToListAsync();
-            return Json(departments);
-        }
-
-        // JSON: Get Wings by Department
-        [HttpGet]
-        public async Task<JsonResult> GetWingsByDepartment(int departmentId)
-        {
-            var wings = await _context.Set<Wing>()
-                .Where(w => w.DepartmentId == departmentId)
-                .OrderBy(w => w.Name)
-                .Select(w => new { value = w.Id.ToString(), text = w.Name })
-                .ToListAsync();
-            return Json(wings);
-        }
-
-        // JSON: Get Squadrons by Wing
-        [HttpGet]
-        public async Task<JsonResult> GetSquadronsByWing(int wingId)
-        {
-            var squadrons = await _context.Set<Squadron>()
-                .Where(s => s.WingId == wingId)
-                .OrderBy(s => s.Name)
-                .Select(s => new { value = s.Id.ToString(), text = s.Name })
-                .ToListAsync();
-            return Json(squadrons);
-        }
-
-        // JSON: Get AcMainGroup by Base
+        // GET: Users/GetAcMainGroupsByBase?baseId=1
         [HttpGet]
         public async Task<JsonResult> GetAcMainGroupsByBase(int baseId)
         {
@@ -721,6 +501,71 @@ namespace FRAProject.Controllers
                 .ToListAsync();
             return Json(acGroups);
         }
-        
+
+        // ── Helpers ──────────────────────────────────────────────────────
+
+        private async Task<bool> IsLastAdminAsync(ApplicationUser user)
+        {
+            if (!await _userManager.IsInRoleAsync(user, AdminRole)) return false;
+            var admins = await _userManager.GetUsersInRoleAsync(AdminRole);
+            return admins.Count <= 1;
+        }
+
+        private async Task<IActionResult> ReturnDeleteViewWithErrors(ApplicationUser user)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            var vm = new UserListViewModel
+            {
+                Id = user.Id,
+                UserName = user.UserName ?? "",
+                Email = user.Email ?? "",
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Roles = roles.Any() ? roles.ToArray() : Array.Empty<string>(),
+                BaseName = user.BaseId.HasValue ? (await _context.Set<Base>().FindAsync(user.BaseId.Value))?.BaseName : null,
+                IsActive = user.IsActive,
+                LastLoginUtc = user.LastLoginUtc,
+                CreatedAtUtc = user.CreatedAtUtc
+            };
+            return View("Delete", vm);
+        }
+
+        private async Task PopulateDropdownsAsync(RegisterUserViewModel vm)
+        {
+            vm.BaseList = await _context.Set<Base>()
+                .OrderBy(b => b.BaseName)
+                .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
+                .ToListAsync();
+
+            vm.SquadronList = await _context.Set<Squadron>()
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+                .ToListAsync();
+
+            vm.AcMainGroupList = await _context.Set<AcMainGroup>()
+                .OrderBy(a => a.Name)
+                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
+                .ToListAsync();
+        }
+
+        private async Task PopulateDropdownsAsync(EditUserViewModel vm)
+        {
+            vm.BaseList = await _context.Set<Base>()
+                .OrderBy(b => b.BaseName)
+                .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = b.BaseName })
+                .ToListAsync();
+
+            // Flat list, no longer cascaded through Wing/Department — this
+            // field is a plain default value now, not a scoped selector.
+            vm.SquadronList = await _context.Set<Squadron>()
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+                .ToListAsync();
+
+            vm.AcMainGroupList = await _context.Set<AcMainGroup>()
+                .OrderBy(a => a.Name)
+                .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
+                .ToListAsync();
+        }
     }
 }

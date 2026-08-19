@@ -1,0 +1,91 @@
+@model FRAProject.ViewModels.UserAssignmentFormDto
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Nouvelle Affectation";
+}
+
+<div class="content-header"><h1>🔐 Nouvelle Affectation — @Model.UserLabel</h1></div>
+
+<div class="card card-primary card-outline">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <input type="hidden" asp-for="UserId" />
+            <input type="hidden" asp-for="UserLabel" />
+            <div asp-validation-summary="All" class="text-danger"></div>
+
+            <div class="form-check mb-3">
+                <input asp-for="IsBaseAdmin" class="form-check-input" id="isBaseAdminCheck" />
+                <label asp-for="IsBaseAdmin" class="form-check-label">
+                    Base Admin (accès transversal à tous les modules pour cette base)
+                </label>
+            </div>
+
+            <div class="form-group" id="moduleRoleGroup">
+                <label>Rôle de Module</label>
+                <select asp-for="ModuleRoleId" asp-items="Model.ModuleRoleOptions" class="form-control">
+                    <option value="">-- Sélectionner --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Base <span class="text-danger">*</span></label>
+                <select asp-for="BaseId" asp-items="Model.BaseOptions" id="baseSelect" class="form-control">
+                    <option value="">-- Sélectionner --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Groupe d'Aéronefs (optionnel — vide = tous les types)</label>
+                <select asp-for="AcMainGroupId" id="acMainGroupSelect" class="form-control">
+                    <option value="">-- Tous les types --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Escadre (optionnel — pour rôles SquadronOps uniquement)</label>
+                <select asp-for="WingId" asp-items="Model.WingOptions" class="form-control">
+                    <option value="">-- Aucune --</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Créer l'Affectation</button>
+            <a asp-action="Index" asp-route-userId="@Model.UserId" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Toggle ModuleRole visibility based on IsBaseAdmin (mutually exclusive,
+    // matches UserAssignmentService.GrantAsync's Guard 1)
+    function toggleModuleRole() {
+        const isBaseAdmin = document.getElementById('isBaseAdminCheck').checked;
+        document.getElementById('moduleRoleGroup').style.display = isBaseAdmin ? 'none' : 'block';
+    }
+    document.getElementById('isBaseAdminCheck').addEventListener('change', toggleModuleRole);
+    toggleModuleRole();
+
+    // Cascading AcMainGroup dropdown — AcMainGroup.BaseId means the list
+    // depends on which Base is selected, same pattern as Aircraft's
+    // Create form (loadVersions/GetVersions).
+    function loadAcMainGroups(baseId) {
+        const select = document.getElementById('acMainGroupSelect');
+        select.innerHTML = '<option value="">-- Tous les types --</option>';
+        if (!baseId) return;
+
+        fetch(`/UserAssignments/GetAcMainGroupsByBase?baseId=${baseId}`)
+            .then(r => r.json())
+            .then(data => {
+                data.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.value;
+                    opt.text = item.text;
+                    select.appendChild(opt);
+                });
+            });
+    }
+    document.getElementById('baseSelect').addEventListener('change', function () {
+        loadAcMainGroups(this.value);
+    });
+</script>
+}

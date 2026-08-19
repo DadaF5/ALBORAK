@@ -1,5 +1,6 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Services;
 using FRAProject.ViewModels.AircraftMaintenance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,14 +8,18 @@ using Microsoft.AspNetCore.Mvc;
 namespace FRAProject.Areas.AircraftMaintenance.Controllers
 {
     [Area("AircraftMaintenance")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "MaintenanceRead")]
     public class WorkOrderSectionPartsController : Controller
     {
-        private readonly IUnitOfWork _uow;
+        private const string ModuleCode = "MAINTENANCE";
 
-        public WorkOrderSectionPartsController(IUnitOfWork uow)
+        private readonly IUnitOfWork _uow;
+        private readonly IUserScopeService _userScopeService;
+
+        public WorkOrderSectionPartsController(IUnitOfWork uow, IUserScopeService userScopeService)
         {
             _uow = uow;
+            _userScopeService = userScopeService;
         }
 
         // GET: AircraftMaintenance/WorkOrderSectionParts/Index/5  (5 = WorkOrderSectionId)
@@ -22,6 +27,9 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         {
             var section = await _uow.WorkOrderSections.GetByIdWithDetailsAsync(id);
             if (section == null) return NotFound();
+
+            if (!await IsSectionInScopeAsync(section))
+                return Forbid();
 
             var parts = await _uow.WorkOrderSectionParts.GetByWorkOrderSectionIdAsync(id);
 
@@ -47,16 +55,29 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         }
 
         // GET: AircraftMaintenance/WorkOrderSectionParts/Create/5  (5 = WorkOrderSectionId)
-        public IActionResult Create(int id)
+        public async Task<IActionResult> Create(int id)
         {
+            var section = await _uow.WorkOrderSections.GetByIdWithDetailsAsync(id);
+            if (section == null) return NotFound();
+
+            if (!await IsSectionInScopeAsync(section))
+                return Forbid();
+
             return View(new WorkOrderSectionPartFormViewModel { WorkOrderSectionId = id });
         }
 
         // POST: AircraftMaintenance/WorkOrderSectionParts/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Create(WorkOrderSectionPartFormViewModel vm)
         {
+            var section = await _uow.WorkOrderSections.GetByIdWithDetailsAsync(vm.WorkOrderSectionId);
+            if (section == null) return NotFound();
+
+            if (!await IsSectionInScopeAsync(section))
+                return Forbid();
+
             if (!ModelState.IsValid) return View(vm);
 
             var entity = new WorkOrderSectionPart
@@ -94,6 +115,9 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             var entity = await _uow.WorkOrderSectionParts.GetByIdAsync(id);
             if (entity == null) return NotFound();
 
+            if (!await IsSectionIdInScopeAsync(entity.WorkOrderSectionId))
+                return Forbid();
+
             var vm = new WorkOrderSectionPartFormViewModel
             {
                 Id = entity.Id,
@@ -121,13 +145,18 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/WorkOrderSectionParts/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Edit(int id, WorkOrderSectionPartFormViewModel vm)
         {
             if (id != vm.Id) return BadRequest();
-            if (!ModelState.IsValid) return View(vm);
 
             var entity = await _uow.WorkOrderSectionParts.GetByIdAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsSectionIdInScopeAsync(entity.WorkOrderSectionId))
+                return Forbid();
+
+            if (!ModelState.IsValid) return View(vm);
 
             var executantChanged = entity.ExecutantNom != vm.ExecutantNom;
 
@@ -159,10 +188,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/WorkOrderSectionParts/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Delete(int id)
         {
             var entity = await _uow.WorkOrderSectionParts.GetByIdAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsSectionIdInScopeAsync(entity.WorkOrderSectionId))
+                return Forbid();
 
             var sectionId = entity.WorkOrderSectionId;
 
@@ -171,6 +204,41 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
 
             TempData["Success"] = "Équipement supprimé.";
             return RedirectToAction(nameof(Index), new { id = sectionId });
+        }
+
+        // ── Helpers ──────────────────────────────────────────────────────
+
+        private async Task<bool> IsSectionInScopeAsync(WorkOrderSection section)
+        {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (scope.IsUnrestricted) return true;
+            if (section.WorkOrder == null) return false; // can't verify — fail closed
+            return await IsAircraftInScopeAsync(section.WorkOrder.AircraftId);
+        }
+
+        private async Task<bool> IsSectionIdInScopeAsync(int workOrderSectionId)
+        {
+            var section = await _uow.WorkOrderSections.GetByIdWithDetailsAsync(workOrderSectionId);
+            if (section == null) return false;
+            return await IsSectionInScopeAsync(section);
+        }
+
+        private async Task<bool> IsAircraftInScopeAsync(int aircraftId)
+        {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (scope.IsUnrestricted) return true;
+
+            var aircraft = await _uow.Aircraft.GetByIdAsync(aircraftId);
+            if (aircraft == null || !aircraft.BaseId.HasValue ||
+                !scope.AllowedBaseIds.Contains(aircraft.BaseId.Value))
+                return false;
+
+            if (!scope.AllowedAcMainGroupIds.Any())
+                return true;
+
+            var acType = await _uow.AcTypes.GetByIdAsync(aircraft.AcTypeId);
+            return acType != null &&
+                   scope.AllowedAcMainGroupIds.Contains(acType.AcMainGroupId);
         }
     }
 }

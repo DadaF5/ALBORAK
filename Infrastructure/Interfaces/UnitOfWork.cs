@@ -1,6 +1,7 @@
 ﻿
 using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.AircraftMaintenance.Repositories;
+using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.Settings.Repositories;
@@ -89,7 +90,9 @@ namespace FRAProject.Infrastructure
         // Settings        
         private IGenericRepository<AircraftManufacturer>? _aircraftManufacturers;
         private IGenericRepository<AircraftVersion>? _aircraftVersions;
+
         private IGenericRepository<Base>? _bases;
+        private IGenericRepository<Wing>? _wings;
 
         // Immatriculation dossier
         private IGenericRepository<ImmatriculationDossier>? _dossiers;
@@ -140,7 +143,8 @@ namespace FRAProject.Infrastructure
 
         public IGenericRepository<Base> Bases =>
             _bases ??= new GenericRepository<Base>(_context);
-
+        public IGenericRepository<Wing> Wings => 
+            _wings ??= new GenericRepository<Wing>(_context);
         // Immatriculation dossier
         public IGenericRepository<ImmatriculationDossier> Dossiers =>
             _dossiers ??= new GenericRepository<ImmatriculationDossier>(_context);

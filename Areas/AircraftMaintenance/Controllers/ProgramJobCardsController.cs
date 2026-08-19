@@ -1,5 +1,6 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Infrastructure.Interfaces;
+using FRAProject.Services;
 using FRAProject.ViewModels.AircraftMaintenance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,14 +8,18 @@ using Microsoft.AspNetCore.Mvc;
 namespace FRAProject.Areas.AircraftMaintenance.Controllers
 {
     [Area("AircraftMaintenance")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "MaintenanceRead")]
     public class ProgramJobCardsController : Controller
     {
-        private readonly IUnitOfWork _uow;
+        private const string ModuleCode = "MAINTENANCE";
 
-        public ProgramJobCardsController(IUnitOfWork uow)
+        private readonly IUnitOfWork _uow;
+        private readonly IUserScopeService _userScopeService;
+
+        public ProgramJobCardsController(IUnitOfWork uow, IUserScopeService userScopeService)
         {
             _uow = uow;
+            _userScopeService = userScopeService;
         }
 
         // GET: AircraftMaintenance/ProgramJobCards/Manage/5  (5 = MaintenanceProgramId)
@@ -23,6 +28,10 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         {
             var vm = await BuildManageVmAsync(id);
             if (vm == null) return NotFound();
+
+            if (!await IsProgramInScopeAsync(id))
+                return Forbid();
+
             return View(vm);
         }
 
@@ -33,10 +42,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // programs span dozens of cards (e.g. PE1: 1-001 to 1-085).
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> BulkAssign(int maintenanceProgramId, string fromCode, string toCode)
         {
             var program = await _uow.MaintenancePrograms.GetByIdAsync(maintenanceProgramId);
             if (program == null) return NotFound();
+
+            if (!await IsAcTypeInScopeAsync(program.AcTypeId))
+                return Forbid();
 
             if (string.IsNullOrWhiteSpace(fromCode) || string.IsNullOrWhiteSpace(toCode))
             {
@@ -93,8 +106,12 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/ProgramJobCards/AddSingle
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> AddSingle(int maintenanceProgramId, int jobCardId)
         {
+            if (!await IsProgramInScopeAsync(maintenanceProgramId))
+                return Forbid();
+
             if (!await _uow.ProgramJobCards.ExistsAsync(maintenanceProgramId, jobCardId))
             {
                 await _uow.ProgramJobCards.AddAsync(new ProgramJobCard
@@ -118,10 +135,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/ProgramJobCards/Remove/5  (5 = ProgramJobCard.Id)
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Remove(int id)
         {
             var entity = await _uow.ProgramJobCards.GetByIdAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsProgramInScopeAsync(entity.MaintenanceProgramId))
+                return Forbid();
 
             var programId = entity.MaintenanceProgramId;
 
@@ -135,10 +156,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         // POST: AircraftMaintenance/ProgramJobCards/ToggleMandatory/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> ToggleMandatory(int id)
         {
             var entity = await _uow.ProgramJobCards.GetByIdAsync(id);
             if (entity == null) return NotFound();
+
+            if (!await IsProgramInScopeAsync(entity.MaintenanceProgramId))
+                return Forbid();
 
             entity.IsMandatory = !entity.IsMandatory;
             _uow.ProgramJobCards.Update(entity);
@@ -148,6 +173,22 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         }
 
         // ── Helpers ──────────────────────────────────────────────────────
+
+        private async Task<bool> IsAcTypeInScopeAsync(int acTypeId)
+        {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (scope.IsUnrestricted || !scope.AllowedAcMainGroupIds.Any()) return true;
+
+            var acType = await _uow.AcTypes.GetByIdAsync(acTypeId);
+            return acType != null &&
+                   scope.AllowedAcMainGroupIds.Contains(acType.AcMainGroupId);
+        }
+
+        private async Task<bool> IsProgramInScopeAsync(int maintenanceProgramId)
+        {
+            var program = await _uow.MaintenancePrograms.GetByIdAsync(maintenanceProgramId);
+            return program != null && await IsAcTypeInScopeAsync(program.AcTypeId);
+        }
 
         private async Task<ProgramJobCardManageViewModel?> BuildManageVmAsync(int maintenanceProgramId)
         {

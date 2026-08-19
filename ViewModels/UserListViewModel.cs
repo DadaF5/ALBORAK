@@ -1,10 +1,10 @@
-﻿using System;
-using System.Reflection;
+using System;
 
 namespace FRAProject.ViewModels
 {
-    // Simple view model for the Users index listing.
-    // Populate this in your UsersController (or AccountController index) with user roles and base name.
+    // Used by Index, Details, and Delete views.
+    // WingId/WingName and DepartmentId/DepartmentName removed — dead
+    // everywhere (see EditUserViewModel.cs), no view shows them anymore.
     public class UserListViewModel
     {
         public string Id { get; set; } = "";
@@ -13,20 +13,14 @@ namespace FRAProject.ViewModels
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public DateTime? CreatedAtUtc { get; set; }
-
-        // NEW: last login timestamp (added per your request)
         public DateTime? LastLoginUtc { get; set; }
 
-        // IDs (optional) and friendly names to avoid lookups in the view
+        // Informational only — no code reads this for authorization.
         public int? BaseId { get; set; }
         public string? BaseName { get; set; }
 
-        public int? WingId { get; set; }
-        public string? WingName { get; set; }
-
-        public int? DepartmentId { get; set; }
-        public string? DepartmentName { get; set; }
-
+        // Real, but only as a Create-time default for SquadronOps screens —
+        // never a source of authorization by itself.
         public int? SquadronId { get; set; }
         public string? SquadronName { get; set; }
 
@@ -35,7 +29,8 @@ namespace FRAProject.ViewModels
 
         public bool IsActive { get; set; } = true;
 
-        // Roles assigned to the user
+        // Identity roles assigned to the user. Only "Admin" affects module
+        // access — everything else here is informational.
         public string[]? Roles { get; set; }
     }
 }

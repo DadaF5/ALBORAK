@@ -1,4 +1,4 @@
-﻿// Services/UserScopeService.cs
+// Services/UserScopeService.cs
 using System.Security.Claims;
 using FRAProject.Infrastructure.Interfaces;
 
@@ -28,14 +28,19 @@ namespace FRAProject.Services
             {
                 scope.AllowedBaseIds.Add(a.BaseId);
 
-                // Base Admin, or a role with ShowGroupScope=false, sees every
-                // group within their allowed bases — don't add a group filter.
+                // Base Admin, or a role with ShowGroupScope=false / ShowWingScope=false,
+                // sees every group/wing within their allowed bases — don't add a filter
+                // for that dimension in that case.
                 if (!a.IsBaseAdmin && a.AcMainGroupId.HasValue)
                     scope.AllowedAcMainGroupIds.Add(a.AcMainGroupId.Value);
+
+                if (!a.IsBaseAdmin && a.WingId.HasValue)
+                    scope.AllowedWingIds.Add(a.WingId.Value);
             }
 
             scope.AllowedBaseIds = scope.AllowedBaseIds.Distinct().ToList();
             scope.AllowedAcMainGroupIds = scope.AllowedAcMainGroupIds.Distinct().ToList();
+            scope.AllowedWingIds = scope.AllowedWingIds.Distinct().ToList();
 
             return scope;
         }

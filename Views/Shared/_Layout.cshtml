@@ -51,8 +51,8 @@
     <link rel="stylesheet" href="~/css/gmao_fra.css" asp-append-version="true" />
     <style>
         /* =========================================
-                                       ROOT VARIABLES
-                            ========================================= */
+                                               ROOT VARIABLES
+                                    ========================================= */
         :root {
             --sidebar-width: 290px;
             --sidebar-collapsed-width: 58px;
@@ -68,8 +68,8 @@
         }
 
         /* =========================================
-                                       PAGE LAYOUT
-                            ========================================= */
+                                               PAGE LAYOUT
+                                    ========================================= */
 
         html,
         body {
@@ -107,8 +107,8 @@
         }
 
         /* =========================================
-                                       SIDEBAR
-                            ========================================= */
+                                               SIDEBAR
+                                    ========================================= */
 
         .sidebar {
             width: var(--sidebar-width);
@@ -263,8 +263,8 @@
         }
 
         /* =========================================
-                                       TOPBAR
-                            ========================================= */
+                                               TOPBAR
+                                    ========================================= */
 
         .topbar {
             min-height: var(--topbar-height);
@@ -272,7 +272,7 @@
             align-items: center;
             gap: 14px;
             padding: 10px 16px;
-            border-bottom: 1px solid var(--panel-border);           
+            border-bottom: 1px solid var(--panel-border);
         }
 
         .topbar-left {
@@ -423,8 +423,8 @@
             }
 
         /* =========================================
-                           COLLAPSED SIDEBAR
-                        ========================================= */
+                                   COLLAPSED SIDEBAR
+                                ========================================= */
 
         body.sidebar-collapsed .sidebar {
             width: var(--sidebar-collapsed-width);
@@ -561,8 +561,8 @@
         }
 
         /* =========================================
-                           RESPONSIVE
-                        ========================================= */
+                                   RESPONSIVE
+                                ========================================= */
 
         @@media (max-width: 991.98px) {
 
@@ -622,10 +622,10 @@
             }
         }
         /* Fix: Bootstrap's default .table-hover sets hover text to a
-                   near-black color (#212529), meant for light backgrounds. Since
-                   every table in this app stays dark on hover, that made hover
-                   text invisible (black on dark background) across ALL tables
-                   site-wide. Applies globally — no per-page overrides needed. */
+                           near-black color (#212529), meant for light backgrounds. Since
+                           every table in this app stays dark on hover, that made hover
+                           text invisible (black on dark background) across ALL tables
+                           site-wide. Applies globally — no per-page overrides needed. */
         .table-hover tbody tr:hover,
         .table-hover tbody tr:hover td,
         .table-hover tbody tr:hover th {
@@ -877,7 +877,7 @@
                             <span class="nav-icon">📈</span>
                             <span class="nav-text">Statistiques (MTBF)</span>
                         </a>
-                       @*  <a class="nav-item @IsActive("Reporting", "Home")"
+                        @*  <a class="nav-item @IsActive("Reporting", "Home")"
                            asp-area="Reporting"
                            asp-controller="Home"
                            asp-action="Index"
@@ -936,6 +936,12 @@
                                 <span class="nav-icon">🧩</span>
                                 <span class="nav-text">Rôles de Module</span>
                             </a>
+
+                            <a class="nav-item @(currentArea == "" && currentController == "BugReports" ? "active" : "")"
+                               asp-area="" asp-controller="BugReports" asp-action="Index" title="Signalements de bugs">
+                                <span class="nav-icon">🐛</span>
+                                <span class="nav-text">Signalements de bugs</span>
+                            </a>
                         </div>
                     </div>
                     <!-- GROUP: ADMINISTRATION END -->
@@ -975,7 +981,6 @@
                     <input type="text" placeholder="Rechercher aéronef, défaut, …" />
                 </div>
                 <!-- TOP BAR CENTER END -->
-               
                 <!-- TOP BAR RIGHT START -->
                 <div class="topbar-actions">
                     <div class="topbar-user" id="topbarUserMenu">
@@ -1002,10 +1007,9 @@
                                 <span>🔐</span>
                                 <span>Changer mot de passe</span>
                             </a>
-
                             <form asp-area="Identity"
                                   asp-page="/Account/Logout"
-                                  asp-route-returnUrl="@Url.Page("/", new { area = "" })"
+                                  asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString"
                                   method="post">
                                 <button type="submit">
                                     <span>🚪</span>

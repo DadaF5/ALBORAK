@@ -25,11 +25,11 @@
 
     <div class="row">
         <div class="col-md-6 form-group">
-            <label asp-for="AcTypeId">Type d'aéronef<span class="required-mark">*</span></label>
-            <select asp-for="AcTypeId" class="form-control" asp-items="Model.AcTypes.Select(a => new SelectListItem(a.DisplayLabel, a.Id.ToString()))">
+            <label asp-for="AcMainGroupId">Famille d'aéronefs<span class="required-mark">*</span></label>
+            <select asp-for="AcMainGroupId" class="form-control" asp-items="Model.AcMainGroups.Select(a => new SelectListItem(a.DisplayLabel, a.Id.ToString()))">
                 <option value="">-- Sélectionner --</option>
             </select>
-            <span asp-validation-for="AcTypeId" class="text-danger"></span>
+            <span asp-validation-for="AcMainGroupId" class="text-danger"></span>
         </div>
         <div class="col-md-6 form-group">
             <label asp-for="Code">Code<span class="required-mark">*</span></label>

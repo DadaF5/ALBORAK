@@ -1,15 +1,21 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FRAProject.Data;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authorization;
 using FRAProject.Areas.SquadronOps.Models;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {
+    // ⚠ Previously had NO [Authorize] at all. Qualification is global
+    // reference data (no Squadron/Base/AcMainGroup of its own, same shape
+    // as Phase/Ata), so no data scoping is added — just the missing
+    // module-level policy gate.
     [Area("SquadronOps")]
+    [Authorize(Policy = "SquadronOpsRead")]
     public class QualificationsController : Controller
     {
         private readonly FRAContext _context;
@@ -78,11 +84,13 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: Qualifications/Create
+        [Authorize(Policy = "SquadronOpsWrite")]
         public IActionResult Create() => View();
 
         // POST: Qualifications/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create([Bind("Name,Description,QualificationType,Active")] Qualification qualification)
         {
             if (!ModelState.IsValid) return View(qualification);
@@ -109,6 +117,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: Qualifications/Edit/5
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -122,6 +131,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: Qualifications/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description,QualificationType,Active")] Qualification qualification)
         {
             if (id != qualification.Id) return BadRequest();
@@ -157,6 +167,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: Qualifications/Delete/5
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -172,6 +183,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: Qualifications/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var qualification = await _context.Qualifications.FindAsync(id);

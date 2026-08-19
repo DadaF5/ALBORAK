@@ -10,11 +10,14 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace FRAProject.Areas.Settings.Controllers
 {
     [Area("AircraftMaintenance")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "MaintenanceRead")]
     public class AircraftCertificatesController : Controller
     {
+        private const string ModuleCode = "MAINTENANCE";
+
         private readonly IUnitOfWork        _uow;
         private readonly IValidationService _validator;
+        private readonly IUserScopeService  _userScopeService;
 
         private const string UploadRoot =
             @"D:\2BAFRA\Uploads\Certificates\";
@@ -22,10 +25,11 @@ namespace FRAProject.Areas.Settings.Controllers
         private const int DefaultPageSize = 15;
 
         public AircraftCertificatesController(
-            IUnitOfWork uow, IValidationService validator)
+            IUnitOfWork uow, IValidationService validator, IUserScopeService userScopeService)
         {
-            _uow       = uow;
-            _validator = validator;
+            _uow              = uow;
+            _validator        = validator;
+            _userScopeService = userScopeService;
         }
 
         // ── INDEX ────────────────────────────────────────────────────────
@@ -41,9 +45,34 @@ namespace FRAProject.Areas.Settings.Controllers
         {
             var today = DateOnly.FromDateTime(DateTime.Today);
 
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
+            // Aircraft + type name map — scoped first, since it's reused both
+            // for the dropdown and for restricting which certificates can
+            // even appear in the paged result below.
+            var aircraftList = await _uow.Aircraft.GetWhereAsync(a => a.IsActive);
+            var acTypes = await _uow.AcTypes.GetWhereAsync(t => t.IsActive);
+            var typeMap = acTypes.ToDictionary(t => t.Id, t => t.Name);
+            var acTypesById = acTypes.ToDictionary(t => t.Id);
+
+            if (!scope.IsUnrestricted)
+            {
+                aircraftList = aircraftList.Where(a =>
+                    a.BaseId.HasValue && scope.AllowedBaseIds.Contains(a.BaseId.Value)
+                    && (!scope.AllowedAcMainGroupIds.Any()
+                        || (acTypesById.TryGetValue(a.AcTypeId, out var t)
+                            && scope.AllowedAcMainGroupIds.Contains(t.AcMainGroupId))));
+            }
+
+            // null = unrestricted (no extra filter applied below)
+            var allowedAircraftIds = scope.IsUnrestricted
+                ? null
+                : aircraftList.Select(a => a.Id).ToHashSet();
+
             var result = await _uow.AircraftCertificates.GetPagedAsync(
 
                 filter: c =>
+                    (allowedAircraftIds == null || allowedAircraftIds.Contains(c.AircraftId)) &&
                     (searchAircraftId == null
                         || c.AircraftId == searchAircraftId) &&
                     (string.IsNullOrEmpty(searchCertType)
@@ -74,13 +103,6 @@ namespace FRAProject.Areas.Settings.Controllers
                 pageSize:   pageSize
             );
 
-            // Aircraft + type name map
-            var aircraftList = await _uow.Aircraft
-                .GetWhereAsync(a => a.IsActive);
-            var acTypes = await _uow.AcTypes
-                .GetWhereAsync(t => t.IsActive);
-            var typeMap = acTypes.ToDictionary(t => t.Id, t => t.Name);
-
             var acMap = aircraftList.ToDictionary(
                 a => a.Id,
                 a => (dynamic)new
@@ -91,9 +113,10 @@ namespace FRAProject.Areas.Settings.Controllers
                                    ? tn : null
                 });
 
-            // Summary counts — all active certs
+            // Summary counts — all active certs the user is allowed to see
             var allActive = await _uow.AircraftCertificates
-                .GetWhereAsync(c => c.IsActive);
+                .GetWhereAsync(c => c.IsActive &&
+                    (allowedAircraftIds == null || allowedAircraftIds.Contains(c.AircraftId)));
 
             var vm = new AircraftCertificateIndexVm
             {
@@ -141,7 +164,7 @@ namespace FRAProject.Areas.Settings.Controllers
                 CountValid       = allActive.Count(c =>
                     !c.ExpiryDate.HasValue || c.DaysRemaining > 30),
 
-                // Aircraft filter dropdown
+                // Aircraft filter dropdown — already scoped via aircraftList
                 AircraftOptions = BuildAircraftOptions(
                     aircraftList, acMap, searchAircraftId)
             };
@@ -153,6 +176,9 @@ namespace FRAProject.Areas.Settings.Controllers
         // Optional: pre-select aircraft via ?aircraftId=X
         public async Task<IActionResult> Create(int? aircraftId = null)
         {
+            if (aircraftId.HasValue && !await IsAircraftInScopeAsync(aircraftId.Value))
+                return Forbid();
+
             var dto = new AircraftCertificateFormDto
             {
                 AircraftId = aircraftId ?? 0,
@@ -168,8 +194,14 @@ namespace FRAProject.Areas.Settings.Controllers
         // ── CREATE POST ──────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Create(AircraftCertificateFormDto dto)
         {
+            // Defense in depth — dropdown only offers in-scope aircraft, but
+            // AircraftId is still a posted value and can be tampered with.
+            if (!await IsAircraftInScopeAsync(dto.AircraftId))
+                return Forbid();
+
             if (ModelState.IsValid)
             {
                 // Check uniqueness: one active cert per type per aircraft
@@ -217,6 +249,9 @@ namespace FRAProject.Areas.Settings.Controllers
             var entity = await _uow.AircraftCertificates.GetByIdAsync(id.Value);
             if (entity == null) return NotFound();
 
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
+
             var dto = MapToDto(entity);
             await FillAircraftInfo(dto, entity.AircraftId);
             return View(dto);
@@ -225,10 +260,14 @@ namespace FRAProject.Areas.Settings.Controllers
         // ── EDIT POST ────────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Edit(
             int id, AircraftCertificateFormDto dto)
         {
             if (id != dto.Id) return BadRequest();
+
+            if (!await IsAircraftInScopeAsync(dto.AircraftId))
+                return Forbid();
 
             if (ModelState.IsValid)
             {
@@ -272,12 +311,16 @@ namespace FRAProject.Areas.Settings.Controllers
         // ── DELETE — soft ────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Delete(int id)
         {
             var entity = await _uow.AircraftCertificates.GetByIdAsync(id);
             if (entity == null)
                 return Json(new { success = false,
                     message = "Certificat introuvable." });
+
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
 
             entity.IsActive       = false;
             entity.LastModifiedAt = DateTime.UtcNow;
@@ -291,12 +334,16 @@ namespace FRAProject.Areas.Settings.Controllers
         // ── ACTIVATE ─────────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "MaintenanceWrite")]
         public async Task<IActionResult> Activate(int id)
         {
             var entity = await _uow.AircraftCertificates.GetByIdAsync(id);
             if (entity == null)
                 return Json(new { success = false,
                     message = "Certificat introuvable." });
+
+            if (!await IsAircraftInScopeAsync(entity.AircraftId))
+                return Forbid();
 
             entity.IsActive       = true;
             entity.LastModifiedAt = DateTime.UtcNow;
@@ -310,6 +357,27 @@ namespace FRAProject.Areas.Settings.Controllers
         // ══════════════════════════════════════════════════════════════════
         //  PRIVATE HELPERS
         // ══════════════════════════════════════════════════════════════════
+
+        // Mirrors the Base+AcMainGroup check used inline in SnagsController,
+        // but for a single already-known AircraftId (form posts, entity
+        // lookups) rather than a list being built for a dropdown.
+        private async Task<bool> IsAircraftInScopeAsync(int aircraftId)
+        {
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (scope.IsUnrestricted) return true;
+
+            var aircraft = await _uow.Aircraft.GetByIdAsync(aircraftId);
+            if (aircraft == null || !aircraft.BaseId.HasValue ||
+                !scope.AllowedBaseIds.Contains(aircraft.BaseId.Value))
+                return false;
+
+            if (!scope.AllowedAcMainGroupIds.Any())
+                return true;
+
+            var acType = await _uow.AcTypes.GetByIdAsync(aircraft.AcTypeId);
+            return acType != null &&
+                   scope.AllowedAcMainGroupIds.Contains(acType.AcMainGroupId);
+        }
 
         private static AircraftCertificateFormDto MapToDto(
             AircraftCertificate entity) =>

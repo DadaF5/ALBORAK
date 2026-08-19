@@ -31,19 +31,56 @@
             </div>
         }
 
+        @if (ViewBag.StatusFilter == null && ViewBag.IncludeClosed != true)
+        {
+            <div class="alert alert-light border py-2 px-3 mb-3">
+                <i class="fas fa-info-circle"></i>
+                Affichage des signalements <strong>ouverts</strong> uniquement (nouveau / confirmé / en cours).
+                Cochez « Inclure les signalements clôturés » pour voir l'historique complet.
+            </div>
+        }
+
         <div class="card card-outline card-danger">
             <div class="card-header">
                 <h3 class="card-title">Filtrer par statut</h3>
             </div>
             <div class="card-body py-2">
-                <div class="btn-group" role="group">
-                    <a asp-action="Index" class="btn btn-sm @(ViewBag.StatusFilter == null ? "btn-secondary" : "btn-outline-light")">Tous</a>
+                <div class="btn-group mb-2" role="group">
+                    <a asp-action="Index" asp-route-includeClosed="@ViewBag.IncludeClosed" class="btn btn-sm @(ViewBag.StatusFilter == null ? "btn-secondary" : "btn-outline-light")">Tous</a>
                     <a asp-action="Index" asp-route-status="NEW" class="btn btn-sm @(ViewBag.StatusFilter?.ToString() == "NEW" ? "btn-warning" : "btn-outline-light")">Nouveau</a>
                     <a asp-action="Index" asp-route-status="CONFIRMED" class="btn btn-sm @(ViewBag.StatusFilter?.ToString() == "CONFIRMED" ? "btn-info" : "btn-outline-light")">Confirmé</a>
                     <a asp-action="Index" asp-route-status="IN_PROGRESS" class="btn btn-sm @(ViewBag.StatusFilter?.ToString() == "IN_PROGRESS" ? "btn-primary" : "btn-outline-light")">En cours</a>
                     <a asp-action="Index" asp-route-status="FIXED" class="btn btn-sm @(ViewBag.StatusFilter?.ToString() == "FIXED" ? "btn-success" : "btn-outline-light")">Corrigé</a>
                     <a asp-action="Index" asp-route-status="WONT_FIX" class="btn btn-sm @(ViewBag.StatusFilter?.ToString() == "WONT_FIX" ? "btn-secondary" : "btn-outline-light")">Ne sera pas corrigé</a>
                 </div>
+
+                <form asp-action="Index" method="get" class="form-inline">
+                    @if (ViewBag.StatusFilter != null)
+                    {
+                        <input type="hidden" name="status" value="@ViewBag.StatusFilter" />
+                    }
+                    <div class="form-check mr-3">
+                        <input type="checkbox" class="form-check-input" id="includeClosed" name="includeClosed" value="true"
+                               @(ViewBag.IncludeClosed == true ? "checked" : "")
+                               onchange="this.form.submit()" />
+                        <label class="form-check-label" for="includeClosed">
+                            Inclure les signalements clôturés (corrigé / ne sera pas corrigé / doublon)
+                        </label>
+                    </div>
+
+                    <div class="form-group mr-2">
+                        <input type="text" name="reportedBy" value="@ViewBag.ReportedBy" class="form-control form-control-sm"
+                               placeholder="Rechercher par utilisateur..." />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-light">
+                        <i class="fas fa-search"></i> Filtrer
+                    </button>
+                    @if (!string.IsNullOrEmpty((string)ViewBag.ReportedBy))
+                    {
+                        <a asp-action="Index" asp-route-status="@ViewBag.StatusFilter" asp-route-includeClosed="@ViewBag.IncludeClosed"
+                           class="btn btn-sm btn-link">Effacer la recherche</a>
+                    }
+                </form>
             </div>
         </div>
 
@@ -55,10 +92,70 @@
                             <th>N°</th>
                             <th>Titre</th>
                             <th>Écran / Module</th>
-                            <th>Sévérité</th>
-                            <th>Statut</th>
-                            <th>Signalé par</th>
-                            <th>Date</th>
+                            <th>
+                                <a asp-action="Index" asp-route-status="@ViewBag.StatusFilter" asp-route-includeClosed="@ViewBag.IncludeClosed"
+                                   asp-route-reportedBy="@ViewBag.ReportedBy"
+                                   asp-route-sortOrder="@(ViewBag.SortOrder == "severity_asc" ? "severity_desc" : "severity_asc")">
+                                    Sévérité
+                                    @if ((string)ViewBag.SortOrder == "severity_asc")
+                                    {
+                                        <span>↑</span>
+                                    }
+                                    else if ((string)ViewBag.SortOrder == "severity_desc")
+                                    {
+
+                                        <span>↓</span>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a asp-action="Index" asp-route-status="@ViewBag.StatusFilter" asp-route-includeClosed="@ViewBag.IncludeClosed"
+                                   asp-route-reportedBy="@ViewBag.ReportedBy"
+                                   asp-route-sortOrder="@(ViewBag.SortOrder == "status_asc" ? "status_desc" : "status_asc")">
+                                    Statut
+                                    @if ((string)ViewBag.SortOrder == "status_asc")
+                                    {
+                                        <span>↑</span>
+                                    }
+                                    else if ((string)ViewBag.SortOrder == "status_desc")
+                                    {
+
+                                        <span>↓</span>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a asp-action="Index" asp-route-status="@ViewBag.StatusFilter" asp-route-includeClosed="@ViewBag.IncludeClosed"
+                                   asp-route-reportedBy="@ViewBag.ReportedBy"
+                                   asp-route-sortOrder="@(ViewBag.SortOrder == "reportedby_asc" ? "reportedby_desc" : "reportedby_asc")">
+                                    Signalé par
+                                    @if ((string)ViewBag.SortOrder == "reportedby_asc")
+                                    {
+                                        <span>↑</span>
+                                    }
+                                    else if ((string)ViewBag.SortOrder == "reportedby_desc")
+                                    {
+
+                                        <span>↓</span>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a asp-action="Index" asp-route-status="@ViewBag.StatusFilter" asp-route-includeClosed="@ViewBag.IncludeClosed"
+                                   asp-route-reportedBy="@ViewBag.ReportedBy"
+                                   asp-route-sortOrder="@(ViewBag.SortOrder == "date_asc" ? "date_desc" : "date_asc")">
+                                    Date
+                                    @if ((string)ViewBag.SortOrder == "date_asc")
+                                    {
+                                        <span>↑</span>
+                                    }
+                                    else
+                                    {
+
+                                        <span>↓</span>
+                                    }
+                                </a>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>

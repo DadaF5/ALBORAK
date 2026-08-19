@@ -1,15 +1,24 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Threading.Tasks;
 using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Data;
 using FRAProject.Models;
 using FRAProject.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {
+    // ⚠ This controller previously had NO [Authorize] attribute at all —
+    // Index/Details/Create/Edit/Delete were reachable by ANY authenticated
+    // user regardless of module, only blocked from anonymous access by the
+    // global FallbackPolicy added in the RBAC session. Phase is global
+    // reference data (no Base/Squadron/AcMainGroup of its own, same shape
+    // as Ata or AcCategory), so no data scoping is added here — just the
+    // missing module-level policy gate.
     [Area("SquadronOps")]
+    [Authorize(Policy = "SquadronOpsRead")]
     public class PhasesController : Controller
     {
         private readonly FRAContext _context;
@@ -59,6 +68,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: Phases/Create
+        [Authorize(Policy = "SquadronOpsWrite")]
         public IActionResult Create()
         {
             return View(new PhaseViewModel());
@@ -67,6 +77,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: Phases/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create(PhaseViewModel model)
         {
             if (!ModelState.IsValid)
@@ -97,6 +108,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: Phases/Edit/5
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -117,6 +129,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: Phases/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Edit(int id, PhaseViewModel model)
         {
             if (id != model.Id) return BadRequest();
@@ -158,6 +171,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // GET: Phases/Delete/5
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -181,6 +195,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // POST: Phases/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var phase = await _context.Phases.FindAsync(id);

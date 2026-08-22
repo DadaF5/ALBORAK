@@ -1,0 +1,11 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentLifeLimitProfileFormDto
+@{
+    ViewData["Title"] = "Nouveau profil de durée de vie";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h3 class="text-light">Nouveau profil de durée de vie</h3>
+
+<form asp-action="CreateProfile" method="post">
+    @Html.AntiForgeryToken()
+    @await Html.PartialAsync("_ProfileForm", Model)
+</form>

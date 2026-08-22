@@ -1,0 +1,50 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentInstallDto
+@{
+    ViewData["Title"] = "Installer composant";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    // NEW — client-side guard against the "20269" year bug; see Receipt.cshtml's comment.
+    var todayIso = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    var minIso = "1940-01-01";
+}
+<h3 class="text-light">Installer composant</h3>
+
+<form asp-action="Install" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ComponentId" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="AircraftId" class="form-label text-light"></label>
+        @* TODO: dropdown scoped via IUserScopeService, same convention as the
+           WorkOrder Create screen's aircraft dropdown. *@
+        <input asp-for="AircraftId" class="form-control" type="number" id="aircraftId" />
+        <span asp-validation-for="AircraftId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="PositionId" class="form-label text-light"></label>
+        @* TODO: AJAX-cascade from AircraftId's AcType, filtered to positions
+           eligible for this ComponentId's ComponentType (ComponentTypePosition) —
+           same "loadVersions"-style pattern used by Aircraft Create. *@
+        <input asp-for="PositionId" class="form-control" type="number" id="positionId" />
+        <span asp-validation-for="PositionId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="EventDate" class="form-label text-light"></label>
+        <input asp-for="EventDate" class="form-control" type="date" min="@minIso" max="@todayIso" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="LinkedWorkOrderId" class="form-label text-light"></label>
+        <input asp-for="LinkedWorkOrderId" class="form-control" type="number" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Remarks" class="form-label text-light"></label>
+        <textarea asp-for="Remarks" class="form-control"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Installer</button>
+    <a asp-action="Details" asp-route-id="@Model.ComponentId" class="btn btn-secondary">Annuler</a>
+</form>

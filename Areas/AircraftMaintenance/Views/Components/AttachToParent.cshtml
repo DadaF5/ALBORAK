@@ -1,0 +1,53 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentAttachToParentDto
+@{
+    ViewData["Title"] = "Attacher un sous-ensemble";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    // NEW — client-side guard against the "20269" year bug; see Receipt.cshtml's comment.
+    var todayIso = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    var minIso = "1940-01-01";
+}
+<h3 class="text-light">Attacher un sous-ensemble</h3>
+<p class="text-muted">Attache ce composant comme sous-ensemble d'un composant parent (ex: un DEEC sur un moteur). Le composant doit être en stock ou en réparation.</p>
+
+<form asp-action="AttachToParent" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ComponentId" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="ParentComponentId" class="form-label text-light"></label>
+        @* TODO: dropdown restricted to Components whose ComponentType has at
+           least one ComponentTypeSubAssemblySlot eligible for this child's
+           ComponentType (IComponentTypeRepository.GetEligibleParentTypesAsync),
+           same "eligible only" convention as Install's position dropdown. *@
+        <input asp-for="ParentComponentId" class="form-control" type="number" />
+        <span asp-validation-for="ParentComponentId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="SlotCode" class="form-label text-light"></label>
+        @* TODO: AJAX-cascade from ParentComponentId's ComponentType, populated
+           from IComponentTypeSlotRepository.GetByParentComponentTypeAsync
+           — same pattern as Install's position AJAX-cascade. *@
+        <input asp-for="SlotCode" class="form-control" placeholder="ex: DEEC, HYD_PUMP_L" />
+        <span asp-validation-for="SlotCode" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="EventDate" class="form-label text-light"></label>
+        <input asp-for="EventDate" class="form-control" type="date" min="@minIso" max="@todayIso" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="LinkedWorkOrderId" class="form-label text-light"></label>
+        <input asp-for="LinkedWorkOrderId" class="form-control" type="number" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Remarks" class="form-label text-light"></label>
+        <textarea asp-for="Remarks" class="form-control"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Attacher</button>
+    <a asp-action="Details" asp-route-id="@Model.ComponentId" class="btn btn-secondary">Annuler</a>
+</form>

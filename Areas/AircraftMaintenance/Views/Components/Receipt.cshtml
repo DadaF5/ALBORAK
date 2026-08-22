@@ -1,0 +1,115 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentReceiptDto
+@{
+    ViewData["Title"] = "Réception composant";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    // NEW — client-side guard against the "20269" year bug: type="date"
+    // inputs don't reliably cap a typed year at 4 digits on their own.
+    // Server-side, [NotFutureDate]/[NotBefore] on the DTO (see
+    // ComponentViewModels.cs) is what actually enforces this.
+    var todayIso = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    var minIso = "1940-01-01";
+}
+<h3 class="text-light">Réception composant</h3>
+
+<form asp-action="Receipt" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="ComponentTypeId" class="form-label text-light"></label>
+        <select asp-for="ComponentTypeId" class="form-select" asp-items="ViewBag.ComponentTypeOptions">
+            <option value="">-- Sélectionner --</option>
+        </select>
+        <span asp-validation-for="ComponentTypeId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="SerialNumber" class="form-label text-light"></label>
+        <input asp-for="SerialNumber" class="form-control" />
+        <span asp-validation-for="SerialNumber" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ManufactureDate" class="form-label text-light"></label>
+        <input asp-for="ManufactureDate" class="form-control" type="date" min="@minIso" max="@todayIso" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="StockBaseId" class="form-label text-light"></label>
+        <select asp-for="StockBaseId" class="form-select" asp-items="ViewBag.BaseOptions">
+            <option value="">-- Sélectionner --</option>
+        </select>
+        <span asp-validation-for="StockBaseId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="EventDate" class="form-label text-light"></label>
+        <input asp-for="EventDate" class="form-control" type="date" min="@minIso" max="@todayIso" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Remarks" class="form-label text-light"></label>
+        <textarea asp-for="Remarks" class="form-control"></textarea>
+    </div>
+
+    <hr class="border-secondary" />
+
+    @{
+        // Revision 13: the 4 fixed InitialXxx/8 PriorSinceOverhaulXxx fields
+        // collapsed to Model.InitialValues — one row per non-calendar
+        // dimension. The GET action populates one empty row per active
+        // non-calendar ComponentLifeLimitDimensionType (see
+        // ComponentTypesController-equivalent Receipt GET action) so the
+        // list here is never empty even for a brand-new part.
+        var hasAnyOpeningUsage = Model.InitialValues.Any(v => v.InitialValue.HasValue && v.InitialValue.Value != 0) || Model.HasPriorOverhaul;
+    }
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="chkUsed" onchange="document.getElementById('usedPartFields').style.display = this.checked ? '' : 'none';" @(hasAnyOpeningUsage ? "checked" : "") />
+        <label class="form-check-label text-light" for="chkUsed">Pièce usagée — relevé initial (laisser décoché pour une pièce neuve, tout démarre à zéro)</label>
+    </div>
+
+    <div id="usedPartFields" style="display:@(hasAnyOpeningUsage ? "" : "none")">
+        <p class="text-muted">Usage déjà accumulé par ce composant AVANT sa réception dans ce système (ex: pièce transférée d'une autre unité).</p>
+
+        <div class="mb-3 form-check">
+            <input asp-for="HasPriorOverhaul" class="form-check-input" id="chkPriorOverhaul" onchange="document.getElementById('priorOverhaulFields').style.display = this.checked ? '' : 'none';" />
+            <label asp-for="HasPriorOverhaul" class="form-check-label text-light"></label>
+        </div>
+
+        <div id="priorOverhaulFields" style="display:@(Model.HasPriorOverhaul ? "" : "none")">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label asp-for="PriorOverhaulCount" class="form-label text-light"></label>
+                    <input asp-for="PriorOverhaulCount" class="form-control" type="number" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label asp-for="PriorLastOverhaulDate" class="form-label text-light"></label>
+                    <input asp-for="PriorLastOverhaulDate" class="form-control" type="date" min="@minIso" max="@todayIso" />
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm table-dark mb-0">
+                <thead><tr><th>Dimension</th><th>Valeur initiale</th><th>Depuis la dernière révision antérieure</th></tr></thead>
+                <tbody>
+                @for (var i = 0; i < Model.InitialValues.Count; i++)
+                {
+                    var v = Model.InitialValues[i];
+                    <tr>
+                        <td>
+                            @v.DimensionTypeName
+                            <input type="hidden" name="InitialValues[@i].DimensionTypeId" value="@v.DimensionTypeId" />
+                        </td>
+                        <td><input type="number" step="0.01" name="InitialValues[@i].InitialValue" value="@v.InitialValue" class="form-control form-control-sm" /></td>
+                        <td><input type="number" step="0.01" name="InitialValues[@i].PriorSinceOverhaulValue" value="@v.PriorSinceOverhaulValue" class="form-control form-control-sm" /></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a asp-action="Index" class="btn btn-secondary">Annuler</a>
+</form>

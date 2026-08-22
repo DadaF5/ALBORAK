@@ -1,0 +1,54 @@
+@model List<FRAProject.Areas.AircraftMaintenance.Models.ComponentTypeSlot>
+@{
+    ViewData["Title"] = "Emplacements de sous-ensembles";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int componentTypeId = ViewBag.ComponentTypeId;
+    string partNumber = ViewBag.ComponentTypePartNumber;
+}
+
+<h3 class="text-light">Emplacements de sous-ensembles — @partNumber</h3>
+<p class="text-muted">
+    Définit les emplacements physiques de ce composant (ex: le moteur F-16 a un
+    emplacement "DEEC" et un emplacement "HYD_PUMP" à 2 places) et leur
+    capacité. Les numéros de pièce interchangeables éligibles pour chaque
+    emplacement se gèrent ensuite séparément (bouton "PN éligibles").
+</p>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+<a asp-action="CreateSlot" asp-route-parentComponentTypeId="@componentTypeId" class="btn btn-primary mb-3">
+    <i class="fas fa-plus"></i> Nouvel emplacement
+</a>
+
+<div class="table-responsive">
+    <table class="table table-dark table-hover">
+        <thead>
+            <tr><th>Code</th><th>Nom</th><th>Capacité max</th><th>PN éligibles</th><th>Actif</th><th></th></tr>
+        </thead>
+        <tbody>
+        @foreach (var s in Model)
+        {
+            <tr>
+                <td>@s.SlotCode</td>
+                <td>@s.SlotName</td>
+                <td>@s.MaxCount</td>
+                <td>@s.EligibleChildren.Count(e => e.IsActive)</td>
+                <td>@(s.IsActive ? "Oui" : "Non")</td>
+                <td>
+                    <a asp-action="ManageSlotEligibility" asp-route-id="@s.Id" class="btn btn-sm btn-outline-warning">PN éligibles</a>
+                    <a asp-action="EditSlot" asp-route-id="@s.Id" class="btn btn-sm btn-outline-info">Modifier</a>
+                    <form asp-action="DeleteSlot" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@s.Id" />
+                        <input type="hidden" name="parentComponentTypeId" value="@componentTypeId" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cet emplacement et tous ses PN éligibles ?')">Supprimer</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<a asp-action="Edit" asp-route-id="@componentTypeId" class="btn btn-secondary">Retour au composant</a>

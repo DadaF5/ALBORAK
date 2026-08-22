@@ -1,0 +1,172 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentLifeLimitProfileFormDto
+@{
+    // NEW (Revision 13) — every active ComponentLifeLimitDimensionType,
+    // populated by the controller (ViewBag.DimensionTypeOptions) — see
+    // ComponentLifeLimitDimensionTypeOptionDto. Drives the "add a dimension"
+    // picker in each stage row (_StageRow.cshtml) client-side, with no extra
+    // round trip needed when a stage is added/edited.
+    var dimensionTypeOptions = ViewBag.DimensionTypeOptions as System.Collections.Generic.List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentLifeLimitDimensionTypeOptionDto>
+        ?? new System.Collections.Generic.List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentLifeLimitDimensionTypeOptionDto>();
+    var dimensionTypeOptionsJson = System.Text.Json.JsonSerializer.Serialize(
+        dimensionTypeOptions.Select(d => new { id = d.Id, code = d.Code, name = d.Name }));
+}
+
+<input type="hidden" asp-for="Id" />
+<input type="hidden" asp-for="ComponentTypeId" />
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label asp-for="ApplicabilityRuleType" class="form-label text-light"></label>
+        <select asp-for="ApplicabilityRuleType" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ApplicabilityRuleType>()"></select>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="SerialNumber" class="form-label text-light"></label>
+        <input asp-for="SerialNumber" class="form-control" placeholder="Requis si Spécifique" />
+    </div>
+    <div class="col-md-2 mb-3">
+        <label asp-for="SerialNumberPrefix" class="form-label text-light"></label>
+        <input asp-for="SerialNumberPrefix" class="form-control" placeholder="ex. LM" />
+    </div>
+    <div class="col-md-2 mb-3">
+        <label asp-for="SerialBoundary" class="form-label text-light"></label>
+        <input asp-for="SerialBoundary" class="form-control" placeholder="ex. 4436" />
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mb-3">
+        <label asp-for="Reason" class="form-label text-light"></label>
+        <input asp-for="Reason" class="form-control" placeholder="Référence/texte verbatim (ex. SB 2ABC-27-014)" />
+    </div>
+    <div class="col-md-2 mb-3">
+        <label asp-for="LifeBasis" class="form-label text-light"></label>
+        <select asp-for="LifeBasis" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeBasis>()"></select>
+    </div>
+    <div class="col-md-2 mb-3 form-check mt-4">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label text-light"></label>
+    </div>
+</div>
+
+<h5 class="text-light">Étapes (paliers)</h5>
+<p class="text-muted">
+    Chaque étape définit un intervalle récurrent jusqu'à sa fin de palier.
+    Laissez une dimension vide si elle n'est pas limitée à cette étape.
+    L'ordre des lignes = ordre des paliers.
+</p>
+
+<div id="stagesContainer">
+    @for (var i = 0; i < Model.Stages.Count; i++)
+    {
+        @await Html.PartialAsync("_StageRow", Model.Stages[i], new ViewDataDictionary(ViewData) { { "Index", i } })
+    }
+</div>
+
+<button type="button" class="btn btn-outline-light mb-3" onclick="addStageRow()">+ Ajouter une étape</button>
+
+<div>
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a asp-action="ManageLifeLimits" asp-route-id="@Model.ComponentTypeId" class="btn btn-secondary">Annuler</a>
+</div>
+
+<template id="stageRowTemplate">
+    @await Html.PartialAsync("_StageRow", new FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentLifeLimitStageFormDto(), new ViewDataDictionary(ViewData) { { "Index", "__INDEX__" } })
+</template>
+
+<script>
+    // NEW (Revision 13) — {id, code, name} for every active dimension type,
+    // shared by every stage row's "add a dimension" picker (see _StageRow.cshtml).
+    window.dimensionTypeOptions = @Html.Raw(dimensionTypeOptionsJson);
+
+    let stageIndex = @Model.Stages.Count;
+
+    function addStageRow() {
+        const template = document.getElementById('stageRowTemplate').innerHTML.replace(/__INDEX__/g, stageIndex);
+        const container = document.getElementById('stagesContainer');
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = template;
+        const newRow = wrapper.firstElementChild;
+        container.appendChild(newRow);
+        refreshDimensionPicker(newRow);
+        stageIndex++;
+    }
+
+    function removeStageRow(button) {
+        button.closest('.stage-row').remove();
+        renumberStages();
+    }
+
+    function renumberStages() {
+        const rows = document.querySelectorAll('#stagesContainer .stage-row');
+        rows.forEach((row, idx) => {
+            row.querySelectorAll('[name]').forEach(el => {
+                el.name = el.name.replace(/Stages\[\d+\]/, `Stages[${idx}]`);
+            });
+            row.dataset.stageIndex = idx;
+        });
+        stageIndex = rows.length;
+    }
+
+    // ── Per-stage dimension rows (NEW — Revision 13) ───────────────────────
+
+    function renderDimensionRow(stageIdx, dimIndex, dimType) {
+        return `<tr class="dimension-row" data-dimension-type-id="${dimType.id}">
+            <td>${dimType.name}
+                <input type="hidden" name="Stages[${stageIdx}].Dimensions[${dimIndex}].DimensionTypeId" value="${dimType.id}" />
+            </td>
+            <td><input type="number" step="0.01" name="Stages[${stageIdx}].Dimensions[${dimIndex}].Interval" class="form-control form-control-sm" /></td>
+            <td><input type="number" step="0.01" name="Stages[${stageIdx}].Dimensions[${dimIndex}].BandEnd" class="form-control form-control-sm" /></td>
+            <td><input type="number" step="0.01" name="Stages[${stageIdx}].Dimensions[${dimIndex}].Tolerance" class="form-control form-control-sm" /></td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeDimensionRow(this)">&times;</button></td>
+        </tr>`;
+    }
+
+    function refreshDimensionPicker(stageRow) {
+        const picker = stageRow.querySelector('.add-dimension-picker');
+        if (!picker) return;
+        const used = new Set(Array.from(stageRow.querySelectorAll('.dimension-row')).map(r => r.dataset.dimensionTypeId));
+        picker.innerHTML = '<option value="">+ Ajouter une dimension...</option>' +
+            (window.dimensionTypeOptions || [])
+                .filter(d => !used.has(String(d.id)))
+                .map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+    }
+
+    function addDimensionRow(button) {
+        const stageRow = button.closest('.stage-row');
+        const picker = stageRow.querySelector('.add-dimension-picker');
+        const dimId = picker.value;
+        if (!dimId) return;
+        const dimType = (window.dimensionTypeOptions || []).find(d => String(d.id) === dimId);
+        if (!dimType) return;
+
+        const stageIdx = stageRow.dataset.stageIndex;
+        const tbody = stageRow.querySelector('.dimensions-container');
+        const dimIndex = tbody.querySelectorAll('.dimension-row').length;
+
+        const wrapper = document.createElement('tbody');
+        wrapper.innerHTML = renderDimensionRow(stageIdx, dimIndex, dimType);
+        tbody.appendChild(wrapper.firstElementChild);
+
+        refreshDimensionPicker(stageRow);
+    }
+
+    function removeDimensionRow(button) {
+        const stageRow = button.closest('.stage-row');
+        button.closest('.dimension-row').remove();
+        renumberDimensions(stageRow);
+        refreshDimensionPicker(stageRow);
+    }
+
+    function renumberDimensions(stageRow) {
+        const stageIdx = stageRow.dataset.stageIndex;
+        const rows = stageRow.querySelectorAll('.dimension-row');
+        rows.forEach((row, idx) => {
+            row.querySelectorAll('[name]').forEach(el => {
+                el.name = el.name.replace(/Dimensions\[\d+\]/, `Dimensions[${idx}]`);
+            });
+        });
+    }
+
+    document.querySelectorAll('#stagesContainer .stage-row').forEach(row => refreshDimensionPicker(row));
+</script>

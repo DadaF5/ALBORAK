@@ -1,0 +1,11 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentPositionFormDto
+@{
+    ViewData["Title"] = "Nouvelle position";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h3 class="text-light">Nouvelle position composant</h3>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    @await Html.PartialAsync("_Form", Model)
+</form>

@@ -1,4 +1,4 @@
-﻿
+
 using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.AircraftMaintenance.Repositories;
 using FRAProject.Areas.HR.Models;
@@ -60,11 +60,11 @@ namespace FRAProject.Infrastructure.Interfaces
         IGenericRepository<AircraftCertificate> AircraftCertificates { get; }
         IGenericRepository<AircraftRestriction> AircraftRestrictions { get; }
 
-        // Maintenance Inspection        
+        // Maintenance Inspection
         IMaintenanceProgramRepository MaintenancePrograms { get; }
         IAtaCategoryRepository AtaCategories { get; }
         IAtaRepository Ata { get; }
-        IJobCardRepository JobCards { get; }              // ← ADD THIS 
+        IJobCardRepository JobCards { get; }              // ← ADD THIS
         IProgramJobCardRepository ProgramJobCards { get; }
         IWorkOrderRepository WorkOrders { get; }
         IGenericRepository<WorkOrderJobCard> WorkOrderJobCards { get; }
@@ -75,8 +75,8 @@ namespace FRAProject.Infrastructure.Interfaces
         IWorkOrderSectionPartRepository WorkOrderSectionParts { get; }
         IWorkOrderSectionTaskRepository WorkOrderSectionTasks { get; }
         IWorkOrderSectionSignOffRepository WorkOrderSectionSignOffs { get; }
-       
-        // Aircraft Snags       
+
+        // Aircraft Snags
         // IUnitOfWork.cs — add alongside existing Maintenance Phase 2 entries
         ISnagRepository Snags { get; }
         IWorkOrderSnagRepository WorkOrderSnags { get; }
@@ -86,6 +86,24 @@ namespace FRAProject.Infrastructure.Interfaces
         IBugReportRepository BugReports { get; }
 
         IUserAssignmentRepository UserAssignments { get; }
+
+        // ── Component / Life-Limited Parts tracking (NEW) ──────────────────
+        // All specialist (custom methods beyond generic CRUD) — same pattern
+        // as AcMainGroups/InspectionTypes above.
+        IComponentPositionRepository ComponentPositions { get; }
+        IComponentTypeRepository ComponentTypes { get; }
+        IComponentLifeLimitProfileRepository ComponentLifeLimitProfiles { get; }
+        IComponentRepository Components { get; }
+        IComponentEventRepository ComponentEvents { get; }
+        IComponentLifeStatusRepository ComponentLifeStatuses { get; }
+        /// <summary>NEW — hierarchy slot definitions (code/name/capacity per parent ComponentType).</summary>
+        IComponentTypeSlotRepository ComponentTypeSlots { get; }
+        /// <summary>NEW — hierarchy per-PN eligibility rows (which child PN(s) fit which ComponentTypeSlot).</summary>
+        IComponentTypeSubAssemblySlotRepository ComponentTypeSubAssemblySlots { get; }
+        /// <summary>NEW (Revision 12) — opening FH/Cycles/Landings/prior-overhaul baseline for a component received with pre-existing usage. Plain generic repo — no custom queries needed, always reached via Component.InitialReading for reads.</summary>
+        IGenericRepository<ComponentInitialReading> ComponentInitialReadings { get; }
+        /// <summary>NEW (Revision 13) — lookup of every life-limit dimension the system knows about (FH/Cycles/CalendarDays/TgoLandings/FullStopLandings, plus any future aircraft-specific counter added later as a new row — no schema change needed). Plain generic repo; code should switch on Code, never Id.</summary>
+        IGenericRepository<ComponentLifeLimitDimensionType> ComponentLifeLimitDimensionTypes { get; }
 
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>

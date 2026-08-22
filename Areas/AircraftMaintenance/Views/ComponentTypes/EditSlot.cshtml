@@ -1,0 +1,45 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentTypeSlotFormDto
+@{
+    ViewData["Title"] = "Modifier l'emplacement de sous-ensemble";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h3 class="text-light">Modifier l'emplacement de sous-ensemble</h3>
+
+<form asp-action="EditSlot" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="ParentComponentTypeId" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="SlotCode" class="form-label text-light"></label>
+        <input asp-for="SlotCode" class="form-control" />
+        <span asp-validation-for="SlotCode" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="SlotName" class="form-label text-light"></label>
+        <input asp-for="SlotName" class="form-control" />
+        <span asp-validation-for="SlotName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="MaxCount" class="form-label text-light"></label>
+        <input asp-for="MaxCount" class="form-control" type="number" min="1" />
+        <span asp-validation-for="MaxCount" class="text-danger"></span>
+        <small class="form-text text-muted">Si vous réduisez la capacité en dessous du nombre actuellement installé, l'écart s'affichera comme un dépassement sur la fiche du composant plutôt que comme une erreur ici.</small>
+    </div>
+
+    <div class="mb-3 form-check">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label text-light"></label>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="SortOrder" class="form-label text-light"></label>
+        <input asp-for="SortOrder" class="form-control" type="number" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a asp-action="ManageSubAssemblySlots" asp-route-id="@Model.ParentComponentTypeId" class="btn btn-secondary">Annuler</a>
+</form>

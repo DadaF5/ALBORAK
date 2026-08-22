@@ -1,0 +1,39 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentPositionFormDto
+
+<input type="hidden" asp-for="Id" />
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<div class="mb-3">
+    <label asp-for="AcTypeId" class="form-label text-light"></label>
+    <select asp-for="AcTypeId" class="form-select" asp-items="ViewBag.AcTypeOptions">
+        <option value="">-- Sélectionner --</option>
+    </select>
+    <span asp-validation-for="AcTypeId" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Code" class="form-label text-light"></label>
+    <input asp-for="Code" class="form-control" style="text-transform:uppercase" />
+    <span asp-validation-for="Code" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Name" class="form-label text-light"></label>
+    <input asp-for="Name" class="form-control" />
+    <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="AtaId" class="form-label text-light"></label>
+    <select asp-for="AtaId" class="form-select" asp-items="ViewBag.AtaOptions">
+        <option value="">-- Sélectionner --</option>
+    </select>
+</div>
+
+<div class="mb-3 form-check">
+    <input asp-for="IsActive" class="form-check-input" />
+    <label asp-for="IsActive" class="form-check-label text-light"></label>
+</div>
+
+<button type="submit" class="btn btn-primary">Enregistrer</button>
+<a asp-action="Index" class="btn btn-secondary">Annuler</a>

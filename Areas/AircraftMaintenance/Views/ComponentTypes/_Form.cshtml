@@ -1,0 +1,83 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentTypeFormDto
+
+<input type="hidden" asp-for="Id" />
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="PartNumber" class="form-label text-light"></label>
+        <input asp-for="PartNumber" class="form-control" />
+        <span asp-validation-for="PartNumber" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="Nomenclature" class="form-label text-light"></label>
+        <input asp-for="Nomenclature" class="form-control" />
+        <span asp-validation-for="Nomenclature" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="AtaId" class="form-label text-light"></label>
+        <select asp-for="AtaId" class="form-select" asp-items="ViewBag.AtaOptions">
+            <option value="">-- Sélectionner --</option>
+        </select>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="AircraftManufacturerId" class="form-label text-light"></label>
+        <select asp-for="AircraftManufacturerId" class="form-select" asp-items="ViewBag.AircraftManufacturerOptions">
+            <option value="">-- Sélectionner --</option>
+        </select>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label asp-for="TrackingMethod" class="form-label text-light"></label>
+        <select asp-for="TrackingMethod" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ComponentTrackingMethod>()"></select>
+    </div>
+    <div class="col-md-4 mb-3 form-check mt-4">
+        <input asp-for="IsSerialized" class="form-check-input" />
+        <label asp-for="IsSerialized" class="form-check-label text-light"></label>
+    </div>
+    <div class="col-md-4 mb-3 form-check mt-4">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label text-light"></label>
+    </div>
+</div>
+
+@if (Model.Id.HasValue && Model.TrackingMethod == FRAProject.Areas.AircraftMaintenance.Models.ComponentTrackingMethod.HardTime)
+{
+    <div class="alert alert-info">
+        Les limites de vie (paliers FH/cycles/calendaire/atterrissages, par
+        numéro de série) se gèrent sur une page dédiée —
+        <a asp-action="ManageLifeLimits" asp-route-id="@Model.Id" class="alert-link">Gérer les profils de durée de vie</a>.
+    </div>
+}
+else if (!Model.Id.HasValue)
+{
+    <div class="alert alert-secondary">
+        Si "Durée de vie limitée" est sélectionné, vous pourrez configurer les
+        profils de durée de vie (paliers, par numéro de série si besoin) juste
+        après l'enregistrement.
+    </div>
+}
+
+<div class="mb-3">
+    <label class="form-label text-light">Positions éligibles</label>
+    @* TODO: multi-select checkbox list sourced from ComponentPositionRepository,
+       same "Manage" bulk-assign pattern as InspectionType.ManagePrograms. *@
+    <select asp-for="EligiblePositionIds" class="form-select" multiple></select>
+</div>
+
+@if (Model.Id.HasValue)
+{
+    <div class="alert alert-info">
+        Les emplacements de sous-ensembles (ex: ce P/N héberge un DEEC, une pompe
+        hydraulique...) se gèrent sur une page dédiée —
+        <a asp-action="ManageSubAssemblySlots" asp-route-id="@Model.Id" class="alert-link">Gérer les emplacements de sous-ensembles</a>.
+    </div>
+}
+
+<button type="submit" class="btn btn-primary">Enregistrer</button>
+<a asp-action="Index" class="btn btn-secondary">Annuler</a>

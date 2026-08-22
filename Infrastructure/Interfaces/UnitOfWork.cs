@@ -1,4 +1,4 @@
-﻿
+
 using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.AircraftMaintenance.Repositories;
 using FRAProject.Areas.HR.Models;
@@ -17,7 +17,7 @@ namespace FRAProject.Infrastructure
     public class UnitOfWork : IUnitOfWork
     {
         private readonly FRAContext _context;
-        
+
         public UnitOfWork(FRAContext context)
         {
             _context = context;
@@ -51,7 +51,18 @@ namespace FRAProject.Infrastructure
             BugReports = new BugReportRepository(_context);
 
             UserAssignments = new UserAssignmentRepository(context);
-            
+
+            // Component / Life-Limited Parts tracking (NEW)
+            ComponentPositions = new ComponentPositionRepository(_context);
+            ComponentTypes = new ComponentTypeRepository(_context);
+            ComponentLifeLimitProfiles = new ComponentLifeLimitProfileRepository(_context);
+            Components = new ComponentRepository(_context);
+            ComponentEvents = new ComponentEventRepository(_context);
+            ComponentLifeStatuses = new ComponentLifeStatusRepository(_context);
+            ComponentTypeSlots = new ComponentTypeSlotRepository(_context);
+            ComponentTypeSubAssemblySlots = new ComponentTypeSubAssemblySlotRepository(_context);
+            ComponentInitialReadings = new GenericRepository<ComponentInitialReading>(_context); // NEW (Revision 12)
+            ComponentLifeLimitDimensionTypes = new GenericRepository<ComponentLifeLimitDimensionType>(_context); // NEW (Revision 13)
 
 
         }
@@ -87,7 +98,7 @@ namespace FRAProject.Infrastructure
         private IGenericRepository<MissionRole>? _missionRoles;
         private IGenericRepository<ImmatriculationDocType>? _immatriculationDocTypes;
 
-        // Settings        
+        // Settings
         private IGenericRepository<AircraftManufacturer>? _aircraftManufacturers;
         private IGenericRepository<AircraftVersion>? _aircraftVersions;
 
@@ -143,7 +154,7 @@ namespace FRAProject.Infrastructure
 
         public IGenericRepository<Base> Bases =>
             _bases ??= new GenericRepository<Base>(_context);
-        public IGenericRepository<Wing> Wings => 
+        public IGenericRepository<Wing> Wings =>
             _wings ??= new GenericRepository<Wing>(_context);
         // Immatriculation dossier
         public IGenericRepository<ImmatriculationDossier> Dossiers =>
@@ -160,7 +171,7 @@ namespace FRAProject.Infrastructure
 
         public IGenericRepository<ImmatriculationDocument> ImmatriculationDocuments =>
             _immatriculationDocuments ??= new GenericRepository<ImmatriculationDocument>(_context);
-        
+
         // Maintenance
         public IGenericRepository<AircraftCertificate> AircraftCertificates =>
             _aircraftCertificates ??= new GenericRepository<AircraftCertificate>(_context);
@@ -173,7 +184,7 @@ namespace FRAProject.Infrastructure
         public IInspectionTypeProgramRepository InspectionTypePrograms { get; private set; }
         public IWorkSectionRepository WorkSections { get; private set; }
         public IWorkOrderSectionRepository WorkOrderSections { get; private set; }
-        public IWorkOrderSectionPartRepository WorkOrderSectionParts { get; private set; }       
+        public IWorkOrderSectionPartRepository WorkOrderSectionParts { get; private set; }
         public IWorkOrderSectionTaskRepository WorkOrderSectionTasks { get; private set; }
         public IWorkOrderSectionSignOffRepository WorkOrderSectionSignOffs { get; private set; }
 
@@ -184,9 +195,21 @@ namespace FRAProject.Infrastructure
 
         //  Application Support :Snags, Errors , Bugs, Issues
         public IBugReportRepository BugReports { get; }
-       
+
         // User assignments and access control
         public IUserAssignmentRepository UserAssignments { get; private set; }
+
+        // ── Component / Life-Limited Parts tracking (NEW) ──────────────────
+        public IComponentPositionRepository ComponentPositions { get; private set; }
+        public IComponentTypeRepository ComponentTypes { get; private set; }
+        public IComponentLifeLimitProfileRepository ComponentLifeLimitProfiles { get; private set; }
+        public IComponentRepository Components { get; private set; }
+        public IComponentEventRepository ComponentEvents { get; private set; }
+        public IComponentLifeStatusRepository ComponentLifeStatuses { get; private set; }
+        public IComponentTypeSlotRepository ComponentTypeSlots { get; private set; }
+        public IComponentTypeSubAssemblySlotRepository ComponentTypeSubAssemblySlots { get; private set; }
+        public IGenericRepository<ComponentInitialReading> ComponentInitialReadings { get; private set; }
+        public IGenericRepository<ComponentLifeLimitDimensionType> ComponentLifeLimitDimensionTypes { get; private set; }
 
         // ── Commit ────────────────────────────────────────────────────────
         // Single method — CompleteAsync() — matches IUnitOfWork contract.

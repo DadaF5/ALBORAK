@@ -806,6 +806,41 @@
                             <span class="nav-icon">🔧</span>
                             <span class="nav-text">Sections de travail</span>
                         </a>
+                        <a class="nav-item @IsActive("AircraftMaintenance", "Components")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="Components"
+                           asp-action="Index"
+                           title="Composants">
+                            <span class="nav-icon">🔩</span>
+                            <span class="nav-text">Composants</span>
+                        </a>
+
+                        <a class="nav-item @IsActive("AircraftMaintenance", "Components", "DueList")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="Components"
+                           asp-action="DueList"
+                           title="Échéances composants">
+                            <span class="nav-icon">⏳</span>
+                            <span class="nav-text">Échéances composants</span>
+                        </a>
+
+                        <a class="nav-item @IsActive("AircraftMaintenance", "ComponentTypes")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="ComponentTypes"
+                           asp-action="Index"
+                           title="Catalogue composants (P/N)">
+                            <span class="nav-icon">🗃️</span>
+                            <span class="nav-text">Catalogue composants</span>
+                        </a>
+
+                        <a class="nav-item @IsActive("AircraftMaintenance", "ComponentPositions")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="ComponentPositions"
+                           asp-action="Index"
+                           title="Positions composants">
+                            <span class="nav-icon">📍</span>
+                            <span class="nav-text">Positions composants</span>
+                        </a>
                     </div>
                 </div>
                 <!-- GROUP: NAVIGABILITE END -->

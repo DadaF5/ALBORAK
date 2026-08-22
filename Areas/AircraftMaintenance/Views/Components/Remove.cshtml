@@ -1,0 +1,55 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentRemoveDto
+@{
+    ViewData["Title"] = "Déposer composant";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    // NEW — client-side guard against the "20269" year bug; see Receipt.cshtml's comment.
+    var todayIso = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    var minIso = "1940-01-01";
+}
+<h3 class="text-light">Déposer composant</h3>
+
+<form asp-action="Remove" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ComponentId" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="RemovalReason" class="form-label text-light"></label>
+        <select asp-for="RemovalReason" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ComponentRemovalReason>()"></select>
+        <span asp-validation-for="RemovalReason" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="EventDate" class="form-label text-light"></label>
+        <input asp-for="EventDate" class="form-control" type="date" min="@minIso" max="@todayIso" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Destination" class="form-label text-light"></label>
+        <select asp-for="Destination" class="form-select">
+            <option value="@FRAProject.Areas.AircraftMaintenance.Models.ComponentStatus.InStock">En stock</option>
+            <option value="@FRAProject.Areas.AircraftMaintenance.Models.ComponentStatus.UnderRepair">En réparation</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="StockBaseId" class="form-label text-light"></label>
+        <select asp-for="StockBaseId" class="form-select" asp-items="ViewBag.BaseOptions">
+            <option value="">-- Sélectionner --</option>
+        </select>
+        <span asp-validation-for="StockBaseId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="LinkedWorkOrderId" class="form-label text-light"></label>
+        <input asp-for="LinkedWorkOrderId" class="form-control" type="number" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Remarks" class="form-label text-light"></label>
+        <textarea asp-for="Remarks" class="form-control"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-warning">Déposer</button>
+    <a asp-action="Details" asp-route-id="@Model.ComponentId" class="btn btn-secondary">Annuler</a>
+</form>

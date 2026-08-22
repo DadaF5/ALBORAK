@@ -1,0 +1,60 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentLifeLimitStageFormDto
+@{
+    var index = ViewData["Index"];
+    string N(string field) => $"Stages[{index}].{field}";
+    string ND(int dimIndex, string field) => $"Stages[{index}].Dimensions[{dimIndex}].{field}";
+}
+
+@* Revision 13: the 5 hardcoded dimension <tr> rows (FH/Cycles/Calendaire/T&G/
+   Atterrissages complets) collapsed to a dynamic Dimensions list — one row
+   per dimension actually configured on this stage, plus an "add a
+   dimension" picker fed from window.dimensionTypeOptions (see _ProfileForm's
+   script block, populated from ViewBag.DimensionTypeOptions). A future
+   dimension (C130 APU starts, Canadair "number of Drops") needs NO change to
+   this view — it just shows up as another option once seeded. *@
+<div class="stage-row card bg-dark text-light mb-2 p-2" data-stage-index="@index">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+            <label class="form-label">Type d'étape</label>
+            <select name="@N("StageType")" class="form-select form-select-sm d-inline-block w-auto">
+                <option value="0" selected="@(Model.StageType == FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitStageType.Overhaul)">Révision</option>
+                <option value="1" selected="@(Model.StageType == FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitStageType.Retirement)">Réforme (limite de vie)</option>
+            </select>
+            <label class="form-label ms-3">Type de tolérance</label>
+            <select name="@N("ToleranceType")" class="form-select form-select-sm d-inline-block w-auto">
+                <option value="0" selected="@(Model.ToleranceType == FRAProject.Areas.AircraftMaintenance.Models.ComponentToleranceType.Absolute)">Absolue</option>
+                <option value="1" selected="@(Model.ToleranceType == FRAProject.Areas.AircraftMaintenance.Models.ComponentToleranceType.PercentOfInterval)">% de l'intervalle</option>
+            </select>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeStageRow(this)">Supprimer l'étape</button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-dark mb-0 dimensions-table">
+            <thead><tr><th>Dimension</th><th>Intervalle</th><th>Fin de palier</th><th>Tolérance</th><th></th></tr></thead>
+            <tbody class="dimensions-container">
+                @for (var j = 0; j < Model.Dimensions.Count; j++)
+                {
+                    var d = Model.Dimensions[j];
+                    <tr class="dimension-row" data-dimension-type-id="@d.DimensionTypeId">
+                        <td>
+                            @d.DimensionTypeName
+                            <input type="hidden" name="@ND(j, "DimensionTypeId")" value="@d.DimensionTypeId" />
+                        </td>
+                        <td><input type="number" step="0.01" name="@ND(j, "Interval")" value="@d.Interval" class="form-control form-control-sm" /></td>
+                        <td><input type="number" step="0.01" name="@ND(j, "BandEnd")" value="@d.BandEnd" class="form-control form-control-sm" /></td>
+                        <td><input type="number" step="0.01" name="@ND(j, "Tolerance")" value="@d.Tolerance" class="form-control form-control-sm" /></td>
+                        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeDimensionRow(this)">&times;</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-2">
+        <select class="form-select form-select-sm d-inline-block w-auto add-dimension-picker">
+            <option value="">+ Ajouter une dimension...</option>
+        </select>
+        <button type="button" class="btn btn-sm btn-outline-light" onclick="addDimensionRow(this)">Ajouter</button>
+    </div>
+</div>

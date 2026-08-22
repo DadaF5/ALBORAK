@@ -1,4 +1,5 @@
-﻿using FRAProject.Areas.AircraftMaintenance.Models;
+﻿using FRAProject.Areas.AircraftMaintenance.Data.Configurations;
+using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.Medical.Models;
 using FRAProject.Areas.Settings.Models;
@@ -110,10 +111,29 @@ namespace FRAProject.Data
         public DbSet<WorkOrderSectionPart> WorkOrderSectionParts { get; set; } = null!;
         public DbSet<WorkOrderSectionTask> WorkOrderSectionTasks { get; set; } = null!;
         public DbSet<WorkOrderSectionSignOff> WorkOrderSectionSignOffs { get; set; } = null!;
+        public DbSet<ComponentInitialReading> ComponentInitialReadings { get; set; } = null!;
+        public DbSet<ComponentLifeLimitDimensionType> ComponentLifeLimitDimensionTypes { get; set; } = null!;
+        public DbSet<ComponentLifeLimitStageDimension> ComponentLifeLimitStageDimensions { get; set; } = null!;
+        public DbSet<ComponentLifeStatusDimension> ComponentLifeStatusDimensions { get; set; } = null!;
+        public DbSet<ComponentEventReading> ComponentEventReadings { get; set; } = null!;
+        public DbSet<ComponentInitialReadingValue> ComponentInitialReadingValues { get; set; } = null!;
 
+        
         // Aircraft snags and malfunctions
         public DbSet<Snag> Snags { get; set; } = null!;
         public DbSet<WorkOrderSnag> WorkOrderSnags { get; set; } = null!;
+
+
+        // ── Component / Life-Limited Parts tracking ───────────────────
+        public DbSet<ComponentPosition> ComponentPositions { get; set; } = null!;
+        public DbSet<ComponentType> ComponentTypes { get; set; } = null!;
+        public DbSet<ComponentLifeLimitProfile> ComponentLifeLimitProfiles { get; set; } = null!;
+        public DbSet<ComponentLifeLimitStage> ComponentLifeLimitStages { get; set; } = null!;
+        public DbSet<ComponentTypePosition> ComponentTypePositions { get; set; } = null!;
+        public DbSet<Component> Components { get; set; } = null!;
+        public DbSet<ComponentEvent> ComponentEvents { get; set; } = null!;
+        public DbSet<ComponentLifeStatus> ComponentLifeStatuses { get; set; } = null!;
+
 
         // =====================================
         // Settings & Lookups
@@ -195,6 +215,27 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new WorkOrderConfiguration());
             modelBuilder.ApplyConfiguration(new WorkOrderJobCardConfiguration());
             modelBuilder.ApplyConfiguration(new WorkOrderJobCardSignOffConfiguration());
+
+            // Aircraft components configuration
+            //===========START ===========================
+            modelBuilder.ApplyConfiguration(new ComponentPositionConfiguration());
+            modelBuilder.ApplyConfiguration(new ComponentTypeConfiguration());
+            modelBuilder.ApplyConfiguration(new ComponentLifeLimitProfileConfiguration());
+            modelBuilder.ApplyConfiguration(new ComponentLifeLimitStageConfiguration());
+            modelBuilder.ApplyConfiguration(new ComponentTypePositionConfiguration());
+            modelBuilder.ApplyConfiguration(new ComponentTypeSlotConfiguration());          // ADD
+            modelBuilder.ApplyConfiguration(new ComponentTypeSubAssemblySlotConfiguration()); // ADD
+            modelBuilder.ApplyConfiguration(new ComponentConfiguration());
+            modelBuilder.ApplyConfiguration(new ComponentEventConfiguration());
+            modelBuilder.ApplyConfiguration(new ComponentLifeStatusConfiguration());
+            //-----------------
+            modelBuilder.ApplyConfiguration(new ComponentInitialReadingConfiguration());          // ADD — Revision 12
+            modelBuilder.ApplyConfiguration(new ComponentLifeLimitDimensionTypeConfiguration());  // ADD — Revision 13
+            modelBuilder.ApplyConfiguration(new ComponentLifeLimitStageDimensionConfiguration()); // ADD — Revision 13
+            modelBuilder.ApplyConfiguration(new ComponentLifeStatusDimensionConfiguration());     // ADD — Revision 13
+            modelBuilder.ApplyConfiguration(new ComponentEventReadingConfiguration());            // ADD — Revision 13
+            modelBuilder.ApplyConfiguration(new ComponentInitialReadingValueConfiguration());     // ADD — Revision 13
+            //===========END ===========================
 
             // ── Platform access control ───────────────────────────────────
             modelBuilder.ApplyConfiguration(new UserProfileConfiguration());

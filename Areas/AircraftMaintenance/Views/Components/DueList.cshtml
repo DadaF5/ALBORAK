@@ -1,0 +1,68 @@
+@model List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentDueListItemViewModel>
+@{
+    ViewData["Title"] = "Échéances composants";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h3 class="text-light">Échéances composants (ALERTE / DÉPASSÉ)</h3>
+<p class="text-muted">
+    Vue provisoire, distincte du DueList/DamDashboard existant — voir le guide
+    d'intégration pour la fusion (§Unification DueList).
+</p>
+
+<div class="table-responsive">
+    <table class="table table-dark table-hover">
+        <thead>
+            <tr>
+                <th>P/N</th><th>Nomenclature</th><th>S/N</th><th>Aéronef</th><th>Position</th>
+                <th>Statut</th><th>Révisions manquées</th><th>Dimension déterminante</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var d in Model)
+        {
+            <tr class="@(d.LifeLimitExceeded || d.MissedOverhaulCount > 0 ? "table-danger" : "")">
+                <td>@d.PartNumber</td>
+                <td>@d.Nomenclature</td>
+                <td>@d.SerialNumber</td>
+                <td>@d.AircraftRegistration</td>
+                <td>@d.PositionLabel</td>
+                <td>
+                    @if (d.Status == FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeStatusValue.Overdue)
+                    {
+                        <span class="badge bg-danger">DÉPASSÉ</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">ALERTE</span>
+                    }
+                </td>
+                <td>
+                    @if (d.LifeLimitExceeded)
+                    {
+                        <span class="badge bg-danger" title="Limite de vie dépassée — réforme immédiate requise">LIMITE DÉPASSÉE</span>
+                    }
+                    else if (d.MissedOverhaulCount > 0)
+                    {
+                        <span class="badge bg-danger" title="Seuil(s) de révision obligatoire franchi(s) sans révision enregistrée">⚠ @d.MissedOverhaulCount manquée(s)</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </td>
+                <td>
+                    @if (d.DrivingDimensionRemainingDisplay.HasValue)
+                    {
+                        @(d.DrivingDimensionRemainingDisplay.Value.ToString("N1") + " " + d.DrivingDimensionName)
+                    }
+                    else
+                    {
+                        <text>—</text>
+                    }
+                </td>
+                <td><a asp-action="Details" asp-route-id="@d.ComponentId" class="btn btn-sm btn-outline-info">Détails</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

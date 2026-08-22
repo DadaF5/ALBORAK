@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20260820132833_AddComponentLifeLimitTracking")]
+    partial class AddComponentLifeLimitTracking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -424,7 +427,19 @@ namespace FRAProject.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AircraftCyclesAtEvent")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AircraftFHAtEventMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AircraftFullStopLandingsAtEvent")
+                        .HasColumnType("int");
+
                     b.Property<int?>("AircraftId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AircraftTgoLandingsAtEvent")
                         .HasColumnType("int");
 
                     b.Property<int>("ComponentId")
@@ -480,139 +495,6 @@ namespace FRAProject.Migrations
                     b.ToTable("ComponentEvents", "dbo");
                 });
 
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentEventReading", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ComponentEventId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DimensionTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ValueAtEvent")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DimensionTypeId");
-
-                    b.HasIndex("ComponentEventId", "DimensionTypeId")
-                        .IsUnique();
-
-                    b.ToTable("ComponentEventReadings", "dbo");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentInitialReading", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ComponentId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateOnly?>("PriorLastOverhaulDate")
-                        .HasColumnType("date");
-
-                    b.Property<int>("PriorOverhaulCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RecordedByUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Remarks")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ComponentId")
-                        .IsUnique();
-
-                    b.HasIndex("RecordedByUserId");
-
-                    b.ToTable("ComponentInitialReadings", "dbo");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentInitialReadingValue", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ComponentInitialReadingId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DimensionTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("InitialValue")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PriorSinceOverhaulValue")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DimensionTypeId");
-
-                    b.HasIndex("ComponentInitialReadingId", "DimensionTypeId")
-                        .IsUnique();
-
-                    b.ToTable("ComponentInitialReadingValues", "dbo");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitDimensionType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsCalendarBased")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<byte>("SortOrder")
-                        .HasColumnType("tinyint");
-
-                    b.Property<int>("Unit")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.ToTable("ComponentLifeLimitDimensionTypes", "dbo");
-                });
-
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitProfile", b =>
                 {
                     b.Property<int>("Id")
@@ -666,13 +548,58 @@ namespace FRAProject.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("BandEndCalendarDays")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("BandEndCycles")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("BandEndFHMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("BandEndFullStopLandings")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("BandEndTgoLandings")
+                        .HasColumnType("int");
+
                     b.Property<int>("ComponentLifeLimitProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IntervalCalendarDays")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IntervalCycles")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IntervalFHMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IntervalFullStopLandings")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IntervalTgoLandings")
                         .HasColumnType("int");
 
                     b.Property<int>("SequenceOrder")
                         .HasColumnType("int");
 
                     b.Property<int>("StageType")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ToleranceCalendarDays")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ToleranceCycles")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ToleranceFHMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ToleranceFullStopLandings")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ToleranceTgoLandings")
                         .HasColumnType("int");
 
                     b.Property<int>("ToleranceType")
@@ -686,39 +613,6 @@ namespace FRAProject.Migrations
                     b.ToTable("ComponentLifeLimitStages", "dbo");
                 });
 
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitStageDimension", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("BandEnd")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ComponentLifeLimitStageId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DimensionTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Interval")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Tolerance")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DimensionTypeId");
-
-                    b.HasIndex("ComponentLifeLimitStageId", "DimensionTypeId")
-                        .IsUnique();
-
-                    b.ToTable("ComponentLifeLimitStageDimensions", "dbo");
-                });
-
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeStatus", b =>
                 {
                     b.Property<int>("Id")
@@ -730,16 +624,22 @@ namespace FRAProject.Migrations
                     b.Property<int>("ComponentId")
                         .HasColumnType("int");
 
+                    b.Property<int>("CumulativeCalendarDays")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CumulativeCycles")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CumulativeFHMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CumulativeFullStopLandings")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CumulativeTgoLandings")
+                        .HasColumnType("int");
+
                     b.Property<int?>("CurrentStageSequence")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DrivingDimensionRemaining")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DrivingDimensionTolerance")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DrivingDimensionTypeId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("LastComputedAtUtc")
@@ -757,6 +657,36 @@ namespace FRAProject.Migrations
                     b.Property<int>("MissedOverhaulCount")
                         .HasColumnType("int");
 
+                    b.Property<int?>("RemainingCalendarDays")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RemainingCycles")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RemainingFHMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RemainingFullStopLandings")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RemainingTgoLandings")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SinceOverhaulCalendarDays")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SinceOverhaulCycles")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SinceOverhaulFHMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SinceOverhaulFullStopLandings")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SinceOverhaulTgoLandings")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -765,44 +695,9 @@ namespace FRAProject.Migrations
                     b.HasIndex("ComponentId")
                         .IsUnique();
 
-                    b.HasIndex("DrivingDimensionTypeId");
-
                     b.HasIndex("MatchedLifeLimitProfileId");
 
                     b.ToTable("ComponentLifeStatuses", "dbo");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeStatusDimension", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ComponentLifeStatusId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Cumulative")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DimensionTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Remaining")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SinceOverhaul")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DimensionTypeId");
-
-                    b.HasIndex("ComponentLifeStatusId", "DimensionTypeId")
-                        .IsUnique();
-
-                    b.ToTable("ComponentLifeStatusDimensions", "dbo");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentPosition", b =>
@@ -6083,63 +5978,6 @@ namespace FRAProject.Migrations
                     b.Navigation("RelatedParentComponent");
                 });
 
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentEventReading", b =>
-                {
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentEvent", "ComponentEvent")
-                        .WithMany("Readings")
-                        .HasForeignKey("ComponentEventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitDimensionType", "DimensionType")
-                        .WithMany()
-                        .HasForeignKey("DimensionTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ComponentEvent");
-
-                    b.Navigation("DimensionType");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentInitialReading", b =>
-                {
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.Component", "Component")
-                        .WithOne("InitialReading")
-                        .HasForeignKey("FRAProject.Areas.AircraftMaintenance.Models.ComponentInitialReading", "ComponentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Models.ApplicationUser", "RecordedByUser")
-                        .WithMany()
-                        .HasForeignKey("RecordedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Component");
-
-                    b.Navigation("RecordedByUser");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentInitialReadingValue", b =>
-                {
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentInitialReading", "ComponentInitialReading")
-                        .WithMany("Values")
-                        .HasForeignKey("ComponentInitialReadingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitDimensionType", "DimensionType")
-                        .WithMany()
-                        .HasForeignKey("DimensionTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ComponentInitialReading");
-
-                    b.Navigation("DimensionType");
-                });
-
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitProfile", b =>
                 {
                     b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentType", "ComponentType")
@@ -6162,25 +6000,6 @@ namespace FRAProject.Migrations
                     b.Navigation("ComponentLifeLimitProfile");
                 });
 
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitStageDimension", b =>
-                {
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitStage", "ComponentLifeLimitStage")
-                        .WithMany("Dimensions")
-                        .HasForeignKey("ComponentLifeLimitStageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitDimensionType", "DimensionType")
-                        .WithMany()
-                        .HasForeignKey("DimensionTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ComponentLifeLimitStage");
-
-                    b.Navigation("DimensionType");
-                });
-
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeStatus", b =>
                 {
                     b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.Component", "Component")
@@ -6189,11 +6008,6 @@ namespace FRAProject.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitDimensionType", "DrivingDimensionType")
-                        .WithMany()
-                        .HasForeignKey("DrivingDimensionTypeId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitProfile", "MatchedLifeLimitProfile")
                         .WithMany()
                         .HasForeignKey("MatchedLifeLimitProfileId")
@@ -6201,28 +6015,7 @@ namespace FRAProject.Migrations
 
                     b.Navigation("Component");
 
-                    b.Navigation("DrivingDimensionType");
-
                     b.Navigation("MatchedLifeLimitProfile");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeStatusDimension", b =>
-                {
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeStatus", "ComponentLifeStatus")
-                        .WithMany("Dimensions")
-                        .HasForeignKey("ComponentLifeStatusId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitDimensionType", "DimensionType")
-                        .WithMany()
-                        .HasForeignKey("DimensionTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ComponentLifeStatus");
-
-                    b.Navigation("DimensionType");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentPosition", b =>
@@ -7435,33 +7228,11 @@ namespace FRAProject.Migrations
                     b.Navigation("ComponentEvents");
 
                     b.Navigation("ComponentLifeStatus");
-
-                    b.Navigation("InitialReading");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentEvent", b =>
-                {
-                    b.Navigation("Readings");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentInitialReading", b =>
-                {
-                    b.Navigation("Values");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitProfile", b =>
                 {
                     b.Navigation("Stages");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitStage", b =>
-                {
-                    b.Navigation("Dimensions");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeStatus", b =>
-                {
-                    b.Navigation("Dimensions");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentPosition", b =>

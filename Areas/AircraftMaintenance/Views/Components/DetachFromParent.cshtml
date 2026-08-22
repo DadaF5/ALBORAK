@@ -1,0 +1,42 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentDetachFromParentDto
+@{
+    ViewData["Title"] = "Détacher le sous-ensemble";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    // NEW — client-side guard against the "20269" year bug; see Receipt.cshtml's comment.
+    var todayIso = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    var minIso = "1940-01-01";
+}
+<h3 class="text-light">Détacher le sous-ensemble</h3>
+<p class="text-muted">Détache ce composant de son composant parent actuel et le remet en stock. Sélectionnez « Cannibalisation » comme motif si ce retrait est une dépose tactique (Canni) vers un autre aéronef, plutôt qu'une opération de maintenance planifiée.</p>
+
+<form asp-action="DetachFromParent" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ComponentId" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="EventDate" class="form-label text-light"></label>
+        <input asp-for="EventDate" class="form-control" type="date" min="@minIso" max="@todayIso" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="RemovalReason" class="form-label text-light"></label>
+        <select asp-for="RemovalReason" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ComponentRemovalReason>()">
+            <option value="">-- (aucun) --</option>
+        </select>
+        <span asp-validation-for="RemovalReason" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="LinkedWorkOrderId" class="form-label text-light"></label>
+        <input asp-for="LinkedWorkOrderId" class="form-control" type="number" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Remarks" class="form-label text-light"></label>
+        <textarea asp-for="Remarks" class="form-control"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-warning">Détacher</button>
+    <a asp-action="Details" asp-route-id="@Model.ComponentId" class="btn btn-secondary">Annuler</a>
+</form>

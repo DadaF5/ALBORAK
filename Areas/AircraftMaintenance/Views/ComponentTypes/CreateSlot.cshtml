@@ -1,0 +1,44 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentTypeSlotFormDto
+@{
+    ViewData["Title"] = "Nouvel emplacement de sous-ensemble";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h3 class="text-light">Nouvel emplacement de sous-ensemble</h3>
+<p class="text-muted">Définit uniquement l'emplacement et sa capacité. Les numéros de pièce éligibles s'ajoutent à l'étape suivante.</p>
+
+<form asp-action="CreateSlot" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ParentComponentTypeId" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="SlotCode" class="form-label text-light"></label>
+        <input asp-for="SlotCode" class="form-control" />
+        <span asp-validation-for="SlotCode" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="SlotName" class="form-label text-light"></label>
+        <input asp-for="SlotName" class="form-control" />
+        <span asp-validation-for="SlotName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="MaxCount" class="form-label text-light"></label>
+        <input asp-for="MaxCount" class="form-control" type="number" min="1" />
+        <span asp-validation-for="MaxCount" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3 form-check">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label text-light"></label>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="SortOrder" class="form-label text-light"></label>
+        <input asp-for="SortOrder" class="form-control" type="number" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Créer et ajouter des PN éligibles</button>
+    <a asp-action="ManageSubAssemblySlots" asp-route-id="@Model.ParentComponentTypeId" class="btn btn-secondary">Annuler</a>
+</form>

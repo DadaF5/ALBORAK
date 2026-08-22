@@ -1,0 +1,262 @@
+@model FRAProject.Areas.AircraftMaintenance.Models.Component
+@{
+    ViewData["Title"] = $"Composant {Model.SerialNumber}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var history = ViewBag.History as List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentHistoryItemViewModel>;
+    var slotStatus = ViewBag.SlotStatus as List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentSlotStatusViewModel>;
+    var status = Model.ComponentLifeStatus;
+}
+
+<h3 class="text-light">@Model.ComponentType?.PartNumber — @Model.ComponentType?.Nomenclature</h3>
+<p class="text-muted">S/N @Model.SerialNumber · Statut: <strong>@Model.Status</strong></p>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card bg-dark text-light">
+            <div class="card-header">Emplacement actuel</div>
+            <div class="card-body">
+                @if (Model.ParentComponentId.HasValue)
+                {
+                    <p>
+                        Sous-ensemble attaché à:
+                        <strong>
+                            <a asp-action="Details" asp-route-id="@Model.ParentComponentId" class="text-info">
+                                @Model.ParentComponent?.ComponentType?.PartNumber — @Model.ParentComponent?.SerialNumber
+                            </a>
+                        </strong>
+                    </p>
+                    <p>Emplacement (slot): <strong>@Model.CurrentSlotCode</strong></p>
+                    <a asp-action="DetachFromParent" asp-route-componentId="@Model.Id" class="btn btn-warning">Détacher</a>
+                }
+                else if (Model.Status == FRAProject.Areas.AircraftMaintenance.Models.ComponentStatus.Installed)
+                {
+                    <p>Aéronef: <strong>@Model.CurrentAircraft?.Registration</strong></p>
+                    <p>Position: <strong>@Model.CurrentPosition?.Name</strong></p>
+                    <a asp-action="Remove" asp-route-componentId="@Model.Id" class="btn btn-warning">Déposer</a>
+                }
+                else
+                {
+                    <p>Base de stockage: <strong>@Model.StockBase?.BaseName</strong></p>
+                    @if (Model.Status == FRAProject.Areas.AircraftMaintenance.Models.ComponentStatus.InStock)
+                    {
+                        <a asp-action="Install" asp-route-componentId="@Model.Id" class="btn btn-primary">Installer</a>
+                        <a asp-action="AttachToParent" asp-route-componentId="@Model.Id" class="btn btn-outline-primary">Attacher à un parent</a>
+                        <form asp-action="Scrap" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ComponentId" value="@Model.Id" />
+                            <input type="hidden" name="EventDate" value="@DateOnly.FromDateTime(DateTime.Today)" />
+                            <input type="text" name="Reason" placeholder="Motif de réforme" class="form-control d-inline-block w-auto" style="display:inline-block" required />
+                            <button type="submit" class="btn btn-danger">Réformer</button>
+                        </form>
+                    }
+                    else if (Model.Status == FRAProject.Areas.AircraftMaintenance.Models.ComponentStatus.UnderRepair)
+                    {
+                        <form asp-action="Overhaul" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ComponentId" value="@Model.Id" />
+                            <input type="hidden" name="EventDate" value="@DateOnly.FromDateTime(DateTime.Today)" />
+                            <button type="submit" class="btn btn-success">Enregistrer révision (retour en stock)</button>
+                        </form>
+                    }
+                }
+
+                @if (slotStatus != null && slotStatus.Any())
+                {
+                    <hr />
+                    <p class="mb-2">Emplacements de sous-ensembles:</p>
+                    @foreach (var slot in slotStatus)
+                    {
+                        <div class="mb-3">
+                            <div>
+                                <strong>@slot.SlotCode</strong> <span class="text-muted">(@slot.SlotName)</span> —
+                                <span class="badge @(slot.MissingCount > 0 ? "bg-warning text-dark" : "bg-success")">
+                                    Supporté @slot.MaxCount / Installé @slot.InstalledCount
+                                </span>
+                                @if (slot.MissingCount > 0)
+                                {
+                                    <span class="badge bg-danger">@slot.MissingCount manquant(s)</span>
+                                }
+                            </div>
+                            @if (slot.SupportedPartNumbers.Any())
+                            {
+                                <small class="text-muted d-block">PN supportés: @string.Join(", ", slot.SupportedPartNumbers)</small>
+                            }
+                            @if (slot.InstalledChildren.Any())
+                            {
+                                <ul class="list-unstyled mb-0 mt-1">
+                                    @foreach (var child in slot.InstalledChildren)
+                                    {
+                                        <li>
+                                            <a asp-action="Details" asp-route-id="@child.Id" class="text-info">
+                                                @child.PartNumber (S/N @child.SerialNumber) — @child.Nomenclature
+                                            </a>
+                                            @if (child.LifeLimitExceeded)
+                                            {
+                                                <span class="badge bg-danger ml-1">LIMITE DÉPASSÉE</span>
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    }
+                }
+                else if (Model.ChildComponents != null && Model.ChildComponents.Any())
+                {
+                    /* Fallback: children are attached but this ComponentType currently
+                       defines no slots (e.g. slot rules were removed/changed after
+                       the attach happened) — still show what's physically there. */
+                    <hr />
+                    <p class="mb-1">Sous-ensembles attachés (@Model.ChildComponents.Count) — aucun emplacement défini pour ce type actuellement:</p>
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var child in Model.ChildComponents)
+                        {
+                            <li>
+                                <a asp-action="Details" asp-route-id="@child.Id" class="text-info">
+                                    [@child.CurrentSlotCode] @child.ComponentType?.PartNumber — @child.ComponentType?.Nomenclature
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-dark text-light">
+            <div class="card-header">Durée de vie</div>
+            <div class="card-body">
+                @if (status == null || status.Status == FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeStatusValue.NotLifeLimited)
+                {
+                    <p class="text-muted">Suivi à la condition (pas de limite de vie).</p>
+                }
+                else
+                {
+                    if (status.MatchedLifeLimitProfile != null)
+                    {
+                        <p class="text-muted">
+                            Profil appliqué: <strong>@status.MatchedLifeLimitProfile.ApplicabilityRuleType</strong>
+                            @if (!string.IsNullOrEmpty(status.MatchedLifeLimitProfile.Reason))
+                            {
+                                <text> — @status.MatchedLifeLimitProfile.Reason</text>
+                            }
+                            @if (status.CurrentStageSequence.HasValue)
+                            {
+                                <text> (étape @status.CurrentStageSequence)</text>
+                            }
+                        </p>
+                    }
+                    else if (status.Status == FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeStatusValue.Unknown)
+                    {
+                        <p class="text-warning">Aucun profil de durée de vie ne correspond à ce numéro de série — statut inconnu.</p>
+                    }
+                    if (status.LifeLimitExceeded)
+                    {
+                        <div class="alert alert-danger">
+                            <strong>⚠ LIMITE DE VIE DÉPASSÉE</strong> — ce composant a franchi son dernier seuil de réforme (retrait obligatoire) et doit être immédiatement immobilisé / réformé.
+                        </div>
+                    }
+                    else if (status.MissedOverhaulCount > 0)
+                    {
+                        <div class="alert alert-danger">
+                            <strong>⚠ @status.MissedOverhaulCount révision(s) programmée(s) manquée(s)</strong> — le composant a franchi @(status.MissedOverhaulCount == 1 ? "un seuil de révision obligatoire" : status.MissedOverhaulCount + " seuils de révision obligatoires") sans qu'aucune révision correspondante n'ait été enregistrée. Le composant a fonctionné au-delà de son intervalle prévu (surcharge cumulée) — risque réel de fissuration / défaillance prématurée. Ne pas se fier uniquement à la marge "prochain seuil" ci-dessous.
+                        </div>
+                    }
+                    // Revision 13: the 5 fixed Cumulative*/SinceOverhaul*/Remaining*
+                    // fields collapsed to status.Dimensions — one row per dimension
+                    // actually tracked (see ComponentLifeStatus's doc comment).
+                    // NOTE: deliberately avoids $"...:N1..." interpolated-string
+                    // format specifiers here — Razor's parser can misread the ':'
+                    // inside an interpolation hole as a markup transition. Plain
+                    // .ToString("N1") + string concatenation sidesteps that.
+                    var cumulativeParts = status.Dimensions
+                        .Where(d => d.DimensionType != null)
+                        .OrderBy(d => d.DimensionType!.SortOrder)
+                        .Select(d => FRAProject.Areas.AircraftMaintenance.Services.DimensionUnitConverter.ToDisplayValue(d.DimensionType!.Unit, d.Cumulative).ToString("N1") + " " + d.DimensionType!.Name)
+                        .ToList();
+                    var sinceOverhaulParts = status.Dimensions
+                        .Where(d => d.DimensionType != null)
+                        .OrderBy(d => d.DimensionType!.SortOrder)
+                        .Select(d => FRAProject.Areas.AircraftMaintenance.Services.DimensionUnitConverter.ToDisplayValue(d.DimensionType!.Unit, d.SinceOverhaul).ToString("N1") + " " + d.DimensionType!.Name)
+                        .ToList();
+                    var remainingParts = status.Dimensions
+                        .Where(d => d.DimensionType != null && d.Remaining.HasValue)
+                        .OrderBy(d => d.DimensionType!.SortOrder)
+                        .Select(d => FRAProject.Areas.AircraftMaintenance.Services.DimensionUnitConverter.ToDisplayValue(d.DimensionType!.Unit, d.Remaining!.Value).ToString("N1") + " " + d.DimensionType!.Name)
+                        .ToList();
+                    <p>Cumulé depuis neuf: @(cumulativeParts.Any() ? string.Join(" · ", cumulativeParts) : "—")</p>
+                    @if (Model.InitialReading != null && Model.InitialReading.Values.Any())
+                    {
+                        var openingParts = Model.InitialReading.Values
+                            .Where(v => v.DimensionType != null)
+                            .OrderBy(v => v.DimensionType!.SortOrder)
+                            .Select(v => FRAProject.Areas.AircraftMaintenance.Services.DimensionUnitConverter.ToDisplayValue(v.DimensionType!.Unit, v.InitialValue).ToString("N1") + " " + v.DimensionType!.Name)
+                            .ToList();
+                        <p class="text-muted">
+                            <small>
+                                dont relevé initial à la réception (pièce usagée): @string.Join(" · ", openingParts)
+                                @if (Model.InitialReading.PriorLastOverhaulDate.HasValue)
+                                {
+                                    <text> · @Model.InitialReading.PriorOverhaulCount révision(s) antérieure(s), dernière le @Model.InitialReading.PriorLastOverhaulDate</text>
+                                }
+                            </small>
+                        </p>
+                    }
+                    @if (status.LastOverhaulDate.HasValue)
+                    {
+                        <p>Depuis révision (@status.LastOverhaulDate): @(sinceOverhaulParts.Any() ? string.Join(" · ", sinceOverhaulParts) : "—")</p>
+                    }
+                    <p>Restant: @(remainingParts.Any() ? string.Join(" · ", remainingParts) : "—")</p>
+                    <p>
+                        Statut: <strong>@status.Status</strong>
+                        @if (status.LifeLimitExceeded)
+                        {
+                            <span class="badge badge-danger ml-1">LIMITE DÉPASSÉE</span>
+                        }
+                        else if (status.MissedOverhaulCount > 0)
+                        {
+                            <span class="badge badge-danger ml-1">@status.MissedOverhaulCount révision(s) manquée(s)</span>
+                        }
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<h5 class="text-light">Historique (généalogie)</h5>
+<div class="table-responsive">
+    <table class="table table-dark table-hover">
+        <thead>
+            <tr>
+                <th>Date</th><th>Événement</th><th>Aéronef</th><th>Position</th><th>Parent lié</th>
+                <th>Relevés</th><th>Motif</th><th>OT lié</th><th>Par</th><th>Remarques</th>
+            </tr>
+        </thead>
+        <tbody>
+        @if (history != null)
+        {
+            @foreach (var h in history)
+            {
+                <tr>
+                    <td>@h.EventDate</td>
+                    <td>@h.EventType</td>
+                    <td>@h.AircraftLabel</td>
+                    <td>@h.PositionLabel</td>
+                    <td>@h.RelatedParentComponentLabel</td>
+                    <td>@string.Join(" · ", h.Readings.Select(r => r.Value.ToString("N1") + " " + r.DimensionCode))</td>
+                    <td>@h.RemovalReason</td>
+                    <td>@h.LinkedWorkOrderNumber</td>
+                    <td>@h.PerformedByUserName</td>
+                    <td>@h.Remarks</td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+</div>
+
+<a asp-action="Index" class="btn btn-secondary">Retour</a>

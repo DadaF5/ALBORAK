@@ -91,7 +91,13 @@ builder.Services.AddScoped<IDossierService, DossierService>();
 builder.Services.AddScoped<ISnagService, SnagService>();
 builder.Services.AddScoped<ISnagStatisticsService, SnagStatisticsService>();
 
-
+// Aircraft Maintenance domain services
+builder.Services.AddScoped<IAircraftReadingProvider, AircraftReadingProvider>();
+builder.Services.AddScoped<IComponentLifeStatusCalculator, ComponentLifeStatusCalculator>();
+builder.Services.AddScoped<IComponentScopeHelper, ComponentScopeHelper>();
+builder.Services.AddScoped<IComponentTypeService, ComponentTypeService>();
+builder.Services.AddScoped<IComponentLifeLimitProfileService, ComponentLifeLimitProfileService>();
+builder.Services.AddScoped<IComponentService, ComponentService>();
 
 builder.Services.AddAuthorization(options =>
 {

@@ -2,10 +2,72 @@
 @{
     ViewData["Title"] = "Positions composants";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    bool includeInactive = (bool)(ViewBag.IncludeInactive ?? false);
+    var mgLabels = ViewBag.AcMainGroupLabels as Dictionary<int, string> ?? new();
+
+    var mainGroupChoices = Model
+        .Where(p => p.AcType != null)
+        .Select(p => p.AcType!.AcMainGroupId)
+        .Distinct()
+        .Select(id => new { Id = id, Label = mgLabels.TryGetValue(id, out var l) ? l : $"#{id}" })
+        .OrderBy(g => g.Label)
+        .ToList();
+
+    var acTypeChoices = Model
+        .Where(p => p.AcType != null)
+        .Select(p => new { p.AcType!.Id, Label = $"{p.AcType.Code} — {p.AcType.Name}", p.AcType.AcMainGroupId })
+        .Distinct()
+        .OrderBy(t => t.Label)
+        .ToList();
 }
+
+@* CHANGED — gained the same two-level Famille aéronef / Type avion filter
+   already used on the ComponentType Positions picker (_Form.cshtml /
+   ManagePositions.cshtml), per Dadda's explicit request ("as we did in
+   the previous model"). Same mechanism, verbatim: pure client-side JS,
+   no page reload — two <select>s narrow which <tr> rows are visible via
+   data-mg/data-at attributes on each row, and picking a family also
+   hides the AcType <option>s that don't belong to it (and resets the
+   AcType filter). "Inclure les positions inactives" stays a real server
+   round trip like before — that one changes which rows even exist, not
+   just which are shown. *@
+
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="text-light">Positions composants (par type d'aéronef)</h3>
-    <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus"></i> Nouvelle position</a>
+    <div>
+        <a asp-action="Tree" class="btn btn-outline-secondary"><i class="fas fa-sitemap"></i> Vue arborescente</a>
+        <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus"></i> Nouvelle position</a>
+    </div>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="includeInactive" value="true" @(includeInactive ? "checked" : "") onchange="this.form.submit()">
+        <label class="form-check-label text-light">Inclure les positions inactives</label>
+    </div>
+</form>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <label class="form-label text-light small mb-1">Famille aéronef</label>
+        <select id="posFilterMainGroup" class="form-select form-select-sm">
+            <option value="">-- Toutes les familles --</option>
+            @foreach (var g in mainGroupChoices)
+            {
+                <option value="@g.Id">@g.Label</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label text-light small mb-1">Type avion</label>
+        <select id="posFilterAcType" class="form-select form-select-sm">
+            <option value="">-- Tous les types --</option>
+            @foreach (var t in acTypeChoices)
+            {
+                <option value="@t.Id" data-mg="@t.AcMainGroupId">@t.Label</option>
+            }
+        </select>
+    </div>
 </div>
 
 @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
@@ -15,10 +77,10 @@
         <thead>
             <tr><th>Type d'aéronef</th><th>Code</th><th>Nom</th><th>ATA</th><th>Actif</th><th></th></tr>
         </thead>
-        <tbody>
+        <tbody id="posTableBody">
         @foreach (var p in Model.OrderBy(x => x.AcType?.Name).ThenBy(x => x.SortOrder))
         {
-            <tr>
+            <tr data-mg="@(p.AcType?.AcMainGroupId)" data-at="@p.AcTypeId">
                 <td>@p.AcType?.Name</td>
                 <td>@p.Code</td>
                 <td>@p.Name</td>
@@ -29,4 +91,45 @@
         }
         </tbody>
     </table>
+    @if (!Model.Any())
+    {
+        <p class="text-muted">Aucune position trouvée.</p>
+    }
+    <p class="text-muted small" id="posEmptyFilterMsg" style="display: none;">Aucune position ne correspond à ce filtre.</p>
 </div>
+
+<script>
+    (function () {
+        var mgSelect = document.getElementById('posFilterMainGroup');
+        var atSelect = document.getElementById('posFilterAcType');
+        var rows = document.querySelectorAll('#posTableBody tr');
+        var emptyMsg = document.getElementById('posEmptyFilterMsg');
+
+        function applyFilter() {
+            var mg = mgSelect.value;
+            var at = atSelect.value;
+            var visibleCount = 0;
+            rows.forEach(function (row) {
+                var showMg = !mg || row.getAttribute('data-mg') === mg;
+                var showAt = !at || row.getAttribute('data-at') === at;
+                var show = showMg && showAt;
+                row.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+            emptyMsg.style.display = (rows.length > 0 && visibleCount === 0) ? '' : 'none';
+        }
+
+        mgSelect.addEventListener('change', function () {
+            // Narrowing the family also narrows which AcTypes make sense —
+            // reset the AcType filter rather than leaving a stale/impossible
+            // combination selected.
+            atSelect.value = '';
+            Array.from(atSelect.options).forEach(function (opt) {
+                if (!opt.value) return;
+                opt.hidden = mgSelect.value && opt.getAttribute('data-mg') !== mgSelect.value;
+            });
+            applyFilter();
+        });
+        atSelect.addEventListener('change', applyFilter);
+    })();
+</script>

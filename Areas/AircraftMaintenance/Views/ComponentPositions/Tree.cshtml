@@ -1,0 +1,134 @@
+@model List<FRAProject.Areas.AircraftMaintenance.ViewModels.AcMainGroupTreeNodeDto>
+@{
+    ViewData["Title"] = "Arborescence aéronef — positions";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    bool includeInactive = (bool)(ViewBag.IncludeInactive ?? false);
+}
+
+@* NEW — answers "how do I define the aircraft tree": AcMainGroup (famille)
+   and AcType (type avion) are read-only navigation here, sourced from the
+   Réglages module which already owns their CRUD (confirmed with Dadda before
+   building this — no duplicate CRUD created for those two levels). Only the
+   Position leaves under each AcType are managed from this page — add, edit,
+   activate/deactivate — using the same Create/Edit actions/entity Index.cshtml
+   already uses, just grouped visually as a tree instead of one flat table.
+
+   CHANGED — the "go manage that in Réglages" note used to be plain text.
+   Now that the real Réglages views were shared (Areas/Settings/Views/
+   AcMainGroups, AcTypes — confirmed routes: Area "Settings", controllers
+   AcMainGroupsController/AcTypesController, standard Create/Edit actions,
+   own _SettingsLayout.cshtml), this cross-links directly: "+ Ajouter une
+   famille"/"+ Ajouter un type" jump straight to their real Create pages,
+   and each tree node's family/type label links to its real Edit page. No
+   query-param prefill on AcType's Create (its controller wasn't shared,
+   so an AcMainGroupId prefill isn't assumed) — you just pick it from that
+   page's own dropdown, same as today. *@
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h3 class="text-light">Arborescence aéronef — positions composants</h3>
+    <div>
+        <a asp-area="Settings" asp-controller="AcMainGroups" asp-action="Create" class="btn btn-outline-light btn-sm">
+            <i class="fas fa-plus"></i> Ajouter une famille
+        </a>
+        <a asp-area="Settings" asp-controller="AcTypes" asp-action="Create" class="btn btn-outline-light btn-sm">
+            <i class="fas fa-plus"></i> Ajouter un type avion
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Vue liste</a>
+        <a asp-action="Create" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Nouvelle position</a>
+    </div>
+</div>
+<p class="text-muted">
+    Les familles (AcMainGroup) et types d'aéronef (AcType) sont gérées dans le
+    module Réglages — les libellés ci-dessous sont cliquables et vous y
+    emmènent directement pour modifier une famille/un type. Cette page gère
+    uniquement les positions (feuilles de l'arbre) : ajout, modification,
+    activation/désactivation.
+</p>
+
+<form method="get" class="mb-3">
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="includeInactive" value="true" @(includeInactive ? "checked" : "") onchange="this.form.submit()">
+        <label class="form-check-label text-light">Inclure les positions inactives</label>
+    </div>
+</form>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+@if (!Model.Any())
+{
+    <p class="text-muted">Aucune famille aéronef avec un type accessible n'a été trouvée.</p>
+}
+
+@foreach (var mg in Model)
+{
+    <details class="card bg-dark text-light mb-2" open>
+        <summary class="card-header d-flex justify-content-between align-items-center" style="cursor: pointer;">
+            <span>@mg.AcMainGroupLabel</span>
+            <a asp-area="Settings" asp-controller="AcMainGroups" asp-action="Edit" asp-route-id="@mg.AcMainGroupId" class="text-info small">
+                <i class="fas fa-pen"></i> Modifier la famille
+            </a>
+        </summary>
+        <div class="card-body">
+            @foreach (var at in mg.AcTypes)
+            {
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">
+                            @at.AcTypeLabel
+                            <a asp-area="Settings" asp-controller="AcTypes" asp-action="Edit" asp-route-id="@at.AcTypeId" class="text-info small ms-2">
+                                <i class="fas fa-pen"></i> Modifier le type
+                            </a>
+                        </h6>
+                        <a asp-action="Create" asp-route-acTypeId="@at.AcTypeId" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-plus"></i> Ajouter une position
+                        </a>
+                    </div>
+                    @if (!at.Positions.Any())
+                    {
+                        <p class="text-muted"><small>Aucune position configurée pour ce type.</small></p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-dark table-hover mb-0">
+                                <thead><tr><th>Code</th><th>Nom</th><th>ATA</th><th>Actif</th><th></th></tr></thead>
+                                <tbody>
+                                @foreach (var p in at.Positions)
+                                {
+                                    <tr class="@(p.IsActive ? "" : "text-muted")">
+                                        <td>@p.Code</td>
+                                        <td>@p.Name</td>
+                                        <td>@p.Ata?.Name</td>
+                                        <td>
+                                            @if (p.IsActive)
+                                            {
+                                                <span class="badge bg-success">Oui</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Non</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-outline-info">Modifier</a>
+                                            <form asp-action="ToggleActive" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@p.Id" />
+                                                <input type="hidden" name="includeInactive" value="@includeInactive" />
+                                                <button type="submit" class="btn btn-sm @(p.IsActive ? "btn-outline-warning" : "btn-outline-success")">
+                                                    @(p.IsActive ? "Désactiver" : "Activer")
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </details>
+}

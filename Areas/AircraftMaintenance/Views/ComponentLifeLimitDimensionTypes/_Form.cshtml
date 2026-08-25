@@ -1,0 +1,64 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentLifeLimitDimensionTypeFormDto
+@{
+    bool isEdit = Model.Id.HasValue;
+}
+
+<input type="hidden" asp-for="Id" />
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<div class="mb-3">
+    <label asp-for="Code" class="form-label text-light"></label>
+    @if (isEdit)
+    {
+        @* CHANGED — Code is a stable contract once a row exists (calculator/
+           reading provider switch on it) — read-only here, and the
+           controller's Edit POST ignores whatever is posted anyway. A
+           hidden input still carries the value so model binding succeeds. *@
+        <input type="text" value="@Model.Code" class="form-control" disabled />
+        <input type="hidden" asp-for="Code" />
+        <div class="form-text text-secondary">Le code ne peut pas être modifié après création.</div>
+    }
+    else
+    {
+        <input asp-for="Code" class="form-control" style="text-transform:uppercase" />
+        <div class="form-text text-secondary">Ex: FH, CYCLES, APU_STARTS — sert de référence stable dans le code, à choisir avec soin.</div>
+    }
+    <span asp-validation-for="Code" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Name" class="form-label text-light"></label>
+    <input asp-for="Name" class="form-control" />
+    <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Unit" class="form-label text-light"></label>
+    <select asp-for="Unit" class="form-select" asp-items="ViewBag.UnitOptions"></select>
+</div>
+
+<div class="mb-3">
+    <label asp-for="AcMainGroupId" class="form-label text-light"></label>
+    <select asp-for="AcMainGroupId" class="form-select" asp-items="ViewBag.AcMainGroupOptions">
+        <option value="">-- Universelle (toutes familles) --</option>
+    </select>
+</div>
+
+<div class="mb-3">
+    <label asp-for="SortOrder" class="form-label text-light"></label>
+    <input asp-for="SortOrder" type="number" class="form-control" style="max-width: 120px;" />
+</div>
+
+<div class="mb-3 form-check">
+    <input asp-for="IsCalendarBased" class="form-check-input" />
+    <label asp-for="IsCalendarBased" class="form-check-label text-light"></label>
+    <div class="form-text text-secondary">Calculée à partir de dates (ex: jours calendaires), pas des relevés de composant. À ne cocher que si vous savez que le calculateur gère ce cas — voir ComponentLifeLimitDimensionType.cs.</div>
+</div>
+
+<div class="mb-3 form-check">
+    <input asp-for="IsActive" class="form-check-input" />
+    <label asp-for="IsActive" class="form-check-label text-light"></label>
+</div>
+
+<button type="submit" class="btn btn-primary">Enregistrer</button>
+<a asp-action="Index" class="btn btn-secondary">Annuler</a>

@@ -9,6 +9,8 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
     public interface IComponentService
     {
         Task<List<ComponentListDto>> GetScopedListAsync(ClaimsPrincipal user, bool includeInactive = false);
+        /// <summary>NEW — filtered/paged replacement backing Components/Index (search, statut, P/N, base, pagination). See implementation doc comment for the "single SQL round-trip, filter/page in memory" design and its scale ceiling.</summary>
+        Task<PagedResult<ComponentListDto>> GetScopedPagedListAsync(ClaimsPrincipal user, ComponentListFilterDto filter);
         Task<Component?> GetWithDetailsAsync(int id);
         Task<List<ComponentHistoryItemViewModel>> GetHistoryAsync(int componentId);
 
@@ -50,46 +52,118 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
             _userScope = userScope;
         }
 
+        /// <summary>UNCHANGED signature, now a thin wrapper over GetScopedPagedListAsync (PageSize=int.MaxValue, i.e. "give me everything") so the two never drift apart. No remaining caller in this codebase (Components/Index moved to the paged version) — kept for any external/future caller that genuinely wants the full unpaged list.</summary>
         public async Task<List<ComponentListDto>> GetScopedListAsync(ClaimsPrincipal user, bool includeInactive = false)
         {
-            var all = await _uow.Components.GetAllWithCurrentLocationAsync();
-            var result = new List<ComponentListDto>();
-
-            foreach (var c in all)
+            var page = await GetScopedPagedListAsync(user, new ComponentListFilterDto
             {
-                if (!includeInactive && !c.IsActive) continue;
-                if (!await _componentScope.IsComponentInScopeAsync(user, c)) continue;
+                IncludeInactive = includeInactive,
+                PageNumber = 1,
+                PageSize = int.MaxValue
+            });
+            return page.Items;
+        }
 
-                result.Add(new ComponentListDto
-                {
-                    Id = c.Id,
-                    PartNumber = c.ComponentType?.PartNumber ?? "",
-                    Nomenclature = c.ComponentType?.Nomenclature ?? "",
-                    SerialNumber = c.SerialNumber,
-                    Status = c.Status,
-                    LocationLabel = c.Status == ComponentStatus.Installed
-                        ? $"{c.CurrentAircraft?.Registration} — {c.CurrentPosition?.Name}"
-                        : c.StockBase?.BaseName,
-                    LifeStatus = c.ComponentLifeStatus?.Status ?? ComponentLifeStatusValue.Unknown,
-                    DrivingDimensionCode = c.ComponentLifeStatus?.DrivingDimensionType?.Code,
-                    DrivingDimensionName = c.ComponentLifeStatus?.DrivingDimensionType?.Name,
-                    DrivingDimensionUnit = c.ComponentLifeStatus?.DrivingDimensionType?.Unit,
-                    DrivingDimensionRemainingDisplay = c.ComponentLifeStatus?.DrivingDimensionType != null
-                        ? DimensionUnitConverter.ToDisplayValue(c.ComponentLifeStatus.DrivingDimensionType.Unit, c.ComponentLifeStatus.DrivingDimensionRemaining)
-                        : null,
-                    MissedOverhaulCount = c.ComponentLifeStatus?.MissedOverhaulCount ?? 0,
-                    LifeLimitExceeded = c.ComponentLifeStatus?.LifeLimitExceeded ?? false,
-                    HasActiveDerogation = c.ComponentLifeStatus?.HasActiveDerogation ?? false,
-                    IsSubAssembly = c.ParentComponentId.HasValue,
-                    ParentLabel = c.ParentComponentId.HasValue
-                        ? $"{c.ParentComponent?.ComponentType?.PartNumber} — {c.ParentComponent?.SerialNumber}"
-                        : null,
-                    ChildCount = c.ChildComponents.Count
-                });
+        /// <summary>
+        /// NEW — filtered/paged Components list backing Components/Index.
+        /// Design: ONE SQL round-trip (GetAllWithCurrentLocationAsync) loads
+        /// every candidate Component with the nav properties scoping/display
+        /// need already eager-loaded; the user's scope is resolved ONCE (fixing
+        /// the old GetScopedListAsync's per-row GetScopeAsync N+1 — see
+        /// IComponentScopeHelper.IsComponentInScope's doc comment); every
+        /// filter (scope, Search, Status, ComponentTypeId, BaseId) and the
+        /// paging itself then run in memory via plain LINQ-to-Objects.
+        /// This is NOT infinite-scale — it's a deliberate tradeoff for a
+        /// solo-maintained app at real fleet scale (low thousands of
+        /// Components even once F5/A-Jet/F16 are all imported), not millions.
+        /// In-memory filtering over a few thousand in-memory objects is
+        /// low-single-digit milliseconds; if the fleet ever grows past the
+        /// tens of thousands, Search and Status are the two filters worth
+        /// pushing down to SQL first (ComponentTypeId/BaseId are cheap
+        /// low-cardinality equality checks that cost nothing extra once the
+        /// list is already in memory for scope filtering).
+        /// </summary>
+        public async Task<PagedResult<ComponentListDto>> GetScopedPagedListAsync(ClaimsPrincipal user, ComponentListFilterDto filter)
+        {
+            var scope = await _userScope.GetScopeAsync(user, "MAINTENANCE");
+            var all = await _uow.Components.GetAllWithCurrentLocationAsync(filter.IncludeInactive);
+
+            IEnumerable<Component> query = all.Where(c => _componentScope.IsComponentInScope(c, scope));
+
+            if (filter.ComponentTypeId.HasValue)
+                query = query.Where(c => c.ComponentTypeId == filter.ComponentTypeId.Value);
+
+            if (filter.Status.HasValue)
+                query = query.Where(c => c.Status == filter.Status.Value);
+
+            if (filter.BaseId.HasValue)
+                query = query.Where(c => _componentScope.GetEffectiveBaseId(c) == filter.BaseId.Value);
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                var term = filter.Search.Trim();
+                query = query.Where(c =>
+                    (c.ComponentType?.PartNumber?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (c.ComponentType?.Nomenclature?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    c.SerialNumber.Contains(term, StringComparison.OrdinalIgnoreCase));
             }
 
-            return result.OrderBy(r => r.PartNumber).ThenBy(r => r.SerialNumber).ToList();
+            var ordered = query
+                .OrderBy(c => c.ComponentType?.PartNumber)
+                .ThenBy(c => c.SerialNumber)
+                .ToList();
+
+            var pageSize = filter.PageSize > 0 ? filter.PageSize : 50;
+            var pageNumber = filter.PageNumber > 0 ? filter.PageNumber : 1;
+
+            var pageItems = ordered
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(MapToListDto)
+                .ToList();
+
+            var totalCount = ordered.Count;
+
+            // App-standard FRAProject.Infrastructure.Interfaces.PagedResult<T>
+            // only carries Items/TotalCount/TotalPages (a plain settable int,
+            // not computed) — no PageNumber/PageSize of its own. The caller
+            // (Index.cshtml, via ViewBag.Filter) already has PageNumber/PageSize
+            // from the same ComponentListFilterDto used to build this page, so
+            // there's no need to duplicate them here.
+            return new PagedResult<ComponentListDto>
+            {
+                Items = pageItems,
+                TotalCount = totalCount,
+                TotalPages = pageSize <= 0 ? 1 : Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize))
+            };
         }
+
+        private static ComponentListDto MapToListDto(Component c) => new ComponentListDto
+        {
+            Id = c.Id,
+            PartNumber = c.ComponentType?.PartNumber ?? "",
+            Nomenclature = c.ComponentType?.Nomenclature ?? "",
+            SerialNumber = c.SerialNumber,
+            Status = c.Status,
+            LocationLabel = c.Status == ComponentStatus.Installed
+                ? $"{c.CurrentAircraft?.Registration} — {c.CurrentPosition?.Name}"
+                : c.StockBase?.BaseName,
+            LifeStatus = c.ComponentLifeStatus?.Status ?? ComponentLifeStatusValue.Unknown,
+            DrivingDimensionCode = c.ComponentLifeStatus?.DrivingDimensionType?.Code,
+            DrivingDimensionName = c.ComponentLifeStatus?.DrivingDimensionType?.Name,
+            DrivingDimensionUnit = c.ComponentLifeStatus?.DrivingDimensionType?.Unit,
+            DrivingDimensionRemainingDisplay = c.ComponentLifeStatus?.DrivingDimensionType != null
+                ? DimensionUnitConverter.ToDisplayValue(c.ComponentLifeStatus.DrivingDimensionType.Unit, c.ComponentLifeStatus.DrivingDimensionRemaining)
+                : null,
+            MissedOverhaulCount = c.ComponentLifeStatus?.MissedOverhaulCount ?? 0,
+            LifeLimitExceeded = c.ComponentLifeStatus?.LifeLimitExceeded ?? false,
+            HasActiveDerogation = c.ComponentLifeStatus?.HasActiveDerogation ?? false,
+            IsSubAssembly = c.ParentComponentId.HasValue,
+            ParentLabel = c.ParentComponentId.HasValue
+                ? $"{c.ParentComponent?.ComponentType?.PartNumber} — {c.ParentComponent?.SerialNumber}"
+                : null,
+            ChildCount = c.ChildComponents.Count
+        };
 
         public Task<Component?> GetWithDetailsAsync(int id) => _uow.Components.GetWithDetailsAsync(id);
 

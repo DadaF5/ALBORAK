@@ -1,8 +1,20 @@
-@model List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentListDto>
+@model FRAProject.Infrastructure.Interfaces.PagedResult<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentListDto>
 @{
     ViewData["Title"] = "Composants";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    bool includeInactive = (bool)(ViewBag.IncludeInactive ?? false);
+    var filter = (FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentListFilterDto)ViewBag.Filter;
+    var componentTypeOptions = (List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.ComponentTypeFilterOptions;
+    var baseOptions = (List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.BaseFilterOptions;
+    var statusOptions = (List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.StatusOptions;
+
+    // The app's standard PagedResult<T> only carries Items/TotalCount/TotalPages
+    // — PageNumber/PageSize for "current page" display come from the same
+    // ComponentListFilterDto (filter, above) the controller used to build this
+    // page, not from the paging result itself.
+    int firstItemIndex = Model.TotalCount == 0 ? 0 : (filter.PageNumber - 1) * filter.PageSize + 1;
+    int lastItemIndex = Model.TotalCount == 0 ? 0 : Math.Min(Model.TotalCount, (filter.PageNumber - 1) * filter.PageSize + Model.Items.Count);
+    bool hasPrevious = filter.PageNumber > 1;
+    bool hasNext = filter.PageNumber < Model.TotalPages;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -22,12 +34,68 @@
     <div class="alert alert-success">@TempData["Success"]</div>
 }
 
-<form method="get" class="mb-3">
-    <div class="form-check form-check-inline">
-        <input class="form-check-input" type="checkbox" name="includeInactive" value="true" @(includeInactive ? "checked" : "") onchange="this.form.submit()">
-        <label class="form-check-label text-light">Inclure inactifs</label>
+<form method="get" asp-action="Index" class="card bg-dark border-secondary mb-3">
+    <div class="card-body">
+        <input type="hidden" name="PageNumber" value="1" />
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label text-light small mb-1">Recherche</label>
+                <input type="text" name="Search" value="@filter.Search" class="form-control form-control-sm" placeholder="P/N, nomenclature ou S/N..." />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-light small mb-1">Numéro de pièce</label>
+                <select name="ComponentTypeId" class="form-select form-select-sm" asp-items="componentTypeOptions" onchange="this.form.submit()"></select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-light small mb-1">Statut</label>
+                <select name="Status" class="form-select form-select-sm" asp-items="statusOptions" onchange="this.form.submit()"></select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-light small mb-1">Base</label>
+                <select name="BaseId" class="form-select form-select-sm" asp-items="baseOptions" onchange="this.form.submit()"></select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label text-light small mb-1">Par page</label>
+                <select name="PageSize" class="form-select form-select-sm" onchange="this.form.submit()">
+                    @foreach (var size in new[] { 25, 50, 100, 200 })
+                    {
+                        <option value="@size" selected="@(filter.PageSize == size)">@size</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 text-end">
+                <label class="form-label text-light small mb-1 d-none d-md-block">&nbsp;</label>
+                <button type="submit" class="btn btn-sm btn-primary w-100 text-nowrap">
+                    <i class="fas fa-search"></i> Filtrer
+                </button>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-auto">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="includeInactive" name="IncludeInactive" value="true" @(filter.IncludeInactive ? "checked" : "") />
+                    <label class="form-check-label text-light" for="includeInactive">Inclure inactifs</label>
+                </div>
+            </div>
+            <div class="col-auto">
+                <a asp-action="Index" class="text-muted small">Réinitialiser les filtres</a>
+            </div>
+        </div>
     </div>
 </form>
+
+<div class="d-flex justify-content-between align-items-center text-light mb-2">
+    <small class="text-muted">
+        @if (Model.TotalCount == 0)
+        {
+            <text>Aucun composant trouvé</text>
+        }
+        else
+        {
+            <text>Affichage @firstItemIndex–@lastItemIndex sur @Model.TotalCount</text>
+        }
+    </small>
+</div>
 
 <div class="table-responsive">
     <table class="table table-dark table-hover align-middle">
@@ -43,7 +111,7 @@
             </tr>
         </thead>
         <tbody>
-        @foreach (var c in Model)
+        @foreach (var c in Model.Items)
         {
             <tr class="@(c.LifeLimitExceeded || c.MissedOverhaulCount > 0 ? "table-danger" : "")">
                 <td>@c.PartNumber</td>
@@ -104,6 +172,45 @@
                 </td>
             </tr>
         }
+        @if (!Model.Items.Any())
+        {
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">Aucun composant ne correspond à ces critères.</td>
+            </tr>
+        }
         </tbody>
     </table>
 </div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="d-flex justify-content-center">
+        <ul class="pagination">
+            <li class="page-item @(hasPrevious ? "" : "disabled")">
+                <a class="page-link bg-dark text-light border-secondary"
+                   asp-action="Index"
+                   asp-route-Search="@filter.Search"
+                   asp-route-ComponentTypeId="@filter.ComponentTypeId"
+                   asp-route-Status="@filter.Status"
+                   asp-route-BaseId="@filter.BaseId"
+                   asp-route-IncludeInactive="@filter.IncludeInactive"
+                   asp-route-PageSize="@filter.PageSize"
+                   asp-route-PageNumber="@(filter.PageNumber - 1)">Précédent</a>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link bg-dark text-light border-secondary">Page @filter.PageNumber / @Model.TotalPages</span>
+            </li>
+            <li class="page-item @(hasNext ? "" : "disabled")">
+                <a class="page-link bg-dark text-light border-secondary"
+                   asp-action="Index"
+                   asp-route-Search="@filter.Search"
+                   asp-route-ComponentTypeId="@filter.ComponentTypeId"
+                   asp-route-Status="@filter.Status"
+                   asp-route-BaseId="@filter.BaseId"
+                   asp-route-IncludeInactive="@filter.IncludeInactive"
+                   asp-route-PageSize="@filter.PageSize"
+                   asp-route-PageNumber="@(filter.PageNumber + 1)">Suivant</a>
+            </li>
+        </ul>
+    </nav>
+}

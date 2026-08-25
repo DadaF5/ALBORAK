@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.AircraftMaintenance.Services;
 using FRAProject.Areas.AircraftMaintenance.ViewModels;
 using FRAProject.Infrastructure.Interfaces;
@@ -34,11 +35,27 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
         private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new InvalidOperationException("No authenticated user id claim found.");
 
+        /// <summary>
+        /// CHANGED — was "load everything, render one giant table", not
+        /// viable once the real fleet is fully imported (900 F5 + 600 A-Jet +
+        /// 1300 F16 + ... per Dadda). Now search/filter/paged — see
+        /// IComponentService.GetScopedPagedListAsync's doc comment for the
+        /// "single SQL round-trip, filter+page in memory" design.
+        /// </summary>
         [Authorize(Policy = "MaintenanceRead")]
-        public async Task<IActionResult> Index(bool includeInactive = false)
+        public async Task<IActionResult> Index([FromQuery] ComponentListFilterDto filter)
         {
-            ViewBag.IncludeInactive = includeInactive;
-            return View(await _service.GetScopedListAsync(User, includeInactive));
+            filter.PageNumber = filter.PageNumber > 0 ? filter.PageNumber : 1;
+            // Only these 4 sizes are offered in the UI — guard against a
+            // hand-edited query string asking for something unbounded.
+            filter.PageSize = filter.PageSize is 25 or 50 or 100 or 200 ? filter.PageSize : 50;
+
+            await PopulateComponentTypeFilterOptionsAsync(filter.ComponentTypeId);
+            await PopulateBaseFilterOptionsAsync(filter.BaseId);
+            ViewBag.StatusOptions = BuildStatusFilterOptions(filter.Status);
+            ViewBag.Filter = filter;
+
+            return View(await _service.GetScopedPagedListAsync(User, filter));
         }
 
         [Authorize(Policy = "MaintenanceRead")]
@@ -128,15 +145,78 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
                 // FIXED — real Base has no SortOrder field (confirmed by a live
                 // build error; Revision 11 guessed it existed under the
                 // "Standard LookupBase" convention along with Code/Name, which
-                // was wrong for this specific field). Ordering by Code alone
-                // until/unless Base turns out to have a different real
+                // was wrong for this specific field). Ordering by BaseCode
+                // alone until/unless Base turns out to have a different real
                 // display-order field.
                 .OrderBy(b => b.BaseCode)
-                // FIXED — real Base uses BaseName, not Name (confirmed by
-                // Dadda against the real solution — Revision 13a still had
-                // this wrong even after the SortOrder fix above).
+                // FIXED — real Base uses BaseCode/BaseName, not Code/Name
+                // (confirmed by Dadda against the real Base.cs — Revision 13a
+                // still had ".Code" wrong even after the BaseName fix).
                 .Select(b => new SelectListItem { Value = b.Id.ToString(), Text = $"{b.BaseCode} — {b.BaseName}" })
                 .ToList();
+        }
+
+        // --- Index filter dropdowns ---
+        // Deliberately separate from PopulateComponentTypeOptionsAsync/
+        // PopulateBaseOptionsAsync above: those back Receipt/Remove, where a
+        // real selection is required and a blank "Tous" option would be
+        // wrong. Small duplication, kept intentional rather than adding a
+        // bool flag to the Receipt-facing methods.
+
+        private async Task PopulateComponentTypeFilterOptionsAsync(int? selectedId)
+        {
+            var types = await _componentTypes.GetAllAsync();
+            var options = types
+                .OrderBy(t => t.PartNumber)
+                .Select(t => new SelectListItem
+                {
+                    Value = t.Id.ToString(),
+                    Text = $"{t.PartNumber} — {t.Nomenclature}",
+                    Selected = selectedId == t.Id
+                })
+                .ToList();
+            options.Insert(0, new SelectListItem { Value = "", Text = "Tous les P/N", Selected = selectedId == null });
+            ViewBag.ComponentTypeFilterOptions = options;
+        }
+
+        private async Task PopulateBaseFilterOptionsAsync(int? selectedId)
+        {
+            var bases = await _uow.Bases.GetAllAsync();
+            var options = bases
+                .Where(b => b.IsActive)
+                .OrderBy(b => b.BaseCode)
+                .Select(b => new SelectListItem
+                {
+                    Value = b.Id.ToString(),
+                    Text = $"{b.BaseCode} — {b.BaseName}",
+                    Selected = selectedId == b.Id
+                })
+                .ToList();
+            options.Insert(0, new SelectListItem { Value = "", Text = "Toutes les bases", Selected = selectedId == null });
+            ViewBag.BaseFilterOptions = options;
+        }
+
+        private static List<SelectListItem> BuildStatusFilterOptions(ComponentStatus? selected)
+        {
+            var options = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "", Text = "Tous les statuts", Selected = selected == null }
+            };
+            options.AddRange(Enum.GetValues<ComponentStatus>().Select(s => new SelectListItem
+            {
+                Value = ((int)s).ToString(),
+                Text = s switch
+                {
+                    ComponentStatus.InStock => "En stock",
+                    ComponentStatus.Installed => "Installé",
+                    ComponentStatus.UnderRepair => "En réparation",
+                    ComponentStatus.Removed => "Déposé",
+                    ComponentStatus.Scrapped => "Réformé",
+                    _ => s.ToString()
+                },
+                Selected = selected == s
+            }));
+            return options;
         }
 
         /// <summary>NEW (Revision 13) — one empty row per active non-calendar ComponentLifeLimitDimensionType, so the Receipt form always shows every dimension the receiving tech might need to fill in (CALENDAR_DAYS deliberately excluded — see ComponentInitialReading's doc comment).</summary>

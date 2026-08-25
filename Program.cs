@@ -246,6 +246,15 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Error occurred during database seeding.");
     }
 }
+//csharp
+using (var importScope = app.Services.CreateScope())
+{
+    var uow = importScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+    var componentService = importScope.ServiceProvider.GetRequiredService<IComponentService>();
+    var importLog = await LegacyEngineImportSeeder.SeedAsync(uow, componentService);
+    foreach (var line in importLog) Console.WriteLine("[LegacyEngineImport] " + line);
+}
+//
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

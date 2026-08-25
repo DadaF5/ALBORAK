@@ -19,24 +19,58 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
             _userScope = userScope;
         }
 
+        // Per-request memoization for IsAcTypeInScopeAsync below — a fresh
+        // controller instance per request (standard MVC lifecycle), so these
+        // are safe as plain instance fields. Avoids re-calling GetScopeAsync
+        // and re-fetching every AcType/AcMainGroup on every loop iteration in
+        // Index/Tree, which both call IsAcTypeInScopeAsync once per row.
+        private UserScope? _scopeCache;
+        private Dictionary<int, int>? _acTypeBaseLookupCache; // AcTypeId -> BaseId
+
         /// <summary>
-        /// STOPGAP — the real IUserScopeService has no IsAcTypeInScopeAsync
-        /// (confirmed this session: it exposes only GetScopeAsync, returning
-        /// UserScope{IsUnrestricted, AllowedBaseIds, AllowedAcMainGroupIds,
-        /// AllowedWingIds}). Reproducing "is this AcType in scope" from that
-        /// needs AcType's real FK path to Base/AcMainGroup, which hasn't been
-        /// shared yet. Until then this fails CLOSED: unrestricted (Admin/
-        /// Base-Admin-everywhere) users pass, everyone else is denied — safe
-        /// default, but means restricted users currently can't manage
-        /// ComponentPositions at all. Fix by resolving AcType -> AcMainGroup
-        /// -> Base (or AcType -> Base directly, whichever your schema uses)
-        /// and checking scope.AllowedBaseIds/AllowedAcMainGroupIds, same
-        /// pattern as ComponentScopeHelper.IsComponentInScopeAsync.
+        /// FIXED (was STOPGAP) — the real IUserScopeService has no
+        /// IsAcTypeInScopeAsync (confirmed: it exposes only GetScopeAsync,
+        /// returning UserScope{IsUnrestricted, AllowedBaseIds,
+        /// AllowedAcMainGroupIds, AllowedWingIds}), so this used to just
+        /// return scope.IsUnrestricted — every restricted (non-Admin) user
+        /// was denied ComponentPositions entirely, regardless of their real
+        /// Base assignment. That was a real gap in what shipped, not a
+        /// theoretical one; it stayed a stopgap only because AcType's real
+        /// FK path to Base/AcMainGroup hadn't been shared yet.
+        ///
+        /// Now resolved for real, using the real confirmed shapes (AcType.cs/
+        /// AcMainGroup.cs, shared and cross-checked this session): AcType has
+        /// a required AcMainGroupId FK; AcMainGroup has its own required
+        /// BaseId FK. So "is this AcType in scope" becomes AcType ->
+        /// AcMainGroup -> Base, checked against scope.AllowedBaseIds — same
+        /// Base-only convention ComponentScopeHelper.IsComponentInScopeAsync
+        /// already uses (no AcMainGroup-level narrowing; revisit both
+        /// together if that's ever needed).
         /// </summary>
         private async Task<bool> IsAcTypeInScopeAsync(int acTypeId)
         {
-            var scope = await _userScope.GetScopeAsync(User, "MAINTENANCE");
-            return scope.IsUnrestricted;
+            _scopeCache ??= await _userScope.GetScopeAsync(User, "MAINTENANCE");
+            if (_scopeCache.IsUnrestricted) return true;
+
+            _acTypeBaseLookupCache ??= await BuildAcTypeBaseLookupAsync();
+            return _acTypeBaseLookupCache.TryGetValue(acTypeId, out var baseId)
+                && _scopeCache.AllowedBaseIds.Contains(baseId);
+        }
+
+        /// <summary>NEW — AcTypeId -> BaseId, built once per request (2 queries total, joined in memory) rather than per-row.</summary>
+        private async Task<Dictionary<int, int>> BuildAcTypeBaseLookupAsync()
+        {
+            var acTypes = await _uow.AcTypes.GetAllAsync();
+            var mainGroups = await _uow.AcMainGroups.GetAllAsync();
+            var mgBaseById = mainGroups.ToDictionary(g => g.Id, g => g.BaseId);
+
+            var lookup = new Dictionary<int, int>();
+            foreach (var at in acTypes)
+            {
+                if (mgBaseById.TryGetValue(at.AcMainGroupId, out var baseId))
+                    lookup[at.Id] = baseId;
+            }
+            return lookup;
         }
 
         /// <summary>

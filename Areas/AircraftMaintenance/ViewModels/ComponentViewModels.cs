@@ -41,6 +41,36 @@ namespace FRAProject.Areas.AircraftMaintenance.ViewModels
         public int ChildCount { get; set; }
     }
 
+    /// <summary>
+    /// NEW — search/filter criteria + paging for Components/Index. Model-bound
+    /// straight from the query string on the GET action (property names match
+    /// the form field names in Index.cshtml, and are what the pagination links'
+    /// asp-route-* attributes echo back). Search matches PartNumber,
+    /// Nomenclature, or SerialNumber (contains, case-insensitive) — see
+    /// ComponentService.GetScopedPagedListAsync for how each field is applied.
+    /// </summary>
+    public class ComponentListFilterDto
+    {
+        public string? Search { get; set; }
+        public ComponentStatus? Status { get; set; }
+        public int? ComponentTypeId { get; set; }
+        /// <summary>Filters against the component's EFFECTIVE current base — CurrentAircraft.BaseId when Installed, StockBaseId otherwise (same split ComponentScopeHelper uses for RBAC).</summary>
+        public int? BaseId { get; set; }
+        public bool IncludeInactive { get; set; }
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 50;
+    }
+
+    // NOTE — no local paging-result type here. Components/Index uses the
+    // app's own FRAProject.Infrastructure.Interfaces.PagedResult<T> (the
+    // same type IGenericRepository.GetPagedAsync() returns everywhere else)
+    // rather than a second, Components-specific wrapper — Dadda confirmed
+    // its real shape (Items/TotalCount/TotalPages, TotalPages a plain settable
+    // int, not computed) after an earlier version of this pass introduced a
+    // duplicate that collided by name. PageNumber/PageSize for "current page"
+    // display come from ComponentListFilterDto above (already carried through
+    // to the view via ViewBag.Filter), not from the paging result itself.
+
     public class ComponentReceiptDto
     {
         [Required(ErrorMessage = "Le type de composant est requis.")]

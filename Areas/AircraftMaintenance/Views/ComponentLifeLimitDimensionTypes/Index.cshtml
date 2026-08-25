@@ -1,0 +1,82 @@
+@model List<FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitDimensionType>
+@{
+    ViewData["Title"] = "Dimensions de suivi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var mgLabels = ViewBag.AcMainGroupLabels as Dictionary<int, string> ?? new();
+}
+
+@* NEW — answers Dadda's question while testing Receipt: "what's the link to
+   access and CRUD this list". ComponentLifeLimitDimensionType (Revision 13)
+   is what drives every "Dimension" row on Receipt's Pièce usagée table, the
+   life-limit profile stage editor's dimension picker, and the Derogation
+   form — it had zero management UI before this page; the only way to add
+   one was editing ComponentLifeLimitDimensionTypeSeeder.cs and redeploying.
+   Kept as a real page, not a test-phase throwaway — a future counter (C130
+   APU starts, drop count, ...) is meant to be "a seeded row, not a
+   migration" per the model's own doc comment, and this is what makes that
+   true without touching code. *@
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="text-light">Dimensions de suivi (Heures de vol, Cycles, Atterrissages...)</h3>
+    <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus"></i> Nouvelle dimension</a>
+</div>
+<p class="text-muted">
+    Ces lignes définissent ce qui peut être suivi/mesuré sur un composant (le
+    tableau "Pièce usagée" de la Réception, les profils de durée de vie, les
+    dérogations). Le <strong>Code</strong> est une référence stable utilisée
+    par le calculateur — il ne peut plus être modifié une fois la dimension
+    créée. Désactiver une dimension la retire des formulaires sans supprimer
+    l'historique déjà enregistré.
+</p>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+
+<div class="table-responsive">
+    <table class="table table-dark table-hover">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Nom</th>
+                <th>Unité</th>
+                <th>Calendaire</th>
+                <th>Famille aéronef</th>
+                <th>Ordre</th>
+                <th>Actif</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var d in Model)
+        {
+            <tr class="@(d.IsActive ? "" : "text-muted")">
+                <td><code>@d.Code</code></td>
+                <td>@d.Name</td>
+                <td>@d.Unit</td>
+                <td>@(d.IsCalendarBased ? "Oui" : "Non")</td>
+                <td>@(d.AcMainGroupId.HasValue ? (mgLabels.TryGetValue(d.AcMainGroupId.Value, out var l) ? l : $"#{d.AcMainGroupId}") : "Universelle")</td>
+                <td>@d.SortOrder</td>
+                <td>
+                    @if (d.IsActive)
+                    {
+                        <span class="badge bg-success">Oui</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Non</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@d.Id" class="btn btn-sm btn-outline-info">Modifier</a>
+                    <form asp-action="ToggleActive" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@d.Id" />
+                        <button type="submit" class="btn btn-sm @(d.IsActive ? "btn-outline-warning" : "btn-outline-success")">
+                            @(d.IsActive ? "Désactiver" : "Activer")
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

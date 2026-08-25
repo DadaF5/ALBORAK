@@ -31,6 +31,24 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
     public interface IComponentScopeHelper
     {
         Task<bool> IsComponentInScopeAsync(ClaimsPrincipal user, Component component);
+
+        /// <summary>
+        /// NEW — same rule as IsComponentInScopeAsync, against an ALREADY-RESOLVED
+        /// UserScope. Added for ComponentService.GetScopedPagedListAsync, which
+        /// loops over potentially thousands of Components for one request —
+        /// calling IsComponentInScopeAsync per row meant one GetScopeAsync
+        /// (itself a DB round trip) per Component, an N+1 that was invisible
+        /// at the old handful-of-rows test scale but would not have stayed
+        /// invisible once the real fleet (thousands of engines alone) loaded.
+        /// Callers looping over many Components should call GetScopeAsync
+        /// ONCE and use this overload; IsComponentInScopeAsync (single-item
+        /// call sites — Details/Install/Remove/etc., unchanged) now just
+        /// resolves the scope once and delegates here.
+        /// </summary>
+        bool IsComponentInScope(Component component, UserScope scope);
+
+        /// <summary>NEW — effective current BaseId for a Component (CurrentAircraft.BaseId when Installed, StockBaseId otherwise) — the same split used for scoping, exposed so the Index filter's "Base" dropdown can filter on the same concept rather than reimplementing it.</summary>
+        int? GetEffectiveBaseId(Component component);
     }
 
     public class ComponentScopeHelper : IComponentScopeHelper
@@ -41,28 +59,33 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
         public async Task<bool> IsComponentInScopeAsync(ClaimsPrincipal user, Component component)
         {
             var scope = await _scope.GetScopeAsync(user, "MAINTENANCE");
+            return IsComponentInScope(component, scope);
+        }
+
+        public bool IsComponentInScope(Component component, UserScope scope)
+        {
             if (scope.IsUnrestricted) return true;
 
-            switch (component.Status)
+            // Requires CurrentAircraft to be eager-loaded by the caller's query
+            // (GetAllWithCurrentLocationAsync/GetWithDetailsAsync both already
+            // Include it) — GetEffectiveBaseId falls back to null (hidden)
+            // rather than throwing if it somehow isn't loaded.
+            var baseId = GetEffectiveBaseId(component);
+            return baseId.HasValue && scope.AllowedBaseIds.Contains(baseId.Value);
+        }
+
+        public int? GetEffectiveBaseId(Component component)
+        {
+            return component.Status switch
             {
-                case ComponentStatus.Installed when component.CurrentAircraftId.HasValue:
-                    // Requires CurrentAircraft to be eager-loaded by the caller's
-                    // query (GetAllWithCurrentLocationAsync/GetWithDetailsAsync
-                    // both already Include it) — falls back to false (hidden)
-                    // rather than throwing if it somehow isn't loaded.
-                    var aircraftBaseId = component.CurrentAircraft?.BaseId;
-                    return aircraftBaseId.HasValue && scope.AllowedBaseIds.Contains(aircraftBaseId.Value);
-
-                case ComponentStatus.InStock:
-                case ComponentStatus.UnderRepair:
-                    return component.StockBaseId.HasValue && scope.AllowedBaseIds.Contains(component.StockBaseId.Value);
-
-                default:
-                    // Removed (transitional) / Scrapped — no live aircraft or stock
-                    // location to scope against; fall back to Base via StockBaseId
-                    // if still set, otherwise hidden (safest default).
-                    return component.StockBaseId.HasValue && scope.AllowedBaseIds.Contains(component.StockBaseId.Value);
-            }
+                ComponentStatus.Installed when component.CurrentAircraftId.HasValue => component.CurrentAircraft?.BaseId,
+                // InStock / UnderRepair / Removed (transitional) / Scrapped — no
+                // live aircraft to scope against; fall back to Base via
+                // StockBaseId if still set, otherwise null (hidden, safest
+                // default) — same fallback the old switch used for its
+                // "default" branch.
+                _ => component.StockBaseId
+            };
         }
     }
 }

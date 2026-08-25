@@ -12,8 +12,21 @@ namespace FRAProject.Areas.AircraftMaintenance.Repositories
         Task<List<Component>> GetByAircraftAsync(int aircraftId);
         Task<List<Component>> GetByStockBaseAsync(int baseId, bool includeUnderRepair = true);
         Task<bool> ExistsSerialAsync(int componentTypeId, string serialNumber, int? excludeId = null);
-        /// <summary>All Components currently Installed — base query the scope filter is applied on top of (IsAircraftInScopeAsync per row) plus all InStock/UnderRepair rows filtered by StockBaseId membership. See ComponentService for the actual scope application — this just returns the raw candidate set.</summary>
-        Task<List<Component>> GetAllWithCurrentLocationAsync();
+        /// <summary>
+        /// All Components (Installed + InStock/UnderRepair/etc.) with the nav
+        /// properties GetScopedPagedListAsync needs already Include()'d. See
+        /// ComponentService for the actual scope/filter/paging application —
+        /// this just returns the raw candidate set. FIXED — includeInactive
+        /// used to be silently ignored: this method always added
+        /// Where(c =&gt; c.IsActive) regardless of what the caller wanted, so
+        /// Index.cshtml's "Inclure inactifs" checkbox never actually worked
+        /// (ComponentService's own includeInactive check in its old in-memory
+        /// loop never got a chance to run — the inactive rows were already
+        /// gone before that loop saw them). Caught while wiring up the paged
+        /// Index — no prior report of it, likely because nothing under test
+        /// so far had actually been marked inactive.
+        /// </summary>
+        Task<List<Component>> GetAllWithCurrentLocationAsync(bool includeInactive = false);
 
         /// <summary>NEW — direct children (one level, not recursive) of a parent Component, eager-loaded for tree display.</summary>
         Task<List<Component>> GetChildrenAsync(int parentComponentId);
@@ -120,9 +133,9 @@ namespace FRAProject.Areas.AircraftMaintenance.Repositories
             return await query.AnyAsync();
         }
 
-        public async Task<List<Component>> GetAllWithCurrentLocationAsync()
+        public async Task<List<Component>> GetAllWithCurrentLocationAsync(bool includeInactive = false)
         {
-            return await _context.Set<Component>()
+            var query = _context.Set<Component>()
                 .Include(c => c.ComponentType)
                 .Include(c => c.CurrentAircraft)
                 .Include(c => c.CurrentPosition)
@@ -130,8 +143,11 @@ namespace FRAProject.Areas.AircraftMaintenance.Repositories
                 .Include(c => c.ComponentLifeStatus).ThenInclude(s => s!.DrivingDimensionType) // NEW (Revision 13) — headline dimension for list display, no full Dimensions join needed here
                 .Include(c => c.ParentComponent).ThenInclude(p => p!.ComponentType) // NEW — hierarchy list-page columns
                 .Include(c => c.ChildComponents)
-                .Where(c => c.IsActive)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!includeInactive) query = query.Where(c => c.IsActive);
+
+            return await query.ToListAsync();
         }
     }
 }

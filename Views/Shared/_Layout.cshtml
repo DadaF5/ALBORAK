@@ -830,7 +830,7 @@
                            asp-action="Index"
                            title="Catalogue composants (P/N)">
                             <span class="nav-icon">🗃️</span>
-                            <span class="nav-text">Catalogue composants</span>
+                            <span class="nav-text">Catalogue composants (PN)</span>
                         </a>
 
                         <a class="nav-item @IsActive("AircraftMaintenance", "ComponentPositions")"
@@ -839,8 +839,17 @@
                            asp-action="Index"
                            title="Positions composants">
                             <span class="nav-icon">📍</span>
-                            <span class="nav-text">Positions composants</span>
+                            <span class="nav-text">Positions composants (Slot)</span>
                         </a>
+                        <a class="nav-item @IsActive("AircraftMaintenance", "ComponentLifeLimitDimensionTypes")"
+                           asp-area="AircraftMaintenance"
+                           asp-controller="ComponentLifeLimitDimensionTypes"
+                           asp-action="Index"
+                           title="Dimensions de suivi">
+                            <span class="nav-icon">📏</span>
+                            <span class="nav-text">Dimensions de suivi(Compteurs)</span>
+                        </a>
+
                     </div>
                 </div>
                 <!-- GROUP: NAVIGABILITE END -->

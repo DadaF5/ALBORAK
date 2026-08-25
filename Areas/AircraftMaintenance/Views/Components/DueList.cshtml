@@ -49,6 +49,10 @@
                     {
                         <span class="text-muted">—</span>
                     }
+                    @if (d.HasActiveDerogation)
+                    {
+                        <br /><span class="badge bg-info" title="Une ou plusieurs dérogations actives modifient ce seuil">Dérogation</span>
+                    }
                 </td>
                 <td>
                     @if (d.DrivingDimensionRemainingDisplay.HasValue)

@@ -1,0 +1,179 @@
+@model List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentDerogationListDto>
+@{
+    ViewData["Title"] = "Dérogations";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int componentTypeId = ViewBag.ComponentTypeId;
+    string partNumber = ViewBag.ComponentTypePartNumber;
+
+    // NEW — one shared Void modal instead of an inline form per row (Dadda's
+    // call after the first live test: keeps the list scannable). Id -> a
+    // short context label, built server-side and serialized once — same
+    // "window.xOptions populated from a JSON blob, looked up by Id at
+    // runtime" convention as window.dimensionTypeOptions in _ProfileForm.cshtml.
+    // ASSUMPTION — this uses the Bootstrap 5 vanilla JS modal API
+    // (`bootstrap.Modal`, no jQuery). If your _Layout.cshtml still ships
+    // Bootstrap 4/jQuery, swap openVoidModal's last line for
+    // `$('#voidModal').modal('show');` instead — flag it if the modal
+    // doesn't visually open and I'll adjust.
+    var voidLabelsJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.ToDictionary(d => d.Id.ToString(), d => $"{d.Summary} — Réf. {d.Reference}"));
+}
+
+<h3 class="text-light">Dérogations — @partNumber</h3>
+<p class="text-muted">
+    Historique en ajout seul (append-only) — une dérogation n'est jamais modifiée
+    ni supprimée. Une correction se fait en créant une nouvelle dérogation.
+</p>
+<div class="alert alert-warning py-2">
+    <strong>Important :</strong> cette page enregistre le fait qu'une dérogation a
+    été émise (document, valeur, portée). Le calcul de durée de vie
+    (<em>Gérer les profils de durée de vie</em>) ne tient pas encore compte
+    automatiquement des dérogations enregistrées ici — c'est une évolution
+    séparée, pas encore réalisée.
+</div>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+<a asp-action="CreateDerogation" asp-route-componentTypeId="@componentTypeId" class="btn btn-primary mb-3">
+    <i class="fas fa-plus"></i> Nouvelle dérogation
+</a>
+
+<div class="table-responsive">
+    <table class="table table-dark table-hover">
+        <thead>
+            <tr><th>Dimension</th><th>Applicabilité</th><th>Dérogation</th><th>Référence</th><th>Émise le</th><th>Valide jusqu'au</th><th>Catégorie</th><th>Autorité</th><th>Statut</th></tr>
+        </thead>
+        <tbody>
+        @foreach (var d in Model)
+        {
+            <tr class="@(d.IsActive ? "" : "opacity-50")">
+                <td>@d.DimensionTypeCode <span class="text-secondary">(@d.DimensionTypeName)</span></td>
+                <td>
+                    @if (d.ApplicabilityRuleType == FRAProject.Areas.AircraftMaintenance.Models.ApplicabilityRuleType.Specific)
+                    {
+                        @d.SerialNumber
+                    }
+                    else if (d.ApplicabilityRuleType == FRAProject.Areas.AircraftMaintenance.Models.ApplicabilityRuleType.RangeFrom)
+                    {
+                        @($"{d.SerialNumberPrefix} {d.SerialBoundary} et +")
+                    }
+                    else if (d.ApplicabilityRuleType == FRAProject.Areas.AircraftMaintenance.Models.ApplicabilityRuleType.RangeTo)
+                    {
+                        @($"{d.SerialNumberPrefix} jusqu'à {d.SerialBoundary}")
+                    }
+                    else if (d.ApplicabilityRuleType == FRAProject.Areas.AircraftMaintenance.Models.ApplicabilityRuleType.Lot)
+                    {
+                        <text>Lot @d.LotReference</text>
+                    }
+                    else
+                    {
+                        <text>Tous (PN générique)</text>
+                    }
+                </td>
+                <td>
+                    @d.Summary
+                    @if (d.IsConditional)
+                    {
+                        <br /><span class="badge bg-warning text-dark">Conditionnelle</span>
+                    }
+                    @if (d.SupersedesDerogationId.HasValue)
+                    {
+                        <br /><span class="text-secondary small">corrige/annule dérogation #@d.SupersedesDerogationId</span>
+                    }
+                </td>
+                <td>
+                    @d.Reference
+                    @if (!string.IsNullOrWhiteSpace(d.Reason))
+                    {
+                        <br />
+                        <span class="text-secondary small">@d.Reason</span>
+                    }
+                </td>
+                <td>@d.IssuedDate.ToString("dd/MM/yyyy")</td>
+                <td>@(d.EffectiveUntil.HasValue ? d.EffectiveUntil.Value.ToString("dd/MM/yyyy") : "—")</td>
+                <td>
+                    @(d.Tier switch
+                    {
+                        FRAProject.Areas.AircraftMaintenance.Models.DerogationTier.Immediate => "Immédiate",
+                        FRAProject.Areas.AircraftMaintenance.Models.DerogationTier.Urgent => "Urgente",
+                        FRAProject.Areas.AircraftMaintenance.Models.DerogationTier.Routine => "Routine",
+                        _ => "—"
+                    })
+                </td>
+                <td>@(string.IsNullOrWhiteSpace(d.ApprovalAuthority) ? "—" : d.ApprovalAuthority)</td>
+                <td>
+                    @if (d.IsActive)
+                    {
+                        <span class="badge bg-success mb-1">Active</span>
+                        <br />
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="openVoidModal(@d.Id)">Annuler</button>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Annulée</span>
+                        <div class="text-secondary small mt-1">
+                            @d.VoidReason
+                            @if (d.VoidedAtUtc.HasValue)
+                            {
+                                <br /><text>par @d.VoidedByUserName le @d.VoidedAtUtc.Value.ToString("dd/MM/yyyy")</text>
+                            }
+                        </div>
+                    }
+                </td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr><td colspan="9" class="text-secondary fst-italic">Aucune dérogation enregistrée pour ce numéro de pièce.</td></tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<!-- NEW — one shared modal for the Void action, replaces the old per-row
+     inline form (Dadda's feedback after first live test: the inline forms
+     cluttered an otherwise-light list view). -->
+<div class="modal" id="voidModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <form asp-action="VoidDerogation" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="voidModalId" value="" />
+                <input type="hidden" name="ComponentTypeId" value="@componentTypeId" />
+                <div class="modal-header">
+                    <h5 class="modal-title">Annuler la dérogation</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-secondary small" id="voidModalContext"></p>
+                    <label for="voidModalReason" class="form-label">Motif d'annulation (requis)</label>
+                    <textarea name="Reason" id="voidModalReason" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Annuler cette dérogation ? Elle restera visible (grisée) avec le motif indiqué, mais ne sera plus considérée comme active.');">Confirmer l'annulation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // NEW — labels keyed by derogation Id, looked up at modal-open time; same
+    // "window.xOptions populated from a JSON blob" convention as
+    // window.dimensionTypeOptions in _ProfileForm.cshtml.
+    window.voidLabels = @Html.Raw(voidLabelsJson);
+
+    // ASSUMPTION — Bootstrap 5 vanilla JS modal API (bootstrap.Modal, no
+    // jQuery). If _Layout.cshtml still ships Bootstrap 4/jQuery, replace the
+    // last line below with: $('#voidModal').modal('show');
+    function openVoidModal(id) {
+        document.getElementById('voidModalId').value = id;
+        document.getElementById('voidModalContext').textContent = window.voidLabels[id] || '';
+        document.getElementById('voidModalReason').value = '';
+        new bootstrap.Modal(document.getElementById('voidModal')).show();
+    }
+</script>
+
+<a asp-action="Details" asp-route-id="@componentTypeId" class="btn btn-secondary">Retour au composant</a>

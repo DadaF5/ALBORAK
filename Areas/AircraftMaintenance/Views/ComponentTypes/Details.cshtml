@@ -1,0 +1,141 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentTypeDetailsDto
+@{
+    ViewData["Title"] = $"P/N {Model.PartNumber}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var isHardTime = Model.TrackingMethod == FRAProject.Areas.AircraftMaintenance.Models.ComponentTrackingMethod.HardTime;
+}
+
+@* NEW (Details-hub-page pass), CHANGED (follow-up) — read-first "hub" for
+   one PN, same role Components/Details.cshtml plays for a physical S/N.
+   Edit is now a lean data-entry form again (PartNumber/Nomenclature/ATA/
+   Fabricant/Méthode/Sérialisé/Actif only) — all four sub-area concerns
+   (Life Limits, Sub-assembly Slots, Derogations, and — as of this follow-up
+   — Positions éligibles) live here instead as clickable summary cards with
+   their current count, matching Dadda's "too many processes crammed into
+   one view" feedback and, for Positions specifically, "Edit View has to
+   follow same process" — it gets the exact same dedicated-Manage-page
+   treatment the other three already had. *@
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h3 class="text-light">@Model.PartNumber — @Model.Nomenclature</h3>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-info btn-sm">Modifier</a>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Retour au catalogue</a>
+    </div>
+</div>
+<p class="text-muted">
+    @(Model.IsSerialized ? "Sérialisé" : "Non sérialisé")
+    ·
+    @(isHardTime ? "Durée de vie limitée" : "À la condition")
+    ·
+    @if (Model.IsActive)
+    {
+        <span class="badge bg-success">Actif</span>
+    }
+    else
+    {
+        <span class="badge bg-secondary">Inactif</span>
+    }
+</p>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card bg-dark text-light h-100">
+            <div class="card-header">Fiche technique</div>
+            <div class="card-body">
+                <p class="mb-0">Chapitre ATA: <strong>@(Model.AtaLabel ?? "—")</strong></p>
+                <p class="mb-0">Fabricant: <strong>@(Model.AircraftManufacturerLabel ?? "—")</strong></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-dark text-light h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                Composants (S/N)
+                @* NEW (follow-up) — direct "add a new S/N" entry point from
+                   the PN's hub, same "quick add next to the count" placement
+                   as most inventory-style dashboards. Pre-selects this PN on
+                   the Receipt form via the new componentTypeId query param. *@
+                <a asp-controller="Components" asp-action="Receipt" asp-route-componentTypeId="@Model.Id" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-plus"></i> Ajouter un S/N
+                </a>
+            </div>
+            <div class="card-body">
+                <p class="display-6 mb-0">@Model.ComponentCount</p>
+                <p class="text-muted mb-0"><small>composant(s) physique(s) actuellement enregistré(s) sous ce P/N.</small></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h5 class="text-light">Gestion</h5>
+<div class="row mb-4">
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card bg-dark text-light h-100 @(isHardTime ? "position-relative" : "opacity-50")">
+            <div class="card-body">
+                <h6 class="card-title">Profils de durée de vie</h6>
+                @if (isHardTime)
+                {
+                    <p class="card-text">@(Model.LifeLimitProfileCount > 0 ? $"{Model.LifeLimitProfileCount} profil(s) actif(s)" : "Aucun — à configurer")</p>
+                    <a asp-action="ManageLifeLimits" asp-route-id="@Model.Id" class="stretched-link">Gérer les profils de durée de vie</a>
+                }
+                else
+                {
+                    <p class="card-text"><small>Non applicable — ce P/N est suivi "à la condition".</small></p>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card bg-dark text-light h-100 position-relative">
+            <div class="card-body">
+                <h6 class="card-title">Emplacements de sous-ensembles</h6>
+                <p class="card-text">@(Model.SubAssemblySlotCount > 0 ? $"{Model.SubAssemblySlotCount} emplacement(s) défini(s)" : "Aucun — à configurer si ce P/N héberge des sous-ensembles")</p>
+                <a asp-action="ManageSubAssemblySlots" asp-route-id="@Model.Id" class="stretched-link">Gérer les emplacements</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card bg-dark text-light h-100 position-relative">
+            <div class="card-body">
+                <h6 class="card-title">
+                    Dérogations
+                    @if (Model.DerogationActiveCount > 0)
+                    {
+                        <span class="badge bg-info ml-1">@Model.DerogationActiveCount active(s)</span>
+                    }
+                </h6>
+                <p class="card-text">@(Model.DerogationTotalCount > 0 ? $"{Model.DerogationTotalCount} au total ({Model.DerogationActiveCount} active(s))" : "Aucune dérogation enregistrée")</p>
+                <a asp-action="ManageDerogations" asp-route-id="@Model.Id" class="stretched-link">Gérer les dérogations</a>
+            </div>
+        </div>
+    </div>
+    @* NEW (follow-up) — Positions éligibles as a fourth management card,
+       following the exact same process ("moved off Edit, own Manage page,
+       linked from here") already applied to the three cards above. *@
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card bg-dark text-light h-100 position-relative">
+            <div class="card-body">
+                <h6 class="card-title">Positions éligibles</h6>
+                @if (Model.EligiblePositionLabels.Any())
+                {
+                    <p class="card-text">@Model.EligiblePositionLabels.Count position(s) configurée(s)</p>
+                    <ul class="small mb-2" style="max-height: 90px; overflow-y: auto;">
+                        @foreach (var label in Model.EligiblePositionLabels)
+                        {
+                            <li>@label</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="card-text">Aucune — à configurer</p>
+                }
+                <a asp-action="ManagePositions" asp-route-id="@Model.Id" class="stretched-link">Gérer les positions éligibles</a>
+            </div>
+        </div>
+    </div>
+</div>

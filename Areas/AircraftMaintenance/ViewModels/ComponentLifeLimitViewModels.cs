@@ -14,6 +14,17 @@ namespace FRAProject.Areas.AircraftMaintenance.ViewModels
         public ComponentLifeBasis LifeBasis { get; set; }
         public bool IsActive { get; set; }
         public int StageCount { get; set; }
+
+        /// <summary>
+        /// NEW — Dadda couldn't see the actual configured values (e.g. "900")
+        /// on the ManageLifeLimits list, only a stage count; you had to open
+        /// Modifier to see anything real. One line per stage, e.g.
+        /// "Révision : FH 900 h" or "Réforme : FH 3000 h (tol. 50 h)" —
+        /// built in ComponentLifeLimitProfileService.GetByComponentTypeAsync
+        /// from data already loaded there (Stages.Dimensions.DimensionType),
+        /// no extra query.
+        /// </summary>
+        public List<string> StageSummaries { get; set; } = new();
     }
 
     public class ComponentLifeLimitProfileFormDto
@@ -97,6 +108,22 @@ namespace FRAProject.Areas.AircraftMaintenance.ViewModels
         public string? DimensionTypeName { get; set; }
         public ComponentLifeLimitDimensionUnit Unit { get; set; }
 
+        /// <summary>
+        /// NEW — null = fall back to the profile's LifeBasis (SinceNew/
+        /// SinceOverhaul), i.e. the pre-existing behavior. See
+        /// ComponentReferenceBasis.cs / ComponentLifeLimitStageDimension.
+        /// ReferenceBasisId for the full explanation, including the
+        /// "every stage row for the same dimension should agree" rule
+        /// ComponentLifeLimitProfileService enforces on save.
+        /// </summary>
+        [Display(Name = "Référence de calcul")]
+        public int? ReferenceBasisId { get; set; }
+
+        // Display-only, populated on read, same convention as
+        // DimensionTypeCode/Name above — ignored on POST.
+        public string? ReferenceBasisCode { get; set; }
+        public string? ReferenceBasisName { get; set; }
+
         [Display(Name = "Intervalle")]
         public decimal? Interval { get; set; }
         [Display(Name = "Fin de palier")]
@@ -105,7 +132,7 @@ namespace FRAProject.Areas.AircraftMaintenance.ViewModels
         public decimal? Tolerance { get; set; }
     }
 
-    /// <summary>NEW (Revision 13) — populates the "add a dimension to this stage" picker in the stage editor. One row per active ComponentLifeLimitDimensionType.</summary>
+    /// <summary>NEW (Revision 13) — populates the "add a dimension to this stage" picker in the stage editor. One row per active ComponentLifeLimitDimensionType eligible for this ComponentType's aircraft family/families (see ComponentTypesController.PopulateDimensionTypeOptionsAsync — union of AcMainGroupId == null (universal) plus every AcMainGroupId this PN's positions resolve to).</summary>
     public class ComponentLifeLimitDimensionTypeOptionDto
     {
         public int Id { get; set; }
@@ -113,5 +140,13 @@ namespace FRAProject.Areas.AircraftMaintenance.ViewModels
         public string Name { get; set; } = string.Empty;
         public ComponentLifeLimitDimensionUnit Unit { get; set; }
         public bool IsCalendarBased { get; set; }
+    }
+
+    /// <summary>NEW — populates the per-dimension-row "référence de calcul" picker. One row per active ComponentReferenceBasis, same "shared window.* list populated once, reused by every stage row" pattern as ComponentLifeLimitDimensionTypeOptionDto (see _ProfileForm.cshtml).</summary>
+    public class ComponentReferenceBasisOptionDto
+    {
+        public int Id { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
     }
 }

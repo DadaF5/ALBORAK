@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20260823180708_AddComponentDerogations")]
+    partial class AddComponentDerogations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -510,16 +513,6 @@ namespace FRAProject.Migrations
                     b.Property<decimal>("Value")
                         .HasColumnType("decimal(9,2)");
 
-                    b.Property<string>("VoidReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime?>("VoidedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("VoidedByUserId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
@@ -527,8 +520,6 @@ namespace FRAProject.Migrations
                     b.HasIndex("DimensionTypeId");
 
                     b.HasIndex("SupersedesDerogationId");
-
-                    b.HasIndex("VoidedByUserId");
 
                     b.HasIndex("ComponentTypeId", "IssuedDate");
 
@@ -873,9 +864,6 @@ namespace FRAProject.Migrations
 
                     b.Property<int?>("DrivingDimensionTypeId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("HasActiveDerogation")
-                        .HasColumnType("bit");
 
                     b.Property<DateTime>("LastComputedAtUtc")
                         .HasColumnType("datetime2");
@@ -6227,11 +6215,6 @@ namespace FRAProject.Migrations
                         .HasForeignKey("SupersedesDerogationId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("FRAProject.Models.ApplicationUser", "VoidedByUser")
-                        .WithMany()
-                        .HasForeignKey("VoidedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("ComponentType");
 
                     b.Navigation("CreatedByUser");
@@ -6239,8 +6222,6 @@ namespace FRAProject.Migrations
                     b.Navigation("DimensionType");
 
                     b.Navigation("SupersedesDerogation");
-
-                    b.Navigation("VoidedByUser");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentEvent", b =>

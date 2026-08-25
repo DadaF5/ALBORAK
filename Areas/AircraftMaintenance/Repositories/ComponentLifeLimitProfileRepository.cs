@@ -24,6 +24,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Repositories
         {
             return await _context.Set<ComponentLifeLimitProfile>()
                 .Include(p => p.Stages).ThenInclude(s => s.Dimensions).ThenInclude(d => d.DimensionType) // NEW (Revision 13)
+                .Include(p => p.Stages).ThenInclude(s => s.Dimensions).ThenInclude(d => d.ReferenceBasis) // NEW
                 .Where(p => p.ComponentTypeId == componentTypeId)
                 .OrderByDescending(p => p.ApplicabilityRuleType == Models.ApplicabilityRuleType.Specific)
                 .ThenBy(p => p.SerialNumber)
@@ -34,6 +35,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Repositories
         {
             return await _context.Set<ComponentLifeLimitProfile>()
                 .Include(p => p.Stages.OrderBy(s => s.SequenceOrder)).ThenInclude(s => s.Dimensions).ThenInclude(d => d.DimensionType) // NEW (Revision 13)
+                .Include(p => p.Stages.OrderBy(s => s.SequenceOrder)).ThenInclude(s => s.Dimensions).ThenInclude(d => d.ReferenceBasis) // NEW
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 

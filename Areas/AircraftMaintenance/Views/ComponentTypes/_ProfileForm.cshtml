@@ -9,6 +9,14 @@
         ?? new System.Collections.Generic.List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentLifeLimitDimensionTypeOptionDto>();
     var dimensionTypeOptionsJson = System.Text.Json.JsonSerializer.Serialize(
         dimensionTypeOptions.Select(d => new { id = d.Id, code = d.Code, name = d.Name }));
+
+    // NEW — every active ComponentReferenceBasis, for the per-dimension-row
+    // "référence de calcul" picker (see _StageRow.cshtml's reference-basis-
+    // select). Not scoped by dimension/family — same list for every row.
+    var referenceBasisOptions = ViewBag.ReferenceBasisOptions as System.Collections.Generic.List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentReferenceBasisOptionDto>
+        ?? new System.Collections.Generic.List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentReferenceBasisOptionDto>();
+    var referenceBasisOptionsJson = System.Text.Json.JsonSerializer.Serialize(
+        referenceBasisOptions.Select(b => new { id = b.Id, name = b.Name }));
 }
 
 <input type="hidden" asp-for="Id" />
@@ -18,19 +26,25 @@
 <div class="row">
     <div class="col-md-4 mb-3">
         <label asp-for="ApplicabilityRuleType" class="form-label text-light"></label>
-        <select asp-for="ApplicabilityRuleType" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ApplicabilityRuleType>()"></select>
+        <select asp-for="ApplicabilityRuleType" id="applicabilitySelect" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ApplicabilityRuleType>()"></select>
+        <div class="form-text text-secondary">
+            <strong>PN générique</strong> : s'applique aux 8 numéros de série de ce P/N — c'est le cas normal.
+            Choisissez une autre option seulement pour une règle propre à un ou plusieurs S/N précis (rare).
+        </div>
     </div>
-    <div class="col-md-4 mb-3">
-        <label asp-for="SerialNumber" class="form-label text-light"></label>
-        <input asp-for="SerialNumber" class="form-control" placeholder="Requis si Spécifique" />
-    </div>
-    <div class="col-md-2 mb-3">
-        <label asp-for="SerialNumberPrefix" class="form-label text-light"></label>
-        <input asp-for="SerialNumberPrefix" class="form-control" placeholder="ex. LM" />
-    </div>
-    <div class="col-md-2 mb-3">
-        <label asp-for="SerialBoundary" class="form-label text-light"></label>
-        <input asp-for="SerialBoundary" class="form-control" placeholder="ex. 4436" />
+    <div id="serialFieldsContainer" class="col-md-8 row" style="display:none;">
+        <div class="col-md-6 mb-3">
+            <label asp-for="SerialNumber" class="form-label text-light"></label>
+            <input asp-for="SerialNumber" class="form-control" placeholder="Requis si Spécifique" />
+        </div>
+        <div class="col-md-3 mb-3">
+            <label asp-for="SerialNumberPrefix" class="form-label text-light"></label>
+            <input asp-for="SerialNumberPrefix" class="form-control" placeholder="ex. LM" />
+        </div>
+        <div class="col-md-3 mb-3">
+            <label asp-for="SerialBoundary" class="form-label text-light"></label>
+            <input asp-for="SerialBoundary" class="form-control" placeholder="ex. 4436" />
+        </div>
     </div>
 </div>
 
@@ -38,10 +52,15 @@
     <div class="col-md-8 mb-3">
         <label asp-for="Reason" class="form-label text-light"></label>
         <input asp-for="Reason" class="form-control" placeholder="Référence/texte verbatim (ex. SB 2ABC-27-014)" />
+        <div class="form-text text-secondary">Optionnel — texte libre, juste pour se souvenir pourquoi ce profil existe.</div>
     </div>
     <div class="col-md-2 mb-3">
         <label asp-for="LifeBasis" class="form-label text-light"></label>
         <select asp-for="LifeBasis" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeBasis>()"></select>
+        <div class="form-text text-secondary">
+            <strong>Depuis révision</strong> : le compteur repart à zéro après chaque révision — à choisir si vous avez un intervalle de révision qui se répète (le cas le plus courant).
+            <strong>Depuis neuf</strong> : le compteur ne redémarre jamais.
+        </div>
     </div>
     <div class="col-md-2 mb-3 form-check mt-4">
         <input asp-for="IsActive" class="form-check-input" />
@@ -51,10 +70,17 @@
 
 <h5 class="text-light">Étapes (paliers)</h5>
 <p class="text-muted">
-    Chaque étape définit un intervalle récurrent jusqu'à sa fin de palier.
-    Laissez une dimension vide si elle n'est pas limitée à cette étape.
-    L'ordre des lignes = ordre des paliers.
+    Une étape = un palier de la vie de la pièce (ex. "révision tous les 900 h", ou "réforme à 3000 h").
+    À l'intérieur d'une étape, ajoutez une ligne par dimension suivie (heures de vol, jours, cycles...).
+    L'ordre des étapes ci-dessous = l'ordre dans lequel elles surviennent.
 </p>
+<div class="alert alert-secondary py-2">
+    <strong>Exemple simple</strong> — une pièce révisée toutes les 900&nbsp;heures de vol, sans limite de vie
+    finale : une seule étape, Type d'étape = <em>Révision</em>, une ligne de dimension
+    <em>FH — Heures de vol</em> avec Intervalle&nbsp;=&nbsp;900 et Fin de palier laissée vide.
+    Si la pièce a aussi une limite de vie finale (réforme), ajoutez une deuxième étape,
+    Type d'étape = <em>Réforme</em>, avec la même dimension et sa Fin de palier renseignée cette fois.
+</div>
 
 <div id="stagesContainer">
     @for (var i = 0; i < Model.Stages.Count; i++)
@@ -79,6 +105,10 @@
     // shared by every stage row's "add a dimension" picker (see _StageRow.cshtml).
     window.dimensionTypeOptions = @Html.Raw(dimensionTypeOptionsJson);
 
+    // NEW — {id, name} for every active reference basis, shared by every
+    // dimension row's "référence de calcul" picker.
+    window.referenceBasisOptions = @Html.Raw(referenceBasisOptionsJson);
+
     let stageIndex = @Model.Stages.Count;
 
     function addStageRow() {
@@ -89,6 +119,7 @@
         const newRow = wrapper.firstElementChild;
         container.appendChild(newRow);
         refreshDimensionPicker(newRow);
+        newRow.querySelectorAll('.reference-basis-select').forEach(populateReferenceBasisSelect); // NEW — no-op for a brand-new stage (0 dimension rows yet), kept for consistency/defensiveness
         stageIndex++;
     }
 
@@ -115,11 +146,28 @@
             <td>${dimType.name}
                 <input type="hidden" name="Stages[${stageIdx}].Dimensions[${dimIndex}].DimensionTypeId" value="${dimType.id}" />
             </td>
+            <td>
+                <select name="Stages[${stageIdx}].Dimensions[${dimIndex}].ReferenceBasisId" class="form-select form-select-sm reference-basis-select" data-selected="">
+                    <option value="">(profil)</option>
+                </select>
+            </td>
             <td><input type="number" step="0.01" name="Stages[${stageIdx}].Dimensions[${dimIndex}].Interval" class="form-control form-control-sm" /></td>
             <td><input type="number" step="0.01" name="Stages[${stageIdx}].Dimensions[${dimIndex}].BandEnd" class="form-control form-control-sm" /></td>
             <td><input type="number" step="0.01" name="Stages[${stageIdx}].Dimensions[${dimIndex}].Tolerance" class="form-control form-control-sm" /></td>
             <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeDimensionRow(this)">&times;</button></td>
         </tr>`;
+    }
+
+    // NEW — fills one <select class="reference-basis-select"> from
+    // window.referenceBasisOptions, restoring whatever it was server-
+    // rendered with (data-selected, set from ReferenceBasisId — see
+    // _StageRow.cshtml) or leaving "(profil)" selected for a brand-new row.
+    function populateReferenceBasisSelect(select) {
+        const selected = select.dataset.selected || '';
+        const options = ['<option value="">(profil)</option>']
+            .concat((window.referenceBasisOptions || []).map(b =>
+                `<option value="${b.id}"${String(b.id) === selected ? ' selected' : ''}>${b.name}</option>`));
+        select.innerHTML = options.join('');
     }
 
     function refreshDimensionPicker(stageRow) {
@@ -146,15 +194,29 @@
 
         const wrapper = document.createElement('tbody');
         wrapper.innerHTML = renderDimensionRow(stageIdx, dimIndex, dimType);
-        tbody.appendChild(wrapper.firstElementChild);
+        const newRow = wrapper.firstElementChild;
+        tbody.appendChild(newRow);
+        newRow.querySelectorAll('.reference-basis-select').forEach(populateReferenceBasisSelect); // NEW
 
+        updateNoDimensionsPlaceholder(stageRow); // NEW — hide "Aucune dimension..." once one exists
         refreshDimensionPicker(stageRow);
+    }
+
+    // NEW — shows/hides the "Aucune dimension pour cette étape..." row based
+    // on whether any real dimension-row currently exists, so the table never
+    // sits there with headers and nothing else and no hint of what to do.
+    function updateNoDimensionsPlaceholder(stageRow) {
+        const placeholder = stageRow.querySelector('.no-dimensions-row');
+        if (!placeholder) return;
+        const hasAny = stageRow.querySelectorAll('.dimension-row').length > 0;
+        placeholder.style.display = hasAny ? 'none' : '';
     }
 
     function removeDimensionRow(button) {
         const stageRow = button.closest('.stage-row');
         button.closest('.dimension-row').remove();
         renumberDimensions(stageRow);
+        updateNoDimensionsPlaceholder(stageRow); // NEW — re-show the placeholder if that was the last dimension row
         refreshDimensionPicker(stageRow);
     }
 
@@ -169,4 +231,21 @@
     }
 
     document.querySelectorAll('#stagesContainer .stage-row').forEach(row => refreshDimensionPicker(row));
+    document.querySelectorAll('#stagesContainer .reference-basis-select').forEach(populateReferenceBasisSelect); // NEW — server-rendered rows (existing stages/dimensions on Edit)
+
+    // NEW — declutter: the Numéro de série/Préfixe/Borne fields only matter
+    // for the rare non-PN-based applicability rules (Spécifique/Plage), but
+    // used to always render, which made this page look far more complex than
+    // the common case actually is. Hidden unless the user picks something
+    // other than "PN générique" (enum value "0"), shown again if they do —
+    // never disabled/cleared, so a value already saved there for an existing
+    // Specific/Range profile is never silently lost.
+    function toggleSerialFields() {
+        var select = document.getElementById('applicabilitySelect');
+        var container = document.getElementById('serialFieldsContainer');
+        if (!select || !container) return;
+        container.style.display = (select.value === '0') ? 'none' : '';
+    }
+    document.getElementById('applicabilitySelect')?.addEventListener('change', toggleSerialFields);
+    toggleSerialFields();
 </script>

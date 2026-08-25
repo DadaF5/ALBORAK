@@ -32,6 +32,19 @@ namespace FRAProject.Data.Seeders
             ("CALENDAR_DAYS", "Jours calendaires", ComponentLifeLimitDimensionUnit.Days, true, (byte)3),
             ("TGO_LANDINGS", "Atterrissages T&G", ComponentLifeLimitDimensionUnit.Count, false, (byte)4),
             ("FULLSTOP_LANDINGS", "Atterrissages complets", ComponentLifeLimitDimensionUnit.Count, false, (byte)5),
+
+            // NEW (Derogation implementation pass) — Dadda's real legacy
+            // tblMeca_ItemDerogation data is 100% DerogUnit = "MONTHS"; a
+            // derogation expressed in calendar months needs its own
+            // dimension rather than an approximated "×30 days" entry on
+            // CALENDAR_DAYS. See ComponentLifeLimitDimensionUnit.Months/
+            // Years doc comment for the important caveat: these two are
+            // usable on a Derogation today, but deliberately NOT exposed on
+            // a life-limit profile stage yet (calculator still evaluates
+            // calendar dimensions as a raw day count, no real AddMonths/
+            // AddYears math — that's separate, not-yet-built work).
+            ("CALENDAR_MONTHS", "Mois calendaires", ComponentLifeLimitDimensionUnit.Months, true, (byte)6),
+            ("CALENDAR_YEARS", "Années calendaires", ComponentLifeLimitDimensionUnit.Years, true, (byte)7),
         };
 
         public static async Task SeedAsync(FRAContext context)

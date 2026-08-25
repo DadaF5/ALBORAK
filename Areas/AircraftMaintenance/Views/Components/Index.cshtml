@@ -90,6 +90,10 @@
                     {
                         <span class="badge bg-danger" title="Seuil(s) de révision obligatoire franchi(s) sans révision enregistrée">⚠ @c.MissedOverhaulCount révision(s) manquée(s)</span>
                     }
+                    @if (c.HasActiveDerogation)
+                    {
+                        <span class="badge bg-info" title="Une ou plusieurs dérogations actives modifient ce seuil">Dérogation</span>
+                    }
                     @if (c.DrivingDimensionRemainingDisplay.HasValue)
                     {
                         <small class="text-muted d-block">@c.DrivingDimensionRemainingDisplay.Value.ToString("N1") @c.DrivingDimensionName restantes</small>

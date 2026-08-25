@@ -23,6 +23,8 @@ namespace FRAProject.Areas.AircraftMaintenance.Data.Configurations
     //   modelBuilder.ApplyConfiguration(new ComponentLifeStatusDimensionConfiguration());      // NEW (Revision 13)
     //   modelBuilder.ApplyConfiguration(new ComponentEventReadingConfiguration());             // NEW (Revision 13)
     //   modelBuilder.ApplyConfiguration(new ComponentInitialReadingValueConfiguration());      // NEW (Revision 13)
+    //   modelBuilder.ApplyConfiguration(new ComponentReferenceBasisConfiguration());            // NEW — reference-basis lookup, DO NOT forget (same failure mode as the Revision 13 lines above: a missed line here silently falls back to EF default conventions instead of the unique-Code index below)
+    //   modelBuilder.ApplyConfiguration(new ComponentDerogationConfiguration());                // NEW — Derogation implementation pass, DO NOT forget (same failure mode as above — a missed line here silently falls back to EF default conventions instead of the Restrict-delete rules below)
 
     public class ComponentPositionConfiguration : IEntityTypeConfiguration<ComponentPosition>
     {
@@ -274,6 +276,25 @@ namespace FRAProject.Areas.AircraftMaintenance.Data.Configurations
         public void Configure(EntityTypeBuilder<ComponentLifeLimitDimensionType> builder)
         {
             builder.HasIndex(d => d.Code).IsUnique();
+
+            // NEW — AcMainGroup scoping (null = universal). Restrict, same
+            // convention as every other lookup FK in this module: deleting an
+            // AcMainGroup that a dimension type still points at should fail
+            // loudly, not silently null out the scoping and make the
+            // dimension universal again.
+            builder.HasOne(d => d.AcMainGroup)
+                .WithMany()
+                .HasForeignKey(d => d.AcMainGroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
+    }
+
+    /// <summary>NEW — reference-basis lookup, see ComponentReferenceBasis.cs for the "why".</summary>
+    public class ComponentReferenceBasisConfiguration : IEntityTypeConfiguration<ComponentReferenceBasis>
+    {
+        public void Configure(EntityTypeBuilder<ComponentReferenceBasis> builder)
+        {
+            builder.HasIndex(b => b.Code).IsUnique();
         }
     }
 
@@ -293,6 +314,16 @@ namespace FRAProject.Areas.AircraftMaintenance.Data.Configurations
                 .WithMany()
                 .HasForeignKey(x => x.DimensionTypeId)
                 .OnDelete(DeleteBehavior.Restrict); // catalog/lookup row — never cascade-deleted, same convention as every other lookup FK in this module.
+
+            // NEW — reference-basis pick per (stage, dimension) row. Restrict
+            // + nullable: a basis being deactivated/removed should be
+            // prevented while any stage row still points at it, not silently
+            // null the pick back to profile-level default (SetNull would
+            // mask a real "this basis is still in use" problem).
+            builder.HasOne(x => x.ReferenceBasis)
+                .WithMany()
+                .HasForeignKey(x => x.ReferenceBasisId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 
@@ -369,6 +400,57 @@ namespace FRAProject.Areas.AircraftMaintenance.Data.Configurations
                 .WithMany()
                 .HasForeignKey(r => r.RecordedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        }
+    }
+
+    /// <summary>NEW (Derogation implementation pass) — see ComponentDerogation.cs for the full design.</summary>
+    public class ComponentDerogationConfiguration : IEntityTypeConfiguration<ComponentDerogation>
+    {
+        public void Configure(EntityTypeBuilder<ComponentDerogation> builder)
+        {
+            // Catalog/lookup FKs — Restrict, same convention as every other
+            // lookup reference in this module (ComponentType/DimensionType
+            // rows are never cascade-deleted out from under a derogation
+            // that still cites them).
+            builder.HasOne(d => d.ComponentType)
+                .WithMany(t => t.Derogations)
+                .HasForeignKey(d => d.ComponentTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(d => d.DimensionType)
+                .WithMany()
+                .HasForeignKey(d => d.DimensionTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Self-FK correction chain (see ComponentDerogation.SupersedesDerogationId
+            // doc comment) — Restrict, no reverse-nav collection, same
+            // pattern as ComponentEvent.RelatedParentComponentId.
+            builder.HasOne(d => d.SupersedesDerogation)
+                .WithMany()
+                .HasForeignKey(d => d.SupersedesDerogationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(d => d.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(d => d.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // NEW — Void action's audit trail (who voided, not who created).
+            builder.HasOne(d => d.VoidedByUser)
+                .WithMany()
+                .HasForeignKey(d => d.VoidedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Append-only log — rows are never edited/deleted through the UI
+            // (Void flips IsActive + stamps VoidedAt/VoidedBy/VoidReason,
+            // it does not touch any other field) — no concurrency token
+            // needed, same discipline as ComponentEvent.
+            builder.HasIndex(d => new { d.ComponentTypeId, d.IssuedDate });
+
+            // decimal(9,2) is generous enough for both a whole-number percent
+            // (e.g. 20) and an absolute months/hours value (e.g. 19, 120)
+            // while leaving room for a fractional value if one ever shows up.
+            builder.Property(d => d.Value).HasColumnType("decimal(9,2)");
         }
     }
 }

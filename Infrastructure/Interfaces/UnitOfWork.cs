@@ -63,7 +63,8 @@ namespace FRAProject.Infrastructure
             ComponentTypeSubAssemblySlots = new ComponentTypeSubAssemblySlotRepository(_context);
             ComponentInitialReadings = new GenericRepository<ComponentInitialReading>(_context); // NEW (Revision 12)
             ComponentLifeLimitDimensionTypes = new GenericRepository<ComponentLifeLimitDimensionType>(_context); // NEW (Revision 13)
-
+            ComponentReferenceBases = new GenericRepository<ComponentReferenceBasis>(_context); // NEW
+            ComponentDerogations = new ComponentDerogationRepository(_context); // NEW (Derogation implementation pass)
 
         }
 
@@ -210,6 +211,8 @@ namespace FRAProject.Infrastructure
         public IComponentTypeSubAssemblySlotRepository ComponentTypeSubAssemblySlots { get; private set; }
         public IGenericRepository<ComponentInitialReading> ComponentInitialReadings { get; private set; }
         public IGenericRepository<ComponentLifeLimitDimensionType> ComponentLifeLimitDimensionTypes { get; private set; }
+        public IGenericRepository<ComponentReferenceBasis> ComponentReferenceBases { get; private set; }
+        public IComponentDerogationRepository ComponentDerogations { get; private set; }
 
         // ── Commit ────────────────────────────────────────────────────────
         // Single method — CompleteAsync() — matches IUnitOfWork contract.

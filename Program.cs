@@ -5,6 +5,7 @@ using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Repositories;
 using FRAProject.Authorization;
 using FRAProject.Data;
+using FRAProject.Data.Seeders;
 using FRAProject.Infrastructure;
 using FRAProject.Infrastructure.Authorization;
 using FRAProject.Infrastructure.Identity;
@@ -98,6 +99,7 @@ builder.Services.AddScoped<IComponentScopeHelper, ComponentScopeHelper>();
 builder.Services.AddScoped<IComponentTypeService, ComponentTypeService>();
 builder.Services.AddScoped<IComponentLifeLimitProfileService, ComponentLifeLimitProfileService>();
 builder.Services.AddScoped<IComponentService, ComponentService>();
+builder.Services.AddScoped<IComponentDerogationService, ComponentDerogationService>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -230,6 +232,11 @@ using (var scope = app.Services.CreateScope())
         // ── Inspection Process ───────────────────────────────────────
         await MaintenanceProgramSeeder.SeedAsync(context);
         await WorkSectionSeeder.SeedAsync(context);
+
+        // --Components seeder
+        await ComponentPositionSeeder.SeedAsync(context);
+        await ComponentReferenceBasisSeeder.SeedAsync(context);
+        await ComponentLifeLimitDimensionTypeSeeder.SeedAsync(context);
 
 
         logger.LogInformation("Reference data seeded successfully.");

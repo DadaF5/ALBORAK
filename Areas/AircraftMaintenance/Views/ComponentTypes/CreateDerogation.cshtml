@@ -1,0 +1,18 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentDerogationFormDto
+@{
+    ViewData["Title"] = "Nouvelle dérogation";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    string partNumber = ViewBag.ComponentTypePartNumber;
+}
+<h3 class="text-light">Nouvelle dérogation — @partNumber</h3>
+<p class="text-muted">
+    Cette dérogation sera enregistrée pour le P/N <strong>@partNumber</strong>
+    (numéro de type de composant #@Model.ComponentTypeId) — l'applicabilité
+    ci-dessous permet ensuite de la restreindre à un S/N, une plage de S/N,
+    ou un lot précis au sein de ce P/N.
+</p>
+
+<form asp-action="CreateDerogation" method="post">
+    @Html.AntiForgeryToken()
+    @await Html.PartialAsync("_DerogationForm", Model)
+</form>

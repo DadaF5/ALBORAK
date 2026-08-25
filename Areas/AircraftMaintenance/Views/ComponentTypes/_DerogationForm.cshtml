@@ -1,0 +1,174 @@
+@model FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentDerogationFormDto
+@{
+    // Same pattern as _ProfileForm.cshtml's DimensionTypeOptions — populated
+    // by the controller (ViewBag.DerogationDimensionTypeOptions), NOT the
+    // same ViewBag key as the profile-stage picker (that one deliberately
+    // excludes CALENDAR_MONTHS/CALENDAR_YEARS — see
+    // PopulateDerogationDimensionTypeOptionsAsync doc comment).
+    var dimensionTypeOptions = ViewBag.DerogationDimensionTypeOptions as System.Collections.Generic.List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentLifeLimitDimensionTypeOptionDto>
+        ?? new System.Collections.Generic.List<FRAProject.Areas.AircraftMaintenance.ViewModels.ComponentLifeLimitDimensionTypeOptionDto>();
+
+    // Pre-built here (not inline in the <select> below) — avoids embedding a
+    // C# string literal containing double quotes inside an already-double-
+    // quoted Razor attribute value.
+    var dimensionTypeSelectItems = dimensionTypeOptions
+        .Select(d => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem($"{d.Code} — {d.Name}", d.Id.ToString()))
+        .ToList();
+
+    // Same "20269" year-typo guard convention as Receipt.cshtml/Install.cshtml/etc.
+    var todayIso = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    var minIso = "1940-01-01"; // matches Receipt.cshtml's floor, and DerogationFormDto's [NotBefore(1940,1,1)]
+}
+
+<input type="hidden" asp-for="ComponentTypeId" />
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<div class="alert alert-secondary py-2">
+    <strong>Exemple</strong> — pièce à durée de vie initiale (réforme) janvier 2024.
+    Une 1ère dérogation "Extension, Absolue, +24 mois" la porte à janvier 2026 ;
+    une 2ème dérogation "Extension, Absolue, +12 mois" la porte ensuite à
+    janvier 2027 (chaque extension s'ajoute, la % se calcule toujours sur la
+    valeur d'origine du constructeur, jamais sur une valeur déjà dérogée).
+    Exemple réel BAFRA : "CALENDAR, MONTHS, 19, TO N 4517/INSP FRA/STQ DU 12/08/2023".
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label asp-for="DimensionTypeId" class="form-label text-light"></label>
+        <select asp-for="DimensionTypeId" class="form-select" asp-items="dimensionTypeSelectItems">
+            <option value="">-- Sélectionner --</option>
+        </select>
+        <div class="form-text text-secondary">Quel compteur cette dérogation modifie (FH, cycles, jours/mois/années calendaires...).</div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="TargetStageType" class="form-label text-light"></label>
+        <select asp-for="TargetStageType" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitStageType>()"></select>
+        <div class="form-text text-secondary">La plupart des dérogations portent sur la <strong>Réforme</strong> (limite finale) — cas le plus courant.</div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="ApplicabilityRuleType" class="form-label text-light"></label>
+        <select asp-for="ApplicabilityRuleType" id="derogApplicabilitySelect" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ApplicabilityRuleType>()"></select>
+        <div class="form-text text-secondary"><strong>PN générique</strong> : tous les S/N de ce P/N. <strong>Lot</strong> : les composants d'un lot de fabrication donné.</div>
+    </div>
+</div>
+
+<div id="derogSerialFieldsContainer" class="row" style="display:none;">
+    <div class="col-md-3 mb-3">
+        <label asp-for="SerialNumber" class="form-label text-light"></label>
+        <input asp-for="SerialNumber" class="form-control" placeholder="Requis si Spécifique" />
+    </div>
+    <div class="col-md-3 mb-3">
+        <label asp-for="SerialNumberPrefix" class="form-label text-light"></label>
+        <input asp-for="SerialNumberPrefix" class="form-control" placeholder="ex. LM" />
+    </div>
+    <div class="col-md-3 mb-3">
+        <label asp-for="SerialBoundary" class="form-label text-light"></label>
+        <input asp-for="SerialBoundary" class="form-control" placeholder="ex. 4436" />
+    </div>
+    <div class="col-md-3 mb-3">
+        <label asp-for="LotReference" class="form-label text-light"></label>
+        <input asp-for="LotReference" class="form-control" placeholder="Requis si Lot" />
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-2 mb-3">
+        <label asp-for="Mode" class="form-label text-light"></label>
+        <select asp-for="Mode" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ComponentToleranceType>()"></select>
+    </div>
+    <div class="col-md-2 mb-3">
+        <label asp-for="Direction" class="form-label text-light"></label>
+        <select asp-for="Direction" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.DerogationDirection>()"></select>
+    </div>
+    <div class="col-md-2 mb-3">
+        <label asp-for="Value" class="form-label text-light"></label>
+        <input asp-for="Value" type="number" step="0.01" class="form-control" />
+        <div class="form-text text-secondary">Toujours positif — le sens (Extension/Réduction) ci-dessus détermine si elle s'ajoute ou se retranche.</div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <label asp-for="IssuedDate" class="form-label text-light"></label>
+        <input asp-for="IssuedDate" class="form-control" type="date" min="@minIso" max="@todayIso" />
+    </div>
+    <div class="col-md-3 mb-3">
+        <label asp-for="EffectiveUntil" class="form-label text-light"></label>
+        <input asp-for="EffectiveUntil" class="form-control" type="date" min="@minIso" />
+        <div class="form-text text-secondary">Optionnel — laisser vide si la dérogation n'expire pas.</div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="Reference" class="form-label text-light"></label>
+        <input asp-for="Reference" class="form-control" placeholder="ex. TO N 4517/INSP FRA/STQ DU 12/08/2023" />
+        <div class="form-text text-secondary">Texte libre — numéro de document/directive tel qu'émis (pas de format imposé).</div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="Reason" class="form-label text-light"></label>
+        <input asp-for="Reason" class="form-control" />
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <label asp-for="Tier" class="form-label text-light"></label>
+        <select asp-for="Tier" class="form-select" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.DerogationTier>()">
+            <option value="">-- Non classée --</option>
+        </select>
+        <div class="form-text text-secondary">Optionnel — inspiré des catégories TCTO USAF (Immédiate/Urgente/Routine). Laisser sur "Non classée" si non applicable.</div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="ApprovalAuthority" class="form-label text-light"></label>
+        <input asp-for="ApprovalAuthority" class="form-control" placeholder="ex. STQ/DTA, bureau d'études constructeur..." />
+    </div>
+    <div class="col-md-5 mb-3">
+        <label asp-for="SupportingEvidence" class="form-label text-light"></label>
+        <input asp-for="SupportingEvidence" class="form-control" placeholder="ex. inspection visuelle, essai labo, analyse constructeur..." />
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3 form-check mt-4">
+        <input asp-for="IsConditional" id="isConditionalCheck" class="form-check-input" />
+        <label asp-for="IsConditional" class="form-check-label text-light"></label>
+    </div>
+    <div class="col-md-9 mb-3" id="conditionDescriptionContainer" style="display:none;">
+        <label asp-for="ConditionDescription" class="form-label text-light"></label>
+        <input asp-for="ConditionDescription" class="form-control" placeholder="ex. revalidée par inspection visuelle tous les 6 mois jusqu'à la prochaine révision" />
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label asp-for="SupersedesDerogationId" class="form-label text-light"></label>
+        <input asp-for="SupersedesDerogationId" type="number" class="form-control" placeholder="Optionnel — ID de la dérogation corrigée/annulée" />
+        <div class="form-text text-secondary">Laisser vide sauf si cette dérogation corrige ou annule une dérogation précédente (voir son ID sur la page "Dérogations").</div>
+    </div>
+</div>
+
+<div>
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a asp-action="ManageDerogations" asp-route-id="@Model.ComponentTypeId" class="btn btn-secondary">Annuler</a>
+</div>
+
+<script>
+    // Same declutter convention as _ProfileForm.cshtml's toggleSerialFields —
+    // Specific/RangeFrom/RangeTo/Lot (values 1/2/3/4) each need the shared
+    // serial/lot field row; PnBased (0) doesn't.
+    function toggleDerogSerialFields() {
+        var select = document.getElementById('derogApplicabilitySelect');
+        var container = document.getElementById('derogSerialFieldsContainer');
+        if (!select || !container) return;
+        container.style.display = (select.value === '0') ? 'none' : '';
+    }
+    document.getElementById('derogApplicabilitySelect')?.addEventListener('change', toggleDerogSerialFields);
+    toggleDerogSerialFields();
+
+    function toggleConditionDescription() {
+        var check = document.getElementById('isConditionalCheck');
+        var container = document.getElementById('conditionDescriptionContainer');
+        if (!check || !container) return;
+        container.style.display = check.checked ? '' : 'none';
+    }
+    document.getElementById('isConditionalCheck')?.addEventListener('change', toggleConditionDescription);
+    toggleConditionDescription();
+</script>

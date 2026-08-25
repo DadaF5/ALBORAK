@@ -48,6 +48,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Models
         /// SN-specific ones with or without a PN_BASED fallback.
         /// </summary>
         public virtual ICollection<ComponentLifeLimitProfile> LifeLimitProfiles { get; set; } = new List<ComponentLifeLimitProfile>();
+
+        /// <summary>
+        /// NEW (Derogation implementation pass) — append-only history of
+        /// life-limit extensions/exceptions issued against this PN (see
+        /// ComponentDerogation.cs). Never edited/deleted through the UI,
+        /// same convention as Component.ComponentEvents.
+        /// </summary>
+        public virtual ICollection<ComponentDerogation> Derogations { get; set; } = new List<ComponentDerogation>();
         public virtual ICollection<ComponentTypePosition> ComponentTypePositions { get; set; } = new HashSet<ComponentTypePosition>();
         public virtual ICollection<Component> Components { get; set; } = new HashSet<Component>();
 

@@ -55,12 +55,23 @@ namespace FRAProject.Areas.AircraftMaintenance.Controllers
 
         // --- Receipt (new part into stock) ---
 
+        /// <summary>
+        /// CHANGED — optional componentTypeId query param so the new
+        /// ComponentTypes/Details hub's "Ajouter un S/N" link can land here
+        /// with the PN already selected, instead of the tech having to find
+        /// it again in the dropdown. Purely a convenience pre-fill — 0/absent
+        /// behaves exactly as before (nothing selected).
+        /// </summary>
         [Authorize(Policy = "MaintenanceWrite")]
-        public async Task<IActionResult> Receipt()
+        public async Task<IActionResult> Receipt(int? componentTypeId = null)
         {
             await PopulateComponentTypeOptionsAsync();
             await PopulateBaseOptionsAsync();
-            var dto = new ComponentReceiptDto { InitialValues = await BuildEmptyInitialValuesAsync() };
+            var dto = new ComponentReceiptDto
+            {
+                ComponentTypeId = componentTypeId ?? 0,
+                InitialValues = await BuildEmptyInitialValuesAsync()
+            };
             return View(dto);
         }
 

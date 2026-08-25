@@ -30,6 +30,9 @@ namespace FRAProject.Areas.AircraftMaintenance.ViewModels
         public int MissedOverhaulCount { get; set; }
         public bool LifeLimitExceeded { get; set; }
 
+        /// <summary>NEW — true when an active ComponentDerogation was applied while computing this row's status — see ComponentLifeStatus.HasActiveDerogation.</summary>
+        public bool HasActiveDerogation { get; set; }
+
         /// <summary>NEW — true when this Component is attached as a sub-assembly to another Component (ParentComponentId set) rather than being a root/top-level item.</summary>
         public bool IsSubAssembly { get; set; }
         /// <summary>NEW — "P/N — S/N" label of the parent Component, set only when IsSubAssembly.</summary>
@@ -377,5 +380,8 @@ namespace FRAProject.Areas.AircraftMaintenance.ViewModels
 
         public int MissedOverhaulCount { get; set; }
         public bool LifeLimitExceeded { get; set; }
+
+        /// <summary>NEW — see ComponentLifeStatus.HasActiveDerogation.</summary>
+        public bool HasActiveDerogation { get; set; }
     }
 }

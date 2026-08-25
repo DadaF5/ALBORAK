@@ -104,6 +104,10 @@ namespace FRAProject.Infrastructure.Interfaces
         IGenericRepository<ComponentInitialReading> ComponentInitialReadings { get; }
         /// <summary>NEW (Revision 13) — lookup of every life-limit dimension the system knows about (FH/Cycles/CalendarDays/TgoLandings/FullStopLandings, plus any future aircraft-specific counter added later as a new row — no schema change needed). Plain generic repo; code should switch on Code, never Id.</summary>
         IGenericRepository<ComponentLifeLimitDimensionType> ComponentLifeLimitDimensionTypes { get; }
+        /// <summary>NEW — lookup of every "computation reference" a dimension can be measured from (SINCE_NEW/SINCE_OVERHAUL/SINCE_INSTALL/SINCE_FIRST_INSTALL — see ComponentReferenceBasis.cs). Plain generic repo; code should switch on Code, never Id, same convention as ComponentLifeLimitDimensionTypes.</summary>
+        IGenericRepository<ComponentReferenceBasis> ComponentReferenceBases { get; }
+        /// <summary>NEW (Derogation implementation pass) — append-only history of life-limit extensions/exceptions (see ComponentDerogation.cs). Specialist repo — GetByComponentTypeAsync only; no Update exposed at the service layer (corrections are a new row, never an edit).</summary>
+        IComponentDerogationRepository ComponentDerogations { get; }
 
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>

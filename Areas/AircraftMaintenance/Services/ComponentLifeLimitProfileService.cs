@@ -38,8 +38,44 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
                 Reason = p.Reason,
                 LifeBasis = p.LifeBasis,
                 IsActive = p.IsActive,
-                StageCount = p.Stages.Count
+                StageCount = p.Stages.Count,
+                StageSummaries = BuildStageSummaries(p.Stages)
             }).ToList();
+        }
+
+        /// <summary>
+        /// NEW — one human-readable line per stage (e.g. "Révision : FH 900 h",
+        /// "Réforme : FH 3000 h (limite 3000h)") for the ManageLifeLimits list,
+        /// which previously showed only a bare stage count with no way to see
+        /// the actual configured values without opening Modifier. Uses the
+        /// same DimensionUnitConverter.ToDisplayValue the edit form uses, so
+        /// the numbers match exactly (stored minutes -> displayed hours, etc).
+        /// </summary>
+        private static List<string> BuildStageSummaries(IEnumerable<ComponentLifeLimitStage> stages)
+        {
+            var result = new List<string>();
+            foreach (var s in stages.OrderBy(s => s.SequenceOrder))
+            {
+                var stageLabel = s.StageType == ComponentLifeLimitStageType.Overhaul ? "Révision" : "Réforme";
+                var dimParts = s.Dimensions
+                    .Where(d => d.DimensionType != null)
+                    .OrderBy(d => d.DimensionType!.SortOrder)
+                    .Select(d =>
+                    {
+                        var unit = d.DimensionType!.Unit;
+                        var unitSuffix = unit == ComponentLifeLimitDimensionUnit.Hours ? "h"
+                            : unit == ComponentLifeLimitDimensionUnit.Days ? "j"
+                            : unit == ComponentLifeLimitDimensionUnit.Months ? "mois" // NEW
+                            : unit == ComponentLifeLimitDimensionUnit.Years ? "ans" : ""; // NEW
+                        var interval = DimensionUnitConverter.ToDisplayValue(unit, d.Interval);
+                        var bandEnd = DimensionUnitConverter.ToDisplayValue(unit, d.BandEnd);
+                        var text = $"{d.DimensionType.Code} {interval}{unitSuffix}".TrimEnd();
+                        if (bandEnd.HasValue) text += $" (limite {bandEnd}{unitSuffix})";
+                        return text;
+                    });
+                result.Add($"{stageLabel} : {string.Join(", ", dimParts)}");
+            }
+            return result;
         }
 
         public async Task<ComponentLifeLimitProfileFormDto?> GetForEditAsync(int id)
@@ -72,6 +108,9 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
                             DimensionTypeCode = d.DimensionType!.Code,
                             DimensionTypeName = d.DimensionType.Name,
                             Unit = d.DimensionType.Unit,
+                            ReferenceBasisId = d.ReferenceBasisId,
+                            ReferenceBasisCode = d.ReferenceBasis?.Code,
+                            ReferenceBasisName = d.ReferenceBasis?.Name,
                             Interval = DimensionUnitConverter.ToDisplayValue(d.DimensionType.Unit, d.Interval),
                             BandEnd = DimensionUnitConverter.ToDisplayValue(d.DimensionType.Unit, d.BandEnd),
                             Tolerance = DimensionUnitConverter.ToDisplayValue(d.DimensionType.Unit, d.Tolerance),
@@ -95,6 +134,21 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
 
             if (!dto.Stages.Any())
                 return (false, "Au moins une étape est requise.", null);
+
+            // NEW — ReferenceBasisId lives on the per-stage row (see
+            // ComponentLifeLimitStageDimension doc comment for why), but a
+            // dimension's basis should read as ONE choice per profile, not
+            // a different one per stage — enforce that agreement here since
+            // the DB schema itself doesn't (application-level rule).
+            var inconsistentDimension = dto.Stages
+                .SelectMany(s => s.Dimensions)
+                .GroupBy(d => d.DimensionTypeId)
+                .FirstOrDefault(g => g.Select(d => d.ReferenceBasisId).Distinct().Count() > 1);
+            if (inconsistentDimension != null)
+            {
+                var dimName = inconsistentDimension.First().DimensionTypeName ?? $"Dimension #{inconsistentDimension.Key}";
+                return (false, $"« {dimName} » doit utiliser la même référence de calcul sur toutes les étapes où elle apparaît.", null);
+            }
 
             int profileId;
 
@@ -138,6 +192,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
             var dimensionTypesById = (await _uow.ComponentLifeLimitDimensionTypes.GetAllAsync())
                 .ToDictionary(d => d.Id);
 
+            // NEW — same "look up the authoritative row, trust only the Id"
+            // discipline as dimensionTypesById above: ReferenceBasisId is the
+            // only reference-basis field the service trusts from the posted
+            // row (ReferenceBasisCode/Name are display-only, ignored here).
+            var referenceBasisIds = (await _uow.ComponentReferenceBases.GetAllAsync())
+                .Select(b => b.Id)
+                .ToHashSet();
+
             var stages = dto.Stages.Select(s => new ComponentLifeLimitStage
             {
                 StageType = s.StageType,
@@ -150,6 +212,14 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
                         return new ComponentLifeLimitStageDimension
                         {
                             DimensionTypeId = d.DimensionTypeId,
+                            // A posted basis Id that doesn't resolve to a real
+                            // row (stale/removed) is dropped back to null
+                            // (profile-default) rather than saved as a dangling
+                            // reference — same "trust the Id, verify it" spirit
+                            // as the DimensionTypeId filter above.
+                            ReferenceBasisId = d.ReferenceBasisId.HasValue && referenceBasisIds.Contains(d.ReferenceBasisId.Value)
+                                ? d.ReferenceBasisId
+                                : null,
                             Interval = DimensionUnitConverter.ToStoredValue(unit, d.Interval),
                             BandEnd = DimensionUnitConverter.ToStoredValue(unit, d.BandEnd),
                             Tolerance = DimensionUnitConverter.ToStoredValue(unit, d.Tolerance),

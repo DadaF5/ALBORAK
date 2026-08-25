@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20260822172007_AddComponentReferenceBasisScoping")]
+    partial class AddComponentReferenceBasisScoping
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -383,10 +386,6 @@ namespace FRAProject.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<string>("LotReference")
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)");
-
                     b.Property<DateOnly?>("ManufactureDate")
                         .HasColumnType("date");
 
@@ -418,121 +417,6 @@ namespace FRAProject.Migrations
                         .IsUnique();
 
                     b.ToTable("Components", "dbo");
-                });
-
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentDerogation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ApplicabilityRuleType")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ApprovalAuthority")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<int>("ComponentTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ConditionDescription")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedByUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("DimensionTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Direction")
-                        .HasColumnType("int");
-
-                    b.Property<DateOnly?>("EffectiveUntil")
-                        .HasColumnType("date");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsConditional")
-                        .HasColumnType("bit");
-
-                    b.Property<DateOnly>("IssuedDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("LotReference")
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)");
-
-                    b.Property<int>("Mode")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Reference")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<string>("SerialBoundary")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("SerialNumber")
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)");
-
-                    b.Property<string>("SerialNumberPrefix")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<int?>("SupersedesDerogationId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SupportingEvidence")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int>("TargetStageType")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Tier")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Value")
-                        .HasColumnType("decimal(9,2)");
-
-                    b.Property<string>("VoidReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime?>("VoidedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("VoidedByUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("DimensionTypeId");
-
-                    b.HasIndex("SupersedesDerogationId");
-
-                    b.HasIndex("VoidedByUserId");
-
-                    b.HasIndex("ComponentTypeId", "IssuedDate");
-
-                    b.ToTable("ComponentDerogations", "dbo");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentEvent", b =>
@@ -873,9 +757,6 @@ namespace FRAProject.Migrations
 
                     b.Property<int?>("DrivingDimensionTypeId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("HasActiveDerogation")
-                        .HasColumnType("bit");
 
                     b.Property<DateTime>("LastComputedAtUtc")
                         .HasColumnType("datetime2");
@@ -6203,46 +6084,6 @@ namespace FRAProject.Migrations
                     b.Navigation("StockBase");
                 });
 
-            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentDerogation", b =>
-                {
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentType", "ComponentType")
-                        .WithMany("Derogations")
-                        .HasForeignKey("ComponentTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Models.ApplicationUser", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitDimensionType", "DimensionType")
-                        .WithMany()
-                        .HasForeignKey("DimensionTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentDerogation", "SupersedesDerogation")
-                        .WithMany()
-                        .HasForeignKey("SupersedesDerogationId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("FRAProject.Models.ApplicationUser", "VoidedByUser")
-                        .WithMany()
-                        .HasForeignKey("VoidedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("ComponentType");
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("DimensionType");
-
-                    b.Navigation("SupersedesDerogation");
-
-                    b.Navigation("VoidedByUser");
-                });
-
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.ComponentEvent", b =>
                 {
                     b.HasOne("FRAProject.Areas.Settings.Models.Aircraft", "Aircraft")
@@ -7704,8 +7545,6 @@ namespace FRAProject.Migrations
                     b.Navigation("ComponentTypePositions");
 
                     b.Navigation("Components");
-
-                    b.Navigation("Derogations");
 
                     b.Navigation("EligibleAsChildIn");
 

@@ -2,6 +2,14 @@
 @{
     ViewData["Title"] = "Catalogue composants (P/N)";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    // FIXED — this view never surfaced includeInactive even though the
+    // controller/service already supported it (see Index(bool includeInactive)
+    // and ComponentTypeService.GetAllAsync), so a PN deactivated via Edit's
+    // "Actif" checkbox (the intended soft-delete — this module has no hard
+    // Delete since ComponentType is referenced by Component history/profiles)
+    // simply vanished from this list with no way back through the UI. Same
+    // toggle pattern already used on Components/Index.cshtml.
+    bool includeInactive = (bool)(ViewBag.IncludeInactive ?? false);
 }
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="text-light">Catalogue composants (numéros de pièce)</h3>
@@ -10,15 +18,22 @@
 
 @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
 
+<form method="get" class="mb-3">
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="includeInactive" value="true" @(includeInactive ? "checked" : "") onchange="this.form.submit()">
+        <label class="form-check-label text-light">Inclure inactifs</label>
+    </div>
+</form>
+
 <div class="table-responsive">
     <table class="table table-dark table-hover">
         <thead>
-            <tr><th>P/N</th><th>Nomenclature</th><th>ATA</th><th>Méthode</th><th>Profils de vie</th><th></th></tr>
+            <tr><th>P/N</th><th>Nomenclature</th><th>ATA</th><th>Méthode</th><th>Profils de vie</th><th>Actif</th><th></th></tr>
         </thead>
         <tbody>
         @foreach (var t in Model)
         {
-            <tr>
+            <tr class="@(t.IsActive ? "" : "text-muted")">
                 <td>@t.PartNumber</td>
                 <td>@t.Nomenclature</td>
                 <td>@t.AtaLabel</td>
@@ -34,12 +49,25 @@
                     }
                 </td>
                 <td>
-                    <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-sm btn-outline-info">Modifier</a>
-                    @if (t.TrackingMethod == FRAProject.Areas.AircraftMaintenance.Models.ComponentTrackingMethod.HardTime)
+                    @if (t.IsActive)
                     {
-                        <a asp-action="ManageLifeLimits" asp-route-id="@t.Id" class="btn btn-sm btn-outline-warning">Profils de vie</a>
+                        <span class="badge bg-success">Actif</span>
                     }
-                    <a asp-action="ManageSubAssemblySlots" asp-route-id="@t.Id" class="btn btn-sm btn-outline-secondary">Sous-ensembles</a>
+                    else
+                    {
+                        <span class="badge bg-secondary">Inactif</span>
+                    }
+                </td>
+                <td>
+                    @* CHANGED (Details-hub-page pass) — was Modifier + conditional
+                       "Profils de vie" + "Sous-ensembles" stacked here. Those two
+                       sub-area links now live on the Détails hub page instead
+                       (same simplification reasoning as the Edit-form cleanup),
+                       so this row goes back to the same "Détails (primary) +
+                       Modifier (secondary)" convention Components/Index.cshtml
+                       already uses. *@
+                    <a asp-action="Details" asp-route-id="@t.Id" class="btn btn-sm btn-outline-info">Détails</a>
+                    <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-sm btn-outline-secondary">Modifier</a>
                 </td>
             </tr>
         }

@@ -45,6 +45,18 @@ namespace FRAProject.Areas.AircraftMaintenance.Models
 
         public DateOnly? ManufactureDate { get; set; }
 
+        /// <summary>
+        /// NEW (Derogation implementation pass) — legacy
+        /// tblMeca_ItemSerialNo.LotReference had nowhere to land until now.
+        /// Free text (manufacturing lot/batch identifier), not a FK — only
+        /// consumed by ComponentDerogationService when resolving a Lot-scope
+        /// derogation (ApplicabilityRuleType.Lot) against this Component's
+        /// LotReference. Null for the vast majority of components that were
+        /// never part of a lot-wise derogation.
+        /// </summary>
+        [StringLength(60)]
+        public string? LotReference { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         /// <summary>

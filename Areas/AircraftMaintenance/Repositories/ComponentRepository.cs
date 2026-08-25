@@ -39,6 +39,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Repositories
         {
             return await _context.Set<Component>()
                 .Include(c => c.ComponentType).ThenInclude(t => t!.LifeLimitProfiles).ThenInclude(p => p.Stages).ThenInclude(s => s.Dimensions).ThenInclude(d => d.DimensionType) // NEW (Revision 13) — generic per-stage dimensions
+                .Include(c => c.ComponentType).ThenInclude(t => t!.LifeLimitProfiles).ThenInclude(p => p.Stages).ThenInclude(s => s.Dimensions).ThenInclude(d => d.ReferenceBasis) // NEW — RecomputeAsync needs this loaded to resolve the per-dimension basis (falls back to profile.LifeBasis when null)
                 .Include(c => c.CurrentAircraft)
                 .Include(c => c.CurrentPosition)
                 .Include(c => c.StockBase)

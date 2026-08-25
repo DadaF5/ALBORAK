@@ -111,14 +111,7 @@ namespace FRAProject.Data
         public DbSet<WorkOrderSectionPart> WorkOrderSectionParts { get; set; } = null!;
         public DbSet<WorkOrderSectionTask> WorkOrderSectionTasks { get; set; } = null!;
         public DbSet<WorkOrderSectionSignOff> WorkOrderSectionSignOffs { get; set; } = null!;
-        public DbSet<ComponentInitialReading> ComponentInitialReadings { get; set; } = null!;
-        public DbSet<ComponentLifeLimitDimensionType> ComponentLifeLimitDimensionTypes { get; set; } = null!;
-        public DbSet<ComponentLifeLimitStageDimension> ComponentLifeLimitStageDimensions { get; set; } = null!;
-        public DbSet<ComponentLifeStatusDimension> ComponentLifeStatusDimensions { get; set; } = null!;
-        public DbSet<ComponentEventReading> ComponentEventReadings { get; set; } = null!;
-        public DbSet<ComponentInitialReadingValue> ComponentInitialReadingValues { get; set; } = null!;
-
-        
+       
         // Aircraft snags and malfunctions
         public DbSet<Snag> Snags { get; set; } = null!;
         public DbSet<WorkOrderSnag> WorkOrderSnags { get; set; } = null!;
@@ -133,6 +126,17 @@ namespace FRAProject.Data
         public DbSet<Component> Components { get; set; } = null!;
         public DbSet<ComponentEvent> ComponentEvents { get; set; } = null!;
         public DbSet<ComponentLifeStatus> ComponentLifeStatuses { get; set; } = null!;
+        public DbSet<ComponentTypeSlot> ComponentTypeSlots { get; set; } = null!;
+        public DbSet<ComponentTypeSubAssemblySlot> ComponentTypeSubAssemblySlots { get; set; } = null!;
+        public DbSet<ComponentInitialReading> ComponentInitialReadings { get; set; } = null!;
+        public DbSet<ComponentLifeLimitDimensionType> ComponentLifeLimitDimensionTypes { get; set; } = null!;
+        public DbSet<ComponentLifeLimitStageDimension> ComponentLifeLimitStageDimensions { get; set; } = null!;
+        public DbSet<ComponentLifeStatusDimension> ComponentLifeStatusDimensions { get; set; } = null!;
+        public DbSet<ComponentEventReading> ComponentEventReadings { get; set; } = null!;
+        public DbSet<ComponentInitialReadingValue> ComponentInitialReadingValues { get; set; } = null!;
+        public DbSet<ComponentReferenceBasis> ComponentReferenceBases { get; set; } = null!;
+        public DbSet<ComponentDerogation> ComponentDerogations { get; set; } = null!; // NEW — Derogations
+
 
 
         // =====================================
@@ -235,6 +239,9 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new ComponentLifeStatusDimensionConfiguration());     // ADD — Revision 13
             modelBuilder.ApplyConfiguration(new ComponentEventReadingConfiguration());            // ADD — Revision 13
             modelBuilder.ApplyConfiguration(new ComponentInitialReadingValueConfiguration());     // ADD — Revision 13
+            modelBuilder.ApplyConfiguration(new ComponentReferenceBasisConfiguration());
+            modelBuilder.ApplyConfiguration(new ComponentDerogationConfiguration()); // NEW — Derogations
+
             //===========END ===========================
 
             // ── Platform access control ───────────────────────────────────

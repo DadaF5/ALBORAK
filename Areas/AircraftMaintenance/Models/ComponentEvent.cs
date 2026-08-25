@@ -56,6 +56,19 @@ namespace FRAProject.Areas.AircraftMaintenance.Models
         public ComponentRemovalReason? RemovalReason { get; set; }
 
         /// <summary>
+        /// NEW — only set for EventType = Remove: InStock or UnderRepair
+        /// (mirrors ComponentRemoveDto.Destination, stamped onto the
+        /// immutable log at the moment of removal — same "snapshot, never
+        /// recomputed retroactively" convention as Readings). Needed so
+        /// ComponentLifeStatusCalculator can detect "first removed to
+        /// workshop" as a Service Life trigger event (SINCE_FIRST_INSTALL
+        /// basis — see ComponentReferenceBasis) without guessing at a
+        /// Remove event's destination from data that isn't otherwise on
+        /// this row.
+        /// </summary>
+        public ComponentStatus? Destination { get; set; }
+
+        /// <summary>
         /// NEW — set for EventType = AttachToParent/DetachFromParent: which
         /// parent Component this sub-assembly was attached to / detached from.
         /// Kept separate from ComponentId (the sub-assembly itself) so the log

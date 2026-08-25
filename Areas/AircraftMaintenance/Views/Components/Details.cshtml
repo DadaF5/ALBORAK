@@ -220,7 +220,20 @@
                         {
                             <span class="badge badge-danger ml-1">@status.MissedOverhaulCount révision(s) manquée(s)</span>
                         }
+                        @if (status.HasActiveDerogation)
+                        {
+                            <span class="badge badge-info ml-1" title="Une ou plusieurs dérogations actives modifient les seuils ci-dessus">Dérogation appliquée</span>
+                        }
                     </p>
+                    @if (status.HasActiveDerogation)
+                    {
+                        <p class="text-muted">
+                            <small>
+                                Les seuils "Restant" ci-dessus tiennent compte d'au moins une dérogation active.
+                                <a asp-controller="ComponentTypes" asp-action="ManageDerogations" asp-route-id="@Model.ComponentTypeId" class="text-info">Voir les dérogations</a>
+                            </small>
+                        </p>
+                    }
                 }
             </div>
         </div>

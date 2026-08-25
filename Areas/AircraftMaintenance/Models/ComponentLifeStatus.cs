@@ -71,6 +71,18 @@ namespace FRAProject.Areas.AircraftMaintenance.Models
 
         public ComponentLifeStatusValue Status { get; set; } = ComponentLifeStatusValue.Unknown;
 
+        /// <summary>
+        /// NEW — true when one or more active, non-expired ComponentDerogation
+        /// rows were applied while computing this status (see
+        /// ComponentLifeStatusCalculator's derogation-wiring pass). Purely a
+        /// display flag so Details/Index/DueList can tell a tech "the Restant
+        /// figure below isn't the raw manufacturer schedule, a derogation
+        /// already adjusted it" without joining ComponentDerogations. Does not
+        /// say WHICH derogation or by how much — see ManageDerogations for
+        /// that detail, linked from Details.cshtml.
+        /// </summary>
+        public bool HasActiveDerogation { get; set; }
+
         public DateTime LastComputedAtUtc { get; set; } = DateTime.UtcNow;
     }
 }

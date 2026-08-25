@@ -79,6 +79,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
                         : null,
                     MissedOverhaulCount = c.ComponentLifeStatus?.MissedOverhaulCount ?? 0,
                     LifeLimitExceeded = c.ComponentLifeStatus?.LifeLimitExceeded ?? false,
+                    HasActiveDerogation = c.ComponentLifeStatus?.HasActiveDerogation ?? false,
                     IsSubAssembly = c.ParentComponentId.HasValue,
                     ParentLabel = c.ParentComponentId.HasValue
                         ? $"{c.ParentComponent?.ComponentType?.PartNumber} — {c.ParentComponent?.SerialNumber}"
@@ -298,6 +299,7 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
                 PositionId = component.CurrentPositionId,
                 Readings = BuildEventReadings(reading, dimensionTypes),
                 RemovalReason = dto.RemovalReason,
+                Destination = dto.Destination, // NEW — see ComponentEvent.Destination doc comment
                 LinkedWorkOrderId = dto.LinkedWorkOrderId,
                 PerformedByUserId = performedByUserId,
                 Remarks = dto.Remarks
@@ -588,7 +590,8 @@ namespace FRAProject.Areas.AircraftMaintenance.Services
                     ? DimensionUnitConverter.ToDisplayValue(s.DrivingDimensionType.Unit, s.DrivingDimensionRemaining)
                     : null,
                 MissedOverhaulCount = s.MissedOverhaulCount,
-                LifeLimitExceeded = s.LifeLimitExceeded
+                LifeLimitExceeded = s.LifeLimitExceeded,
+                HasActiveDerogation = s.HasActiveDerogation
             })
             // Missed overhauls / exceeded life limits are the most serious finding (real overstress risk,
             // not just "running late") — surface them above ordinary Overdue/Alert rows regardless of margin.

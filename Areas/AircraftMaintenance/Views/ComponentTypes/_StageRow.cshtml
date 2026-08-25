@@ -13,26 +13,48 @@
    dimension (C130 APU starts, Canadair "number of Drops") needs NO change to
    this view — it just shows up as another option once seeded. *@
 <div class="stage-row card bg-dark text-light mb-2 p-2" data-stage-index="@index">
-    <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex justify-content-between align-items-start mb-2">
         <div>
-            <label class="form-label">Type d'étape</label>
-            <select name="@N("StageType")" class="form-select form-select-sm d-inline-block w-auto">
-                <option value="0" selected="@(Model.StageType == FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitStageType.Overhaul)">Révision</option>
-                <option value="1" selected="@(Model.StageType == FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitStageType.Retirement)">Réforme (limite de vie)</option>
-            </select>
-            <label class="form-label ms-3">Type de tolérance</label>
-            <select name="@N("ToleranceType")" class="form-select form-select-sm d-inline-block w-auto">
-                <option value="0" selected="@(Model.ToleranceType == FRAProject.Areas.AircraftMaintenance.Models.ComponentToleranceType.Absolute)">Absolue</option>
-                <option value="1" selected="@(Model.ToleranceType == FRAProject.Areas.AircraftMaintenance.Models.ComponentToleranceType.PercentOfInterval)">% de l'intervalle</option>
-            </select>
+            <div>
+                <label class="form-label">Type d'étape</label>
+                <select name="@N("StageType")" class="form-select form-select-sm d-inline-block w-auto">
+                    <option value="0" selected="@(Model.StageType == FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitStageType.Overhaul)">Révision</option>
+                    <option value="1" selected="@(Model.StageType == FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitStageType.Retirement)">Réforme (limite de vie)</option>
+                </select>
+                <label class="form-label ms-3">Type de tolérance</label>
+                <select name="@N("ToleranceType")" class="form-select form-select-sm d-inline-block w-auto">
+                    <option value="0" selected="@(Model.ToleranceType == FRAProject.Areas.AircraftMaintenance.Models.ComponentToleranceType.Absolute)">Absolue</option>
+                    <option value="1" selected="@(Model.ToleranceType == FRAProject.Areas.AircraftMaintenance.Models.ComponentToleranceType.PercentOfInterval)">% de l'intervalle</option>
+                </select>
+            </div>
+            <div class="form-text text-secondary">
+                <strong>Révision</strong> = palier qui se répète (ex. toutes les 900&nbsp;h).
+                <strong>Réforme</strong> = limite finale, la pièce est retirée du service une fois atteinte.
+            </div>
         </div>
         <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeStageRow(this)">Supprimer l'étape</button>
     </div>
 
     <div class="table-responsive">
         <table class="table table-sm table-dark mb-0 dimensions-table">
-            <thead><tr><th>Dimension</th><th>Intervalle</th><th>Fin de palier</th><th>Tolérance</th><th></th></tr></thead>
+            <thead><tr>
+                <th>Dimension</th>
+                <th>Référence de calcul<br><small class="text-secondary fw-normal">"(profil)" = utilise la Base du calcul ci-dessus</small></th>
+                <th>Intervalle<br><small class="text-secondary fw-normal">valeur récurrente (ex. 900)</small></th>
+                <th>Fin de palier<br><small class="text-secondary fw-normal">limite finale, laisser vide si aucune</small></th>
+                <th>Tolérance<br><small class="text-secondary fw-normal">optionnel</small></th>
+                <th></th>
+            </tr></thead>
             <tbody class="dimensions-container">
+                @* NEW — an empty table with headers and nothing else read as
+                   broken/incomplete rather than "add a row below". Shown only
+                   when there are zero dimension rows; addDimensionRow/
+                   removeDimensionRow in _ProfileForm.cshtml toggle it. *@
+                <tr class="no-dimensions-row" style="@(Model.Dimensions.Count == 0 ? "" : "display:none;")">
+                    <td colspan="6" class="text-secondary fst-italic">
+                        Aucune dimension pour cette étape pour l'instant — choisissez-en une juste en dessous (ex. "FH — Heures de vol") puis cliquez sur "Ajouter".
+                    </td>
+                </tr>
                 @for (var j = 0; j < Model.Dimensions.Count; j++)
                 {
                     var d = Model.Dimensions[j];
@@ -40,6 +62,12 @@
                         <td>
                             @d.DimensionTypeName
                             <input type="hidden" name="@ND(j, "DimensionTypeId")" value="@d.DimensionTypeId" />
+                        </td>
+                        <td>
+                            @* NEW — null option = "(profil)" = fall back to the profile-level LifeBasis (SinceNew/SinceOverhaul), the pre-existing behavior. Options populated client-side from window.referenceBasisOptions (see _ProfileForm.cshtml), same "shared list, per-row select" pattern as the dimension picker. *@
+                            <select name="@ND(j, "ReferenceBasisId")" class="form-select form-select-sm reference-basis-select" data-selected="@d.ReferenceBasisId">
+                                <option value="">(profil)</option>
+                            </select>
                         </td>
                         <td><input type="number" step="0.01" name="@ND(j, "Interval")" value="@d.Interval" class="form-control form-control-sm" /></td>
                         <td><input type="number" step="0.01" name="@ND(j, "BandEnd")" value="@d.BandEnd" class="form-control form-control-sm" /></td>
@@ -52,6 +80,7 @@
     </div>
 
     <div class="mt-2">
+        <label class="form-label d-block text-secondary mb-1">↓ Ajouter une dimension à cette étape (ex. FH pour un intervalle en heures de vol) :</label>
         <select class="form-select form-select-sm d-inline-block w-auto add-dimension-picker">
             <option value="">+ Ajouter une dimension...</option>
         </select>

@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20260824125510_AddComponentDerogationVoid")]
+    partial class AddComponentDerogationVoid
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -873,9 +876,6 @@ namespace FRAProject.Migrations
 
                     b.Property<int?>("DrivingDimensionTypeId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("HasActiveDerogation")
-                        .HasColumnType("bit");
 
                     b.Property<DateTime>("LastComputedAtUtc")
                         .HasColumnType("datetime2");

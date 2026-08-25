@@ -46,38 +46,23 @@
     </div>
 </div>
 
-@if (Model.Id.HasValue && Model.TrackingMethod == FRAProject.Areas.AircraftMaintenance.Models.ComponentTrackingMethod.HardTime)
-{
-    <div class="alert alert-info">
-        Les limites de vie (paliers FH/cycles/calendaire/atterrissages, par
-        numéro de série) se gèrent sur une page dédiée —
-        <a asp-action="ManageLifeLimits" asp-route-id="@Model.Id" class="alert-link">Gérer les profils de durée de vie</a>.
-    </div>
-}
-else if (!Model.Id.HasValue)
+@if (!Model.Id.HasValue)
 {
     <div class="alert alert-secondary">
         Si "Durée de vie limitée" est sélectionné, vous pourrez configurer les
         profils de durée de vie (paliers, par numéro de série si besoin) juste
-        après l'enregistrement.
+        après l'enregistrement — comme les positions éligibles, les
+        sous-ensembles et les dérogations, cela se gère depuis la page
+        "Détails" du P/N une fois créé.
     </div>
 }
 
-<div class="mb-3">
-    <label class="form-label text-light">Positions éligibles</label>
-    @* TODO: multi-select checkbox list sourced from ComponentPositionRepository,
-       same "Manage" bulk-assign pattern as InspectionType.ManagePrograms. *@
-    <select asp-for="EligiblePositionIds" class="form-select" multiple></select>
-</div>
-
-@if (Model.Id.HasValue)
-{
-    <div class="alert alert-info">
-        Les emplacements de sous-ensembles (ex: ce P/N héberge un DEEC, une pompe
-        hydraulique...) se gèrent sur une page dédiée —
-        <a asp-action="ManageSubAssemblySlots" asp-route-id="@Model.Id" class="alert-link">Gérer les emplacements de sous-ensembles</a>.
-    </div>
-}
+@* CHANGED (Details-hub-page pass, follow-up) — Positions éligibles used to
+   have its own picker right here. It's now managed on its own page
+   (ComponentTypesController.ManagePositions), reached from a link on
+   Details, following the exact same "dedicated Manage page" process
+   already used for Life Limits/Sub-assembly Slots/Derogations. See
+   ManagePositions.cshtml for the filterable checkbox picker itself. *@
 
 <button type="submit" class="btn btn-primary">Enregistrer</button>
-<a asp-action="Index" class="btn btn-secondary">Annuler</a>
+<a asp-action="@(Model.Id.HasValue ? "Details" : "Index")" asp-route-id="@Model.Id" class="btn btn-secondary">Annuler</a>

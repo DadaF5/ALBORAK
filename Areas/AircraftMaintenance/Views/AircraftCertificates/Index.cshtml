@@ -1,7 +1,8 @@
 @model FRAProject.Areas.AircraftMaintenance.ViewModels.AircraftCertificateIndexVm
 @{
     ViewData["Title"] = "Certificats de navigabilité";
-    Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    // Layout = "~/Areas/Settings/Views/Shared/_SettingsLayout.cshtml";
 }
 
 <div class="container mt-3">
@@ -85,14 +86,14 @@
                     </select>
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label small text-muted mb-1">
                         Type de certificat
                     </label>
                     <select name="searchCertType"
                             asp-items="Model.CertTypeOptions"
                             class="form-select form-select-sm bg-dark
-                                   text-white border-secondary">
+                                   text-white border-secondary" style="width: 160px;" >
                     </select>
                 </div>
 
@@ -152,7 +153,7 @@
                         </select>
                 </div>
 
-                <div class="col-md-3 d-flex gap-2">
+                <div class="col-md-2 d-flex gap-2">
                     <input type="hidden" name="sortColumn"
                            value="@Model.SortColumn" />
                     <input type="hidden" name="sortDirection"

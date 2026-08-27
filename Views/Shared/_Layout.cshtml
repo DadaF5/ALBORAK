@@ -565,7 +565,7 @@
                                 ========================================= */
 
         @@media (max-width: 991.98px) {
-
+           
             .sidebar {
                 position: fixed;
                 top: 0;
@@ -580,6 +580,13 @@
                 width: 100%;
             }
 
+            body:not(.sidebar-collapsed)::before {
+                content: "";
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.35);
+                z-index: 1030;
+            }
             body.sidebar-collapsed .sidebar {
                 width: var(--sidebar-width);
                 min-width: var(--sidebar-width);
@@ -1095,34 +1102,36 @@
     </a>
     <script>
         (function () {
-            // =========================
-            // Element references
-            // =========================
             const body = document.body;
+            const sidebar = document.getElementById('appSidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
             const userMenu = document.getElementById('topbarUserMenu');
             const userTrigger = document.getElementById('topbarUserTrigger');
 
-            // =========================
-            // Local storage keys
-            // =========================
             const sidebarStorageKey = 'gmao.sidebar.collapsed';
             const groupStorageKey = 'gmao.sidebar.groups';
+            const mobileMq = window.matchMedia('(max-width: 991.98px)');
 
-            // =========================
-            // Sidebar collapse / expand
-            // =========================
+            function isMobile() {
+                return mobileMq.matches;
+            }
+
             function applySidebarState(collapsed) {
                 body.classList.toggle('sidebar-collapsed', collapsed);
-
                 if (sidebarToggle) {
                     sidebarToggle.setAttribute('aria-expanded', (!collapsed).toString());
                 }
             }
 
-            // =========================
-            // Menu groups
-            // =========================
+            function syncSidebarForViewport() {
+                const saved = localStorage.getItem(sidebarStorageKey) === 'true';
+                if (isMobile()) {
+                    applySidebarState(true);   // mobile default = hidden
+                } else {
+                    applySidebarState(saved);  // desktop = saved preference
+                }
+            }
+
             function getGroups() {
                 return Array.from(document.querySelectorAll('[data-group]'));
             }
@@ -1153,7 +1162,6 @@
             function restoreGroupState() {
                 const saved = localStorage.getItem(groupStorageKey);
                 if (!saved) return;
-
                 try {
                     const parsed = JSON.parse(saved);
                     getGroups().forEach((group, index) => {
@@ -1161,56 +1169,62 @@
                             applyGroup(group, !!parsed[index]);
                         }
                     });
-                } catch (error) {
-                    console.warn('Impossible de restaurer l’état du menu latéral.', error);
+                } catch (e) {
+                    console.warn('Impossible de restaurer l’état du menu latéral.', e);
                 }
             }
 
-            // =========================
-            // Initialize sidebar state
-            // =========================
-            if (sidebarToggle) {
-                const savedSidebarState = localStorage.getItem(sidebarStorageKey);
-                applySidebarState(savedSidebarState === 'true');
+            // INIT (important: this CALL makes function non-grayed and active)
+            syncSidebarForViewport();
 
-                sidebarToggle.addEventListener('click', function () {
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function (e) {
+                    e.stopPropagation();
                     const collapsed = !body.classList.contains('sidebar-collapsed');
                     applySidebarState(collapsed);
-                    localStorage.setItem(sidebarStorageKey, collapsed.toString());
 
-                    if (!collapsed) {
-                        getGroups().forEach(function (group) {
-                            const isOpen = group.classList.contains('open');
-                            const menu = group.querySelector('[data-group-menu]');
-                            if (menu) {
-                                menu.style.display = isOpen ? 'block' : 'none';
-                            }
-                        });
+                    // save only desktop preference
+                    if (!isMobile()) {
+                        localStorage.setItem(sidebarStorageKey, collapsed.toString());
                     }
                 });
             }
 
-            // =========================
-            // Group toggle behavior
-            // =========================
+            // close on outside click (mobile)
+            document.addEventListener('click', function (e) {
+                if (!isMobile()) return;
+                if (!sidebar) return;
+
+                const clickInsideSidebar = sidebar.contains(e.target);
+                const clickOnToggle = sidebarToggle && sidebarToggle.contains(e.target);
+
+                if (!clickInsideSidebar && !clickOnToggle) {
+                    applySidebarState(true);
+                }
+            });
+
+            // listen viewport changes
+            if (mobileMq.addEventListener) {
+                mobileMq.addEventListener('change', syncSidebarForViewport);
+            } else if (mobileMq.addListener) {
+                mobileMq.addListener(syncSidebarForViewport);
+            }
+            window.addEventListener('resize', syncSidebarForViewport);
+
             getGroups().forEach(function (group) {
                 const toggle = group.querySelector('[data-group-toggle]');
                 if (!toggle) return;
 
                 toggle.addEventListener('click', function () {
-                    if (body.classList.contains('sidebar-collapsed') && window.innerWidth > 991.98) {
+                    if (body.classList.contains('sidebar-collapsed') && !isMobile()) {
                         return;
                     }
-
                     const isOpen = group.classList.contains('open');
                     applyGroup(group, !isOpen);
                     saveGroupState();
                 });
             });
 
-            // =========================
-            // User dropdown
-            // =========================
             if (userMenu && userTrigger) {
                 userTrigger.addEventListener('click', function (e) {
                     e.stopPropagation();
@@ -1226,9 +1240,6 @@
                 });
             }
 
-            // =========================
-            // Restore saved group state
-            // =========================
             restoreGroupState();
         })();
     </script>

@@ -365,7 +365,7 @@ namespace FRAProject.Data
                 .HasOne(a => a.AtaCategory)
                 .WithMany(c => c.AtaChapters)
                 .HasForeignKey(a => a.AtaCategoryId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<JobCard>()
                .HasOne(j => j.Ata)

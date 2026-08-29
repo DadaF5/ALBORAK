@@ -137,6 +137,8 @@ namespace FRAProject.Data
         public DbSet<ComponentReferenceBasis> ComponentReferenceBases { get; set; } = null!;
         public DbSet<ComponentDerogation> ComponentDerogations { get; set; } = null!; // NEW — Derogations
 
+        // Sortie data reading and recording
+        public DbSet<AircraftReading> AircraftReadings { get; set; } = null!; // NEW — generic aircraft-level readings
 
 
         // =====================================
@@ -241,7 +243,9 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new ComponentInitialReadingValueConfiguration());     // ADD — Revision 13
             modelBuilder.ApplyConfiguration(new ComponentReferenceBasisConfiguration());
             modelBuilder.ApplyConfiguration(new ComponentDerogationConfiguration()); // NEW — Derogations
-
+            
+            // Aircraft -level readings configuration
+            modelBuilder.ApplyConfiguration(new AircraftReadingConfiguration()); // NEW — generic aircraft-level readings
             //===========END ===========================
 
             // ── Platform access control ───────────────────────────────────

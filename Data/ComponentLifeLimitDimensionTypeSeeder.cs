@@ -45,6 +45,17 @@ namespace FRAProject.Data.Seeders
             // AddYears math — that's separate, not-yet-built work).
             ("CALENDAR_MONTHS", "Mois calendaires", ComponentLifeLimitDimensionUnit.Months, true, (byte)6),
             ("CALENDAR_YEARS", "Années calendaires", ComponentLifeLimitDimensionUnit.Years, true, (byte)7),
+
+            // NEW (AircraftReadings pass) — engine-run hours (Sortie.EngineStartTime
+            // to Sortie.EngineStopTime, ground running included), a genuinely
+            // different basis from FH (airframe flight hours, RealTOFF to
+            // RealLandingTime) for engine LLPs that accrue by run time, not
+            // airborne time. Universal (AcMainGroupId stays null) — every
+            // family with tracked engines can use it. Fed through the new
+            // AircraftReadings table via IAircraftReadingProvider.
+            // IncrementReadingAsync, same generic path TGO_LANDINGS already
+            // uses — no schema change needed for this dimension itself.
+            ("ENGINE_HOURS", "Heures moteur (start-stop)", ComponentLifeLimitDimensionUnit.Hours, false, (byte)8),
         };
 
         public static async Task SeedAsync(FRAContext context)

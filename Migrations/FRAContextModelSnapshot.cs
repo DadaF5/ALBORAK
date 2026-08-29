@@ -283,6 +283,37 @@ namespace FRAProject.Migrations
                     b.ToTable("AircraftJobCardStates", (string)null);
                 });
 
+            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AircraftReading", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AircraftId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DimensionTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastUpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Value")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DimensionTypeId");
+
+                    b.HasIndex("AircraftId", "DimensionTypeId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AircraftReadings_Aircraft_Dimension");
+
+                    b.ToTable("AircraftReadings", "dbo");
+                });
+
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AircraftRestriction", b =>
                 {
                     b.Property<int>("Id")
@@ -3561,6 +3592,12 @@ namespace FRAProject.Migrations
                     b.Property<int?>("BaseId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("BlockOffTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("BlockOnTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool?>("BrakeChuteUsed")
                         .HasColumnType("bit");
 
@@ -3590,6 +3627,12 @@ namespace FRAProject.Migrations
 
                     b.Property<int?>("DurationMinutes")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("EngineStartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EngineStopTime")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("FinalizedAtUtc")
                         .HasColumnType("datetime2");
@@ -6142,6 +6185,25 @@ namespace FRAProject.Migrations
                     b.Navigation("JobCard");
 
                     b.Navigation("LastWorkOrder");
+                });
+
+            modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AircraftReading", b =>
+                {
+                    b.HasOne("FRAProject.Areas.Settings.Models.Aircraft", "Aircraft")
+                        .WithMany()
+                        .HasForeignKey("AircraftId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.ComponentLifeLimitDimensionType", "DimensionType")
+                        .WithMany()
+                        .HasForeignKey("DimensionTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Aircraft");
+
+                    b.Navigation("DimensionType");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.AircraftMaintenance.Models.AircraftRestriction", b =>

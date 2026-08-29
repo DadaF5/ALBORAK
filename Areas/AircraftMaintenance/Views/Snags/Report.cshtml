@@ -14,70 +14,74 @@
     <div class="card-body">
         <form asp-action="Report" method="post">
             <div asp-validation-summary="All" class="text-danger"></div>
-
-            <div class="form-group">
+            <div class="row">
+            <div class="col-md-3 form-group">
+                <label>Date</label>
+                <input asp-for="DiscoveryDate" class="form-control" type="date" />
+            </div>
+            <div class="col-md-3 form-group">
                 <label>Aéronef <span class="text-danger">*</span></label>
                 <select asp-for="AircraftId" asp-items="ViewBag.Aircrafts" class="form-control">
                     <option value="">-- Sélectionner --</option>
                 </select>
             </div>
 
-            <div class="form-group">
+            <div class="col-md-3 form-group">
                 <label>Chapitre ATA <span class="text-danger">*</span></label>
                 <select asp-for="AtaId" asp-items="ViewBag.AtaChapters" class="form-control">
                     <option value="">-- Sélectionner --</option>
                 </select>
             </div>
-
+            </div>
             <div class="row">
-                <div class="col-md-4 form-group">
+                <div class="col-md-3 form-group">
                     <label>Gravité <span class="text-danger">*</span></label>
                     <select asp-for="Severity" asp-items="Html.GetEnumSelectList<SnagSeverity>()" class="form-control"></select>
                 </div>
-                <div class="col-md-4 form-group">
+                <div class="col-md-3 form-group">
                     <label>Impact Navigabilité <span class="text-danger">*</span></label>
                     <select asp-for="Impact" asp-items="Html.GetEnumSelectList<AirworthinessImpact>()" class="form-control"></select>
                 </div>
-                <div class="col-md-4 form-group">
+                <div class="col-md-3 form-group">
                     <label>Signalé par <span class="text-danger">*</span></label>
                     <select asp-for="ReportedBy" asp-items="Html.GetEnumSelectList<ReportedBy>()" class="form-control"></select>
                 </div>
+                <div class="form-group">
+                    <label>Phase de Découverte <span class="text-danger">*</span></label>
+                    <select asp-for="DiscoveryPhase" asp-items="Html.GetEnumSelectList<DiscoveryPhase>()" class="form-control"></select>
+                </div>
             </div>
+            <div class="row">
+                <div class="col-md-3 form-group">
+                    <label>Heures de Vol (min)</label>
+                    <input asp-for="DiscoveryFH" class="form-control" />
+                </div>
+                <div class="col-md-3 form-group">
+                    <label>Cycles</label>
+                    <input asp-for="DiscoveryCycles" class="form-control" />
+                </div>
 
-            <div class="form-group">
-                <label>Phase de Découverte <span class="text-danger">*</span></label>
-                <select asp-for="DiscoveryPhase" asp-items="Html.GetEnumSelectList<DiscoveryPhase>()" class="form-control"></select>
+                <div class="col-md-3 form-group">
+                    <label>Base</label>
+                    <select asp-for="DiscoveryBaseId" asp-items="ViewBag.Bases" class="form-control"></select>
+                </div>
             </div>
+           
 
             <div class="form-group">
                 <label>Description <span class="text-danger">*</span></label>
                 <textarea asp-for="Description" class="form-control" rows="4"></textarea>
             </div>
 
-            <a data-toggle="collapse" href="#advOptions" class="d-block mb-2">Options avancées (position au moment de la découverte) ▾</a>
+            @* <a data-bs-toggle="collapse" href="#advOptions" class="d-block mb-2">
+                Options avancées (position au moment de la découverte) ▾
+            </a>
             <div class="collapse" id="advOptions">
-                <div class="row">
-                    <div class="col-md-3 form-group">
-                        <label>Heures de Vol (min)</label>
-                        <input asp-for="DiscoveryFH" class="form-control" />
-                    </div>
-                    <div class="col-md-3 form-group">
-                        <label>Cycles</label>
-                        <input asp-for="DiscoveryCycles" class="form-control" />
-                    </div>
-                    <div class="col-md-3 form-group">
-                        <label>Date</label>
-                        <input asp-for="DiscoveryDate" class="form-control" type="date" />
-                    </div>
-                    <div class="col-md-3 form-group">
-                        <label>Base</label>
-                        <select asp-for="DiscoveryBaseId" asp-items="ViewBag.Bases" class="form-control"></select>
-                    </div>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-danger">Signaler le Snag</button>
+                
+            </div> *@
             <a asp-action="Index" class="btn btn-secondary">Annuler</a>
+            <button type="submit" class="btn btn-warning">Signaler le Snag</button>
+            
         </form>
     </div>
 </div>

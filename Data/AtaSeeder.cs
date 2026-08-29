@@ -3,46 +3,37 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Data
 {
-    public class AtaCategorySeeder
-    {
-        public static async Task SeedAsync(FRAContext context)
-        {
-            if (await context.Set<AtaCategory>().AnyAsync())
-                return;
-
-            var categories = new List<AtaCategory>
-            {
-                new() { Code = "GEN",   Name = "Aircraft General",  SortOrder = 1, IsActive = true },
-                new() { Code = "AFS",   Name = "Airframe Systems",  SortOrder = 2, IsActive = true },
-                new() { Code = "STRUC", Name = "Structure",         SortOrder = 3, IsActive = true },
-                new() { Code = "PWR",   Name = "Power Plant",       SortOrder = 4, IsActive = true },
-            };
-
-            await context.Set<AtaCategory>().AddRangeAsync(categories);
-            await context.SaveChangesAsync();
-        }
-    }
-
     public class AtaSeeder
     {
         public static async Task SeedAsync(FRAContext context)
         {
-            if (await context.Set<Ata>().AnyAsync())
-                return;
-
             await AtaCategorySeeder.SeedAsync(context);
 
-            var genId = await context.Set<AtaCategory>().Where(c => c.Code == "GEN").Select(c => c.Id).SingleAsync();
-            var airId = await context.Set<AtaCategory>().Where(c => c.Code == "AFS").Select(c => c.Id).SingleAsync();
-            var strId = await context.Set<AtaCategory>().Where(c => c.Code == "STRUC").Select(c => c.Id).SingleAsync();
-            var pwrId = await context.Set<AtaCategory>().Where(c => c.Code == "PWR").Select(c => c.Id).SingleAsync();
+            var genId = await context.Set<AtaCategory>()
+                .Where(c => c.Code == "GEN")
+                .Select(c => c.Id)
+                .SingleOrDefaultAsync();
 
-            // Full chapter list per ATA iSpec 2200 (chapter level only — see
-            // ATA_Chapters.pdf). Category assigned per the document's own
-            // section headers.
+            var airId = await context.Set<AtaCategory>()
+                .Where(c => c.Code == "AFS")
+                .Select(c => c.Id)
+                .SingleOrDefaultAsync();
+
+            var strId = await context.Set<AtaCategory>()
+                .Where(c => c.Code == "STRUC")
+                .Select(c => c.Id)
+                .SingleOrDefaultAsync();
+
+            var pwrId = await context.Set<AtaCategory>()
+                .Where(c => c.Code == "PWR")
+                .Select(c => c.Id)
+                .SingleOrDefaultAsync();
+
+            if (genId == 0 || airId == 0 || strId == 0 || pwrId == 0)
+                throw new InvalidOperationException("AtaSeeder prerequisites missing: GEN/AFS/STRUC/PWR categories.");
+
             var chapters = new (string Code, string Name, int CategoryId)[]
             {
-                // AIRCRAFT GENERAL
                 ("05", "Time Limits / Maintenance Checks", genId),
                 ("06", "Dimensions and Areas", genId),
                 ("07", "Lifting and Shoring", genId),
@@ -54,7 +45,6 @@ namespace FRAProject.Data
                 ("18", "Vibration and Noise Analysis (Helicopter Only)", genId),
                 ("89", "Flight Test Installation", genId),
 
-                // AIRFRAME SYSTEMS
                 ("20", "Standard Practices — Airframe", airId),
                 ("21", "Air Conditioning and Pressurization", airId),
                 ("22", "Auto Flight", airId),
@@ -86,7 +76,6 @@ namespace FRAProject.Data
                 ("49", "Airborne Auxiliary Power", airId),
                 ("50", "Cargo and Accessory Compartments", airId),
 
-                // STRUCTURE
                 ("51", "Standard Practices and Structures — General", strId),
                 ("52", "Doors", strId),
                 ("53", "Fuselage", strId),
@@ -95,8 +84,6 @@ namespace FRAProject.Data
                 ("56", "Windows", strId),
                 ("57", "Wings", strId),
 
-                // POWER PLANT (includes Propeller/Rotor chapters, and 91/92
-                // per the document's own grouping)
                 ("60", "Standard Practices — Propeller/Rotor", pwrId),
                 ("61", "Propellers", pwrId),
                 ("62", "Rotor(s)", pwrId),
@@ -125,19 +112,27 @@ namespace FRAProject.Data
                 ("92", "Electrical System Installation", pwrId),
             };
 
+            var existingCodes = await context.Set<Ata>()
+                .Select(a => a.Code)
+                .ToListAsync();
+
             var entities = chapters
+                .Where(c => !existingCodes.Contains(c.Code))
                 .Select((c, i) => new Ata
                 {
                     Code = c.Code,
                     Name = c.Name,
                     AtaCategoryId = c.CategoryId,
-                    SortOrder = (byte)Math.Min(i, 255),
+                    SortOrder = (byte)Math.Min(i + 1, 255),
                     IsActive = true
                 })
                 .ToList();
 
-            await context.Set<Ata>().AddRangeAsync(entities);
-            await context.SaveChangesAsync();
+            if (entities.Any())
+            {
+                await context.Set<Ata>().AddRangeAsync(entities);
+                await context.SaveChangesAsync();
+            }
         }
     }
 }

@@ -3,13 +3,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FRAProject.Data
 {
-    // Single authoritative source for AcType creation. Refactored from a
-    // table-wide AnyAsync() guard to a per-code idempotent pattern — the
-    // old guard silently blocked adding new types once ANY row existed,
-    // which forced ad-hoc "GetOrCreate" workarounds in other seeders
-    // (InspectionTypeSeeder had its own private F5E helper). Every other
-    // seeder should now call AcTypeSeeder.SeedAsync(context) and look up
-    // by Code, never create an AcType itself.
     public class AcTypeSeeder
     {
         public static async Task SeedAsync(FRAContext context)
@@ -17,74 +10,63 @@ namespace FRAProject.Data
             await AcMainGroupSeeder.SeedAsync(context);
             await AircraftManufacturerSeeder.SeedAsync(context);
 
+            static async Task<int> RequireIdAsync<TEntity>(
+                FRAContext ctx,
+                IQueryable<TEntity> query,
+                string what) where TEntity : class
+            {
+                var id = await query.Select(e => EF.Property<int>(e, "Id")).SingleOrDefaultAsync();
+                if (id == 0)
+                    throw new InvalidOperationException($"Seeder prerequisite missing: {what}");
+                return id;
+            }
+
             var chasseGroupId = await context.Set<AcMainGroup>()
-                .Where(g => g.Code == "CHASSE-2B").Select(g => g.Id).SingleAsync();
+                .Where(g => g.Code == "CHASSE-2B")
+                .Select(g => g.Id)
+                .SingleOrDefaultAsync();
+            if (chasseGroupId == 0)
+                throw new InvalidOperationException("AcMainGroup code 'CHASSE-2B' not found.");
+
             var transGroupId = await context.Set<AcMainGroup>()
-                .Where(g => g.Code == "TRANS-2B").Select(g => g.Id).SingleAsync();
+                .Where(g => g.Code == "TRANS-2B")
+                .Select(g => g.Id)
+                .SingleOrDefaultAsync();
+            if (transGroupId == 0)
+                throw new InvalidOperationException("AcMainGroup code 'TRANS-2B' not found.");
 
             var lmId = await context.Set<AircraftManufacturer>()
-                .Where(m => m.Code == "LM").Select(m => m.Id).SingleAsync();
+                .Where(m => m.Code == "LM")
+                .Select(m => m.Id)
+                .SingleOrDefaultAsync();
+            if (lmId == 0)
+                throw new InvalidOperationException("AircraftManufacturer code 'LM' not found.");
+
             var northropId = await context.Set<AircraftManufacturer>()
-                .Where(m => m.Code == "NORTHR").Select(m => m.Id).SingleAsync();
+                .Where(m => m.Code == "NORTHR")
+                .Select(m => m.Id)
+                .SingleOrDefaultAsync();
+            if (northropId == 0)
+                throw new InvalidOperationException("AircraftManufacturer code 'NORTHR' not found.");
+
             var dassaultId = await context.Set<AircraftManufacturer>()
-                .Where(m => m.Code == "DASSAULT").Select(m => m.Id).SingleAsync();
+                .Where(m => m.Code == "DASSAULT")
+                .Select(m => m.Id)
+                .SingleOrDefaultAsync();
+            if (dassaultId == 0)
+                throw new InvalidOperationException("AircraftManufacturer code 'DASSAULT' not found.");
 
             var wanted = new List<AcType>
             {
-                new()
-                {
-                    Code = "F16C", Name = "F-16C Fighting Falcon",
-                    Description = "Chasseur monoplace",
-                    AcMainGroupId = chasseGroupId, AircraftManufacturerId = lmId,
-                    MaxGrossWeight = 19187, MaxEngines = 1, SeatCount = 1, MaxPassengers = 0,
-                    SortOrder = 1, IsActive = true
-                },
-                new()
-                {
-                    Code = "F16D", Name = "F-16D Fighting Falcon",
-                    Description = "Chasseur biplace (entraînement) — même famille que F16C",
-                    AcMainGroupId = chasseGroupId, AircraftManufacturerId = lmId,
-                    MaxGrossWeight = 19200, MaxEngines = 1, SeatCount = 2, MaxPassengers = 0,
-                    SortOrder = 2, IsActive = true
-                },
-                new()
-                {
-                    Code = "C130H", Name = "C-130H Hercules",
-                    Description = "Transport tactique quadrimoteur",
-                    AcMainGroupId = transGroupId, AircraftManufacturerId = lmId,
-                    MaxGrossWeight = 70307, MaxEngines = 4, SeatCount = 5, MaxPassengers = 92,
-                    SortOrder = 2, IsActive = true
-                },
-                new()
-                {
-                    Code = "F5E", Name = "F-5E Tiger II",
-                    Description = "Chasseur léger biréacteur monoplace",
-                    AcMainGroupId = chasseGroupId, AircraftManufacturerId = northropId,
-                    MaxGrossWeight = 11214, MaxEngines = 2, SeatCount = 1, MaxPassengers = 0,
-                    SortOrder = 3, IsActive = true
-                },
-                new()
-                {
-                    Code = "F5F", Name = "F-5F Tiger II",
-                    Description = "Chasseur léger biréacteur biplace (entraînement)",
-                    AcMainGroupId = chasseGroupId, AircraftManufacturerId = northropId,
-                    MaxGrossWeight = 11340, MaxEngines = 2, SeatCount = 2, MaxPassengers = 0,
-                    SortOrder = 4, IsActive = true
-                },
-                new()
-                {
-                    Code = "AJET", Name = "Alpha Jet",
-                    Description = "Avion d'entraînement / appui léger biplace",
-                    AcMainGroupId = chasseGroupId, AircraftManufacturerId = dassaultId,
-                    MaxGrossWeight = 8000, MaxEngines = 2, SeatCount = 2, MaxPassengers = 0,
-                    SortOrder = 5, IsActive = true
-                },
+                new() { Code = "F16C", Name = "F-16C Fighting Falcon", Description = "Chasseur monoplace", AcMainGroupId = chasseGroupId, AircraftManufacturerId = lmId, MaxGrossWeight = 19187, MaxEngines = 1, SeatCount = 1, MaxPassengers = 0, SortOrder = 1, IsActive = true },
+                new() { Code = "F16D", Name = "F-16D Fighting Falcon", Description = "Chasseur biplace (entraînement) — même famille que F16C", AcMainGroupId = chasseGroupId, AircraftManufacturerId = lmId, MaxGrossWeight = 19200, MaxEngines = 1, SeatCount = 2, MaxPassengers = 0, SortOrder = 2, IsActive = true },
+                new() { Code = "C130H", Name = "C-130H Hercules", Description = "Transport tactique quadrimoteur", AcMainGroupId = transGroupId, AircraftManufacturerId = lmId, MaxGrossWeight = 70307, MaxEngines = 4, SeatCount = 5, MaxPassengers = 92, SortOrder = 2, IsActive = true },
+                new() { Code = "F5E", Name = "F-5E Tiger II", Description = "Chasseur léger biréacteur monoplace", AcMainGroupId = chasseGroupId, AircraftManufacturerId = northropId, MaxGrossWeight = 11214, MaxEngines = 2, SeatCount = 1, MaxPassengers = 0, SortOrder = 3, IsActive = true },
+                new() { Code = "F5F", Name = "F-5F Tiger II", Description = "Chasseur léger biréacteur biplace (entraînement)", AcMainGroupId = chasseGroupId, AircraftManufacturerId = northropId, MaxGrossWeight = 11340, MaxEngines = 2, SeatCount = 2, MaxPassengers = 0, SortOrder = 4, IsActive = true },
+                new() { Code = "AJET", Name = "Alpha Jet", Description = "Avion d'entraînement / appui léger biplace", AcMainGroupId = chasseGroupId, AircraftManufacturerId = dassaultId, MaxGrossWeight = 8000, MaxEngines = 2, SeatCount = 2, MaxPassengers = 0, SortOrder = 5, IsActive = true },
             };
 
-            var existingCodes = await context.Set<AcType>()
-                .Select(t => t.Code)
-                .ToListAsync();
-
+            var existingCodes = await context.Set<AcType>().Select(t => t.Code).ToListAsync();
             var missing = wanted.Where(t => !existingCodes.Contains(t.Code)).ToList();
 
             if (missing.Any())

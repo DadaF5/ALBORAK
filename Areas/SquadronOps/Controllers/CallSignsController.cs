@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FRAProject.Data;
 using FRAProject.Services;
-using FRAProject.ViewModels;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -13,6 +12,7 @@ using System.Collections.Generic;
 using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Areas.Settings.Models;
+using FRAProject.Areas.SquadronOps.ViewModels;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {

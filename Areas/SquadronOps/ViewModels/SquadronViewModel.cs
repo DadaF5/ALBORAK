@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 
-namespace FRAProject.ViewModels
+namespace FRAProject.Areas.SquadronOps.ViewModels
 {
     public class SquadronViewModel
     {

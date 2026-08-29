@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using FRAProject.Models;
+using FRAProject.Areas.SquadronOps.Models;
 
-namespace FRAProject.ViewModels
+namespace FRAProject.Areas.SquadronOps.ViewModels
 {
     public class OdvIndexVm
     {

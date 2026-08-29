@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-namespace FRAProject.ViewModels
+namespace FRAProject.Areas.SquadronOps.ViewModels
 {
     public class CallSignViewModel
     {

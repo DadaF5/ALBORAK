@@ -1,6 +1,4 @@
-﻿using FRAProject.Areas.HR.Models;
-using FRAProject.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Areas.SquadronOps.Models

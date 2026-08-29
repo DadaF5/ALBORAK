@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using FRAProject.Areas.Settings.Models;
-using FRAProject.Areas.HR.Models;
+using FRAProject.Areas.SquadronOps.Models;
 
 namespace FRAProject.Models
 {

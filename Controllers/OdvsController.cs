@@ -1,5 +1,6 @@
 ﻿using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.SquadronOps.ViewModels;
 using FRAProject.Data;
 using FRAProject.Models;
 using FRAProject.ViewModels;

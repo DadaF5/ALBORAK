@@ -1,4 +1,4 @@
-﻿namespace FRAProject.ViewModels
+﻿namespace FRAProject.Areas.SquadronOps.ViewModels
 {
     // Squadron final report VM - duration is in minutes (e.g. 65)
     public class SortieFinalizeVm

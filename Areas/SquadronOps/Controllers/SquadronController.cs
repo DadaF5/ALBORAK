@@ -1,9 +1,9 @@
 using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.SquadronOps.ViewModels;
 using FRAProject.Data;
 using FRAProject.Models;
 using FRAProject.Services;
-using FRAProject.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;

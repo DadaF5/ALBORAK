@@ -1,6 +1,5 @@
 ﻿
 using FRAProject.Areas.Settings.Models;
-using FRAProject.Models;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

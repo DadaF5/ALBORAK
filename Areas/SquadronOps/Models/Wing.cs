@@ -1,9 +1,9 @@
-﻿using FRAProject.Areas.Settings.Models;
-using FRAProject.Areas.SquadronOps.Models;
+﻿using FRAProject.Areas.HR.Models;
+using FRAProject.Areas.Settings.Models;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace FRAProject.Areas.HR.Models
+namespace FRAProject.Areas.SquadronOps.Models
 {
     public class Wing
     {

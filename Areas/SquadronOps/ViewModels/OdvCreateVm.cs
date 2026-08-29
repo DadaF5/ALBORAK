@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace FRAProject.ViewModels
+namespace FRAProject.Areas.SquadronOps.ViewModels
 {
     // ViewModel for creating or editing an ODV with nested sorties & crew
     public class OdvCreateVm
@@ -29,12 +29,12 @@ namespace FRAProject.ViewModels
         // Use your Zone enum; default provided. If you want user to choose, render select with enum values.
         [Display(Name = "Zone")]
         [Required(ErrorMessage ="Select the zone")]
-        public Enums.Zone Zone { get; set; } = Enums.Zone.North;
+        public Zone Zone { get; set; } = Zone.North;
 
         // Mission type enum
         [Display(Name = "Mission Type")]
         [Required]
-        public Enums.MissionType MissionType { get; set; } = Enums.MissionType.Training;
+        public MissionType MissionType { get; set; } = MissionType.Training;
 
         [Display(Name = "Area")]
         [Required(ErrorMessage ="Area Required")]
@@ -42,7 +42,7 @@ namespace FRAProject.ViewModels
 
         // Use the same enum type for ODV status as in your Models namespace
         [Display(Name = "ODV Status")]
-        public OdvStatus? OdvStatus { get; set; } = FRAProject.Enums.OdvStatus.Planned;
+        public OdvStatus? OdvStatus { get; set; } = Enums.OdvStatus.Planned;
 
         // Optional planned TOFF: bind using <input type="time" /> or accept a string and parse on server
         [Display(Name = "Planned TOFF")]

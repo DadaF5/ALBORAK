@@ -1,4 +1,4 @@
-﻿namespace FRAProject.ViewModels
+﻿namespace FRAProject.Areas.SquadronOps.ViewModels
 {
     public class SortieVm
     {

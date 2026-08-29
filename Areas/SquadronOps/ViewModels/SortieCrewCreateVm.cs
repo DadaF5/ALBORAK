@@ -1,7 +1,7 @@
 ﻿using FRAProject.Enums;
 using System.ComponentModel.DataAnnotations;
 
-namespace FRAProject.ViewModels
+namespace FRAProject.Areas.SquadronOps.ViewModels
 {
     public class SortieCrewCreateVm
     {

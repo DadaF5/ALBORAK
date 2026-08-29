@@ -1,10 +1,10 @@
 
 using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.AircraftMaintenance.Repositories;
-using FRAProject.Areas.HR.Models;
 using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.Settings.Repositories;
+using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Data.Configurations;
 using FRAProject.Infrastructure.Repositories;
 using FRAProject.Models;

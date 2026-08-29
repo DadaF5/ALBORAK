@@ -1,12 +1,11 @@
 ﻿using FRAProject.Areas.Settings.Models;
-using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Enums;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FRAProject.Models
+namespace FRAProject.Areas.SquadronOps.Models
 {
     
     public class Odv
@@ -29,8 +28,8 @@ namespace FRAProject.Models
         public DateTime OdvDate { get; set; }
 
         // enum-backed fields (we'll map enums to string columns via value converters in DbContext)
-        public Zone Zone { get; set; } = Enums.Zone.North;
-        public MissionType MissionType { get; set; } = Enums.MissionType.Training;
+        public Zone Zone { get; set; } = Zone.North;
+        public MissionType MissionType { get; set; } = MissionType.Training;
 
         public string Area { get; set; } = string.Empty;
         public OdvStatus? OdvStatus { get; set; } = Enums.OdvStatus.Planned;

@@ -1,6 +1,4 @@
-﻿using FRAProject.Models;
-
-namespace FRAProject.Areas.SquadronOps.Models
+﻿namespace FRAProject.Areas.SquadronOps.Models
 {
     public class Mission
     {

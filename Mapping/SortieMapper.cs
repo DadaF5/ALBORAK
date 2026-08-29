@@ -1,6 +1,6 @@
 ﻿using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.SquadronOps.ViewModels;
 using FRAProject.Models;
-using FRAProject.ViewModels;
 
 namespace FRAProject.Mapping
 {

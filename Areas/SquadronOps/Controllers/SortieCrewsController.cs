@@ -1,9 +1,9 @@
 using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.SquadronOps.ViewModels;
 using FRAProject.Data;
 using FRAProject.Enums;
 using FRAProject.Models;
 using FRAProject.Services;
-using FRAProject.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;

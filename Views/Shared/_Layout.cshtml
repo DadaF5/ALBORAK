@@ -115,11 +115,21 @@
             min-width: var(--sidebar-width);
             max-width: var(--sidebar-width);
             flex-shrink: 0;
-            overflow: visible;
             transition: width .22s ease, min-width .22s ease, max-width .22s ease, transform .22s ease;
-            position: relative;
+            position: sticky; /* was relative */
+            top: 0;
+            height: 100vh;
+            overflow: hidden; /* was visible */
             border-right: 1px solid var(--panel-border);
             z-index: 1200;
+        }
+
+        .sidebar-section {
+            padding: 10px 8px;
+            height: calc(100vh - 92px); /* logo block height */
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-gutter: stable;
         }
 
         .sidebar-logo {

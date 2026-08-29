@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using FRAProject.Data;
 using FRAProject.Models;
 using FRAProject.Services;
-using FRAProject.ViewModels;
-using FRAProject.Areas.HR.Models;
+using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.SquadronOps.ViewModels;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {

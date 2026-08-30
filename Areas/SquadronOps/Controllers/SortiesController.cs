@@ -167,11 +167,28 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         }
 
         // POST: Sorties/Create?odvId=123
+        //
+        // CHANGED (Batch 15, 2026-08-30) — one additive branch, per Dadda's
+        // choice to rebuild the legacy "Add Sortie to ODV" one-step card as
+        // client-orchestrated AJAX (OdvPlanning/Index.cshtml now POSTs here
+        // directly, then chains into SortieCrews/Create for Captain/
+        // Co-Pilot/Pax, since no combined backend endpoint exists). Every
+        // existing caller of this action (the real Sorties/Create.cshtml
+        // page, and its own GET/POST round trip) posts a normal browser
+        // form with no X-Requested-With header, so it is completely
+        // unaffected — same View(model)-on-failure / redirect-on-success
+        // behaviour as before this batch. Only a request carrying
+        // X-Requested-With: XMLHttpRequest (the same header the board's
+        // existing data-ajax="true" forms already send) gets the new JSON
+        // branch: BadRequest(errors) on failure, Json({sortieId,
+        // sortieCode}) on success, instead of View(model)/Redirect.
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "SquadronOpsWrite")]
         public async Task<IActionResult> Create(SortieCreateVm model, int? acMainGroupId)
         {
+            bool isAjax = string.Equals(Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase);
+
             var odv = await _unitOfWork.Odvs.GetByIdAsync(model.OdvId);
             if (odv == null) return NotFound();
 
@@ -189,6 +206,14 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             if (!ModelState.IsValid)
             {
+                if (isAjax)
+                {
+                    var errors = ModelState
+                        .Where(kvp => kvp.Value != null && kvp.Value.Errors.Count > 0)
+                        .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                    return BadRequest(errors);
+                }
+
                 if (acMainGroupId.HasValue)
                 {
                     await PopulateAcTypesByMainGroup(acMainGroupId.Value);
@@ -210,6 +235,11 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             _unitOfWork.SortiePlanning.Add(sortie);
             await _unitOfWork.CompleteAsync();
+
+            if (isAjax)
+            {
+                return Json(new { sortieId = sortie.Id, sortieCode = sortie.SortieCode });
+            }
 
             return RedirectToAction(
                 "Index",

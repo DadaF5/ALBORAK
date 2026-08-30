@@ -1,4 +1,5 @@
 using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.SquadronOps.Services;
 using FRAProject.Areas.SquadronOps.ViewModels;
 using FRAProject.Data;
 using FRAProject.Enums;
@@ -21,6 +22,21 @@ namespace FRAProject.Areas.SquadronOps.Controllers
     // Sortie, which belongs to an Odv, which carries both — so scope is
     // resolved by walking up that chain, same pattern used throughout the
     // AircraftMaintenance conversion.
+    //
+    // CHANGED (Batch 16, 2026-08-30) — AircraftRole dropdown filtered via
+    // the new AircraftRoleCatalog.
+    //
+    // FIX (Batch 17, 2026-08-30) — Batch 16 keyed the filter on the
+    // sortie's Odv.AcMainGroup.Code ("F16-2B"). Real data showed that
+    // group contains BOTH the single-seat F16C and two-seat F16D — keying
+    // on the group meant a single-seat sortie was wrongly offered the
+    // two-seat roles too. Re-keyed on the Sortie's own AcType.Code
+    // instead (via the real Sortie.AcType navigation property) — every
+    // call site now loads Sortie.AcType instead of Odv.AcMainGroup (same
+    // one-more-Include shape, no new query). Still injects FRAContext
+    // directly rather than IUnitOfWork, same as the file arrived — that
+    // inconsistency is flagged, not fixed, since it's outside what was
+    // asked.
     [Area("SquadronOps")]
     [Authorize(Policy = "SquadronOpsRead")]
     public class SortieCrewsController : Controller
@@ -81,6 +97,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         {
             var sortie = await _context.Sorties
                 .Include(s => s.Odv)
+                .Include(s => s.AcType)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Id == sortieId);
 
@@ -126,7 +143,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             ViewBag.CrewMembers = availableCrewMembers;
             ViewBag.Seats = GetSeatOptions();
-            ViewBag.AircraftRoles = GetAircraftRoleOptions();
+            ViewBag.AircraftRoles = GetAircraftRoleOptions(sortie.AcType?.Code);
 
             return View(vm);
         }
@@ -139,6 +156,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         {
             var sortie = await _context.Sorties
                 .Include(s => s.Odv)
+                .Include(s => s.AcType)
                 .FirstOrDefaultAsync(s => s.Id == model.SortieId);
             if (sortie == null) return NotFound();
 
@@ -154,9 +172,19 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 ModelState.AddModelError("CrewMemberId", "Selected crew member does not belong to this ODV's squadron.");
             }
 
+            // NEW (Batch 16), FIXED (Batch 17) — defense in depth for the
+            // role filter, same spirit as the CrewMemberId check above:
+            // the dropdown only offers roles valid for this Sortie's own
+            // AcType, but AircraftRole is still a posted value.
+            var allowedRoles = AircraftRoleCatalog.GetAllowedRoles(sortie.AcType?.Code);
+            if (!allowedRoles.Contains(model.AircraftRole))
+            {
+                ModelState.AddModelError(nameof(model.AircraftRole), "Selected role is not valid for this aircraft type.");
+            }
+
             if (!ModelState.IsValid)
             {
-                await PopulateDropdowns(model.SortieId, sortie.Odv.SquadronId);
+                await PopulateDropdowns(model.SortieId, sortie.Odv.SquadronId, sortie.AcType?.Code);
                 return View(model);
             }
 
@@ -167,7 +195,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             if (existingAssignment != null)
             {
                 ModelState.AddModelError("CrewMemberId", "This crew member is already assigned to this sortie.");
-                await PopulateDropdowns(model.SortieId, sortie.Odv.SquadronId);
+                await PopulateDropdowns(model.SortieId, sortie.Odv.SquadronId, sortie.AcType?.Code);
                 return View(model);
             }
 
@@ -199,6 +227,8 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 .ThenInclude(cm => cm.Person)
                 .Include(sc => sc.Sortie)
                     .ThenInclude(s => s.Odv)
+                .Include(sc => sc.Sortie)
+                    .ThenInclude(s => s.AcType)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(sc => sc.Id == id);
 
@@ -241,7 +271,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             ViewBag.CrewMembers = crewMembers;
             ViewBag.Seats = GetSeatOptions();
-            ViewBag.AircraftRoles = GetAircraftRoleOptions();
+            ViewBag.AircraftRoles = GetAircraftRoleOptions(sortieCrew.Sortie?.AcType?.Code);
 
             return View(vm);
         }
@@ -260,6 +290,8 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             var sortieCrew = await _context.SortieCrews
                 .Include(sc => sc.Sortie)
                     .ThenInclude(s => s.Odv)
+                .Include(sc => sc.Sortie)
+                    .ThenInclude(s => s.AcType)
                 .FirstOrDefaultAsync(sc => sc.Id == id);
 
             if (sortieCrew == null)
@@ -272,9 +304,18 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             if (odv == null || !await IsOdvInScopeAsync(odv.SquadronId, odv.AcMainGroupId, scope))
                 return Forbid();
 
+            // NEW (Batch 16), FIXED (Batch 17) — same defense-in-depth
+            // role check as Create, now keyed on the Sortie's own AcType.
+            var acTypeCode = sortieCrew.Sortie?.AcType?.Code;
+            var allowedRoles = AircraftRoleCatalog.GetAllowedRoles(acTypeCode);
+            if (!allowedRoles.Contains(model.AircraftRole))
+            {
+                ModelState.AddModelError(nameof(model.AircraftRole), "Selected role is not valid for this aircraft type.");
+            }
+
             if (!ModelState.IsValid)
             {
-                await PopulateDropdowns(model.SortieId, odv.SquadronId, model.CrewMemberId);
+                await PopulateDropdowns(model.SortieId, odv.SquadronId, acTypeCode, model.CrewMemberId);
                 return View(model);
             }
 
@@ -289,7 +330,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 if (existingAssignment != null)
                 {
                     ModelState.AddModelError("CrewMemberId", "This crew member is already assigned to this sortie.");
-                    await PopulateDropdowns(model.SortieId, odv.SquadronId, model.CrewMemberId);
+                    await PopulateDropdowns(model.SortieId, odv.SquadronId, acTypeCode, model.CrewMemberId);
                     return View(model);
                 }
 
@@ -297,7 +338,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 if (crewMember == null || crewMember.SquadronId != odv.SquadronId)
                 {
                     ModelState.AddModelError("CrewMemberId", "Selected crew member does not belong to this ODV's squadron.");
-                    await PopulateDropdowns(model.SortieId, odv.SquadronId, model.CrewMemberId);
+                    await PopulateDropdowns(model.SortieId, odv.SquadronId, acTypeCode, model.CrewMemberId);
                     return View(model);
                 }
             }
@@ -359,10 +400,16 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 .ToList();
         }
 
-        private List<SelectListItem> GetAircraftRoleOptions()
+        // CHANGED (Batch 16, 2026-08-30) — filters via
+        // AircraftRoleCatalog.GetAllowedRoles() instead of unconditionally
+        // listing every AircraftRole value.
+        // FIXED (Batch 17, 2026-08-30) — parameter is now the Sortie's own
+        // AcType.Code, not its Odv's AcMainGroup.Code (see class header
+        // comment and AircraftRoleCatalog.cs for why). Pass null (or an
+        // unconfigured Code) to keep the "every role" fallback behaviour.
+        private List<SelectListItem> GetAircraftRoleOptions(string? acTypeCode)
         {
-            return Enum.GetValues(typeof(AircraftRole))
-                .Cast<AircraftRole>()
+            return AircraftRoleCatalog.GetAllowedRoles(acTypeCode)
                 .Select(r => new SelectListItem
                 {
                     Value = ((int)r).ToString(),
@@ -371,7 +418,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 .ToList();
         }
 
-        private async Task PopulateDropdowns(int sortieId, int odvSquadronId, int? currentCrewMemberId = null)
+        private async Task PopulateDropdowns(int sortieId, int odvSquadronId, string? acTypeCode, int? currentCrewMemberId = null)
         {
             var crewMembers = await _context.CrewMembers
                 .Include(cm => cm.Person)
@@ -388,7 +435,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             ViewBag.CrewMembers = crewMembers;
             ViewBag.Seats = GetSeatOptions();
-            ViewBag.AircraftRoles = GetAircraftRoleOptions();
+            ViewBag.AircraftRoles = GetAircraftRoleOptions(acTypeCode);
         }
 
         // ── Scope helpers ────────────────────────────────────────────────

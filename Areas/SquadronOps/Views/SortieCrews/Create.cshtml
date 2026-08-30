@@ -1,108 +1,94 @@
-﻿@using FRAProject.Areas.SquadronOps.ViewModels
-@model SortieCrewCreateVm
+@model FRAProject.Areas.SquadronOps.ViewModels.SortieCrewCreateVm
 
 @{
-    ViewData["Title"] = "Add Crew to Sortie";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Ajouter un membre d'équipage";
 }
 
-<style>
-    .popup-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.75);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1050;
-        padding: 20px;
-    }
+@*
+    NEW (Batch 15, 2026-08-30). Standalone full-page form, NOT AJAX — see
+    SortieCrews/Index.cshtml's header comment: the real
+    SortieCrewsController.Create POST returns View(model) (HTTP 200) on
+    validation failure, unlike OdvPlanning/Sorties' BadRequest(JSON)
+    contract, so the plain asp-validation-summary/asp-validation-for
+    pattern (same as Sorties/RecordDeparture.cshtml) is the correct one
+    here, not the data-ajax="true" fetch handler used elsewhere in this
+    module.
 
-    .popup-container {
-        background-color: #2d3748;
-        border-radius: 16px;
-        max-width: 500px;
-        width: 100%;
-    }
+    Seat / Rôle avion dropdown text comes straight from the real
+    controller's GetSeatOptions()/GetAircraftRoleOptions() (enum
+    .ToString(), e.g. "Front", "WeaponOfficer") — left as the controller
+    sends it rather than relabeling only on this page, so what you see
+    here always matches what the controller actually offers. Flagged in
+    the README as a possible cosmetic follow-up ([Display] attributes on
+    the enums, or a formatting helper in the controller).
 
-    .popup-content {
-        padding: 30px;
-    }
-</style>
+    CHANGED (Batch 16, 2026-08-30) — the Rôle avion options are no longer
+    every AircraftRole value: GetAircraftRoleOptions() now filters through
+    AircraftRoleCatalog per this sortie's own AcMainGroup (F16 vs C130
+    etc. see different lists). Nothing changed on THIS page for that —
+    the filtering happens entirely server-side before ViewBag.AircraftRoles
+    reaches here.
+*@
 
-<div class="popup-overlay">
-    <div class="popup-container">
-        <div class="popup-content">
-            <h4 class="text-white mb-4">Add Crew to Sortie: @Model.SortieCode</h4>
+<h1>Ajouter un membre d'équipage</h1>
+<h4>Sortie @Model.SortieCode</h4>
+<hr />
 
-            <form asp-action="Create" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="SortieId" />
-                <input type="hidden" asp-for="SortieCode" />
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="SortieId" />
 
-                <div class="mb-3">
-                    <label class="form-label text-white">Crew Member</label>
-                    <select asp-for="CrewMemberId" asp-items="ViewBag.CrewMembers"
-                            class="form-select bg-dark text-white border-secondary" required>
-                        <option value="">-- Select Crew Member --</option>
-                    </select>
-                    <span asp-validation-for="CrewMemberId" class="text-danger"></span>
-                </div>
+            <div class="form-group mb-3">
+                <label asp-for="CrewMemberId" class="form-label">Membre d'équipage</label>
+                <select asp-for="CrewMemberId" asp-items="ViewBag.CrewMembers" class="form-select">
+                    <option value="">-- Sélectionner --</option>
+                </select>
+                <span asp-validation-for="CrewMemberId" class="text-danger"></span>
+                @if (ViewBag.CrewMembers == null || !((IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.CrewMembers).Any())
+                {
+                    <div class="form-text text-warning">Aucun membre d'équipage disponible (actif, non déjà affecté, de l'escadron de cet ODV).</div>
+                }
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label text-white">Seat</label>
-                    <select asp-for="Seat" asp-items="ViewBag.Seats"
-                            class="form-select bg-dark text-white border-secondary" required>
-                        <option value="">-- Select Seat --</option>
-                    </select>
-                    <span asp-validation-for="Seat" class="text-danger"></span>
-                </div>
+            <div class="form-group mb-3">
+                <label asp-for="Seat" class="form-label">Place</label>
+                <select asp-for="Seat" asp-items="ViewBag.Seats" class="form-select"></select>
+                <span asp-validation-for="Seat" class="text-danger"></span>
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label text-white">Aircraft Role</label>
-                    <select asp-for="AircraftRole" asp-items="ViewBag.AircraftRoles"
-                            class="form-select bg-dark text-white border-secondary" required>
-                        <option value="">-- Select Aircraft Role --</option>
-                    </select>
-                    <span asp-validation-for="AircraftRole" class="text-danger"></span>
-                </div>
+            <div class="form-group mb-3">
+                <label asp-for="AircraftRole" class="form-label">Rôle avion</label>
+                <select asp-for="AircraftRole" asp-items="ViewBag.AircraftRoles" class="form-select"></select>
+                <span asp-validation-for="AircraftRole" class="text-danger"></span>
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label text-white">Role (Optional)</label>
-                    <input asp-for="Role" class="form-control bg-dark text-white border-secondary"
-                           placeholder="e.g., Mission Commander, Instructor" />
-                    <span asp-validation-for="Role" class="text-danger"></span>
-                </div>
+            <div class="form-group mb-3">
+                <label asp-for="Role" class="form-label">Rôle (texte libre)</label>
+                <input asp-for="Role" class="form-control" placeholder="ex : Pilote, Copilote, Observateur..." />
+                <span asp-validation-for="Role" class="text-danger"></span>
+            </div>
 
-                <div class="mb-3 form-check">
-                    <input type="checkbox" asp-for="IsPrimary" class="form-check-input" />
-                    <label class="form-check-label text-white" asp-for="IsPrimary">
-                        Mark as Primary for this role
-                    </label>
-                </div>
+            <div class="form-check mb-3">
+                <input asp-for="IsPrimary" class="form-check-input" />
+                <label asp-for="IsPrimary" class="form-check-label">Membre principal</label>
+            </div>
 
-                <div class="mb-4">
-                    <label class="form-label text-white">Remarks</label>
-                    <textarea asp-for="Remarks" class="form-control bg-dark text-white border-secondary"
-                              rows="3" placeholder="Additional notes..."></textarea>
-                    <span asp-validation-for="Remarks" class="text-danger"></span>
-                </div>
+            <div class="form-group mb-3">
+                <label asp-for="Remarks" class="form-label">Remarques</label>
+                <textarea asp-for="Remarks" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Remarks" class="text-danger"></span>
+            </div>
 
-                <div class="d-flex gap-2 justify-content-end">
-                    <button type="submit" class="btn btn-success">Add Crew</button>
-                    <a asp-action="Index" asp-route-sortieId="@Model.SortieId"
-                       class="btn btn-secondary">Cancel</a>
-                </div>
-            </form>
-        </div>
+            <div class="form-group mt-3">
+                <input type="submit" value="Ajouter" class="btn btn-primary" />
+                <a asp-action="Index" asp-route-sortieId="@Model.SortieId" class="btn btn-secondary">Annuler</a>
+            </div>
+        </form>
     </div>
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }

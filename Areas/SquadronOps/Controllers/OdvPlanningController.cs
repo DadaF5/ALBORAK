@@ -32,6 +32,40 @@ namespace FRAProject.Areas.SquadronOps.Controllers
     // the legacy single-squadron/group fields, the Wing-vs-Department
     // scope-base fix, and the Odv-cancels-all-Sorties cascade with its
     // Finalized-sortie-left-alone judgment call.
+    //
+    // BATCH 14 (2026-08-30) — Dadda shared the real legacy WebForms board
+    // (CIPL_FlyingProgram.aspx/.vb) as the layout users are used to, and
+    // asked for an Escadron filter matching it, extended to unrestricted/
+    // Admin users only (a scoped user's own squadron scope already limits
+    // what they see — see Index below). ONE change in this file: Index
+    // gained an optional squadronId parameter. Nothing else here changed.
+    //
+    // BATCH 15 (2026-08-30) — SortieCrewsController.cs arrived, unblocking
+    // the legacy "Add Sortie to ODV" one-step card. Two additive fields
+    // populated here (AcTypesFull/CrewMembersFull on OdvIndexVm) feed that
+    // new card's client-side cascading dropdowns; no existing field or
+    // action here changed shape. See OdvPlanning/Index.cshtml's own Batch
+    // 15 comment for the full design and the SortiesController.Create
+    // change that makes the combined card's AJAX orchestration possible.
+    //
+    // BATCH 16 (2026-08-30) — real per-AcMainGroup crew-role structures
+    // confirmed (F16 vs C130), surfacing that a single global AircraftRole
+    // list doesn't fit every squadron. One more additive field here
+    // (AcMainGroupsFull) feeds the combined card's redesigned per-row Role
+    // dropdown — see AircraftRoleCatalog.cs and OdvPlanning/Index.cshtml's
+    // Batch 16 comment. Also fixes a real Batch 15 bug: AcTypesFull was
+    // typed against the wrong AcType (this file already had the correct
+    // using — FRAProject.Areas.Settings.Models — so it was unaffected, but
+    // OdvIndexVm.cs and OdvPlanning/Index.cshtml were not; both fixed).
+    //
+    // BATCH 17 (2026-08-30) — FIX: Batch 16's AcMainGroupsFull/
+    // AircraftRoleCatalog keying was wrong — a real query showed the
+    // F16-2B AcMainGroup contains BOTH the single-seat F16C and the
+    // two-seat F16D, so keying role filtering on the group gave the
+    // single-seat jet the two-seat jet's extra crew roles. Re-keyed on
+    // AcType.Code instead (see AircraftRoleCatalog.cs). AcMainGroupsFull
+    // is removed here — AcTypesFull (already populated below since Batch
+    // 15) already carries each AcType's Code, so nothing new is needed.
     [Route("Odvplanning")]
     [Authorize(Policy = "SquadronOpsRead")]
     [Area("SquadronOps")]
@@ -59,8 +93,17 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // =============================
         // GET: /Odvs
         // =============================
+        // BATCH 14: added `int? squadronId` — an OPTIONAL manual narrowing
+        // filter on top of real UserScope, matching the legacy Escadron
+        // dropdown. Only meaningful for an unrestricted (Admin) user, who
+        // otherwise sees every squadron's ODVs with no way to narrow the
+        // list to one, same as the legacy page's Escadron dropdown did.
+        // A scoped (non-Admin) user's own UserScope already limits results
+        // to their assigned squadron(s) — passing squadronId for a scoped
+        // user is intersected with their real scope below, never used to
+        // widen it beyond what they're actually allowed to see.
         [HttpGet("")]
-        public async Task<IActionResult> Index(DateTime? odvDate)
+        public async Task<IActionResult> Index(DateTime? odvDate, int? squadronId)
         {
             var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
 
@@ -86,6 +129,8 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             var vm = new OdvIndexVm
             {
                 SelectedDate = selectedDate,
+                SelectedSquadronId = squadronId,
+                IsUnrestrictedScope = scope.IsUnrestricted,
                 CreateModel = new OdvCreateVm
                 {
                     OdvDate = selectedDate
@@ -133,19 +178,45 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 allowedAcMainGroupIds = scope.AllowedAcMainGroupIds.Any()
                     ? scope.AllowedAcMainGroupIds.ToHashSet()
                     : new HashSet<int>();
+
+                // BATCH 14: a scoped user's optional squadronId is only
+                // ever used to further NARROW their own real scope, never
+                // to widen it — intersect, don't replace.
+                if (squadronId.HasValue)
+                {
+                    allowedSquadronIds = allowedSquadronIds.Contains(squadronId.Value)
+                        ? new HashSet<int> { squadronId.Value }
+                        : new HashSet<int>(); // asked for a squadron outside their scope — show nothing, not an error
+                }
+            }
+            else if (squadronId.HasValue)
+            {
+                // BATCH 14: unrestricted (Admin) user manually narrowed via
+                // the Escadron dropdown — reuse the same repository
+                // parameter shape the scoped path already uses, no new
+                // repository method needed.
+                allowedSquadronIds = new HashSet<int> { squadronId.Value };
             }
 
             vm.Odvs = await _unitOfWork.Odvs.GetBoardForDateAsync(selectedDate, allowedSquadronIds, allowedAcMainGroupIds);
 
             // Load AcTypes for Sortie creation
-            vm.AcTypes = (await _unitOfWork.AcTypes.GetAllAsync())
+            var allAcTypes = (await _unitOfWork.AcTypes.GetAllAsync())
                 .OrderBy(a => a.Name)
+                .ToList();
+
+            vm.AcTypes = allAcTypes
                 .Select(a => new SelectListItem
                 {
                     Value = a.Id.ToString(),
                     Text = a.Name
                 })
                 .ToList();
+
+            // NEW (Batch 15, 2026-08-30) — see the Batch 15 comment on
+            // vm.CrewMembersFull. Same list already fetched above, just
+            // also exposed with its AcMainGroupId for client-side filtering.
+            vm.AcTypesFull = allAcTypes;
 
             return View(vm);
         }
@@ -500,6 +571,26 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 .OrderBy(cm => cm.NickName)
                 .Select(cm => new SelectListItem { Value = cm.Id.ToString(), Text = cm.Captain })
                 .ToList();
+
+            // NEW (Batch 15, 2026-08-30) — full entities for the "Ajouter
+            // une sortie à un ODV" combined card's client-side cascading
+            // filters (AcType by AcMainGroupId, CrewMember by SquadronId).
+            // Reuses the exact same crewMembers/acMainGroups queries already
+            // fetched above for this same scope — no new query. AcTypesFull
+            // is intentionally unscoped (same as vm.AcTypes below already
+            // was, unchanged) since AcType eligibility for a given ODV is
+            // resolved client-side by AcMainGroupId, and re-checked
+            // server-side by SortiesController.Create regardless.
+            vm.CrewMembersFull = crewMembers
+                .OrderBy(cm => cm.Captain)
+                .ToList();
+
+            // REMOVED (Batch 17, 2026-08-30) — Batch 16 populated
+            // vm.AcMainGroupsFull here for the combined card's per-row Role
+            // dropdown. AircraftRoleCatalog is now keyed on AcType.Code,
+            // not AcMainGroup.Code (see AircraftRoleCatalog.cs's header),
+            // and vm.AcTypesFull above already carries each AcType's Code
+            // — so this field is no longer needed.
 
             vm.ZoneList = Enum.GetValues(typeof(Enums.Zone))
                 .Cast<Enums.Zone>()

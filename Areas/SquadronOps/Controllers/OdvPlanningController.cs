@@ -66,6 +66,20 @@ namespace FRAProject.Areas.SquadronOps.Controllers
     // AcType.Code instead (see AircraftRoleCatalog.cs). AcMainGroupsFull
     // is removed here — AcTypesFull (already populated below since Batch
     // 15) already carries each AcType's Code, so nothing new is needed.
+    //
+    // BATCH 19 (2026-08-30) — Dadda compared the real legacy
+    // CIPL_FlyingProgram.aspx/.vb against this rebuild and asked for two
+    // real behavioural changes (confirmed against the real .aspx.vb, not
+    // guessed): (1) legacy has exactly ONE Escadron selector total —
+    // btnCreateODV_Click reads squadron straight off the same ddlSqnID
+    // used for filtering — so Create ODV's own Escadron dropdown is
+    // removed; an unrestricted user's new-ODV squadron now always follows
+    // whichever one the Filtres bar is narrowed to (see Index below and
+    // OdvIndexVm.CanCreateOdv). (2) added the Wing filter legacy has
+    // ("Wing: C.I.P.L" in the screenshot) — Squadron.WingId is real,
+    // confirmed non-nullable, so every squadron belongs to exactly one
+    // Wing; narrows the Escadron dropdown/board the same "narrow, never
+    // widen" way squadronId already did.
     [Route("Odvplanning")]
     [Authorize(Policy = "SquadronOpsRead")]
     [Area("SquadronOps")]
@@ -103,9 +117,29 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // user is intersected with their real scope below, never used to
         // widen it beyond what they're actually allowed to see.
         [HttpGet("")]
-        public async Task<IActionResult> Index(DateTime? odvDate, int? squadronId)
+        // BATCH 19 (2026-08-30) — one more optional param, wingId, per
+        // Dadda's choice to add the legacy page's Wing filter (real
+        // .aspx.vb screenshot showed "Wing: C.I.P.L" alongside Escadron/
+        // Flying Date). Squadron.WingId is a real, required (non-nullable)
+        // field — confirmed from Squadron.cs — so every squadron belongs
+        // to exactly one Wing; this narrows which squadrons the Escadron
+        // dropdown/board consider, same "narrow, never widen" rule as the
+        // existing squadronId param.
+        public async Task<IActionResult> Index(DateTime? odvDate, int? squadronId, int? wingId)
         {
             var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+
+            // Wing → its Squadron ids, used below both to narrow the board
+            // query and to keep squadronId from a stale Wing/Escadron
+            // combination (e.g. Wing changed but the old Escadron value is
+            // still in the URL) from being applied.
+            HashSet<int>? wingSquadronIds = null;
+            if (wingId.HasValue)
+            {
+                wingSquadronIds = (await _unitOfWork.Squadrons.GetWhereAsync(s => s.WingId == wingId.Value))
+                    .Select(s => s.Id)
+                    .ToHashSet();
+            }
 
             // Persist board date
             DateTime selectedDate;
@@ -126,10 +160,20 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 TempData["OdvDate"] = selectedDate.ToString("yyyy-MM-dd");
             }
 
+            // BATCH 19: squadronId is only honored if it actually belongs
+            // to the selected Wing (when one is selected) — otherwise a
+            // stale combination would silently narrow the board to a
+            // squadron the user can no longer see reflected in the
+            // Escadron dropdown.
+            var effectiveSquadronId = (wingId.HasValue && squadronId.HasValue && !wingSquadronIds!.Contains(squadronId.Value))
+                ? null
+                : squadronId;
+
             var vm = new OdvIndexVm
             {
                 SelectedDate = selectedDate,
-                SelectedSquadronId = squadronId,
+                SelectedSquadronId = effectiveSquadronId,
+                SelectedWingId = wingId,
                 IsUnrestrictedScope = scope.IsUnrestricted,
                 CreateModel = new OdvCreateVm
                 {
@@ -162,9 +206,33 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 // CreateModel unset, PopulateSelectListsAsync still offers
                 // the user's real in-scope squadrons/groups to choose from.
             }
+            else if (effectiveSquadronId.HasValue)
+            {
+                // NEW (Batch 19, 2026-08-30) — matches the real legacy
+                // btnCreateODV_Click, which reads its squadron straight off
+                // the same ddlSqnID used for filtering: an unrestricted
+                // user's Create-ODV squadron is now whichever one the
+                // Filtres bar is narrowed to, not a second dropdown of its
+                // own (removed from the view this batch — see
+                // OdvIndexVm.CanCreateOdv's comment). No AcMainGroup
+                // equivalent exists to default here — legacy's Create ODV
+                // never had a Groupe avion field either; that one stays a
+                // manual choice for everyone, as before.
+                vm.CreateModel.SquadronId = effectiveSquadronId.Value;
+
+                var squadron = await _unitOfWork.Squadrons.GetByIdAsync(effectiveSquadronId.Value);
+                ViewBag.SquadronName = squadron?.Name;
+            }
+            // else (unrestricted, no squadron currently filtered): leave
+            // CreateModel.SquadronId at 0 — vm.CanCreateOdv below reflects
+            // that there's no real single-squadron context to create
+            // against yet, same as legacy never having an "all squadrons"
+            // state for ddlSqnID.
+
+            vm.CanCreateOdv = vm.CreateModel.SquadronId > 0;
 
             // Populate dropdowns (scoped)
-            await PopulateSelectListsAsync(vm, scope);
+            await PopulateSelectListsAsync(vm, scope, wingId);
 
             // Load ODVs for that date + scope
             HashSet<int>? allowedSquadronIds = null;
@@ -179,23 +247,39 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                     ? scope.AllowedAcMainGroupIds.ToHashSet()
                     : new HashSet<int>();
 
+                // BATCH 19: Wing narrows the same way squadronId already
+                // does — intersect the user's real scope, never widen it.
+                if (wingId.HasValue)
+                {
+                    allowedSquadronIds = allowedSquadronIds.Intersect(wingSquadronIds!).ToHashSet();
+                }
+
                 // BATCH 14: a scoped user's optional squadronId is only
                 // ever used to further NARROW their own real scope, never
-                // to widen it — intersect, don't replace.
-                if (squadronId.HasValue)
+                // to widen it — intersect, don't replace. Uses
+                // effectiveSquadronId (Batch 19) so a stale squadronId left
+                // over from before a Wing change is ignored rather than
+                // zeroing out the board.
+                if (effectiveSquadronId.HasValue)
                 {
-                    allowedSquadronIds = allowedSquadronIds.Contains(squadronId.Value)
-                        ? new HashSet<int> { squadronId.Value }
+                    allowedSquadronIds = allowedSquadronIds.Contains(effectiveSquadronId.Value)
+                        ? new HashSet<int> { effectiveSquadronId.Value }
                         : new HashSet<int>(); // asked for a squadron outside their scope — show nothing, not an error
                 }
             }
-            else if (squadronId.HasValue)
+            else if (effectiveSquadronId.HasValue)
             {
                 // BATCH 14: unrestricted (Admin) user manually narrowed via
                 // the Escadron dropdown — reuse the same repository
                 // parameter shape the scoped path already uses, no new
                 // repository method needed.
-                allowedSquadronIds = new HashSet<int> { squadronId.Value };
+                allowedSquadronIds = new HashSet<int> { effectiveSquadronId.Value };
+            }
+            else if (wingId.HasValue)
+            {
+                // NEW (Batch 19, 2026-08-30) — unrestricted user narrowed
+                // by Wing only (no specific Escadron chosen yet).
+                allowedSquadronIds = wingSquadronIds;
             }
 
             vm.Odvs = await _unitOfWork.Odvs.GetBoardForDateAsync(selectedDate, allowedSquadronIds, allowedAcMainGroupIds);
@@ -286,6 +370,23 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                         { "CreateModel.AcMainGroupId", new[] { "This aircraft group is outside your assigned scope." } }
                     });
                 }
+            }
+            else if (model.SquadronId <= 0)
+            {
+                // NEW (Batch 19, 2026-08-30) — an unrestricted user no
+                // longer picks the squadron via its own dropdown on this
+                // form (removed this batch — Create ODV now always targets
+                // whichever squadron the Filtres bar is narrowed to, per
+                // the real legacy behaviour). model.SquadronId comes from
+                // a hidden field the view leaves at 0 when nothing is
+                // filtered (Model.CanCreateOdv is false and the form is
+                // disabled in that state) — this is the server-side half of
+                // that guard, in case the hidden field is ever missing or
+                // tampered with (JS disabled, devtools, etc.).
+                return BadRequest(new Dictionary<string, string[]>
+                {
+                    { "CreateModel.SquadronId", new[] { "Select a squadron in the Filtres bar first." } }
+                });
             }
 
             // Validation
@@ -508,7 +609,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // =============================
         // Select-list population
         // =============================
-        private async Task PopulateSelectListsAsync(OdvIndexVm vm, UserScope scope)
+        private async Task PopulateSelectListsAsync(OdvIndexVm vm, UserScope scope, int? wingId = null)
         {
             IEnumerable<Squadron> squadrons;
             IEnumerable<AcMainGroup> acMainGroups;
@@ -545,9 +646,26 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 crewMembers = await _unitOfWork.CrewMembers.GetAllAsync();
             }
 
+            // NEW (Batch 19, 2026-08-30) — Wing filter, per Dadda's choice
+            // to add legacy's "Wing: C.I.P.L" dropdown. Narrows the
+            // Escadron list to that Wing's squadrons only (Squadron.WingId
+            // is real and required — every squadron belongs to exactly one
+            // Wing). Applied on top of whatever the scope branch above
+            // already produced, so a scoped user's Wing filter still can't
+            // widen past their own real scope.
+            if (wingId.HasValue)
+            {
+                squadrons = squadrons.Where(s => s.WingId == wingId.Value);
+            }
+
             vm.Squadrons = squadrons
                 .OrderBy(s => s.Name)
                 .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+                .ToList();
+
+            vm.Wings = (await _unitOfWork.Wings.GetAllAsync())
+                .OrderBy(w => w.Name)
+                .Select(w => new SelectListItem { Value = w.Id.ToString(), Text = w.Name })
                 .ToList();
 
             vm.AcMainGroups = acMainGroups

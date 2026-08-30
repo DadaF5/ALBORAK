@@ -13,6 +13,12 @@ namespace FRAProject.Areas.SquadronOps.ViewModels
         public DateTime SelectedDate { get; set; }
         public int? SelectedAcMainGroupId { get; set; }
 
+        // NEW (Batch 19, 2026-08-30) — real legacy Wing filter
+        // (Squadron.WingId, confirmed non-nullable). See
+        // OdvPlanningController's Batch 19 comment.
+        public int? SelectedWingId { get; set; }
+        public List<SelectListItem>? Wings { get; set; }
+
         // NEW (Batch 14, 2026-08-30) — lets the view show the Escadron
         // filter dropdown only for an unrestricted (Admin) user, matching
         // the legacy CIPL_FlyingProgram.aspx page's Escadron dropdown. A
@@ -20,6 +26,23 @@ namespace FRAProject.Areas.SquadronOps.ViewModels
         // squadron(s), so showing them a dropdown that can't actually
         // widen their view would be misleading.
         public bool IsUnrestrictedScope { get; set; }
+
+        // NEW (Batch 19, 2026-08-30) — the real legacy CIPL_FlyingProgram
+        // page has exactly ONE Escadron selector total (confirmed from the
+        // real .aspx.vb: btnCreateODV_Click reads straight off
+        // ddlSqnID.SelectedValue, the same control used for filtering) —
+        // no separate squadron field on its Create ODV form at all. Per
+        // Dadda's choice, "Créer un ODV" no longer has its own Escadron
+        // dropdown; it now always targets whichever squadron the Filtres
+        // bar is currently narrowed to (CreateModel.SquadronId is set
+        // server-side from that same value — see OdvPlanningController's
+        // Batch 19 comment). Legacy's ddlSqnID is never "unset" (it always
+        // has a concrete bound squadron), which our Filtres bar allows for
+        // an unrestricted user ("-- Toutes --") — this flag is how the
+        // view knows whether there's currently a real single-squadron
+        // context to create against, and disables/hides the Créer un ODV
+        // form with an explanatory message when there isn't.
+        public bool CanCreateOdv { get; set; }
 
         // Create-model (bind the create form to this so posted values are preserved)
         public OdvCreateVm? CreateModel { get; set; }

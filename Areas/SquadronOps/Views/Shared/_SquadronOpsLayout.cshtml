@@ -700,6 +700,92 @@
             border: 1px solid var(--panel-border);
             border-radius: 12px;
         }
+
+        /* FIX (Batch 18, 2026-08-30) — confirmed via a real screenshot of
+           OdvPlanning/Index: card headers were rendering with a solid
+           black background and near-invisible title text, and
+           .btn-outline-secondary/.btn-outline-primary buttons (the
+           day-nav «/»/Aujourd'hui controls) had no visible border or
+           background at all. Root cause is exactly what the "Content
+           cards" rule above and the body-background comment near the top
+           of this file already anticipated: adminlte.min.css/
+           custom.min.css/gmao_fra.css are dark-themed elsewhere in this
+           app, and that dark theme reaches .card-header/.card-title/
+           .btn-outline-* too — the earlier fix only ever covered the
+           card's own background, not its header or its buttons. Same
+           !important safety-net pattern as the body fix, scoped to
+           .content so nothing outside SquadronOps pages is touched.
+           Covers every card/button in the area, not just OdvPlanning/
+           Index, since the same dark-theme CSS reaches every page here. */
+        .content .card-header {
+            background: var(--panel-bg) !important;
+            color: var(--text-main) !important;
+            border-bottom: 1px solid var(--panel-border) !important;
+        }
+
+        .content .card-title {
+            color: var(--brand-blue-dark) !important;
+        }
+
+        .content .card-body {
+            background: var(--panel-bg) !important;
+            color: var(--text-main) !important;
+        }
+
+        .content .btn-outline-secondary {
+            color: var(--text-main) !important;
+            border: 1px solid var(--panel-border) !important;
+            background: var(--panel-bg) !important;
+        }
+
+            .content .btn-outline-secondary:hover {
+                background: var(--menu-hover) !important;
+                color: var(--brand-blue-dark) !important;
+            }
+
+        .content .btn-outline-primary {
+            color: var(--brand-blue) !important;
+            border: 1px solid var(--brand-blue) !important;
+            background: var(--panel-bg) !important;
+        }
+
+            .content .btn-outline-primary:hover {
+                background: var(--brand-blue) !important;
+                color: #fff !important;
+            }
+
+        .content .btn-outline-danger {
+            color: #c0392b !important;
+            border: 1px solid #c0392b !important;
+            background: var(--panel-bg) !important;
+        }
+
+            .content .btn-outline-danger:hover {
+                background: #c0392b !important;
+                color: #fff !important;
+            }
+
+        .content .btn-primary {
+            background: var(--brand-blue) !important;
+            border-color: var(--brand-blue) !important;
+            color: #fff !important;
+        }
+
+            .content .btn-primary:hover {
+                background: var(--brand-blue-dark) !important;
+                border-color: var(--brand-blue-dark) !important;
+            }
+
+        .content .btn-success {
+            background: #1c9c6b !important;
+            border-color: #1c9c6b !important;
+            color: #fff !important;
+        }
+
+            .content .btn-success:hover {
+                background: #16805a !important;
+                border-color: #16805a !important;
+            }
     </style>
     @RenderSection("Styles", required: false)
 </head>

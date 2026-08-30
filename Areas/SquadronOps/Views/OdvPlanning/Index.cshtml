@@ -3,8 +3,6 @@
 @using FRAProject.Areas.Settings.Models
 @using FRAProject.Areas.SquadronOps.Services
 @using System.Text.Json
-@using FRAProject
-@using FRAProject.Enums
 
 @{
     ViewData["Title"] = "Programme de vol";
@@ -154,26 +152,83 @@
 
 <style>
     /* Structural classes ported from the legacy CIPL_FlyingProgram.aspx
-       page, recolored to the already-approved Batch 10 light-blue
-       palette (var(--brand-blue) etc. come from _SquadronOpsLayout.cshtml
-       — this page inherits them, no redefinition needed here beyond the
-       few not already defined by the shell). */
-    .table-tight td, .table-tight th { padding: .35rem; vertical-align: middle; }
-    .odv-canceled    { background: #ffe0e0; }
-    .btn-xs          { padding: .15rem .4rem; font-size: .75rem; line-height: 1.2; }
-    .badge-soft      { background: #e9ecef; color: #495057; border: 1px solid #dee2e6; }
+           page, recolored to the already-approved Batch 10 light-blue
+           palette (var(--brand-blue) etc. come from _SquadronOpsLayout.cshtml
+           — this page inherits them, no redefinition needed here beyond the
+           few not already defined by the shell). */
+    .table-tight td, .table-tight th {
+        padding: .35rem;
+        vertical-align: middle;
+    }
 
-    .sortie-inner    { width: 100%; border-collapse: collapse; }
-    .sortie-inner td { padding: .25rem .4rem; font-size: .78rem; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
-    .sortie-inner tr:last-child td { border-bottom: none; }
-    .sortie-inner tr.s-canceled { background: #fff1f1; }
-    .sortie-inner .col-seq  { width: 34px;  text-align: center; font-weight: 700; }
-    .sortie-inner .col-type { width: 70px; }
-    .sortie-inner .col-ac   { width: 80px; }
-    .sortie-inner .col-time { width: 70px; }
-    .sortie-inner .col-stat { width: 130px; }
-    .sortie-inner .col-act  { text-align: right; white-space: nowrap; }
-    thead.thead-dark th { background: var(--brand-blue-dark, #0f4a99); color: #fff; border-color: var(--brand-blue-dark, #0f4a99); }
+    .odv-canceled {
+        background: #ffe0e0;
+    }
+
+    .btn-xs {
+        padding: .15rem .4rem;
+        font-size: .75rem;
+        line-height: 1.2;
+    }
+
+    .badge-soft {
+        background: #e9ecef;
+        color: #495057;
+        border: 1px solid #dee2e6;
+    }
+
+    .sortie-inner {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .sortie-inner td {
+            padding: .25rem .4rem;
+            font-size: .78rem;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+
+        .sortie-inner tr:last-child td {
+            border-bottom: none;
+        }
+
+        .sortie-inner tr.s-canceled {
+            background: #fff1f1;
+        }
+
+        .sortie-inner .col-seq {
+            width: 34px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .sortie-inner .col-type {
+            width: 70px;
+        }
+
+        .sortie-inner .col-ac {
+            width: 80px;
+        }
+
+        .sortie-inner .col-time {
+            width: 70px;
+        }
+
+        .sortie-inner .col-stat {
+            width: 130px;
+        }
+
+        .sortie-inner .col-act {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+    thead.thead-dark th {
+        background: var(--brand-blue-dark, #0f4a99);
+        color: #fff;
+        border-color: var(--brand-blue-dark, #0f4a99);
+    }
 </style>
 
 <div class="card card-outline mb-3" style="border-top-color: var(--brand-blue, #1c64c9);">
@@ -182,8 +237,32 @@
         <form asp-action="Index" method="get" class="form-row align-items-end">
             @if (Model.IsUnrestrictedScope)
             {
+                @* NEW (Batch 19, 2026-08-30) — real legacy Wing filter
+                   ("Wing: C.I.P.L" in the CIPL_FlyingProgram screenshot).
+                   Same visibility rule as Escadron below (unrestricted
+                   only — a scoped user's own UserScope already limits
+                   them). Narrows the Escadron list server-side; changing
+                   Wing resubmits the whole filter form, same pattern as
+                   Escadron/Date already use. *@
+                <div class="col-md-2 form-group mb-2">
+                    <label class="mb-1">Wing</label>
+                    <select name="wingId" asp-items="Model.Wings" class="form-control form-control-sm" onchange="this.form.submit()">
+                        <option value="">-- Tous --</option>
+                    </select>
+                </div>
+                @* FIX (Batch 18, 2026-08-30) — this filter's "Escadron"
+                   dropdown and the "Créer un ODV" card's "Escadron"
+                   dropdown further down both showed the plain label
+                   "Escadron" with a bare "--" placeholder, which read as
+                   the same control duplicated on the page. They're two
+                   different things (view filter vs. new-ODV squadron) —
+                   label made explicit here so it's clear at a glance.
+                   REMOVED (Batch 19, 2026-08-30) — turns out the real
+                   legacy page only ever has ONE Escadron selector, and
+                   Create ODV now follows this one directly (see that
+                   card's Batch 19 comment) rather than needing its own. *@
                 <div class="col-md-3 form-group mb-2">
-                    <label class="mb-1">Escadron</label>
+                    <label class="mb-1">Filtrer par escadron</label>
                     <select name="squadronId" asp-items="Model.Squadrons" class="form-control form-control-sm" onchange="this.form.submit()">
                         <option value="">-- Toutes --</option>
                     </select>
@@ -196,11 +275,15 @@
                 {
                     <input type="hidden" name="squadronId" value="@Model.SelectedSquadronId" />
                 }
+                @if (Model.IsUnrestrictedScope && Model.SelectedWingId.HasValue)
+                {
+                    <input type="hidden" name="wingId" value="@Model.SelectedWingId" />
+                }
             </div>
             <div class="col-md-3 form-group mb-2 d-flex" style="gap:.35rem;">
-                <a class="btn btn-sm btn-outline-secondary" asp-action="Index" asp-route-odvDate="@prevDate" asp-route-squadronId="@Model.SelectedSquadronId" title="Jour précédent">&laquo;</a>
-                <a class="btn btn-sm btn-outline-secondary" asp-action="Index" asp-route-odvDate="@nextDate" asp-route-squadronId="@Model.SelectedSquadronId" title="Jour suivant">&raquo;</a>
-                <a class="btn btn-sm btn-outline-primary" asp-action="Index" asp-route-odvDate="@todayDate" asp-route-squadronId="@Model.SelectedSquadronId">Aujourd'hui</a>
+                <a class="btn btn-sm btn-outline-secondary" asp-action="Index" asp-route-odvDate="@prevDate" asp-route-squadronId="@Model.SelectedSquadronId" asp-route-wingId="@Model.SelectedWingId" title="Jour précédent">&laquo;</a>
+                <a class="btn btn-sm btn-outline-secondary" asp-action="Index" asp-route-odvDate="@nextDate" asp-route-squadronId="@Model.SelectedSquadronId" asp-route-wingId="@Model.SelectedWingId" title="Jour suivant">&raquo;</a>
+                <a class="btn btn-sm btn-outline-primary" asp-action="Index" asp-route-odvDate="@todayDate" asp-route-squadronId="@Model.SelectedSquadronId" asp-route-wingId="@Model.SelectedWingId">Aujourd'hui</a>
             </div>
             <div class="col-md-2 form-group mb-2">
                 <button type="submit" class="btn btn-sm btn-primary w-100">Refresh</button>
@@ -219,65 +302,133 @@
             validation failure and a redirect on success (confirmed from
             the real OdvPlanningController.Create) — never View(model) —
             so this form is submitted via AJAX (see Scripts).
+
+            REMOVED (Batch 19, 2026-08-30) — this card had its own
+            Escadron dropdown until now. The real legacy
+            CIPL_FlyingProgram.aspx.vb only has ONE Escadron selector
+            total (btnCreateODV_Click reads squadron straight off the same
+            ddlSqnID used for filtering) — so this card now always targets
+            whichever squadron the Filtres bar above is narrowed to
+            (CreateModel.SquadronId is set server-side from that same
+            value — see OdvPlanningController's Batch 19 comment), shown
+            here as a read-only label plus a hidden field instead of a
+            second dropdown. When nothing is filtered yet (an
+            unrestricted user on "-- Toutes --" — legacy's ddlSqnID never
+            has that state), there's no single squadron to create against,
+            so the whole form is replaced with a prompt instead
+            (Model.CanCreateOdv).
         *@
         <div class="text-danger mb-2" data-ajax-errors></div>
-        <form asp-controller="OdvPlanning" asp-action="Create" method="post" data-ajax="true">
-            <input type="hidden" asp-for="CreateModel.OdvDate" />
-            <div class="form-row">
-                <div class="col-md-2 form-group mb-2">
-                    <label class="mb-1">Call-Sign</label>
-                    <select asp-for="CreateModel.CallSignId" asp-items="Model.CallSigns" class="form-control form-control-sm">
-                        <option value="">--</option>
-                    </select>
-                    <span asp-validation-for="CreateModel.CallSignId" class="text-danger small"></span>
-                </div>
-                <div class="col-md-2 form-group mb-2">
-                    <label class="mb-1">Escadron</label>
-                    <select asp-for="CreateModel.SquadronId" asp-items="Model.Squadrons" class="form-control form-control-sm">
-                        <option value="">--</option>
-                    </select>
-                    <span asp-validation-for="CreateModel.SquadronId" class="text-danger small"></span>
-                </div>
-                <div class="col-md-2 form-group mb-2">
-                    <label class="mb-1">Groupe avion</label>
-                    <select asp-for="CreateModel.AcMainGroupId" asp-items="Model.AcMainGroups" class="form-control form-control-sm">
-                        <option value="">--</option>
-                    </select>
-                    <span asp-validation-for="CreateModel.AcMainGroupId" class="text-danger small"></span>
-                </div>
-                <div class="col-md-2 form-group mb-2">
-                    <label class="mb-1">Mission</label>
-                    <select asp-for="CreateModel.MissionId" asp-items="Model.Missions" class="form-control form-control-sm">
-                        <option value="">--</option>
-                    </select>
-                    <span asp-validation-for="CreateModel.MissionId" class="text-danger small"></span>
-                </div>
-                <div class="col-md-2 form-group mb-2">
-                    <label class="mb-1">Area</label>
-                    <input asp-for="CreateModel.Area" class="form-control form-control-sm" value="SECTEUR" />
-                </div>
-                <div class="col-md-2 form-group mb-2">
-                    <label class="mb-1">TOFF</label>
-                    <input asp-for="CreateModel.TOFF" class="form-control form-control-sm" placeholder="hh:mm" />
-                </div>
-
-                <div class="col-md-2 form-group mb-2">
-                    <label class="mb-1">Zone</label>
-                    <select asp-for="CreateModel.Zone" asp-items="Model.ZoneList" class="form-control form-control-sm"></select>
-                </div>
-                <div class="col-md-2 form-group mb-2">
-                    <label class="mb-1">Type mission</label>
-                    <select asp-for="CreateModel.MissionType" asp-items="Model.MissionTypeList" class="form-control form-control-sm"></select>
-                </div>
-                <div class="col-md-4 form-group mb-2">
-                    <label class="mb-1">Obs</label>
-                    <textarea asp-for="CreateModel.Obs" class="form-control form-control-sm" rows="1"></textarea>
-                </div>
-                <div class="col-md-2 form-group mb-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-sm btn-info w-100">Créer ODV</button>
-                </div>
+        @if (!Model.CanCreateOdv)
+        {
+            <div class="text-muted small py-2">
+                Sélectionnez un escadron dans les filtres ci-dessus pour créer un ODV.
             </div>
-        </form>
+        }
+        else
+        {
+            <form asp-controller="OdvPlanning" asp-action="Create" method="post" data-ajax="true">
+                <input type="hidden" asp-for="CreateModel.OdvDate" />
+                <input type="hidden" asp-for="CreateModel.SquadronId" />
+                <div class="form-row">
+                    <div class="col-md-2 form-group mb-2">
+                        <label class="mb-1">Call-Sign</label>
+                        <select asp-for="CreateModel.CallSignId" asp-items="Model.CallSigns" class="form-control form-control-sm">
+                            <option value="">--</option>
+                        </select>
+                        <span asp-validation-for="CreateModel.CallSignId" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-2 form-group mb-2">
+                        <label class="mb-1">Escadron</label>
+                        <input type="text" class="form-control form-control-sm" value="@ViewBag.SquadronName" readonly disabled />
+                    </div>
+                    <div class="col-md-2 form-group mb-2">
+                        <label class="mb-1">Groupe avion</label>
+                        <select asp-for="CreateModel.AcMainGroupId" asp-items="Model.AcMainGroups" class="form-control form-control-sm">
+                            <option value="">--</option>
+                        </select>
+                        <span asp-validation-for="CreateModel.AcMainGroupId" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-2 form-group mb-2">
+                        <label class="mb-1">Mission</label>
+                        <select asp-for="CreateModel.MissionId" asp-items="Model.Missions" class="form-control form-control-sm">
+                            <option value="">--</option>
+                        </select>
+                        <span asp-validation-for="CreateModel.MissionId" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-2 form-group mb-2">
+                        <label class="mb-1">Area</label>
+                        <input asp-for="CreateModel.Area" class="form-control form-control-sm" value="SECTEUR" />
+                    </div>
+                    <div class="col-md-2 form-group mb-2">
+                        @* CHANGED (Batch 19, 2026-08-30) — legacy's TOFF is
+                           two dropdowns (hour 00-23, minute in 5-min
+                           steps), not free text. Matched here: as_TOFF_HH/
+                           as_TOFF_MM aren't posted themselves (no `name`
+                           attribute — plain ids only); a change listener
+                           in Scripts composes them into the real hidden
+                           CreateModel.TOFF field ("HH:mm"), which is what
+                           actually gets submitted and binds to the real
+                           TimeSpan? property, same as before. *@
+                        <label class="mb-1">TOFF</label>
+                        <div class="d-flex" style="gap:.25rem;">
+                            <select id="as_TOFF_HH" class="form-control form-control-sm">
+                                <option value="">HH</option>
+                                @for (int h = 0; h < 24; h++)
+                                {
+                                    <option value="@h.ToString("00")">@h.ToString("00")</option>
+                                }
+                            </select>
+                            <select id="as_TOFF_MM" class="form-control form-control-sm">
+                                <option value="">MM</option>
+                                @for (int m = 0; m < 60; m += 5)
+                                {
+                                    <option value="@m.ToString("00")">@m.ToString("00")</option>
+                                }
+                            </select>
+                        </div>
+                        <input type="hidden" asp-for="CreateModel.TOFF" id="as_TOFF_hidden" />
+                        <span asp-validation-for="CreateModel.TOFF" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-2 form-group mb-2">
+                        <label class="mb-1">Zone</label>
+                        <select asp-for="CreateModel.Zone" asp-items="Model.ZoneList" class="form-control form-control-sm"></select>
+                    </div>
+                    <div class="col-md-2 form-group mb-2">
+                        <label class="mb-1">Type mission</label>
+                        <select asp-for="CreateModel.MissionType" asp-items="Model.MissionTypeList" class="form-control form-control-sm"></select>
+                    </div>
+                    <div class="col-md-4 form-group mb-2">
+                        <label class="mb-1">Obs</label>
+                        <textarea asp-for="CreateModel.Obs" class="form-control form-control-sm" rows="1"></textarea>
+                    </div>
+                    <div class="col-md-2 form-group mb-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-sm btn-info w-100">Créer ODV</button>
+                    </div>
+                </div>
+            </form>
+            <script>
+                // NEW (Batch 19, 2026-08-30) — composes the HH/MM TOFF
+                // dropdowns into the real CreateModel.TOFF hidden field
+                // ("HH:mm", which the real TimeSpan? property already
+                // binds fine — same format the old free-text box posted).
+                // Only present when Model.CanCreateOdv rendered the form.
+                (function () {
+                    var hh = document.getElementById('as_TOFF_HH');
+                    var mm = document.getElementById('as_TOFF_MM');
+                    var hidden = document.getElementById('as_TOFF_hidden');
+                    if (!hh || !mm || !hidden) return;
+
+                    function syncToff() {
+                        hidden.value = (hh.value && mm.value) ? (hh.value + ':' + mm.value) : '';
+                    }
+
+                    hh.addEventListener('change', syncToff);
+                    mm.addEventListener('change', syncToff);
+                })();
+            </script>
+        }
     </div>
 </div>
 
@@ -389,8 +540,15 @@
             </div>
             <div class="col-md-2 form-group mb-2">
                 <label class="mb-1">Type avion</label>
-                <select id="as_AcTypeId" class="form-control form-control-sm">
-                    <option value="">-- Choisir un ODV --</option>
+                @* FIX (Batch 18, 2026-08-30) — this and Captain below both
+                   said "-- Choisir un ODV --", which read like every field
+                   was asking the user to pick an ODV. Now a neutral
+                   placeholder plus `disabled` until an ODV is actually
+                   selected (re-enabled by the odvSelect change handler in
+                   Scripts), so it's obvious these two just depend on the
+                   ODV choice rather than duplicating its instruction. *@
+                <select id="as_AcTypeId" class="form-control form-control-sm" disabled>
+                    <option value="">-- Sélectionner --</option>
                 </select>
                 <span class="text-danger small" id="as_err_AcTypeId"></span>
             </div>
@@ -405,8 +563,8 @@
             </div>
             <div class="col-md-2 form-group mb-2">
                 <label class="mb-1">Captain</label>
-                <select id="as_CaptainId" class="form-control form-control-sm">
-                    <option value="">-- Choisir un ODV --</option>
+                <select id="as_CaptainId" class="form-control form-control-sm" disabled>
+                    <option value="">-- Sélectionner --</option>
                 </select>
             </div>
         </form>
@@ -697,7 +855,9 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
     <script>
         (function () {
             document.getElementById('cancelOdvModal')?.addEventListener('show.bs.modal', function (e) {
@@ -880,8 +1040,16 @@
                 addRowBtn.disabled = true;
 
                 if (!opt || !opt.value) {
-                    fillSelect(acTypeSelect, [], '-- Choisir un ODV --');
-                    fillSelect(captainSelect, [], '-- Choisir un ODV --');
+                    // FIX (Batch 18, 2026-08-30) — was '-- Choisir un ODV --'
+                    // on BOTH of these, which looked like every dropdown on
+                    // the card was asking for the same thing. Neutral
+                    // placeholder + disabled communicates "depends on ODV"
+                    // without repeating that instruction as literal option
+                    // text in two unrelated fields.
+                    fillSelect(acTypeSelect, [], '-- Sélectionner --');
+                    fillSelect(captainSelect, [], '-- Sélectionner --');
+                    acTypeSelect.disabled = true;
+                    captainSelect.disabled = true;
                     currentCrew = [];
                     rowsHint.textContent = 'Sélectionnez d\'abord un ODV pour ajouter de l\'équipage.';
                     return;
@@ -890,9 +1058,11 @@
                 var squadronId = parseInt(opt.getAttribute('data-squadron-id'), 10);
 
                 fillSelect(acTypeSelect, AC_TYPES.filter(function (t) { return t.acMainGroupId === parseInt(acMainGroupId, 10); }), '-- Sélectionner --');
+                acTypeSelect.disabled = false;
 
                 currentCrew = CREW.filter(function (c) { return c.squadronId === squadronId; });
                 fillSelect(captainSelect, currentCrew, '--');
+                captainSelect.disabled = false;
 
                 rowsHint.textContent = 'Sélectionnez le type avion pour ajouter de l\'équipage.';
             });

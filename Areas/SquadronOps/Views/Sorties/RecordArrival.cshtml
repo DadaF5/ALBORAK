@@ -1,0 +1,65 @@
+@model FRAProject.Areas.SquadronOps.ViewModels.SortieRecordArrivalVm
+
+@{
+    ViewData["Title"] = "Record Arrival";
+}
+
+@*
+    ATC/Tower post-flight step. Same generic Bootstrap baseline as
+    AssignAircraft.cshtml (Batch 9).
+
+    CHANGED (Batch 12, 2026-08-30) — "Engine Start" display row removed
+    (see SortieRecordArrivalVm's comment — no longer set by this point).
+*@
+
+<h1>Record Arrival</h1>
+
+<h4>Sortie @Model.SortieCode &mdash; @Model.AcTypeName</h4>
+<p class="text-muted">ATC / Tower — real landing time and airfield activity data.</p>
+<hr />
+
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
+}
+
+<dl class="row">
+    <dt class="col-sm-3">Real TOFF</dt>
+    <dd class="col-sm-9">@(Model.RealTOFF?.ToString("g") ?? "—")</dd>
+</dl>
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="RecordArrival" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="SortieId" />
+
+            <div class="form-group mb-3">
+                <label asp-for="RealLandingTime" class="form-label"></label>
+                <input asp-for="RealLandingTime" class="form-control" />
+                <span asp-validation-for="RealLandingTime" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Landings" class="form-label"></label>
+                <input asp-for="Landings" class="form-control" />
+                <span asp-validation-for="Landings" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="TGOsLandings" class="form-label"></label>
+                <input asp-for="TGOsLandings" class="form-control" />
+                <span asp-validation-for="TGOsLandings" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <input type="submit" value="Record Arrival" class="btn btn-primary" />
+                <a asp-action="Index" asp-controller="OdvPlanning" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

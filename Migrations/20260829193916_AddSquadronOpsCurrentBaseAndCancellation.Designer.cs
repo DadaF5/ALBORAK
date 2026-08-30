@@ -4,6 +4,7 @@ using FRAProject.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FRAProject.Migrations
 {
     [DbContext(typeof(FRAContext))]
-    partial class FRAContextModelSnapshot : ModelSnapshot
+    [Migration("20260829193916_AddSquadronOpsCurrentBaseAndCancellation")]
+    partial class AddSquadronOpsCurrentBaseAndCancellation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3405,10 +3408,6 @@ namespace FRAProject.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal?>("OilUsedLiters")
-                        .HasPrecision(8, 2)
-                        .HasColumnType("decimal(8,2)");
-
                     b.Property<int>("SortieId")
                         .HasColumnType("int");
 
@@ -3765,20 +3764,6 @@ namespace FRAProject.Migrations
                     b.Property<int>("OdvId")
                         .HasColumnType("int");
 
-                    b.Property<string>("PostFlightNotes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<decimal?>("PostFlightOilUsedLiters")
-                        .HasColumnType("decimal(8,2)");
-
-                    b.Property<DateTime?>("PostFlightReportedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PostFlightReportedBy")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
                     b.Property<int?>("RadarContacts")
                         .HasColumnType("int");
 
@@ -3795,9 +3780,6 @@ namespace FRAProject.Migrations
                         .HasColumnName("RowVersion");
 
                     b.Property<int>("Sequence")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("SnagId")
                         .HasColumnType("int");
 
                     b.Property<string>("SortieCode")
@@ -3851,8 +3833,6 @@ namespace FRAProject.Migrations
 
                     b.HasIndex("OdvId")
                         .HasDatabaseName("IX_Sortie_OdvId");
-
-                    b.HasIndex("SnagId");
 
                     b.HasIndex("OdvId", "IsCompleted")
                         .HasDatabaseName("IX_Sorties_Odv_Completed");
@@ -7385,18 +7365,11 @@ namespace FRAProject.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FRAProject.Areas.AircraftMaintenance.Models.Snag", "Snag")
-                        .WithMany()
-                        .HasForeignKey("SnagId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("AcType");
 
                     b.Navigation("Aircraft");
 
                     b.Navigation("Odv");
-
-                    b.Navigation("Snag");
                 });
 
             modelBuilder.Entity("FRAProject.Areas.SquadronOps.Models.SortieCrew", b =>

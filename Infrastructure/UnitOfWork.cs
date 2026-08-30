@@ -5,6 +5,7 @@ using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.Settings.Repositories;
 using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.SquadronOps.Repositories;
 using FRAProject.Data;
 using FRAProject.Infrastructure.Interfaces;
 using FRAProject.Infrastructure.Repositories;
@@ -66,6 +67,12 @@ namespace FRAProject.Infrastructure
             ComponentReferenceBases = new GenericRepository<ComponentReferenceBasis>(_context); // NEW
             ComponentDerogations = new ComponentDerogationRepository(_context); // NEW (Derogation implementation pass)
 
+            // ── SquadronOps (Odv/Sortie planning) — REDESIGNED 2026-08-29 ──
+            // Specialist repositories, registered directly (non-lazy) —
+            // same convention as AcMainGroups/WorkOrders/etc. above.
+            Odvs = new OdvRepository(_context);
+            Squadrons = new SquadronRepository(_context);
+            SortiePlanning = new SortiePlanningRepository(_context);
         }
 
         // ── Specialist repository ─────────────────────────────────────────
@@ -213,6 +220,34 @@ namespace FRAProject.Infrastructure
         public IGenericRepository<ComponentLifeLimitDimensionType> ComponentLifeLimitDimensionTypes { get; private set; }
         public IGenericRepository<ComponentReferenceBasis> ComponentReferenceBases { get; private set; }
         public IComponentDerogationRepository ComponentDerogations { get; private set; }
+
+        // ── SquadronOps (Odv/Sortie planning) — REDESIGNED 2026-08-29 ──────
+        public IOdvRepository Odvs { get; private set; }
+        public ISquadronRepository Squadrons { get; private set; }
+        public ISortiePlanningRepository SortiePlanning { get; private set; }
+
+        private IGenericRepository<Mission>? _missions;
+        private IGenericRepository<Phase>? _phases;
+        private IGenericRepository<CallSign>? _callSigns;
+        private IGenericRepository<CrewMember>? _crewMembers;
+        private IGenericRepository<SortieCrew>? _sortieCrews;
+
+        public IGenericRepository<Mission> Missions =>
+            _missions ??= new GenericRepository<Mission>(_context);
+        public IGenericRepository<Phase> Phases =>
+            _phases ??= new GenericRepository<Phase>(_context);
+        public IGenericRepository<CallSign> CallSigns =>
+            _callSigns ??= new GenericRepository<CallSign>(_context);
+        public IGenericRepository<CrewMember> CrewMembers =>
+            _crewMembers ??= new GenericRepository<CrewMember>(_context);
+        public IGenericRepository<SortieCrew> SortieCrews =>
+            _sortieCrews ??= new GenericRepository<SortieCrew>(_context);
+
+        // NEW (2026-08-29, Batch 8) — FlightLog, plain generic, lazy — same
+        // pattern as Missions/Phases/SortieCrews above. See IUnitOfWork.cs.
+        private IGenericRepository<FlightLog>? _flightLogs;
+        public IGenericRepository<FlightLog> FlightLogs =>
+            _flightLogs ??= new GenericRepository<FlightLog>(_context);
 
         // ── Commit ────────────────────────────────────────────────────────
         // Single method — CompleteAsync() — matches IUnitOfWork contract.

@@ -72,6 +72,16 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("SquadronOrBaseMaintenance", p => p.Requirements.Add(new SquadronOrBaseMaintenanceRequirement()));
     options.AddPolicy("RequireCrewChiefOrAdmin", p => p.RequireRole("CrewChief", "Admin"));
 
+    // NEW (Batch 11, 2026-08-29) — action-level gates for the two other
+    // SquadronOps actor roles, same pattern as RequireCrewChiefOrAdmin
+    // above (which existed already but was unused until this batch wired
+    // it onto SortiesController.AssignAircraft). Roles are the ones
+    // already seeded by IdentitySeed.cs. "Tower" IS "ATC" — confirmed by
+    // Dadda, same real-world role, just named differently in
+    // IdentitySeed.cs than in Dadda's own description.
+    options.AddPolicy("RequireTowerOrAdmin", p => p.RequireRole("Tower", "Admin"));
+    options.AddPolicy("RequireSquadronPlannerOrAdmin", p => p.RequireRole("SquadronPlanner", "Admin"));
+
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
@@ -105,7 +115,16 @@ builder.Services.AddScoped<IComponentDerogationService, ComponentDerogationServi
 builder.Services.AddRazorPages();
 
 // Domain services
-builder.Services.AddScoped<SquadronActivityService>();
+// SquadronActivityService REMOVED (Batch 11, 2026-08-29) — confirmed by
+// Dadda to be dead/legacy code (pre-restart leftover, same treatment as
+// OdvsController.cs): computed DurationMinutes instead of using the locked
+// manual-entry value, hardcoded Cycles=1, and its Aircraft/Component
+// increment logic referenced nonexistent Maintenance model classes
+// (MaintenanceComponent/MaintenanceThreshold/MaintenanceWorkOrder). Not
+// referenced by anything real — safe to stop registering. Delete
+// Areas/SquadronOps/Services/SquadronActivityService.cs (or wherever it
+// lives) once confirmed nothing else still references the class directly.
+// builder.Services.AddScoped<SquadronActivityService>();
 builder.Services.AddScoped<IMedicalFitnessService, MedicalFitnessService>();
 builder.Services.AddScoped<IMenuService, MenuService>();
 
@@ -219,6 +238,11 @@ using (var scope = app.Services.CreateScope())
         await RunSeederAsync(nameof(ComponentPositionSeeder), () => ComponentPositionSeeder.SeedAsync(context), logger);
         await RunSeederAsync(nameof(ComponentReferenceBasisSeeder), () => ComponentReferenceBasisSeeder.SeedAsync(context), logger);
         await RunSeederAsync(nameof(ComponentLifeLimitDimensionTypeSeeder), () => ComponentLifeLimitDimensionTypeSeeder.SeedAsync(context), logger);
+
+        // NEW (Batch 11, 2026-08-29) — SQUADRONOPS ModuleRole rows
+        // (SQUADRON_PLANNER/ATC/CREWCHIEF), needed for UserScope data-scope
+        // filtering. See Data/Seeders/SquadronOpsModuleRoleSeeder.cs.
+        await RunSeederAsync(nameof(SquadronOpsModuleRoleSeeder), () => SquadronOpsModuleRoleSeeder.SeedAsync(context), logger);
 
         logger.LogInformation("Reference data seeding pipeline completed.");
     }

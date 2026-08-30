@@ -1,4 +1,4 @@
-﻿
+
 using FRAProject.Areas.Settings.Models;
 
 namespace FRAProject.Areas.SquadronOps.Models
@@ -34,6 +34,17 @@ namespace FRAProject.Areas.SquadronOps.Models
 
         // Extra data: fuel used, mission snapshot, notes
         public decimal? FuelUsedKg { get; set; }
+
+        /// <summary>
+        /// NEW (Batch 11, 2026-08-29) — CrewChief's post-flight oil entry,
+        /// copied from Sortie.PostFlightOilUsedLiters at Finalize. Same
+        /// units end to end (Liters), unlike FuelUsedKg above, which is
+        /// NOT populated from Sortie.FuelUsedLiters due to an unresolved
+        /// Liters-vs-Kg unit mismatch — see Sortie.cs's own comment on
+        /// FuelUsedLiters.
+        /// </summary>
+        public decimal? OilUsedLiters { get; set; }
+
         public string? MissionSnapshot { get; set; }
         public string? Notes { get; set; }
 

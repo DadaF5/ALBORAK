@@ -1,4 +1,4 @@
-﻿using FRAProject.Areas.Settings.Models;
+using FRAProject.Areas.Settings.Models;
 using FRAProject.Enums;
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FRAProject.Areas.SquadronOps.Models
 {
-    
+
     public class Odv
     {
         // Primary key (EF convention)
@@ -55,6 +55,18 @@ namespace FRAProject.Areas.SquadronOps.Models
         // Preflight approval/validation flag controlled by Squadron
         // When false, CrewChief/TWR actions that change sorties are blocked.
         public bool IsPreflightApproved { get; set; } = false;
+
+        // ════════════════════════════════════════════════════════════════
+        // NEW (2026-08-29, Dadda's own instruction) — cancellation reason.
+        // Set alongside OdvStatus = OdvStatus.Cancelled (that enum value
+        // already existed). Cancelling an Odv cascades this SAME reason
+        // text to every related Sortie's own CancellationReason — see
+        // OdvPlanningController.Cancel.
+        // ════════════════════════════════════════════════════════════════
+        [Display(Name = "Cancellation Reason")]
+        [StringLength(500)]
+        public string? CancellationReason { get; set; }
+        public DateTime? CancelledAtUtc { get; set; }
 
         // optional RowVersion on ODV as well if you plan concurrent edits
         [Timestamp]

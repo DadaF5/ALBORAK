@@ -1,380 +1,511 @@
-﻿@using FRAProject.Areas.SquadronOps.ViewModels
-@model OdvIndexVm
+@model FRAProject.Areas.SquadronOps.ViewModels.OdvIndexVm
+@using FRAProject.Areas.SquadronOps.Models
+
 @{
-    ViewData["Title"] = "Squadron Flying Program";
-    bool isAdmin = User.IsInRole("Admin");
+    ViewData["Title"] = "Programme de vol";
+
+    // Local helpers — status → (Bootstrap badge class, French label).
+    // OdvStatus only has Planned/Cancelled referenced anywhere seen this
+    // session (Enums.OdvStatus) — default label falls back to ToString()
+    // for any other value so nothing throws if more are added later.
+    (string css, string label) OdvBadge(FRAProject.Enums.OdvStatus? status) => status switch
+    {
+        FRAProject.Enums.OdvStatus.Cancelled => ("bg-danger", "Annulé"),
+        FRAProject.Enums.OdvStatus.Planned => ("bg-secondary", "Planifié"),
+        null => ("bg-secondary", "—"),
+        _ => ("bg-secondary", status.ToString() ?? "—")
+    };
+
+    (string css, string label) SortieBadge(SortieStatus status) => status switch
+    {
+        SortieStatus.Planned => ("bg-secondary", "Planifiée"),
+        SortieStatus.AircraftAssigned => ("bg-info text-dark", "Avion assigné"),
+        SortieStatus.Airborne => ("bg-primary", "En vol"),
+        SortieStatus.Landed => ("bg-primary", "Atterrie"),
+        SortieStatus.CrewChiefReported => ("bg-warning text-dark", "Compte-rendu CrewChief"),
+        SortieStatus.Finalized => ("bg-success", "Clôturée"),
+        SortieStatus.Canceled => ("bg-danger", "Annulée"),
+        _ => ("bg-secondary", status.ToString())
+    };
+
+    var prevDate = Model.SelectedDate.AddDays(-1).ToString("yyyy-MM-dd");
+    var nextDate = Model.SelectedDate.AddDays(1).ToString("yyyy-MM-dd");
+    var todayDate = DateTime.Today.ToString("yyyy-MM-dd");
 }
-@{
-    Layout = "~/Views/Shared/_Layout.cshtml";
+
+@*
+    NEW (Batch 13, 2026-08-30) — the real "Programme de vol" operational
+    board. First real content wired into _SquadronOpsLayout.cshtml
+    (Batch 10's shell, approved but empty until now).
+
+    Grounded in the real OdvPlanningController.Index/Create/Edit/Cancel
+    actions and OdvIndexVm/OdvCreateVm/Odv.cs/Sortie.cs — every field and
+    route below matches those exactly.
+
+    ONE deliberate scope cut, flagged rather than guessed: no crew
+    assignment UI here. The Batch 10 layout comment says Sorties/
+    SortieCrews are meant to be worked "from within that board... via a
+    crew-assignment modal", but no SortieCrewsController has been sent
+    this session — building that blind risks a modal that posts to a
+    route/shape that doesn't exist. Each sortie row below shows assigned
+    crew count only (if any); a real "Assign crew" action needs that
+    controller's real file first. Everything else in the workflow —
+    Create ODV, Edit ODV, Cancel ODV, Add Sortie, AssignAircraft,
+    RecordDeparture, RecordArrival, RecordPostFlight, Finalize, Cancel
+    Sortie — is wired for real, using each action's confirmed real route.
+
+    Finalize has NO GET action in SortiesController (only POST) — it was
+    clearly meant to be submitted right from this board, not a separate
+    page. Built as a single shared Bootstrap modal below, populated via a
+    small vanilla-JS onclick handler (matches the no-library-dependency
+    pattern already used in RecordPostFlight.cshtml's snag-block toggle).
+*@
+
+<h1>Programme de vol</h1>
+<p class="text-muted">Tableau opérationnel — ODVs et sorties du jour.</p>
+
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
 }
-<!-- ============================= -->
-<!-- ODV DETAILS (CREATE)         -->
-<!-- ============================= -->
-<div class="card mb-8" style="margin-top:0px;">
-    <div class="card-body">
-        <div class="row">
-            <div class="form-control" style="font-size:18px; color:white; padding-left:30px; background-color:dodgerblue;">
-                Squadron Daily Flying Program
-            </div>
-        </div>
-        
-        <div class="col-md-2">
-            <form method="get" asp-action="Index" class="row mb-1" id="dateForm">
-                <label class="form-label">Date</label>
-                <input type="date"
-                       name="odvDate"
-                       class="form-control"
-                       value="@(Model.SelectedDate.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))"
-                       onchange="this.form.submit()" />
-            </form>
-        </div>
-        
-        <form asp-action="Create" method="post">
-            @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="CreateModel.OdvDate" id="createOdvDate" />
-            <div class="row g-3">
-                @if (User.IsInRole("Admin"))
-                {
-                    <div class="col-md-2">
-                        <label class="form-label">Aircraft Group</label>
-                        <select asp-for="CreateModel.AcMainGroupId" required
-                                class="form-control"
-                                asp-items="Model.AcMainGroups">
-                            <option value="">-- Select Group --</option>
-                        </select>
-                        <span asp-validation-for="CreateModel.AcMainGroupId" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Squadron</label>
-                        <select asp-for="CreateModel.SquadronId" required
-                                class="form-control"
-                                asp-items="Model.Squadrons">
-                            <option value="">-- Select Squadron --</option>
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <form asp-action="Index" method="get" class="d-flex align-items-center gap-2">
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-odvDate="@prevDate" title="Jour précédent">&laquo;</a>
+        <input type="date" name="odvDate" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" class="form-control" style="max-width:180px;" onchange="this.form.submit()" />
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-odvDate="@nextDate" title="Jour suivant">&raquo;</a>
+        <a class="btn btn-outline-primary" asp-action="Index" asp-route-odvDate="@todayDate">Aujourd'hui</a>
+    </form>
+
+    <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#createOdvPanel">
+        + Nouvel ODV
+    </button>
+</div>
+
+<div class="collapse" id="createOdvPanel">
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Nouvel ODV — @Model.SelectedDate.ToString("dd/MM/yyyy")</h5>
+            @*
+                Create's controller action returns BadRequest(JSON) on
+                validation failure and Redirect on success (confirmed from
+                the real OdvPlanningController.Create) — NOT View(model) —
+                so this form is submitted via AJAX (see Scripts) rather
+                than a plain POST, otherwise a validation failure would
+                just show raw JSON in the browser.
+            *@
+            <div class="text-danger mb-2" data-ajax-errors></div>
+            <form asp-controller="OdvPlanning" asp-action="Create" method="post" data-ajax="true">
+                <input type="hidden" asp-for="CreateModel.OdvDate" />
+                <div class="row">
+                    <div class="col-md-3 form-group mb-3">
+                        <label asp-for="CreateModel.SquadronId" class="form-label"></label>
+                        <select asp-for="CreateModel.SquadronId" asp-items="Model.Squadrons" class="form-select">
+                            <option value="">-- Escadron --</option>
                         </select>
                         <span asp-validation-for="CreateModel.SquadronId" class="text-danger"></span>
                     </div>
-                }
-                else
-                {
-                    <input type="hidden" asp-for="CreateModel.SquadronId" />
-                    <input type="hidden" asp-for="CreateModel.AcMainGroupId" />
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <strong>Squadron:</strong> @ViewBag.SquadronName
-                        </div>
-                        <div class="col-md-4">
-                            <strong>Aircraft Group:</strong> @ViewBag.AcMainGroupName
-                        </div>
+                    <div class="col-md-3 form-group mb-3">
+                        <label asp-for="CreateModel.AcMainGroupId" class="form-label"></label>
+                        <select asp-for="CreateModel.AcMainGroupId" asp-items="Model.AcMainGroups" class="form-select">
+                            <option value="">-- Groupe avion --</option>
+                        </select>
+                        <span asp-validation-for="CreateModel.AcMainGroupId" class="text-danger"></span>
                     </div>
-                }
-                
-                <div class="col-md-2">
-                    <label class="form-label">Call Sign</label>
-                    <select asp-for="CreateModel.CallSignId" class="form-control"
-                            asp-items="Model.CallSigns" required></select>
-                    <span asp-validation-for="CreateModel.CallSignId" class="text-danger"></span>
-                </div>
-                
-                <div class="col-md-1">
-                    <label class="form-label">Mission</label>
-                    <select asp-for="CreateModel.MissionId" class="form-control"
-                            asp-items="Model.Missions" required></select>
-                    <span asp-validation-for="CreateModel.MissionId" class="text-danger"></span>
+                    <div class="col-md-3 form-group mb-3">
+                        <label asp-for="CreateModel.MissionId" class="form-label"></label>
+                        <select asp-for="CreateModel.MissionId" asp-items="Model.Missions" class="form-select">
+                            <option value="">-- Mission --</option>
+                        </select>
+                        <span asp-validation-for="CreateModel.MissionId" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3 form-group mb-3">
+                        <label asp-for="CreateModel.CallSignId" class="form-label"></label>
+                        <select asp-for="CreateModel.CallSignId" asp-items="Model.CallSigns" class="form-select">
+                            <option value="">-- Indicatif --</option>
+                        </select>
+                        <span asp-validation-for="CreateModel.CallSignId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3 form-group mb-3">
+                        <label asp-for="CreateModel.Zone" class="form-label"></label>
+                        <select asp-for="CreateModel.Zone" asp-items="Model.ZoneList" class="form-select"></select>
+                        <span asp-validation-for="CreateModel.Zone" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3 form-group mb-3">
+                        <label asp-for="CreateModel.MissionType" class="form-label"></label>
+                        <select asp-for="CreateModel.MissionType" asp-items="Model.MissionTypeList" class="form-select"></select>
+                        <span asp-validation-for="CreateModel.MissionType" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3 form-group mb-3">
+                        <label asp-for="CreateModel.TOFF" class="form-label"></label>
+                        <input asp-for="CreateModel.TOFF" class="form-control" placeholder="hh:mm" />
+                        <span asp-validation-for="CreateModel.TOFF" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3 form-group mb-3">
+                        <label asp-for="CreateModel.Area" class="form-label"></label>
+                        <input asp-for="CreateModel.Area" class="form-control" />
+                        <span asp-validation-for="CreateModel.Area" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-12 form-group mb-3">
+                        <label asp-for="CreateModel.Obs" class="form-label"></label>
+                        <textarea asp-for="CreateModel.Obs" class="form-control" rows="2"></textarea>
+                    </div>
                 </div>
 
-                <div class="col-md-1">
-                    <label class="form-label">Area</label>
-                    <input asp-for="CreateModel.Area" class="form-control" required />
-                    <span asp-validation-for="CreateModel.Area" class="text-danger"></span>
-                </div>
+                <button type="submit" class="btn btn-primary">Créer l'ODV</button>
+                <button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#createOdvPanel">Annuler</button>
+            </form>
+        </div>
+    </div>
+</div>
 
-                <div class="col-md-1">
-                    <label class="form-label">TOFF</label>
-                    <input asp-for="CreateModel.TOFF" type="time"
-                           asp-format="{0:HH:mm}"
-                           class="form-control"
-                           pattern="[0-9]{2}:[0-9]{2}"
-                           required />
-                    <span asp-validation-for="CreateModel.TOFF" class="text-danger"></span>
+@if (Model.Odvs == null || !Model.Odvs.Any())
+{
+    <div class="alert alert-info">Aucun ODV pour cette date.</div>
+}
+else
+{
+    foreach (var odv in Model.Odvs)
+    {
+        var (odvCss, odvLabel) = OdvBadge(odv.OdvStatus);
+        <div class="card mb-3">
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                    <strong>@(odv.Squadron?.Name ?? "—")</strong>
+                    &nbsp;|&nbsp; @(odv.CallSign?.Code ?? "—")
+                    &nbsp;|&nbsp; TOFF @(odv.TOFF?.ToString(@"hh\:mm") ?? "—")
+                    &nbsp;|&nbsp; @(odv.Mission?.Name ?? "—")
+                    &nbsp;|&nbsp; @odv.Zone &nbsp;/&nbsp; @odv.MissionType
+                    <span class="badge @odvCss ms-2">@odvLabel</span>
                 </div>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-sm btn-outline-primary"
+                       asp-controller="Sorties" asp-action="Create" asp-route-odvId="@odv.Id">
+                        + Ajouter une sortie
+                    </a>
+                    @if (odv.OdvStatus !=  FRAProject.Enums.OdvStatus.Cancelled)
+                    {
+                        <a class="btn btn-sm btn-outline-secondary"
+                           asp-action="Edit" asp-route-id="@odv.Id" asp-route-odvDate="@Model.SelectedDate.ToString("yyyy-MM-dd")">
+                            Modifier
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal" data-bs-target="#cancelOdvModal"
+                                data-odv-id="@odv.Id">
+                            Annuler l'ODV
+                        </button>
+                    }
+                </div>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(odv.Obs))
+            {
+                <div class="card-body py-2 border-bottom">
+                    <small class="text-muted">Obs: @odv.Obs</small>
+                </div>
+            }
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Sortie</th>
+                            <th>Type</th>
+                            <th>Avion</th>
+                            <th>TOFF réel</th>
+                            <th>Atterrissage réel</th>
+                            <th>Équipage</th>
+                            <th>Statut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (odv.Sorties == null || !odv.Sorties.Any())
+                        {
+                            <tr><td colspan="8" class="text-muted">Aucune sortie.</td></tr>
+                        }
+                        else
+                        {
+                            foreach (var sortie in odv.Sorties.OrderBy(s => s.Sequence))
+                            {
+                                var (sCss, sLabel) = SortieBadge(sortie.Status);
+                                <tr>
+                                    <td>@sortie.SortieCode</td>
+                                    <td>@(sortie.AcType?.Name ?? "—")</td>
+                                    <td>@(sortie.Aircraft?.Registration ?? "—")</td>
+                                    <td>@(sortie.RealTOFF?.ToString("HH:mm") ?? "—")</td>
+                                    <td>@(sortie.RealLandingTime?.ToString("HH:mm") ?? "—")</td>
+                                    <td>@(sortie.SortieCrews?.Count ?? 0)</td>
+                                    <td><span class="badge @sCss">@sLabel</span></td>
+                                    <td class="d-flex flex-wrap gap-1">
+                                        @switch (sortie.Status)
+                                        {
+                                            case SortieStatus.Planned:
+                                                <a class="btn btn-sm btn-primary" asp-controller="Sorties" asp-action="Edit" asp-route-id="@sortie.Id">Modifier</a>
+                                                <a class="btn btn-sm btn-primary" asp-controller="Sorties" asp-action="AssignAircraft" asp-route-id="@sortie.Id">Assigner avion</a>
+                                                break;
+                                            case SortieStatus.AircraftAssigned:
+                                                <a class="btn btn-sm btn-primary" asp-controller="Sorties" asp-action="RecordDeparture" asp-route-id="@sortie.Id">Départ (ATC)</a>
+                                                break;
+                                            case SortieStatus.Airborne:
+                                                <a class="btn btn-sm btn-primary" asp-controller="Sorties" asp-action="RecordArrival" asp-route-id="@sortie.Id">Arrivée (ATC)</a>
+                                                break;
+                                            case SortieStatus.Landed:
+                                                <a class="btn btn-sm btn-primary" asp-controller="Sorties" asp-action="RecordPostFlight" asp-route-id="@sortie.Id">Post-vol (CrewChief)</a>
+                                                break;
+                                            case SortieStatus.CrewChiefReported:
+                                                <button type="button" class="btn btn-sm btn-success"
+                                                        data-bs-toggle="modal" data-bs-target="#finalizeModal"
+                                                        data-sortie-id="@sortie.Id"
+                                                        data-sortie-code="@sortie.SortieCode">
+                                                    Clôturer (Squadron)
+                                                </button>
+                                                break;
+                                            case SortieStatus.Finalized:
+                                                <span class="text-muted">Clôturée @(sortie.FinalizedAtUtc?.ToString("dd/MM HH:mm"))</span>
+                                                break;
+                                            case SortieStatus.Canceled:
+                                                <span class="text-muted">@sortie.CancellationReason</span>
+                                                break;
+                                        }
+                                        @if (sortie.Status != SortieStatus.Finalized && sortie.Status != SortieStatus.Canceled)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal" data-bs-target="#cancelSortieModal"
+                                                    data-sortie-id="@sortie.Id">
+                                                Annuler
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
 
-                <div class="col-md-2">
-                    <label class="form-label">Obs</label>
-                    <input asp-for="CreateModel.Obs" class="form-control" />
-                </div>
+@* ============================= MODALS ============================= *@
 
-                <div class="col-md-1">
-                    <label class="form-label">Add ODV</label>
-                    <button type="submit" class="btn btn-success w-100">+ Create</button>
-                </div>
+<div class="modal fade" id="cancelOdvModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form asp-controller="OdvPlanning" asp-action="Cancel" method="post" class="modal-content" data-ajax="true">
+            <input type="hidden" name="id" id="cancelOdvId" />
+            <input type="hidden" name="odvDate" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" />
+            <div class="modal-header">
+                <h5 class="modal-title">Annuler l'ODV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Toutes les sorties non clôturées de cet ODV seront également annulées.</p>
+                <div class="text-danger mb-2" data-ajax-errors></div>
+                <label class="form-label">Motif</label>
+                <textarea name="reason" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="submit" class="btn btn-danger">Confirmer l'annulation</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- ============================= -->
-<!-- PLANNED ODVs GRID            -->
-<!-- ============================= -->
-<table class="table table-bordered table-sm">
-    <thead class="table-primary text-center">
-        <tr>
-            <th rowspan="2">Mission</th>
-            <th rowspan="2">TOFF</th>
-            <th rowspan="2">Call Sign</th>
-            <th rowspan="2">Area</th>
-            <th rowspan="2">Status</th>
-            <th rowspan="2">Actions</th>
-            <th colspan="8">Sortie Details & Crew Assignment</th>
-        </tr>
-        <tr>
-            <th>Sortie</th>
-            <th>Config</th>
-            <th>Aircraft Type</th>
-            <th>Fuel</th>
-            <th>Captain</th>
-            <th>Copilot</th>
-            <th>Mechanic</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (!Model.Odvs.Any())
-        {
-            <tr>
-                <td colspan="15" class="text-center text-muted">No ODVs planned.</td>
-            </tr>
-        }
-        else
-        {
-            foreach (var odv in Model.Odvs)
-            {
-                var sortieCounter = 0;
-                var maxSortiesInOdv = odv.Sorties?.Count() ?? 0;
+<div class="modal fade" id="cancelSortieModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form asp-controller="Sorties" asp-action="Cancel" method="post" class="modal-content" data-ajax="true">
+            <input type="hidden" name="id" id="cancelSortieId" />
+            <div class="modal-header">
+                <h5 class="modal-title">Annuler la sortie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-danger mb-2" data-ajax-errors></div>
+                <label class="form-label">Motif</label>
+                <textarea name="reason" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="submit" class="btn btn-danger">Confirmer l'annulation</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-                @if (maxSortiesInOdv == 0)
-                {
-                    <tr>
-                        <td>@odv.Mission?.Name</td>
-                        <td>@(odv.TOFF?.ToString(@"hh\:mm"))</td>
-                        <td>@odv.CallSign?.Code</td>
-                        <td>@odv.Area</td>
-                        <td>@odv.OdvStatus</td>
-                        <td class="text-center">
-                            <a asp-action="Edit"
-                               asp-route-id="@odv.Id"
-                               asp-route-odvDate="@Model.SelectedDate.ToString("yyyy-MM-dd")"
-                               class="btn btn-sm btn-primary">
-                                Edit
-                            </a>
-                            <a asp-controller="Sorties"
-                               asp-action="Create"
-                               asp-route-odvId="@odv.Id"
-                               class="btn btn-sm btn-success">
-                                + Add Sortie
-                            </a>
-                        </td>
-                        <td colspan="8" class="text-muted text-center">No sorties planned</td>
-                    </tr>
-                }
-                else
-                {
-                    foreach (var sortie in odv.Sorties.OrderBy(s => s.Sequence))
-                    {
-                        // Get crew by role/seat - USING CORRECT ENUM VALUES
-                        var captain = sortie.SortieCrews?.FirstOrDefault(sc =>
-                            sc.Seat == FRAProject.Enums.CrewSeat.Front &&
-                            sc.AircraftRole == FRAProject.Enums.AircraftRole.Captain);
+@* Finalize — SortieFinalizeVm has no GET-backed view anywhere in
+   SortiesController (POST-only action), so this is the page it's
+   submitted from, per Dadda's original "...at squadron => mission
+   closed" sequence happening from the ops board itself. *@
+<div class="modal fade" id="finalizeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form asp-controller="Sorties" asp-action="Finalize" method="post" class="modal-content" data-ajax="true">
+            <input type="hidden" name="SortieId" id="finalizeSortieId" />
+            <div class="modal-header">
+                <h5 class="modal-title">Clôturer la sortie <span id="finalizeSortieCode"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-danger mb-2" data-ajax-errors></div>
+                <div class="row">
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">Durée totale (min)</label>
+                        <input type="number" name="DurationMinutes" class="form-control" />
+                    </div>
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">Dont jour (min)</label>
+                        <input type="number" name="DayMinutes" class="form-control" />
+                    </div>
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">Dont nuit (min)</label>
+                        <input type="number" name="NightMinutes" class="form-control" />
+                    </div>
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">Atterrissages</label>
+                        <input type="number" name="Landings" class="form-control" />
+                    </div>
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">Approches</label>
+                        <input type="number" name="Approachs" class="form-control" />
+                    </div>
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">T/G O's Landings</label>
+                        <input type="number" name="TGOsLandings" class="form-control" />
+                    </div>
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">Instrument simulé</label>
+                        <input type="number" step="0.1" name="InstSimulated" class="form-control" />
+                    </div>
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">Instrument réel</label>
+                        <input type="number" step="0.1" name="InstActual" class="form-control" />
+                    </div>
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">Heures IFR</label>
+                        <input type="number" step="0.1" name="IFRHours" class="form-control" />
+                    </div>
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">Interceptions</label>
+                        <input type="number" name="Interceptions" class="form-control" />
+                    </div>
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">Contacts radar</label>
+                        <input type="number" name="RadarContacts" class="form-control" />
+                    </div>
+                    <div class="col-md-4 form-group mb-3">
+                        <label class="form-label">Contacts approche</label>
+                        <input type="number" name="AppContacts" class="form-control" />
+                    </div>
+                    <div class="col-md-12 form-group mb-3">
+                        <label class="form-label">Notes escadron</label>
+                        <textarea name="SquadronReportNotes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="submit" class="btn btn-success">Clôturer la sortie</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-                        var copilot = sortie.SortieCrews?.FirstOrDefault(sc =>
-                            sc.Seat == FRAProject.Enums.CrewSeat.Rear &&
-                            sc.AircraftRole == FRAProject.Enums.AircraftRole.Copilot);
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        (function () {
+            document.getElementById('cancelOdvModal')?.addEventListener('show.bs.modal', function (e) {
+                var btn = e.relatedTarget;
+                document.getElementById('cancelOdvId').value = btn.getAttribute('data-odv-id');
+            });
+            document.getElementById('cancelSortieModal')?.addEventListener('show.bs.modal', function (e) {
+                var btn = e.relatedTarget;
+                document.getElementById('cancelSortieId').value = btn.getAttribute('data-sortie-id');
+            });
+            document.getElementById('finalizeModal')?.addEventListener('show.bs.modal', function (e) {
+                var btn = e.relatedTarget;
+                document.getElementById('finalizeSortieId').value = btn.getAttribute('data-sortie-id');
+                document.getElementById('finalizeSortieCode').textContent = btn.getAttribute('data-sortie-code') || '';
+            });
 
-                        var mechanic = sortie.SortieCrews?.FirstOrDefault(sc =>
-                            sc.AircraftRole == FRAProject.Enums.AircraftRole.Mechanic);
+            // ─────────────────────────────────────────────────────────
+            // AJAX submission for forms marked data-ajax="true".
+            //
+            // Why: OdvPlanningController.Create/Cancel and
+            // SortiesController.Cancel/Finalize all return
+            // BadRequest(Dictionary<string,string[]>) on validation
+            // failure and a 302 redirect on success (confirmed from the
+            // real controller code) — never View(model). A plain HTML
+            // form POST would show raw JSON in the browser on any
+            // failure (e.g. "already cancelled", missing aircraft,
+            // out-of-scope squadron). This intercepts submit, posts via
+            // fetch, and on failure maps each JSON key to the matching
+            // asp-validation-for span (data-valmsg-for="<key>") when one
+            // exists, or drops it into the form's [data-ajax-errors] box
+            // otherwise (that's where "" -keyed general errors land,
+            // e.g. Cancel's "This ODV is already cancelled.").
+            // ─────────────────────────────────────────────────────────
+            document.querySelectorAll('form[data-ajax="true"]').forEach(function (form) {
+                form.addEventListener('submit', async function (e) {
+                    e.preventDefault();
 
-                        <tr>
-                            @if (sortieCounter == 0)
-                            {
-                                <td rowspan="@maxSortiesInOdv">@odv.Mission?.Name</td>
-                                <td rowspan="@maxSortiesInOdv">@(odv.TOFF?.ToString(@"hh\:mm"))</td>
-                                <td rowspan="@maxSortiesInOdv">@odv.CallSign?.Code</td>
-                                <td rowspan="@maxSortiesInOdv">@odv.Area</td>
-                                <td rowspan="@maxSortiesInOdv">@odv.OdvStatus</td>
-                                <td rowspan="@maxSortiesInOdv" class="text-center">
-                                    <a asp-action="Edit"
-                                       asp-route-id="@odv.Id"
-                                       asp-route-odvDate="@Model.SelectedDate.ToString("yyyy-MM-dd")"
-                                       class="btn btn-sm btn-primary">
-                                        Edit
-                                    </a>
-                                    <a asp-controller="Sorties"
-                                       asp-action="Create"
-                                       asp-route-odvId="@odv.Id"
-                                       class="btn btn-sm btn-success">
-                                        + Add Sortie
-                                    </a>
-                                </td>
+                    var errBox = form.querySelector('[data-ajax-errors]');
+                    if (errBox) errBox.innerHTML = '';
+                    form.querySelectorAll('[data-valmsg-for]').forEach(function (span) {
+                        span.textContent = '';
+                    });
+
+                    var submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) submitBtn.disabled = true;
+
+                    try {
+                        var resp = await fetch(form.getAttribute('action') || form.action, {
+                            method: 'POST',
+                            body: new FormData(form),
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+
+                        if (resp.redirected) {
+                            window.location.href = resp.url;
+                            return;
+                        }
+                        if (resp.ok) {
+                            window.location.reload();
+                            return;
+                        }
+
+                        var data = null;
+                        try { data = await resp.json(); } catch (parseErr) { /* not JSON */ }
+
+                        var generalMessages = [];
+                        if (data && typeof data === 'object') {
+                            Object.keys(data).forEach(function (key) {
+                                var messages = Array.isArray(data[key]) ? data[key] : [data[key]];
+                                var span = form.querySelector('[data-valmsg-for="' + key + '"]');
+                                if (span) {
+                                    span.textContent = messages.join(' ');
+                                } else {
+                                    generalMessages = generalMessages.concat(messages);
+                                }
+                            });
+                        } else {
+                            generalMessages.push('Une erreur est survenue (HTTP ' + resp.status + ').');
+                        }
+
+                        if (generalMessages.length) {
+                            if (errBox) {
+                                errBox.innerHTML = generalMessages.map(function (m) { return '<div>' + m + '</div>'; }).join('');
+                            } else {
+                                window.alert(generalMessages.join('\n'));
                             }
-
-                            <td>
-                                <small class="badge bg-info">@sortie.Status</small>
-                            </td>
-                            <td>@sortie.Configuration</td>
-                            <td>@sortie.AcType?.Name</td>
-                            <td>@sortie.FuelQuantity</td>
-
-                            <!-- Captain Column -->
-                            <td>
-                                @if (captain != null)
-                                {
-                                    <div class="crew-display captain">
-                                        <strong>@captain.CrewMember?.Captain</strong>
-                                        @* @if (!string.IsNullOrEmpty(captain.Role))
-                                        {
-                                            <small class="d-block text-muted">@captain.Role</small>
-                                        } *@
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">—</span>
-                                }
-                            </td>
-
-                            <!-- Copilot Column -->
-                            <td>
-                                @if (copilot != null)
-                                {
-                                    <div class="crew-display copilot">
-                                        <strong>@copilot.CrewMember?.Captain</strong>
-                                        @* @if (!string.IsNullOrEmpty(copilot.Role))
-                                        {
-                                            <small class="d-block text-muted">@copilot.Role</small>
-                                        } *@
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">—</span>
-                                }
-                            </td>
-
-                            <!-- Mechanic Column -->
-                            <td>
-                                @if (mechanic != null)
-                                {
-                                    <div class="crew-display mechanic">
-                                        <strong>@mechanic.CrewMember?.Captain</strong>
-                                        @* @if (!string.IsNullOrEmpty(mechanic.Role))
-                                        {
-                                            <small class="d-block text-muted">@mechanic.Role</small>
-                                        } *@
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">—</span>
-                                }
-                            </td>
-
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a asp-controller="Sorties"
-                                       asp-action="Edit"
-                                       asp-route-id="@sortie.Id"
-                                       class="btn btn-outline-primary">
-                                        Edit
-                                    </a>
-                                    <a asp-controller="SortieCrews"
-                                       asp-action="Index"
-                                       asp-route-sortieId="@sortie.Id"
-                                       class="btn btn-outline-secondary">
-                                        Crew
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-
-                        sortieCounter++;
+                        }
+                    } catch (networkErr) {
+                        if (errBox) errBox.textContent = 'Erreur réseau — réessayez.';
+                    } finally {
+                        if (submitBtn) submitBtn.disabled = false;
                     }
-                }
-            }
-        }
-    </tbody>
-</table>
-
-<style>
-    .crew-display {
-        padding: 4px;
-        border-radius: 4px;
-        margin: 2px 0;
-    }
-    
-    .crew-display.captain {
-        background-color: rgba(13, 110, 253, 0.1);
-        border-left: 3px solid #0d6efd;
-    }
-    
-    .crew-display.copilot {
-        background-color: rgba(25, 135, 84, 0.1);
-        border-left: 3px solid #198754;
-    }
-    
-    .crew-display.mechanic {
-        background-color: rgba(255, 193, 7, 0.1);
-        border-left: 3px solid #ffc107;
-    }
-
-    .badge-sm {
-        font-size: 0.7em;
-        padding: 2px 4px;
-    }
-
-    /* Make rows more compact */
-    .table-sm td, .table-sm th {
-        padding: 0.3rem;
-        vertical-align: middle;
-    }
-
-    /* Alternating row colors for better readability */
-    tbody tr:nth-child(even) {
-        background-color: rgba(0, 0, 0, 0.02);
-    }
-    
-    /* Highlight rows with missing crew */
-    .crew-missing {
-        background-color: rgba(220, 53, 69, 0.05) !important;
-    }
-    
-    /* Highlight rows with full crew */
-    .crew-complete {
-        background-color: rgba(25, 135, 84, 0.05) !important;
-    }
-</style>
-
-<script>
-    // Optional: Add row highlighting based on crew completeness
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add CSS classes to rows based on crew status
-        const rows = document.querySelectorAll('tbody tr');
-        rows.forEach(row => {
-            const captainCell = row.querySelector('td:nth-child(6)'); // Captain column
-            const copilotCell = row.querySelector('td:nth-child(7)'); // Copilot column
-            const mechanicCell = row.querySelector('td:nth-child(8)'); // Mechanic column
-            
-            // Check if cells exist (skip header rows)
-            if (captainCell && copilotCell) {
-                const hasCaptain = !captainCell.querySelector('.text-muted');
-                const hasCopilot = !copilotCell.querySelector('.text-muted');
-                
-                if (hasCaptain && hasCopilot) {
-                    row.classList.add('crew-complete');
-                } else if (!hasCaptain || !hasCopilot) {
-                    row.classList.add('crew-missing');
-                }
-            }
-        });
-    });
-</script>
-
-
+                });
+            });
+        })();
+    </script>
+}

@@ -5,6 +5,7 @@ using FRAProject.Areas.Settings.Interfaces;
 using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.Settings.Repositories;
 using FRAProject.Areas.SquadronOps.Models;
+using FRAProject.Areas.SquadronOps.Repositories;
 using FRAProject.Data.Configurations;
 using FRAProject.Infrastructure.Repositories;
 using FRAProject.Models;
@@ -80,6 +81,11 @@ namespace FRAProject.Infrastructure.Interfaces
         // IUnitOfWork.cs — add alongside existing Maintenance Phase 2 entries
         ISnagRepository Snags { get; }
         IWorkOrderSnagRepository WorkOrderSnags { get; }
+
+        // Maintenance-owned, read-only FH-aggregation specialist. Narrow on
+        // purpose (one method, no CRUD) — see ISortieRepository.cs. Do NOT
+        // repurpose this for SquadronOps' own Sortie CRUD — see
+        // SortiePlanning below instead.
         ISortieRepository Sorties { get; }
 
         // Support
@@ -108,6 +114,36 @@ namespace FRAProject.Infrastructure.Interfaces
         IGenericRepository<ComponentReferenceBasis> ComponentReferenceBases { get; }
         /// <summary>NEW (Derogation implementation pass) — append-only history of life-limit extensions/exceptions (see ComponentDerogation.cs). Specialist repo — GetByComponentTypeAsync only; no Update exposed at the service layer (corrections are a new row, never an edit).</summary>
         IComponentDerogationRepository ComponentDerogations { get; }
+
+        // ════════════════════════════════════════════════════════════════
+        // ── SquadronOps (Odv/Sortie planning) — REDESIGNED 2026-08-29 ──
+        // Supersedes Batch 1's plain IGenericRepository<Odv>/<Squadron>
+        // entries. Follows the same convention confirmed from the real
+        // IWorkOrderRepository/WorkOrderRepository pair: specialist
+        // interfaces extend IGenericRepository<T> (full CRUD) plus
+        // hand-written Include-aware methods, registered directly
+        // (non-lazy) in UnitOfWork's constructor. See each interface's own
+        // comments for why it's shaped the way it is.
+        // ════════════════════════════════════════════════════════════════
+        IOdvRepository Odvs { get; }
+        ISquadronRepository Squadrons { get; }
+        ISortiePlanningRepository SortiePlanning { get; }
+
+        // Plain generic — no custom queries needed for these yet (out of
+        // scope for this redesign pass; revisit if/when their controllers
+        // get the same treatment).
+        IGenericRepository<Mission> Missions { get; }
+        IGenericRepository<Phase> Phases { get; }
+        IGenericRepository<CallSign> CallSigns { get; }
+        IGenericRepository<CrewMember> CrewMembers { get; }
+        IGenericRepository<SortieCrew> SortieCrews { get; }
+
+        // NEW (2026-08-29, Batch 8) — "the authoritative record created once
+        // a Sortie is completed" (FlightLog.cs's own doc comment). No custom
+        // queries needed yet (Finalize only ever adds one row per Sortie) —
+        // plain generic, same convention as Missions/Phases/SortieCrews
+        // above rather than a specialist repository.
+        IGenericRepository<FlightLog> FlightLogs { get; }
 
         // ── Commit ────────────────────────────────────────────────────────
         /// <summary>

@@ -1,0 +1,10 @@
+@{
+    // NEW (Batch 10) — wires this subfolder to the new light-blue
+    // "activities" layout. A more specific _ViewStart.cshtml (this one)
+    // always wins over any less-specific parent _ViewStart.cshtml
+    // (Areas/SquadronOps/Views/_ViewStart.cshtml or the app-root one),
+    // so this is safe to add even if a parent file already sets Layout to
+    // something else — it just needs to exist for this to take effect,
+    // nothing else to remove.
+    Layout = "_SquadronOpsLayout";
+}

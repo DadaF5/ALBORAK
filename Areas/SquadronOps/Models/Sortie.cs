@@ -1,4 +1,5 @@
-﻿
+
+using FRAProject.Areas.AircraftMaintenance.Models;
 using FRAProject.Areas.Settings.Models;
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -12,7 +13,32 @@ namespace FRAProject.Areas.SquadronOps.Models
         AircraftAssigned = 10,
         Airborne = 20,
         Landed = 30,
-        Finalized = 40
+
+        // NEW (Batch 11, 2026-08-29) — CrewChief's post-flight report
+        // (fuel/oil/snag/other info) has been recorded, per Dadda's
+        // confirmed sequence: "...ATC real landing time + airfield
+        // activities data...Crewchief post flight data (fuel and oil or
+        // snag or any other info)...at squadron => ...Mission(sortie)
+        // closed." Deliberately placed between Landed (30) and Finalized
+        // (40) — it IS the next real step in the 0/10/20/30/40
+        // progression, unlike Canceled below. Finalize now BLOCKS unless
+        // Status == CrewChiefReported — see SortiesController.Finalize's
+        // own comment for why, and how to relax this if it turns out to
+        // be too strict for some sortie types.
+        CrewChiefReported = 35,
+
+        Finalized = 40,
+
+        // NEW (2026-08-29, Dadda's own instruction) — a Sortie can be
+        // cancelled either individually (its own reason) or as part of a
+        // whole-Odv cancellation cascade (same reason as the Odv). This is
+        // a divergent TERMINAL state, not the "next" stage after Finalized
+        // — do not assume linear ordering (e.g. `status >= Finalized`)
+        // still means "done and reportable"; check for Canceled explicitly
+        // wherever that kind of comparison is used. Deliberately given a
+        // value that does not fit the existing 0/10/20/30/40 progression,
+        // as a visual reminder it is not part of that sequence.
+        Canceled = 999
     }
 
     public class Sortie
@@ -68,6 +94,13 @@ namespace FRAProject.Areas.SquadronOps.Models
         //      Maintenance NEVER reads these two fields.
         //  Whatever finalizes a Sortie must feed each basis from its own
         //  dedicated pair — never derive one basis from another's fields.
+        //
+        //  NEW (Batch 11) — RealTOFF/EngineStartTime are now set together
+        //  by SortiesController.RecordDeparture (ATC/Tower action), and
+        //  RealLandingTime by RecordArrival (also ATC/Tower) — per Dadda's
+        //  confirmed sequence "ATC engine start and TOFF time...ATC real
+        //  landing time". Previously these fields existed with no action
+        //  writing to them at all.
         // ════════════════════════════════════════════════════════════════
         public DateTime? RealTOFF { get; set; }
         public DateTime? RealLandingTime { get; set; }
@@ -99,6 +132,22 @@ namespace FRAProject.Areas.SquadronOps.Models
         public DateTime? BlockOffTime { get; set; }
         public DateTime? BlockOnTime { get; set; }
 
+        /// <summary>
+        /// NEW (2026-08-29, Dadda's F16 block-off/holding-point example) —
+        /// OPS's own block-to-block duration in minutes (BlockOnTime -
+        /// BlockOffTime), for crew duty-time/regulatory reporting. Purely
+        /// OPS-side, same rule as BlockOffTime/BlockOnTime themselves:
+        /// Maintenance NEVER reads this field. Deliberately kept separate
+        /// from DurationMinutes below (which is squadron-entered airframe
+        /// flight duration and is what Maintenance's FH accrual actually
+        /// sums) — the two numbers are legitimately different by design
+        /// (ground taxi/holding-point delay is real duty time but not
+        /// flight time) and must never be confused for one another. See
+        /// the Finalize validation note on DurationMinutes just below.
+        /// </summary>
+        [Display(Name = "Block Duration (minutes)")]
+        public int? BlockDurationMinutes { get; set; }
+
         public string? Notes { get; set; }
 
         // Post flight
@@ -112,12 +161,51 @@ namespace FRAProject.Areas.SquadronOps.Models
         [Display(Name = "Duration (hours)")]
         public double? DurationHours => (DayHours ?? 0.0) + (NightHours ?? 0.0);
 
-        // Persisted duration in minutes (Squadron-finalized)
-        // This is the field you asked for: e.g. 1:05 -> 65
+        // ════════════════════════════════════════════════════════════════
+        // Persisted duration in minutes (Squadron-finalized), e.g. 1:05 ->
+        // 65. Stays MANUALLY ENTERED by Squadron per Dadda's decision
+        // (2026-08-29) — NOT auto-computed from RealTOFF/RealLandingTime.
+        //
+        // This is also the exact field Maintenance's real
+        // SortieRepository.GetAccumulatedFHByAcTypeAsync sums for
+        // component-life FH accrual per AcType — Dadda also decided NOT to
+        // change that method to compute FH independently from
+        // RealTOFF/RealLandingTime. Both decisions together mean the
+        // safeguard against the block-off/holding-point conflict lives
+        // entirely in whatever finalizes a Sortie:
+        //
+        //   At Finalize time, when RealTOFF and RealLandingTime are both
+        //   set, compute expectedMinutes = (RealLandingTime -
+        //   RealTOFF).TotalMinutes and compare it to the entered
+        //   DurationMinutes. If they differ by more than a small tolerance
+        //   (proposed default: 5 minutes — NOT yet confirmed by Dadda),
+        //   show a non-blocking warning naming the discrepancy (e.g. "Entered
+        //   duration is 30 minutes longer than computed airframe time —
+        //   ground delays before TOFF should not be included here; did you
+        //   mean to enter block time in Block Duration instead?") rather
+        //   than silently accepting it or hard-blocking the save.
+        //
+        // IMPLEMENTED — see SortiesController.Finalize (Batch 6 onward).
+        // ════════════════════════════════════════════════════════════════
         public int? DurationMinutes { get; set; }
 
         [Display(Name = "Approachs")]
         public int? Approachs { get; set; }
+
+        // ════════════════════════════════════════════════════════════════
+        // Landings / TGOsLandings — NEW OWNERSHIP (Batch 11, 2026-08-29).
+        // Per Dadda's corrected sequence, these are ATC-recorded post-
+        // flight "airfield activities data", NOT Squadron-entered at
+        // Finalize as Batch 8 originally assumed. Now set by
+        // SortiesController.RecordArrival (ATC/Tower action). Finalize no
+        // longer writes these two fields from SortieFinalizeVm — it only
+        // reads whatever ATC already recorded here. SortieFinalizeVm
+        // itself (a real, pre-existing file) still HAS Landings/
+        // TGOsLandings properties; Finalize simply ignores them now. If
+        // any real view still posts values into those VM properties,
+        // remove/hide those two inputs there — not something this batch
+        // can fix without seeing that view.
+        // ════════════════════════════════════════════════════════════════
         public int? Landings { get; set; }
 
         [Display(Name = "T/G O's Landings")]
@@ -139,9 +227,63 @@ namespace FRAProject.Areas.SquadronOps.Models
         public double? IFRHours { get; set; }
         public int? Cycles { get; set; }
 
+        // ════════════════════════════════════════════════════════════════
+        // NEW OWNERSHIP (Batch 11) — FuelUsedLiters is now CrewChief's
+        // post-flight entry (SortiesController.RecordPostFlight), per
+        // Dadda's sequence: "Crewchief post flight data (fuel and oil...)".
+        // Previously existed on the model with nothing setting it.
+        //
+        // KNOWN UNIT MISMATCH, flagged not silently converted: this field
+        // is Liters; FlightLog.FuelUsedKg (set at Finalize) is Kg. Finalize
+        // does NOT convert between them (no confirmed density/conversion
+        // factor) — FlightLog.FuelUsedKg is left unset. Needs a decision:
+        // either add FlightLog.FuelUsedLiters instead of reusing
+        // FuelUsedKg, or supply a real conversion factor for the aircraft
+        // type's fuel.
+        // ════════════════════════════════════════════════════════════════
         [Display(Name = "Fuel Used (Liters)")]
         [Column(TypeName = "decimal(12,2)")]
         public decimal? FuelUsedLiters { get; set; }
+
+        /// <summary>
+        /// NEW (Batch 11) — CrewChief's post-flight oil entry, matching
+        /// FuelUsedLiters's staging convention: set by RecordPostFlight,
+        /// copied into FlightLog.OilUsedLiters (new field, same batch) at
+        /// Finalize. Same units end to end — no conversion needed, unlike
+        /// the fuel Liters/Kg mismatch above.
+        /// </summary>
+        [Display(Name = "Oil Used (Liters)")]
+        [Column(TypeName = "decimal(8,2)")]
+        public decimal? PostFlightOilUsedLiters { get; set; }
+
+        /// <summary>
+        /// NEW (Batch 11) — CrewChief's post-flight "any other info" free
+        /// text, per Dadda's sequence. Copied into FlightLog.Notes at
+        /// Finalize. Deliberately separate from the pre-existing Malfunctions
+        /// field below (which is unused elsewhere and left alone) and from
+        /// SquadronReportNotes (Squadron's own, separate note field).
+        /// </summary>
+        [Display(Name = "CrewChief Post-Flight Notes")]
+        [StringLength(1000)]
+        public string? PostFlightNotes { get; set; }
+
+        public DateTime? PostFlightReportedAtUtc { get; set; }
+        public string? PostFlightReportedBy { get; set; }
+
+        /// <summary>
+        /// NEW (Batch 11) — set when CrewChief's post-flight report
+        /// includes a snag. Links to the REAL, existing AircraftMaintenance
+        /// Snag record created via ISnagService.ReportAsync — per Dadda's
+        /// confirmed decision to reuse that system rather than build a
+        /// separate SquadronOps-only snag field. One snag per Sortie's
+        /// post-flight report today (matches how RecordPostFlight is
+        /// written this batch); a sortie needing multiple snags reported
+        /// is out of scope for now — flagged, not silently limited without
+        /// a comment.
+        /// </summary>
+        public int? SnagId { get; set; }
+        public Snag? Snag { get; set; }
+
         public string? Malfunctions { get; set; }
         public bool IsCompleted { get; set; }
         public bool? IsFinalized { get; set; }
@@ -160,6 +302,21 @@ namespace FRAProject.Areas.SquadronOps.Models
 
         [Display(Name = "Squadron Notes")]
         public string? SquadronReportNotes { get; set; }
+
+        // ════════════════════════════════════════════════════════════════
+        // NEW (2026-08-29) — cancellation. Set when Status == Canceled,
+        // either from an individual per-Sortie cancel (SortiesController)
+        // or cascaded from the parent Odv's cancellation
+        // (OdvPlanningController) — in the cascade case this carries the
+        // SAME reason text as the Odv's own CancellationReason, per
+        // Dadda's instruction. Mirrors Sortie's existing
+        // Completed*/Finalized* audit-pair convention.
+        // ════════════════════════════════════════════════════════════════
+        [Display(Name = "Cancellation Reason")]
+        [StringLength(500)]
+        public string? CancellationReason { get; set; }
+        public DateTime? CancelledAtUtc { get; set; }
+        public string? CancelledBy { get; set; }
 
         // Audit fields(recommended)
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

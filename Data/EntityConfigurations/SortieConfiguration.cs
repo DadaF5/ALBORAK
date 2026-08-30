@@ -34,6 +34,12 @@ namespace FRAProject.Data.EntityConfigurations
                 .HasForeignKey(s => s.AircraftId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // relationship to Snag (optional)
+            builder.HasOne(s => s.Snag)
+                .WithMany()
+                .HasForeignKey(s => s.SnagId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Date/time related fields
             builder.Property(s => s.StartTime)
                 .HasColumnType("datetime2")
@@ -54,6 +60,22 @@ namespace FRAProject.Data.EntityConfigurations
             // Fuel used
             builder.Property(s => s.FuelUsedLiters)
                 .HasColumnType("decimal(12,2)")
+                .IsRequired(false);
+
+            builder.Property(s => s.PostFlightOilUsedLiters)
+                .HasColumnType("decimal(8,2)")
+                .IsRequired(false);
+
+            builder.Property(s => s.PostFlightNotes)
+                .HasMaxLength(2000)
+                .IsRequired(false);
+
+            builder.Property(s => s.PostFlightReportedAtUtc)
+                .HasColumnType("datetime2")
+                .IsRequired(false);
+
+            builder.Property(s => s.PostFlightReportedBy)
+                .HasMaxLength(200)
                 .IsRequired(false);
 
             // Text fields

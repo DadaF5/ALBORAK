@@ -1,0 +1,149 @@
+@model FRAProject.Areas.SquadronOps.ViewModels.SortieRecordPostFlightVm
+
+@{
+    ViewData["Title"] = "Record Post-Flight Data";
+}
+
+@*
+    CrewChief's post-flight step. Same generic Bootstrap baseline as
+    AssignAircraft.cshtml (Batch 9). The snag block is shown/hidden
+    client-side by the ReportSnag checkbox (plain JS below — no library
+    dependency, matches the rest of this batch's views).
+
+    CHANGED (Batch 12, 2026-08-30) — added the four ground-time fields
+    (Block-Off/Engine Start/Engine Stop/Block-On), all optional free entry.
+    See SortieRecordPostFlightVm's comment for why these moved here.
+*@
+
+<h1>Record Post-Flight Data</h1>
+
+<h4>Sortie @Model.SortieCode &mdash; @Model.AcTypeName</h4>
+<p class="text-muted">CrewChief — ground times, fuel, oil, and any snag or other info from this flight.</p>
+<hr />
+
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
+}
+
+<dl class="row">
+    <dt class="col-sm-3">Real TOFF (ATC)</dt>
+    <dd class="col-sm-9">@(Model.RealTOFF?.ToString("g") ?? "—")</dd>
+    <dt class="col-sm-3">Real Landing (ATC)</dt>
+    <dd class="col-sm-9">@(Model.RealLandingTime?.ToString("g") ?? "—")</dd>
+</dl>
+
+<div class="row">
+    <div class="col-md-7">
+        <form asp-action="RecordPostFlight" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="SortieId" />
+
+            <h5>Ground Times</h5>
+            <div class="row">
+                <div class="col-md-6 form-group mb-3">
+                    <label asp-for="BlockOffTime" class="form-label"></label>
+                    <input asp-for="BlockOffTime" class="form-control" />
+                    <span asp-validation-for="BlockOffTime" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 form-group mb-3">
+                    <label asp-for="EngineStartTime" class="form-label"></label>
+                    <input asp-for="EngineStartTime" class="form-control" />
+                    <span asp-validation-for="EngineStartTime" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 form-group mb-3">
+                    <label asp-for="EngineStopTime" class="form-label"></label>
+                    <input asp-for="EngineStopTime" class="form-control" />
+                    <span asp-validation-for="EngineStopTime" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 form-group mb-3">
+                    <label asp-for="BlockOnTime" class="form-label"></label>
+                    <input asp-for="BlockOnTime" class="form-control" />
+                    <span asp-validation-for="BlockOnTime" class="text-danger"></span>
+                </div>
+            </div>
+            <hr />
+
+            <div class="form-group mb-3">
+                <label asp-for="FuelUsedLiters" class="form-label"></label>
+                <input asp-for="FuelUsedLiters" class="form-control" />
+                <span asp-validation-for="FuelUsedLiters" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="OilUsedLiters" class="form-label"></label>
+                <input asp-for="OilUsedLiters" class="form-control" />
+                <span asp-validation-for="OilUsedLiters" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Notes" class="form-label"></label>
+                <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Notes" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="ReportSnag" class="form-check-input" id="reportSnagCheck" />
+                <label asp-for="ReportSnag" class="form-check-label"></label>
+            </div>
+
+            <div id="snagBlock" class="border rounded p-3 mb-3" style="display:none;">
+                <div class="form-group mb-3">
+                    <label asp-for="AtaId" class="form-label"></label>
+                    <select asp-for="AtaId" asp-items="Model.AtaOptions" class="form-select">
+                        <option value="">-- Select ATA chapter --</option>
+                    </select>
+                    <span asp-validation-for="AtaId" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Severity" class="form-label"></label>
+                    <select asp-for="Severity" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.SnagSeverity>()" class="form-select">
+                        <option value="">-- Select severity --</option>
+                    </select>
+                    <span asp-validation-for="Severity" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Impact" class="form-label"></label>
+                    <select asp-for="Impact" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.AirworthinessImpact>()" class="form-select">
+                        <option value="">-- Select impact --</option>
+                    </select>
+                    <span asp-validation-for="Impact" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="ReportedBy" class="form-label"></label>
+                    <select asp-for="ReportedBy" asp-items="Html.GetEnumSelectList<FRAProject.Areas.AircraftMaintenance.Models.ReportedBy>()" class="form-select">
+                        <option value="">-- Aircrew or Maintenance --</option>
+                    </select>
+                    <span asp-validation-for="ReportedBy" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="SnagDescription" class="form-label"></label>
+                    <textarea asp-for="SnagDescription" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="SnagDescription" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group mt-3">
+                <input type="submit" value="Submit Post-Flight Report" class="btn btn-primary" />
+                <a asp-action="Index" asp-controller="OdvPlanning" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        (function () {
+            var checkbox = document.getElementById('reportSnagCheck');
+            var block = document.getElementById('snagBlock');
+            function sync() { block.style.display = checkbox.checked ? '' : 'none'; }
+            checkbox.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
+}

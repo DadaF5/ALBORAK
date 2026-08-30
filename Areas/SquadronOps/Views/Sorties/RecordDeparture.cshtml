@@ -1,0 +1,50 @@
+@model FRAProject.Areas.SquadronOps.ViewModels.SortieRecordDepartureVm
+
+@{
+    ViewData["Title"] = "Record Departure";
+}
+
+@*
+    ATC/Tower pre-flight step. Same generic Bootstrap baseline as
+    AssignAircraft.cshtml (Batch 9) — no real Sortie view has been sent
+    this session to match against. Inherits _SquadronOpsLayout via
+    Sorties/_ViewStart.cshtml (Batch 10).
+
+    CHANGED (Batch 12, 2026-08-30) — Engine Start Time input removed.
+    ATC now records only TOFF — see SortieRecordDepartureVm's comment.
+*@
+
+<h1>Record Departure</h1>
+
+<h4>Sortie @Model.SortieCode &mdash; @Model.AcTypeName</h4>
+<p class="text-muted">ATC / Tower — take-off (TOFF) time.</p>
+<hr />
+
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="RecordDeparture" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="SortieId" />
+
+            <div class="form-group mb-3">
+                <label asp-for="RealTOFF" class="form-label"></label>
+                <input asp-for="RealTOFF" class="form-control" />
+                <span asp-validation-for="RealTOFF" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <input type="submit" value="Record Departure" class="btn btn-primary" />
+                <a asp-action="Index" asp-controller="OdvPlanning" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

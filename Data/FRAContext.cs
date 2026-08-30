@@ -181,6 +181,7 @@ namespace FRAProject.Data
             modelBuilder.ApplyConfiguration(new MissionConfiguration());
             modelBuilder.ApplyConfiguration(new PhaseConfiguration());
             modelBuilder.ApplyConfiguration(new SortieCrewConfiguration());
+            modelBuilder.ApplyConfiguration(new SquadronConfiguration());
 
             // ── Lookup tables — Fluent API + seed data ────────────────────
             modelBuilder.ApplyConfiguration(new CountryConfiguration());
@@ -456,6 +457,7 @@ namespace FRAProject.Data
                 e.Property(f => f.TachStart).HasPrecision(8, 2);
                 e.Property(f => f.TachEnd).HasPrecision(8, 2);
                 e.Property(f => f.FuelUsedKg).HasPrecision(10, 2);
+                e.Property(f => f.OilUsedLiters).HasPrecision(8, 2);
 
                 e.HasIndex(f => f.SortieId).IsUnique(false);
                 e.HasIndex(f => f.AircraftId);

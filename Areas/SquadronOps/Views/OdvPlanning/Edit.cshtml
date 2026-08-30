@@ -1,42 +1,72 @@
-﻿@using FRAProject.Areas.SquadronOps.ViewModels
-@model OdvEditVm
+@model FRAProject.Areas.SquadronOps.ViewModels.OdvEditVm
+@using Microsoft.AspNetCore.Mvc.Rendering
 
-<h4>Edit ODV</h4>
+@{
+    ViewData["Title"] = "Modifier l'ODV";
+}
 
-<form asp-action="Edit" method="post">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="Id" />
-    
-    <input type="hidden" name="odvDate" value="@ViewBag.ReturnDate" />
+@*
+    NEW (Batch 13, 2026-08-30). OdvPlanningController.Edit(int id,
+    DateTime? odvDate) GET returns View(vm) with ViewBag.Missions/
+    ViewBag.CallSigns/ViewBag.ReturnDate — this view matches that exactly.
+    OdvEditVm only exposes Mission/CallSign/TOFF/Area/Obs (Squadron and
+    AcMainGroup are deliberately NOT editable here — real VM has those
+    commented out, presumably because changing an ODV's squadron/aircraft
+    group after sorties may already exist against it is a bigger decision
+    than a simple field edit).
+*@
 
-    <div class="mb-2">
-        <label>Mission</label>
-        <select asp-for="MissionId" asp-items="ViewBag.Missions" class="form-control"></select>
+<h1>Modifier l'ODV</h1>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Edit" asp-route-id="@Model.Id" asp-route-odvDate="@(ViewBag.ReturnDate as DateTime?)?.ToString("yyyy-MM-dd")" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="form-group mb-3">
+                <label asp-for="MissionId" class="form-label"></label>
+                <select asp-for="MissionId" asp-items="(IEnumerable<SelectListItem>)ViewBag.Missions" class="form-select">
+                    <option value="">-- Mission --</option>
+                </select>
+                <span asp-validation-for="MissionId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="CallSignId" class="form-label"></label>
+                <select asp-for="CallSignId" asp-items="(IEnumerable<SelectListItem>)ViewBag.CallSigns" class="form-select">
+                    <option value="">-- Indicatif --</option>
+                </select>
+                <span asp-validation-for="CallSignId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="TOFF" class="form-label"></label>
+                <input asp-for="TOFF" class="form-control" placeholder="hh:mm" />
+                <span asp-validation-for="TOFF" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Area" class="form-label"></label>
+                <input asp-for="Area" class="form-control" />
+                <span asp-validation-for="Area" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Obs" class="form-label"></label>
+                <textarea asp-for="Obs" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Obs" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <input type="submit" value="Enregistrer" class="btn btn-primary" />
+                <a asp-action="Index" asp-route-odvDate="@(ViewBag.ReturnDate as DateTime?)?.ToString("yyyy-MM-dd")" class="btn btn-secondary">Annuler</a>
+            </div>
+        </form>
     </div>
+</div>
 
-    <div class="mb-2">
-        <label>Call Sign</label>
-        <select asp-for="CallSignId" asp-items="ViewBag.CallSigns" class="form-control"></select>
-    </div>
-
-    <div class="mb-2">
-        <label>TOFF</label>
-        <input asp-for="TOFF" type="time" class="form-control" />
-    </div>
-
-    <div class="mb-2">
-        <label>Area</label>
-        <input asp-for="Area" class="form-control" />
-    </div>
-
-    <div class="mb-2">
-        <label>Obs</label>
-        <input asp-for="Obs" class="form-control" />
-    </div>
-
-    <button type="submit" class="btn btn-success">Save</button>
-    <a asp-action="Index"
-       asp-route-odvDate="@ViewBag.ReturnDate"
-       class="btn btn-secondary">Cancel</a>
-</form>
-
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

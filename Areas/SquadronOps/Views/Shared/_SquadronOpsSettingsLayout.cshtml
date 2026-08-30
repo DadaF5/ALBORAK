@@ -1,0 +1,411 @@
+@{
+    // NEW (2026-08-29, Batch 10) — SquadronOps "settings" layout, for the
+    // reference/config-data CRUD screens (Squadrons, Wings, Call Signs,
+    // Crew, Missions, Phases, Qualifications) — mirrors the real
+    // _SettingsLayout.cshtml's AdminLTE structure exactly, per Dadda's
+    // confirmed decision, recolored light blue (AdminLTE's own
+    // sidebar-light-primary/navbar-light variants) instead of dark.
+}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - AL-BORAK SquadronOps</title>
+
+    <link rel="stylesheet" href="~/lib/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/plugins/fontawesome-free/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/adminlte.min.css" />
+    <link rel="stylesheet" href="~/css/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <style>
+        :root {
+            --so-brand-blue: #1c64c9;
+            --so-brand-blue-dark: #0f4a99;
+            --so-sidebar-bg: #eef5fc;
+            --so-sidebar-border: #cfe0f2;
+            --so-topbar-bg: #ffffff;
+            --so-text-main: #123a63;
+            --so-text-muted: #5b7fa6;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f6faff;
+        }
+
+        /* ── Topbar — light, matches _SquadronOpsLayout's palette ─────── */
+        .main-header.navbar {
+            min-height: 48px !important;
+            height: 48px !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            background: var(--so-topbar-bg) !important;
+            border-bottom: 1px solid var(--so-sidebar-border);
+        }
+
+        .main-header .nav-link {
+            padding-top: 10px !important;
+            padding-bottom: 10px !important;
+            color: var(--so-text-main) !important;
+        }
+
+            .main-header .nav-link:hover {
+                color: var(--so-brand-blue) !important;
+            }
+
+        /* ── Brand — light blue, 34px image, matches sidebar-mini ─────── */
+        .brand-link {
+            height: 48px !important;
+            padding: 7px 10px !important;
+            display: flex !important;
+            align-items: center !important;
+            overflow: hidden;
+            background: var(--so-sidebar-bg) !important;
+            border-bottom: 1px solid var(--so-sidebar-border);
+        }
+
+        .brand-image-wrap {
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .brand-image-wrap img {
+                width: 34px;
+                height: 34px;
+                object-fit: contain;
+            }
+
+        .brand-text-wrap {
+            margin-left: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+            .brand-text-wrap .t1 {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--so-text-main);
+                display: block;
+                line-height: 1.3;
+            }
+
+            .brand-text-wrap .t2 {
+                font-size: 9px;
+                color: var(--so-brand-blue);
+                letter-spacing: .7px;
+                text-transform: uppercase;
+            }
+
+        .navbar-nav.ml-auto {
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        /* ── User display ───────────────────────────────────────────── */
+        .topbar-user-btn {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--so-text-main);
+            text-decoration: none;
+        }
+
+            .topbar-user-btn:hover {
+                color: var(--so-brand-blue-dark);
+            }
+
+        .topbar-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--so-brand-blue);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .topbar-name {
+            font-size: 12.5px;
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* ── Alerts ──────────────────────────────────────────────────── */
+        .alert-success-fra {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid #10b981;
+            color: #0d7a5f;
+            padding: 10px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .alert-error-fra {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid #ef4444;
+            color: #b0261a;
+            padding: 10px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        /* ── Sidebar / content — AdminLTE's sidebar-light-primary handles
+           most of this on its own; these fill the gaps it doesn't cover. */
+        .main-sidebar {
+            background: var(--so-sidebar-bg) !important;
+            border-right: 1px solid var(--so-sidebar-border);
+        }
+
+        .content-wrapper {
+            background: #f6faff;
+        }
+
+        .main-footer {
+            background: #ffffff !important;
+            border-top: 1px solid var(--so-sidebar-border) !important;
+            color: var(--so-text-muted) !important;
+        }
+    </style>
+    @RenderSection("Styles", required: false)
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed sidebar-light-primary">
+    <div class="wrapper">
+        @{
+            var rawName = User.Identity?.Name ?? "Utilisateur";
+            var shortName = rawName.Contains('@') ? rawName.Split('@')[0] : rawName;
+            var parts = shortName.Split(new[] { '.', '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
+            var initials = parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
+            : (shortName.Length >= 2 ? shortName.Substring(0, 2).ToUpper() : shortName.ToUpper());
+        }
+        <!-- ═══ TOPBAR ═══════════════════════════════════════════════════ -->
+        <nav class="main-header navbar navbar-expand navbar-light bg-white">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button">
+                        <i class="fas fa-bars"></i>
+                    </a>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <span class="nav-link" style="font-size:14px;font-weight:600;">
+                        @ViewData["Title"]
+                    </span>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <span class="nav-link text-muted" style="font-size:12px;">
+                        FRA &rsaquo; SquadronOps &rsaquo; Param&egrave;tres
+                    </span>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="navbar-search" href="#" role="button">
+                        <i class="fas fa-search fa-sm"></i>
+                    </a>
+                    <div class="navbar-search-block">
+                        <form class="form-inline">
+                            <div class="input-group input-group-sm">
+                                <input class="form-control form-control-navbar"
+                                       type="search"
+                                       placeholder="Rechercher&hellip;"
+                                       aria-label="Rechercher" />
+                                <div class="input-group-append">
+                                    <button class="btn btn-navbar" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    <button class="btn btn-navbar" type="button" data-widget="navbar-search">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="topbar-user-btn dropdown-toggle"
+                       href="#"
+                       id="userMenu"
+                       role="button"
+                       data-bs-toggle="dropdown"
+                       aria-expanded="false">
+                        <div class="topbar-avatar">@initials</div>
+                        <span class="topbar-name d-none d-md-inline">@shortName</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userMenu">
+                        <li>
+                            <span class="dropdown-item-text" style="font-size:11px;color:#6c757d;">
+                                @rawName
+                            </span>
+                        </li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>@await Html.PartialAsync("_LoginPartial")</li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- ═══ SIDEBAR ═══════════════════════════════════════════════════ -->
+        <aside class="main-sidebar sidebar-light-primary elevation-1">
+
+            <a href="/" class="brand-link" style="height:70px;">
+                <div class="brand-image-wrap mt-6" style="width:50px; height:100px;">
+                    <img src="~/Images/Air_Force_small.png" style="width:50px; height:80px;" alt="FRA" />
+                </div>
+                <div class="brand-text-wrap mt-2">
+                    <span class="t1">FORCES ROYALES AIR</span>
+                    <span class="t1" style="font-size:8pt;">SQUADRONOPS &mdash; PARAM&Egrave;TRES</span>
+                </div>
+            </a>
+
+            <div class="sidebar">
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column nav-compact nav-child-indent"
+                        data-widget="treeview"
+                        role="menu"
+                        data-accordion="false">
+
+                        <!-- ── Retour au programme de vol ──────────────── -->
+                        <li class="nav-header">VUE D'ENSEMBLE</li>
+                        <li class="nav-item">
+                            <a asp-area="SquadronOps" asp-controller="OdvPlanning" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-clipboard-list"></i>
+                                <p>Programme de vol</p>
+                            </a>
+                        </li>
+
+                        <!-- ── Données de base ─────────────────────────── -->
+                        <li class="nav-header">DONN&Eacute;ES DE BASE</li>
+                        <li class="nav-item">
+                            <a asp-area="SquadronOps" asp-controller="Squadron" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-shield-alt"></i>
+                                <p>Escadrons</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="SquadronOps" asp-controller="Wings" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-fighter-jet"></i>
+                                <p>Wings</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="SquadronOps" asp-controller="CallSigns" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-broadcast-tower"></i>
+                                <p>Call Signs</p>
+                            </a>
+                        </li>
+
+                        <!-- ── Personnel ────────────────────────────────── -->
+                        <li class="nav-header">PERSONNEL</li>
+                        <li class="nav-item">
+                            <a asp-area="SquadronOps" asp-controller="CrewMembers" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-user-astronaut"></i>
+                                <p>Membres d'&eacute;quipage</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="SquadronOps" asp-controller="CrewMemberQualifications" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-id-badge"></i>
+                                <p>Qualifications par membre</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="SquadronOps" asp-controller="Qualifications" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-certificate"></i>
+                                <p>Qualifications</p>
+                            </a>
+                        </li>
+
+                        <!-- ── Planification ────────────────────────────── -->
+                        <li class="nav-header">PLANIFICATION</li>
+                        <li class="nav-item">
+                            <a asp-area="SquadronOps" asp-controller="Mission" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-crosshairs"></i>
+                                <p>Missions</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-area="SquadronOps" asp-controller="Phases" asp-action="Index"
+                               class="nav-link">
+                                <i class="nav-icon fas fa-layer-group"></i>
+                                <p>Phases</p>
+                            </a>
+                        </li>
+
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- ═══ CONTENT WRAPPER ═══════════════════════════════════════════ -->
+        <div class="content-wrapper">
+            <section class="content pt-3">
+                <div class="container-fluid">
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert-success-fra">&#10003; @TempData["SuccessMessage"]</div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert-error-fra">&#10007; @TempData["ErrorMessage"]</div>
+                    }
+                    @if (TempData["Warning"] != null)
+                    {
+                        <div class="alert-error-fra">&#9888; @TempData["Warning"]</div>
+                    }
+
+                    @RenderBody()
+
+                </div>
+            </section>
+        </div>
+
+        <!-- ═══ FOOTER ════════════════════════════════════════════════════ -->
+        <footer class="main-footer" style="font-size:11px;">
+            <strong>GMAO FRA</strong> &mdash; SquadronOps &copy; @DateTime.Now.Year
+        </footer>
+
+    </div>
+    <script src="~/lib/js/jquery.min.js"></script>
+    <script src="~/lib/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/dist/js/adminlte.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        document.querySelectorAll('.nav-sidebar .nav-link').forEach(function (link) {
+            if (link.href === window.location.href) {
+                link.classList.add('active');
+            }
+        });
+    </script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

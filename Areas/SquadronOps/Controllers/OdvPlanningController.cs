@@ -1,7 +1,8 @@
-using FRAProject.Areas.HR.Models;
+using FRAProject.Areas.AircraftMaintenance.Models;
+using FRAProject.Areas.Settings.Models;
 using FRAProject.Areas.SquadronOps.Models;
 using FRAProject.Areas.SquadronOps.ViewModels;
-using FRAProject.Data;
+using FRAProject.Infrastructure.Interfaces;
 using FRAProject.Models;
 using FRAProject.Services;
 using Humanizer;
@@ -9,7 +10,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -19,18 +19,19 @@ using System.Threading.Tasks;
 
 namespace FRAProject.Areas.SquadronOps.Controllers
 {
-    // ⚠ Was [Authorize(Roles = "Admin,SquadronOps")] — "SquadronOps" is not
-    // a real seeded AspNetRole. Replaced with real SquadronOpsRead/Write
-    // policies. Also: scoping previously forced every non-Admin user to
-    // exactly ONE squadron/AcMainGroup pulled from the legacy
-    // ApplicationUser.SquadronId/AcMainGroupId fields — a user with a real
-    // UserAssignment spanning a whole Wing (multiple squadrons) or multiple
-    // AcMainGroups couldn't see or create ODVs outside that single legacy
-    // value. This conversion switches to real scope-based filtering
-    // (Base+AcMainGroup+Wing via UserAssignment), while still using the
-    // legacy field as a Create-time default for convenience — cross-checked
-    // against the real scope so a stale/incorrect legacy value can't grant
-    // access it shouldn't.
+    // REDESIGNED 2026-08-29 — "redesign from zero" pass. Was: FRAContext
+    // injected directly and queried in every action (Batch 1/2 stopgap).
+    // Now: talks only to IUnitOfWork, same rule as the rest of the app.
+    // All eager-loading that the plain generic repos can't do lives in the
+    // new specialist repositories (IOdvRepository, ISquadronRepository) —
+    // see Areas/SquadronOps/Repositories/ for the why behind each one.
+    //
+    // Also carries forward, unchanged in behaviour, everything fixed in
+    // Batch 1/2: real SquadronOpsRead/Write policy checks (not the dead
+    // "SquadronOps" AspNetRole), real UserScope-based filtering instead of
+    // the legacy single-squadron/group fields, the Wing-vs-Department
+    // scope-base fix, and the Odv-cancels-all-Sorties cascade with its
+    // Finalized-sortie-left-alone judgment call.
     [Route("Odvplanning")]
     [Authorize(Policy = "SquadronOpsRead")]
     [Area("SquadronOps")]
@@ -38,18 +39,18 @@ namespace FRAProject.Areas.SquadronOps.Controllers
     {
         private const string ModuleCode = "SQUADRONOPS";
 
-        private readonly FRAContext _context;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<OdvPlanningController> _logger;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IUserScopeService _userScopeService;
 
         public OdvPlanningController(
-            FRAContext context,
+            IUnitOfWork unitOfWork,
             ILogger<OdvPlanningController> logger,
             UserManager<ApplicationUser> userManager,
             IUserScopeService userScopeService)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
             _logger = logger;
             _userManager = userManager;
             _userScopeService = userScopeService;
@@ -106,15 +107,11 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                     vm.CreateModel.SquadronId = user.SquadronId.Value;
                     vm.CreateModel.AcMainGroupId = user.AcMainGroupId.Value;
 
-                    ViewBag.SquadronName = await _context.Squadrons
-                        .Where(s => s.Id == user.SquadronId)
-                        .Select(s => s.Name)
-                        .FirstOrDefaultAsync();
+                    var squadron = await _unitOfWork.Squadrons.GetByIdAsync(user.SquadronId.Value);
+                    ViewBag.SquadronName = squadron?.Name;
 
-                    ViewBag.AcMainGroupName = await _context.AcMainGroups
-                        .Where(g => g.Id == user.AcMainGroupId)
-                        .Select(g => g.Name)
-                        .FirstOrDefaultAsync();
+                    var acMainGroup = await _unitOfWork.AcMainGroups.GetByIdAsync(user.AcMainGroupId.Value);
+                    ViewBag.AcMainGroupName = acMainGroup?.Name;
                 }
                 // else: legacy field missing/stale/out of scope — leave
                 // CreateModel unset, PopulateSelectListsAsync still offers
@@ -125,39 +122,30 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             await PopulateSelectListsAsync(vm, scope);
 
             // Load ODVs for that date + scope
-            var odvQuery = _context.Odvs
-                .Include(o => o.Mission)
-                .Include(o => o.AcMainGroup)
-                .Include(o => o.CallSign)
-                .Include(o => o.Sorties!)
-                    .ThenInclude(s => s.AcType)
-                .Include(o => o.Sorties!)
-                    .ThenInclude(s => s.SortieCrews)
-                        .ThenInclude(sc => sc.CrewMember)
-                .Where(o => o.OdvDate == selectedDate);
+            HashSet<int>? allowedSquadronIds = null;
+            HashSet<int>? allowedAcMainGroupIds = null;
 
             if (!scope.IsUnrestricted)
             {
-                var allowedSquadronIds = await GetInScopeSquadronIdsAsync(scope);
-                odvQuery = odvQuery.Where(o =>
-                    allowedSquadronIds.Contains(o.SquadronId) &&
-                    (!scope.AllowedAcMainGroupIds.Any() || scope.AllowedAcMainGroupIds.Contains(o.AcMainGroupId)));
+                allowedSquadronIds = await GetInScopeSquadronIdsAsync(scope);
+                // Empty set = "no AcMainGroup restriction", same semantics
+                // as UserScope.AllowedAcMainGroupIds.Any() == false below.
+                allowedAcMainGroupIds = scope.AllowedAcMainGroupIds.Any()
+                    ? scope.AllowedAcMainGroupIds.ToHashSet()
+                    : new HashSet<int>();
             }
 
-            vm.Odvs = await odvQuery
-                .AsNoTracking()
-                .OrderBy(o => o.TOFF)
-                .ToListAsync();
+            vm.Odvs = await _unitOfWork.Odvs.GetBoardForDateAsync(selectedDate, allowedSquadronIds, allowedAcMainGroupIds);
 
             // Load AcTypes for Sortie creation
-            vm.AcTypes = await _context.AcTypes
-               .OrderBy(a => a.Name)
-               .Select(a => new SelectListItem
-               {
-                   Value = a.Id.ToString(),
-                   Text = a.Name
-               })
-               .ToListAsync();
+            vm.AcTypes = (await _unitOfWork.AcTypes.GetAllAsync())
+                .OrderBy(a => a.Name)
+                .Select(a => new SelectListItem
+                {
+                    Value = a.Id.ToString(),
+                    Text = a.Name
+                })
+                .ToList();
 
             return View(vm);
         }
@@ -174,8 +162,19 @@ namespace FRAProject.Areas.SquadronOps.Controllers
 
             var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
 
-            bool acGroupExists = await _context.AcMainGroups
-                .AnyAsync(g => g.Id == model.AcMainGroupId);
+            // NOTE: relies on IAcMainGroupRepository extending
+            // IGenericRepository<AcMainGroup> (so AnyAsync/GetByIdAsync
+            // are inherited). Confirmed for IWorkOrderRepository by
+            // reading the real file; NOT independently confirmed for
+            // IAcMainGroupRepository itself (I haven't seen that
+            // interface). It's already wired into the real IUnitOfWork as
+            // "IAcMainGroupRepository AcMainGroups { get; }" and the
+            // codebase's own convention (every specialist repo seen so far
+            // except the narrow Maintenance ISortieRepository) makes this
+            // a safe bet — but flagging it as the one remaining assumption
+            // in this batch. If AcMainGroups turns out not to extend the
+            // generic interface, this is a one-line fix.
+            bool acGroupExists = await _unitOfWork.AcMainGroups.AnyAsync(g => g.Id == model.AcMainGroupId);
 
             if (!acGroupExists)
             {
@@ -238,10 +237,18 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 });
             }
 
+            // Default BaseId from the squadron's current operating base
+            // (Squadron.CurrentBaseId, e.g. Squadron 312 currently at 2nd
+            // AFB while its Wing's home is 6th AFB). Falls back to null
+            // (unset) if the squadron has no CurrentBaseId configured yet.
+            var squadron = await _unitOfWork.Squadrons.GetByIdAsync(model.SquadronId);
+            var squadronBaseId = squadron?.CurrentBaseId;
+
             // Create ODV
             var odv = new Odv
             {
                 SquadronId = model.SquadronId,
+                BaseId = squadronBaseId,
                 AcMainGroupId = model.AcMainGroupId,
                 MissionId = model.MissionId,
                 OdvDate = model.OdvDate!.Date,
@@ -254,8 +261,8 @@ namespace FRAProject.Areas.SquadronOps.Controllers
                 CreatedAtUtc = DateTime.UtcNow
             };
 
-            _context.Odvs.Add(odv);
-            await _context.SaveChangesAsync();
+            _unitOfWork.Odvs.Add(odv);
+            await _unitOfWork.CompleteAsync();
 
             // Redirect back to SAME DATE
             return RedirectToAction(nameof(Index), new
@@ -272,18 +279,11 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         {
             var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
 
-            var odv = await _context.Odvs
-                .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.Id == id);
+            var odv = await _unitOfWork.Odvs.GetByIdAsync(id);
 
             if (odv == null)
                 return NotFound();
 
-            // ⚠ This scope check did not exist before — Edit GET/POST had
-            // no per-record authorization at all beyond the (effectively
-            // dead) "SquadronOps" role check, so any authenticated
-            // non-Admin user with real access to this controller could
-            // reach any ODV by id.
             if (!scope.IsUnrestricted)
             {
                 if (!await IsSquadronInScopeAsync(odv.SquadronId, scope) ||
@@ -302,13 +302,13 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             };
 
             // reuse dropdown population
-            ViewBag.Missions = await _context.Missions
+            ViewBag.Missions = (await _unitOfWork.Missions.GetAllAsync())
                 .Select(m => new SelectListItem { Value = m.Id.ToString(), Text = m.Name })
-                .ToListAsync();
+                .ToList();
 
-            ViewBag.CallSigns = await _context.CallSigns
+            ViewBag.CallSigns = (await _unitOfWork.CallSigns.GetAllAsync())
                 .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Code })
-                .ToListAsync();
+                .ToList();
 
             ViewBag.ReturnDate = odvDate;
 
@@ -327,7 +327,7 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            var odv = await _context.Odvs.FirstOrDefaultAsync(o => o.Id == id);
+            var odv = await _unitOfWork.Odvs.GetByIdAsync(id);
             if (odv == null)
                 return NotFound();
 
@@ -346,9 +346,92 @@ namespace FRAProject.Areas.SquadronOps.Controllers
             odv.Obs = model.Obs;
             odv.UpdatedAtUtc = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await _unitOfWork.CompleteAsync();
 
             return RedirectToAction("Index", new { odvDate });
+        }
+
+        // =============================
+        // POST: /Odvplanning/Cancel/{id}  (2026-08-29)
+        // =============================
+        // Cancels a whole ODV: sets OdvStatus.Cancelled (already existed)
+        // + the dedicated Odv.CancellationReason field, and CASCADES the
+        // same reason to every related Sortie's own CancellationReason
+        // (Sortie.SortieStatus.Canceled), per Dadda's direct instruction.
+        // Scoped the same way as Edit. Unchanged behaviour from Batch 2 —
+        // only the data access underneath moved to IUnitOfWork.
+        [HttpPost("Cancel/{id}")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = "SquadronOpsWrite")]
+        public async Task<IActionResult> Cancel(int id, string? reason, DateTime? odvDate)
+        {
+            var odv = await _unitOfWork.Odvs.GetByIdWithSortiesAsync(id);
+            if (odv == null)
+                return NotFound();
+
+            var scope = await _userScopeService.GetScopeAsync(User, ModuleCode);
+            if (!scope.IsUnrestricted)
+            {
+                if (!await IsSquadronInScopeAsync(odv.SquadronId, scope) ||
+                    (scope.AllowedAcMainGroupIds.Any() && !scope.AllowedAcMainGroupIds.Contains(odv.AcMainGroupId)))
+                    return Forbid();
+            }
+
+            if (odv.OdvStatus == Enums.OdvStatus.Cancelled)
+            {
+                return BadRequest(new Dictionary<string, string[]>
+                {
+                    { "", new[] { "This ODV is already cancelled." } }
+                });
+            }
+
+            var utcNow = DateTime.UtcNow;
+
+            odv.OdvStatus = Enums.OdvStatus.Cancelled;
+            odv.CancellationReason = reason;
+            odv.CancelledAtUtc = utcNow;
+            odv.UpdatedAtUtc = utcNow;
+
+            // Cascade — cancelling the Odv cancels every related Sortie
+            // with the SAME reason. Deliberately skips Sorties already
+            // Finalized: a Finalized sortie has already had its
+            // FH/ENGINE_HOURS/TGO_LANDINGS effects applied to
+            // Aircraft/AircraftReadings — silently cancelling it now would
+            // not reverse those, so it's left as Finalized and flagged via
+            // TempData instead of quietly mis-stating its status. Also
+            // skips Sorties already individually Canceled (no-op, not an
+            // error).
+            var skippedFinalized = 0;
+            if (odv.Sorties != null)
+            {
+                foreach (var sortie in odv.Sorties)
+                {
+                    if (sortie.Status == SortieStatus.Finalized)
+                    {
+                        skippedFinalized++;
+                        continue;
+                    }
+
+                    if (sortie.Status == SortieStatus.Canceled)
+                        continue;
+
+                    sortie.Status = SortieStatus.Canceled;
+                    sortie.CancellationReason = reason;
+                    sortie.CancelledAtUtc = utcNow;
+                    sortie.UpdatedAtUtc = utcNow;
+                }
+            }
+
+            if (skippedFinalized > 0)
+            {
+                TempData["Warning"] =
+                    $"ODV cancelled. {skippedFinalized} already-finalized sortie(s) were left as Finalized — " +
+                    "cancelling them would not reverse their recorded flight/engine hours.";
+            }
+
+            await _unitOfWork.CompleteAsync();
+
+            return RedirectToAction(nameof(Index), new { odvDate });
         }
 
         // =============================
@@ -356,54 +439,67 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // =============================
         private async Task PopulateSelectListsAsync(OdvIndexVm vm, UserScope scope)
         {
-            var squadronsQuery = _context.Squadrons.AsQueryable();
-            var acMainGroupsQuery = _context.AcMainGroups.AsQueryable();
-            var callSignsQuery = _context.CallSigns.AsQueryable();
-            var aircraftsQuery = _context.Aircrafts.AsQueryable();
-            var crewMembersQuery = _context.CrewMembers.AsQueryable();
+            IEnumerable<Squadron> squadrons;
+            IEnumerable<AcMainGroup> acMainGroups;
+            IEnumerable<CallSign> callSigns;
+            IEnumerable<Aircraft> aircrafts;
+            IEnumerable<CrewMember> crewMembers;
 
             if (!scope.IsUnrestricted)
             {
                 var allowedSquadronIds = await GetInScopeSquadronIdsAsync(scope);
-                squadronsQuery = squadronsQuery.Where(s => allowedSquadronIds.Contains(s.Id));
-                crewMembersQuery = crewMembersQuery.Where(cm => allowedSquadronIds.Contains(cm.SquadronId));
+
+                squadrons = await _unitOfWork.Squadrons.GetWhereAsync(s => allowedSquadronIds.Contains(s.Id));
+                crewMembers = await _unitOfWork.CrewMembers.GetWhereAsync(cm => allowedSquadronIds.Contains(cm.SquadronId));
 
                 if (scope.AllowedAcMainGroupIds.Any())
                 {
-                    acMainGroupsQuery = acMainGroupsQuery.Where(g => scope.AllowedAcMainGroupIds.Contains(g.Id));
-                    aircraftsQuery = aircraftsQuery.Where(a => a.AcType != null && scope.AllowedAcMainGroupIds.Contains(a.AcType.AcMainGroupId));
+                    acMainGroups = await _unitOfWork.AcMainGroups.GetWhereAsync(g => scope.AllowedAcMainGroupIds.Contains(g.Id));
+                    aircrafts = await _unitOfWork.Aircraft.GetWhereAsync(a => a.AcType != null && scope.AllowedAcMainGroupIds.Contains(a.AcType.AcMainGroupId));
+                }
+                else
+                {
+                    acMainGroups = await _unitOfWork.AcMainGroups.GetAllAsync();
+                    aircrafts = await _unitOfWork.Aircraft.GetAllAsync();
                 }
 
-                callSignsQuery = callSignsQuery.Where(c =>
-                    c.BaseId == null || scope.AllowedBaseIds.Contains(c.BaseId.Value));
+                callSigns = await _unitOfWork.CallSigns.GetWhereAsync(c => c.BaseId == null || scope.AllowedBaseIds.Contains(c.BaseId.Value));
+            }
+            else
+            {
+                squadrons = await _unitOfWork.Squadrons.GetAllAsync();
+                acMainGroups = await _unitOfWork.AcMainGroups.GetAllAsync();
+                callSigns = await _unitOfWork.CallSigns.GetAllAsync();
+                aircrafts = await _unitOfWork.Aircraft.GetAllAsync();
+                crewMembers = await _unitOfWork.CrewMembers.GetAllAsync();
             }
 
-            vm.Squadrons = await squadronsQuery
+            vm.Squadrons = squadrons
                 .OrderBy(s => s.Name)
                 .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
-                .ToListAsync();
+                .ToList();
 
-            vm.AcMainGroups = await acMainGroupsQuery
+            vm.AcMainGroups = acMainGroups
                 .OrderBy(g => g.Name)
                 .Select(g => new SelectListItem { Value = g.Id.ToString(), Text = g.Name })
-                .ToListAsync();
+                .ToList();
 
             vm.Missions = await GetMissionSelectListAsync(scope);
 
-            vm.CallSigns = await callSignsQuery
+            vm.CallSigns = callSigns
                 .OrderBy(c => c.Code)
                 .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Code })
-                .ToListAsync();
+                .ToList();
 
-            vm.Aircrafts = await aircraftsQuery
+            vm.Aircrafts = aircrafts
                 .OrderBy(a => a.Registration)
                 .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Registration })
-                .ToListAsync();
+                .ToList();
 
-            vm.CrewMembers = await crewMembersQuery
+            vm.CrewMembers = crewMembers
                 .OrderBy(cm => cm.NickName)
                 .Select(cm => new SelectListItem { Value = cm.Id.ToString(), Text = cm.Captain })
-                .ToListAsync();
+                .ToList();
 
             vm.ZoneList = Enum.GetValues(typeof(Enums.Zone))
                 .Cast<Enums.Zone>()
@@ -421,27 +517,27 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         // =============================
         private async Task<List<SelectListItem>> GetMissionSelectListAsync(UserScope scope)
         {
-            IQueryable<Mission> query = _context.Missions.Where(m => m.IsActive);
+            var missions = (await _unitOfWork.Missions.GetWhereAsync(m => m.IsActive)).AsEnumerable();
 
             if (!scope.IsUnrestricted)
             {
                 var allowedSquadronIds = await GetInScopeSquadronIdsAsync(scope);
-                query = query.Where(m => m.SquadronId == null || allowedSquadronIds.Contains(m.SquadronId.Value));
+                missions = missions.Where(m => m.SquadronId == null || allowedSquadronIds.Contains(m.SquadronId.Value));
             }
 
-            return await query
+            return missions
                 .OrderBy(m => m.Name)
                 .Select(m => new SelectListItem
                 {
                     Value = m.Id.ToString(),
                     Text = m.Name
                 })
-                .ToListAsync();
+                .ToList();
         }
 
         private async Task<bool> IsMissionAllowedAsync(int missionId, int squadronId, UserScope scope)
         {
-            var mission = await _context.Missions.FirstOrDefaultAsync(m => m.Id == missionId && m.IsActive);
+            var mission = await _unitOfWork.Missions.GetFirstOrDefaultAsync(m => m.Id == missionId && m.IsActive);
             if (mission == null) return false;
             if (scope.IsUnrestricted) return true;
             if (mission.SquadronId == null) return true; // global mission
@@ -469,30 +565,18 @@ namespace FRAProject.Areas.SquadronOps.Controllers
         {
             if (scope.IsUnrestricted) return true;
 
-            var info = await (from s in _context.Set<Squadron>()
-                               join w in _context.Set<Wing>() on s.WingId equals w.Id
-                               join d in _context.Set<Department>() on w.DepartmentId equals d.Id
-                               where s.Id == squadronId
-                               select new { WingId = w.Id, d.BaseId })
-                              .FirstOrDefaultAsync();
-
+            var info = await _unitOfWork.Squadrons.GetScopeInfoAsync(squadronId);
             if (info == null) return false;
-            if (!scope.AllowedBaseIds.Contains(info.BaseId)) return false;
-            if (scope.AllowedWingIds.Any() && !scope.AllowedWingIds.Contains(info.WingId)) return false;
+
+            if (!scope.AllowedBaseIds.Contains(info.Value.BaseId)) return false;
+            if (scope.AllowedWingIds.Any() && !scope.AllowedWingIds.Contains(info.Value.WingId)) return false;
 
             return true;
         }
 
         private async Task<HashSet<int>> GetInScopeSquadronIdsAsync(UserScope scope)
         {
-            var query = from s in _context.Set<Squadron>()
-                        join w in _context.Set<Wing>() on s.WingId equals w.Id
-                        join d in _context.Set<Department>() on w.DepartmentId equals d.Id
-                        where scope.AllowedBaseIds.Contains(d.BaseId)
-                        where !scope.AllowedWingIds.Any() || scope.AllowedWingIds.Contains(w.Id)
-                        select s.Id;
-
-            return (await query.ToListAsync()).ToHashSet();
+            return await _unitOfWork.Squadrons.GetInScopeIdsAsync(scope.AllowedBaseIds, scope.AllowedWingIds);
         }
 
         // =============================

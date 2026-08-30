@@ -1,0 +1,1033 @@
+@using System.Security.Claims
+@{
+    // =========================
+    // Current route information
+    // =========================
+    var currentArea = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    // =========================
+    // Helper: active menu item
+    // =========================
+    string IsActive(string area, string controller, string action = "Index")
+    {
+        return string.Equals(currentArea, area, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase)
+            ? "active"
+            : "";
+    }
+
+    // ==========================================
+    // Default behavior: all groups open on load
+    // ==========================================
+    var flyingProgramOpen = true;
+    var squadronActivitiesOpen = true;
+
+    // =========================
+    // Display name for top bar
+    // =========================
+    var displayName =
+        User.FindFirst("full_name")?.Value ??
+        User.FindFirst("name")?.Value ??
+        User.FindFirst(ClaimTypes.GivenName)?.Value ??
+        User.Identity?.Name ??
+        "Utilisateur";
+}
+<!doctype html>
+<html lang="fr">
+<head>
+    <!--
+        NEW (2026-08-29, Batch 10) — SquadronOps "activities" layout.
+        Structure/behavior copied deliberately from the real _Layout.cshtml
+        (same app-shell/sidebar/menu-group markup, same collapsible-sidebar
+        + hover-flyout JS, same localStorage persistence) per Dadda's
+        confirmed decision — only the color palette changes, to a light
+        blue theme instead of the dark theme _Layout.cshtml uses elsewhere
+        in the app. This is what visually distinguishes SquadronOps
+        day-to-day pages (ODV/Sortie board) from AircraftMaintenance.
+    -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AL-BORAK SquadronOps</title>
+
+    <link href="~/css/adminlte.min.css" rel="stylesheet" />
+    <link href="~/css/custom.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/gmao_fra.css" asp-append-version="true" />
+    <style>
+        /* =========================================
+           ROOT VARIABLES — light blue palette
+           (NEW, replaces _Layout.cshtml's dark set)
+           ========================================= */
+        :root {
+            --sidebar-width: 290px;
+            --sidebar-collapsed-width: 58px;
+
+            --brand-blue: #1c64c9;
+            --brand-blue-dark: #0f4a99;
+
+            --sidebar-bg: #eef5fc;
+            --sidebar-border: #cfe0f2;
+            --submenu-bg: #e3eefa;
+            --menu-hover: #d6e8fa;
+            --menu-active: #c3ddf7;
+
+            --panel-bg: #ffffff;
+            --panel-border: #d7e6f7;
+            --text-main: #123a63;
+            --text-muted: #5b7fa6;
+
+            --flyout-bg: #ffffff;
+            --flyout-shadow: 0 12px 32px rgba(28,100,201,0.18);
+
+            --topbar-height: 64px;
+            --content-bg: #f6faff;
+        }
+
+        /* =========================================
+           PAGE LAYOUT
+           ========================================= */
+
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            /* IMPORTANT: explicit background/color here, with sufficient
+               cascade priority to win over adminlte.min.css/custom.min.css/
+               gmao_fra.css (which are dark-themed elsewhere in this app —
+               not reviewed in this batch, so this is the safety net,
+               mirroring the !important pattern _Layout.cshtml already uses
+               for its table-hover fix below). Verify visually once wired
+               up — if a global dark rule still wins somewhere, it needs
+               !important added here too. */
+            background: var(--content-bg);
+            color: var(--text-main);
+        }
+
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .main {
+            width: calc(100% - var(--sidebar-width));
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            transition: width .22s ease;
+            overflow-x: hidden;
+        }
+
+        .content {
+            flex: 1;
+            padding: 24px;
+            overflow-x: hidden;
+        }
+
+        body.sidebar-collapsed .main {
+            width: calc(100% - var(--sidebar-collapsed-width));
+        }
+
+        /* =========================================
+           SIDEBAR
+           ========================================= */
+
+        .sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            max-width: var(--sidebar-width);
+            flex-shrink: 0;
+            transition: width .22s ease, min-width .22s ease, max-width .22s ease, transform .22s ease;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: hidden;
+            background: var(--sidebar-bg);
+            color: var(--text-main);
+            border-right: 1px solid var(--sidebar-border);
+            z-index: 1200;
+        }
+
+        .sidebar-section {
+            padding: 10px 8px;
+            height: calc(100vh - 92px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-gutter: stable;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            min-height: 92px;
+            border-bottom: 1px solid var(--sidebar-border);
+            background: var(--panel-bg);
+        }
+
+        .sidebar-logo-image {
+            width: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+            .sidebar-logo-image img {
+                max-width: 52px;
+                max-height: 52px;
+                width: auto;
+                height: auto;
+                object-fit: contain;
+            }
+
+        .logo-text {
+            min-width: 0;
+        }
+
+            .logo-text .name {
+                font-weight: 700;
+                color: var(--text-main);
+                font-size: .95rem;
+            }
+
+            .logo-text .sub {
+                font-size: .78rem;
+                color: var(--brand-blue);
+                font-weight: 600;
+                letter-spacing: .03em;
+            }
+
+        .menu-group {
+            margin-bottom: 6px;
+            position: relative;
+        }
+
+        .menu-group-toggle {
+            width: 100%;
+            min-height: 40px;
+            border: 0;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: 10px;
+            color: var(--text-main);
+            cursor: pointer;
+            text-align: left;
+        }
+
+            .menu-group-toggle:hover {
+                background: var(--menu-hover);
+            }
+
+        .menu-group-title {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            min-width: 0;
+        }
+
+        .menu-group-label {
+            font-weight: 600;
+            letter-spacing: .02em;
+            white-space: nowrap;
+            font-size: .92rem;
+        }
+
+        .menu-group-arrow {
+            transition: transform .2s ease;
+            font-size: .9rem;
+            color: var(--text-muted);
+        }
+
+        .menu-group.open .menu-group-arrow {
+            transform: rotate(90deg);
+        }
+
+        .submenu {
+            margin-top: 4px;
+            padding: 4px;
+            border-radius: 12px;
+            background: var(--submenu-bg);
+        }
+
+            .submenu .nav-item {
+                margin-bottom: 2px;
+            }
+
+                .submenu .nav-item:last-child {
+                    margin-bottom: 0;
+                }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            min-height: 38px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: background-color .18s ease, color .18s ease;
+            position: relative;
+        }
+
+            .nav-item:hover {
+                text-decoration: none;
+                color: var(--brand-blue-dark);
+                background: var(--menu-hover);
+            }
+
+            .nav-item.active {
+                background: var(--menu-active);
+                color: var(--brand-blue-dark);
+                font-weight: 600;
+            }
+
+        .nav-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            min-width: 18px;
+            font-size: 15px;
+        }
+
+        .nav-text {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+        }
+
+        /* =========================================
+           TOPBAR
+           ========================================= */
+
+        .topbar {
+            min-height: var(--topbar-height);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 16px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+
+        .topbar-title {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            min-width: 0;
+        }
+
+        .topbar-title-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .topbar-breadcrumb {
+            margin-top: 2px;
+            font-size: .82rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .sidebar-toggle,
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            background: var(--content-bg);
+            color: var(--text-main);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+            .icon-btn.disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+
+        .search-box {
+            flex: 1;
+            max-width: 420px;
+            min-width: 180px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 40px;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 0 12px;
+            background: var(--content-bg);
+        }
+
+            .search-box input {
+                flex: 1;
+                border: 0;
+                outline: 0;
+                background: transparent;
+                color: var(--text-main);
+                min-width: 0;
+            }
+
+                .search-box input::placeholder {
+                    color: var(--text-muted);
+                }
+
+        .topbar-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .topbar-user {
+            position: relative;
+        }
+
+        .topbar-user-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 40px;
+            padding: 0 12px;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            background: var(--content-bg);
+            color: var(--text-main);
+            cursor: pointer;
+            max-width: 220px;
+        }
+
+        .topbar-user-name {
+            white-space: nowrap;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .topbar-user-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 220px;
+            background: var(--flyout-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: var(--flyout-shadow);
+            padding: 8px;
+            display: none;
+            z-index: 1300;
+        }
+
+        .topbar-user.open .topbar-user-menu {
+            display: block;
+        }
+
+        .topbar-user-link,
+        .topbar-user-menu form button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 0;
+            background: transparent;
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 10px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+            .topbar-user-link:hover,
+            .topbar-user-menu form button:hover {
+                background: var(--menu-hover);
+                text-decoration: none;
+                color: var(--brand-blue-dark);
+            }
+
+        /* =========================================
+           COLLAPSED SIDEBAR
+           ========================================= */
+
+        body.sidebar-collapsed .sidebar {
+            width: var(--sidebar-collapsed-width);
+            min-width: var(--sidebar-collapsed-width);
+            max-width: var(--sidebar-collapsed-width);
+            overflow: visible;
+        }
+
+        body.sidebar-collapsed .logo-text,
+        body.sidebar-collapsed .menu-group-label,
+        body.sidebar-collapsed .menu-group-arrow,
+        body.sidebar-collapsed .nav-text,
+        body.sidebar-collapsed .nav-badge {
+            display: none !important;
+        }
+
+        body.sidebar-collapsed .submenu {
+            display: none !important;
+            background: transparent !important;
+            border: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        body.sidebar-collapsed .sidebar-logo {
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0;
+            min-height: 92px;
+        }
+
+        body.sidebar-collapsed .sidebar-logo-image {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+            body.sidebar-collapsed .sidebar-logo-image img {
+                max-width: 42px;
+                max-height: 42px;
+            }
+
+        body.sidebar-collapsed .sidebar-section {
+            padding: 8px 0;
+        }
+
+        body.sidebar-collapsed .menu-group {
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        body.sidebar-collapsed .menu-group-toggle,
+        body.sidebar-collapsed .nav-item {
+            width: 44px;
+            height: 44px;
+            min-height: 44px;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            border-radius: 12px;
+        }
+
+            body.sidebar-collapsed .menu-group-toggle .menu-group-title {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0;
+            }
+
+        body.sidebar-collapsed .nav-icon {
+            width: 20px;
+            min-width: 20px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.sidebar-collapsed .menu-group:hover .menu-group-toggle {
+            background: var(--menu-hover);
+        }
+
+        body.sidebar-collapsed .menu-group:hover > .submenu {
+            display: block !important;
+            position: absolute;
+            top: 0;
+            left: calc(100% + 8px);
+            min-width: 240px;
+            background: var(--flyout-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            box-shadow: var(--flyout-shadow);
+            padding: 8px;
+            z-index: 3000;
+        }
+
+            body.sidebar-collapsed .menu-group:hover > .submenu .nav-item {
+                width: 100%;
+                min-height: 38px;
+                justify-content: flex-start;
+                align-items: center;
+                gap: .75rem;
+                padding: 8px 10px;
+                margin: 0 0 2px 0;
+            }
+
+            body.sidebar-collapsed .menu-group:hover > .submenu .nav-text {
+                display: block !important;
+                flex: 1;
+                min-width: 0;
+            }
+
+            body.sidebar-collapsed .menu-group:hover > .submenu .nav-badge {
+                display: inline-flex !important;
+            }
+
+            body.sidebar-collapsed .menu-group:hover > .submenu .nav-icon {
+                width: 18px;
+                min-width: 18px;
+            }
+
+        body.sidebar-collapsed .menu-group > .submenu:hover {
+            display: block !important;
+        }
+
+        /* =========================================
+           RESPONSIVE
+           ========================================= */
+
+        @@media (max-width: 991.98px) {
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                z-index: 1040;
+                width: var(--sidebar-width);
+                transform: translateX(0);
+            }
+
+            .main {
+                width: 100%;
+            }
+
+            body:not(.sidebar-collapsed)::before {
+                content: "";
+                position: fixed;
+                inset: 0;
+                background: rgba(18,58,99,0.35);
+                z-index: 1030;
+            }
+
+            body.sidebar-collapsed .sidebar {
+                width: var(--sidebar-width);
+                min-width: var(--sidebar-width);
+                max-width: var(--sidebar-width);
+                transform: translateX(-100%);
+            }
+
+            body.sidebar-collapsed .logo-text,
+            body.sidebar-collapsed .menu-group-label,
+            body.sidebar-collapsed .menu-group-arrow,
+            body.sidebar-collapsed .nav-text,
+            body.sidebar-collapsed .nav-badge {
+                display: revert !important;
+            }
+
+            body.sidebar-collapsed .submenu {
+                display: none !important;
+            }
+
+            body.sidebar-collapsed .menu-group:hover > .submenu {
+                display: none !important;
+            }
+
+            body.sidebar-collapsed .menu-group-toggle,
+            body.sidebar-collapsed .nav-item {
+                width: 100%;
+                justify-content: flex-start;
+                gap: .75rem;
+                padding: 8px 10px;
+            }
+
+            .topbar {
+                flex-wrap: wrap;
+            }
+
+            .topbar-actions {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+        }
+
+        /* Light-theme table hover — Bootstrap's default .table-hover already
+           reads fine on a white/light background, so (unlike _Layout.cshtml,
+           which needed a dark-theme fix here) nothing to override. If a
+           table still looks wrong once wired into the real app, it's the
+           shared adminlte.min.css/custom.min.css fighting this layout —
+           flag it and it gets a targeted fix here. */
+
+        /* Content cards — light panels on the light-blue background, for
+           any page that wraps its content in a simple card container. */
+        .content .card,
+        .content .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+        }
+    </style>
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <div class="app-shell">
+
+        <!-- SIDEBAR START -->
+        <aside class="sidebar" id="appSidebar">
+
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-image">
+                    <img src="~/Images/Air_Force_small.png" alt="Logo FRA" />
+                </div>
+                <div class="logo-text">
+                    <div class="name">FORCES ROYALES AIR</div>
+                    <div class="sub">SquadronOps</div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+
+                <!-- GROUP: PROGRAMME DE VOL — OdvPlanning (the board), Sorties/
+                     SortieCrews are worked from within that board (Create/
+                     Edit/Cancel/Finalize/AssignAircraft, crew-assignment
+                     modal) rather than having their own Index pages, so
+                     they don't get separate nav entries here. Revisit if
+                     dedicated list views for Sorties/SortieCrews get built
+                     later. -->
+                <div class="menu-group @(flyingProgramOpen ? "open" : "")" data-group>
+                    <button type="button"
+                            class="menu-group-toggle"
+                            data-group-toggle
+                            aria-expanded="@(flyingProgramOpen.ToString().ToLower())"
+                            title="Programme de vol">
+                        <span class="menu-group-title">
+                            <span class="nav-icon">🛫</span>
+                            <span class="menu-group-label">Programme de vol</span>
+                        </span>
+                        <span class="menu-group-arrow">›</span>
+                    </button>
+
+                    <div class="submenu" data-group-menu style="display:block">
+                        <a class="nav-item @IsActive("SquadronOps", "OdvPlanning")"
+                           asp-area="SquadronOps"
+                           asp-controller="OdvPlanning"
+                           asp-action="Index"
+                           title="Programme de vol quotidien">
+                            <span class="nav-icon">📋</span>
+                            <span class="nav-text">Programme de vol quotidien</span>
+                        </a>
+                    </div>
+                </div>
+                <!-- GROUP: PROGRAMME DE VOL END -->
+
+                <!-- GROUP: ACTIVITÉS ESCADRON — SquadronActivitiesController's
+                     action name ASSUMED to be Index (that controller file
+                     hasn't been reviewed this session — confirm/adjust if
+                     different). -->
+                <div class="menu-group @(squadronActivitiesOpen ? "open" : "")" data-group>
+                    <button type="button"
+                            class="menu-group-toggle"
+                            data-group-toggle
+                            aria-expanded="@(squadronActivitiesOpen.ToString().ToLower())"
+                            title="Activités Escadron">
+                        <span class="menu-group-title">
+                            <span class="nav-icon">🎖️</span>
+                            <span class="menu-group-label">Activités Escadron</span>
+                        </span>
+                        <span class="menu-group-arrow">›</span>
+                    </button>
+
+                    <div class="submenu" data-group-menu style="display:block">
+                        <a class="nav-item @IsActive("SquadronOps", "SquadronActivities")"
+                           asp-area="SquadronOps"
+                           asp-controller="SquadronActivities"
+                           asp-action="Index"
+                           title="Activités Escadron">
+                            <span class="nav-icon">📅</span>
+                            <span class="nav-text">Activités Escadron</span>
+                        </a>
+                    </div>
+                </div>
+                <!-- GROUP: ACTIVITÉS ESCADRON END -->
+
+            </div>
+
+        </aside>
+        <!-- SIDEBAR END -->
+
+        <div class="main">
+
+            <header class="topbar">
+
+                <div class="topbar-left">
+                    <div class="topbar-title">
+                        <button class="icon-btn sidebar-toggle"
+                                type="button"
+                                id="sidebarToggle"
+                                title="Réduire / étendre"
+                                aria-label="Réduire ou étendre la barre latérale"
+                                aria-expanded="true">
+                            ☰
+                        </button>
+                        <span class="topbar-title-text">@ViewData["Title"]</span>
+                    </div>
+                    <div class="topbar-breadcrumb">
+                        FRA <span>›</span> SquadronOps
+                    </div>
+                </div>
+
+                <div class="search-box" title="Recherche">
+                    <span>🔎</span>
+                    <input type="text" placeholder="Rechercher un ODV, une sortie…" />
+                </div>
+
+                <div class="topbar-actions">
+                    <div class="topbar-user" id="topbarUserMenu">
+                        <button type="button"
+                                class="topbar-user-trigger"
+                                id="topbarUserTrigger"
+                                aria-expanded="false">
+                            <span>👤</span>
+                            <span class="topbar-user-name">@displayName</span>
+                            <span>▾</span>
+                        </button>
+
+                        <div class="topbar-user-menu" id="topbarUserDropdown">
+                            <a class="topbar-user-link"
+                               asp-area="Identity"
+                               asp-page="/Account/Manage/Index">
+                                <span>⚙</span>
+                                <span>Mon profil</span>
+                            </a>
+
+                            <a class="topbar-user-link"
+                               asp-area="Identity"
+                               asp-page="/Account/Manage/ChangePassword">
+                                <span>🔐</span>
+                                <span>Changer mot de passe</span>
+                            </a>
+                            <form asp-area="Identity"
+                                  asp-page="/Account/Logout"
+                                  asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString"
+                                  method="post">
+                                <button type="submit">
+                                    <span>🚪</span>
+                                    <span>Déconnexion</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <button class="icon-btn disabled" type="button" title="Notifications (à venir)" disabled>🔔</button>
+                    <button class="icon-btn disabled" type="button" title="Aide (à venir)" disabled>?</button>
+                    <!-- Gear icon points at the NEW SquadronOps settings
+                         layout's landing page (Squadron/Index) rather than
+                         the system-wide Settings/Home that _Layout.cshtml
+                         uses — reasonable choice for this area, easy to
+                         repoint if a different landing page is wanted. -->
+                    <a class="icon-btn"
+                       asp-area="SquadronOps"
+                       asp-controller="Squadron"
+                       asp-action="Index"
+                       title="Paramètres SquadronOps">⚙</a>
+                </div>
+
+            </header>
+
+            <main class="content">
+                @RenderBody()
+            </main>
+
+        </div>
+
+    </div>
+
+    <a asp-area="" asp-controller="BugReports" asp-action="Create"
+       asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString"
+       class="btn btn-danger btn-sm position-fixed"
+       style="bottom: 20px; right: 20px; z-index: 1050;">
+        🐛 Signaler un problème
+    </a>
+    <script>
+        (function () {
+            const body = document.body;
+            const sidebar = document.getElementById('appSidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const userMenu = document.getElementById('topbarUserMenu');
+            const userTrigger = document.getElementById('topbarUserTrigger');
+
+            // Distinct localStorage keys from _Layout.cshtml's
+            // (gmao.squadronops.* vs gmao.*) so collapsing this sidebar
+            // doesn't also collapse the AircraftMaintenance one, and vice
+            // versa — separate layouts, separate remembered state.
+            const sidebarStorageKey = 'gmao.squadronops.sidebar.collapsed';
+            const groupStorageKey = 'gmao.squadronops.sidebar.groups';
+            const mobileMq = window.matchMedia('(max-width: 991.98px)');
+
+            function isMobile() {
+                return mobileMq.matches;
+            }
+
+            function applySidebarState(collapsed) {
+                body.classList.toggle('sidebar-collapsed', collapsed);
+                if (sidebarToggle) {
+                    sidebarToggle.setAttribute('aria-expanded', (!collapsed).toString());
+                }
+            }
+
+            function syncSidebarForViewport() {
+                const saved = localStorage.getItem(sidebarStorageKey) === 'true';
+                if (isMobile()) {
+                    applySidebarState(true);
+                } else {
+                    applySidebarState(saved);
+                }
+            }
+
+            function getGroups() {
+                return Array.from(document.querySelectorAll('[data-group]'));
+            }
+
+            function applyGroup(group, open) {
+                const menu = group.querySelector('[data-group-menu]');
+                const toggle = group.querySelector('[data-group-toggle]');
+
+                group.classList.toggle('open', open);
+
+                if (menu && !body.classList.contains('sidebar-collapsed')) {
+                    menu.style.display = open ? 'block' : 'none';
+                }
+
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', open.toString());
+                }
+            }
+
+            function saveGroupState() {
+                const state = {};
+                getGroups().forEach((group, index) => {
+                    state[index] = group.classList.contains('open');
+                });
+                localStorage.setItem(groupStorageKey, JSON.stringify(state));
+            }
+
+            function restoreGroupState() {
+                const saved = localStorage.getItem(groupStorageKey);
+                if (!saved) return;
+                try {
+                    const parsed = JSON.parse(saved);
+                    getGroups().forEach((group, index) => {
+                        if (Object.prototype.hasOwnProperty.call(parsed, index)) {
+                            applyGroup(group, !!parsed[index]);
+                        }
+                    });
+                } catch (e) {
+                    console.warn('Impossible de restaurer l’état du menu latéral.', e);
+                }
+            }
+
+            syncSidebarForViewport();
+
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const collapsed = !body.classList.contains('sidebar-collapsed');
+                    applySidebarState(collapsed);
+
+                    if (!isMobile()) {
+                        localStorage.setItem(sidebarStorageKey, collapsed.toString());
+                    }
+                });
+            }
+
+            document.addEventListener('click', function (e) {
+                if (!isMobile()) return;
+                if (!sidebar) return;
+
+                const clickInsideSidebar = sidebar.contains(e.target);
+                const clickOnToggle = sidebarToggle && sidebarToggle.contains(e.target);
+
+                if (!clickInsideSidebar && !clickOnToggle) {
+                    applySidebarState(true);
+                }
+            });
+
+            if (mobileMq.addEventListener) {
+                mobileMq.addEventListener('change', syncSidebarForViewport);
+            } else if (mobileMq.addListener) {
+                mobileMq.addListener(syncSidebarForViewport);
+            }
+            window.addEventListener('resize', syncSidebarForViewport);
+
+            getGroups().forEach(function (group) {
+                const toggle = group.querySelector('[data-group-toggle]');
+                if (!toggle) return;
+
+                toggle.addEventListener('click', function () {
+                    if (body.classList.contains('sidebar-collapsed') && !isMobile()) {
+                        return;
+                    }
+                    const isOpen = group.classList.contains('open');
+                    applyGroup(group, !isOpen);
+                    saveGroupState();
+                });
+            });
+
+            if (userMenu && userTrigger) {
+                userTrigger.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const isOpen = userMenu.classList.toggle('open');
+                    userTrigger.setAttribute('aria-expanded', isOpen.toString());
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (!userMenu.contains(e.target)) {
+                        userMenu.classList.remove('open');
+                        userTrigger.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            }
+
+            restoreGroupState();
+        })();
+    </script>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

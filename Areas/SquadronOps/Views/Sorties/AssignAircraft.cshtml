@@ -1,0 +1,52 @@
+@model FRAProject.Areas.SquadronOps.ViewModels.SortieAssignAircraftVm
+
+@{
+    ViewData["Title"] = "Assign Aircraft";
+}
+
+@*
+    NEW (2026-08-29, Batch 9) — drafted from scratch, NOT matched against
+    any real view in this project yet. No existing Sortie Create/Edit
+    .cshtml has been sent this session, so this uses plain Bootstrap
+    (form-label/form-select/form-control, btn/btn-primary — the ASP.NET
+    Core MVC default scaffolding classes) as a safe, generic baseline.
+    If the real views use a different layout, partials, or component
+    library, send one (e.g. Create.cshtml or Edit.cshtml) and this gets
+    a follow-up pass to match it exactly rather than guessing here.
+*@
+
+<h1>Assign Aircraft</h1>
+
+<h4>Sortie @Model.SortieCode &mdash; @Model.AcTypeName</h4>
+<hr />
+
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="AssignAircraft" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="SortieId" />
+
+            <div class="form-group mb-3">
+                <label asp-for="AircraftId" class="form-label"></label>
+                <select asp-for="AircraftId" asp-items="Model.Aircraft" class="form-select">
+                    <option value="">-- Select an aircraft --</option>
+                </select>
+                <span asp-validation-for="AircraftId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <input type="submit" value="Assign" class="btn btn-primary" />
+                <a asp-action="Index" asp-controller="OdvPlanning" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
